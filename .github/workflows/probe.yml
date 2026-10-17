@@ -12,10 +12,10 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
         with:
-          java-version: '21'
+          java-version: '25'
           distribution: 'temurin'
       - uses: gradle/actions/setup-gradle@v4
       - name: decompile
-        run: chmod +x ./gradlew && ./gradlew genSources -q > /dev/null 2>&1 || ./gradlew genSources
+        run: chmod +x ./gradlew && ./gradlew genSources 2>&1 | grep -vE "^\s+at " | tail -60
       - name: probe
         run: bash tools/ci/probe.sh
