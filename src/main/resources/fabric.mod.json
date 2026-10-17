@@ -1,0 +1,21 @@
+{
+	"schemaVersion": 1,
+	"id": "deadline",
+	"version": "${version}",
+	"name": "DEAD LINE",
+	"description": "Sos exorcista. Tu teléfono suena. Del otro lado, alguien pide ayuda... o algo.",
+	"authors": ["thiagoz111"],
+	"license": "All-Rights-Reserved",
+	"icon": "assets/deadline/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": ["com.deadline.DeadLine"],
+		"client": ["com.deadline.client.DeadLineClient"]
+	},
+	"depends": {
+		"fabricloader": ">=0.19.5",
+		"minecraft": "~1.21.11",
+		"java": ">=21",
+		"fabric-api": "*"
+	}
+}
