@@ -227,7 +227,7 @@ public abstract class HauntEntity extends Monster {
 	/** Called when the entity is banished (jar / exorcism). */
 	public void banish(ServerLevel level, Player by) {
 		level.sendParticles(ModParticles.WISP, this.getX(), this.getY() + 1, this.getZ(), 40, 0.5, 0.8, 0.5, 0.15);
-		level.sendParticles(ParticleTypes.FLASH, this.getX(), this.getY() + 1, this.getZ(), 1, 0, 0, 0, 0);
+		level.sendParticles(ParticleTypes.END_ROD, this.getX(), this.getY() + 1, this.getZ(), 30, 0.2, 0.4, 0.2, 0.12);
 		level.playSound(null, this.getX(), this.getY(), this.getZ(), this.getDeathSoundEvent(), SoundSource.HOSTILE, 2.0F, 1.0F);
 		CaseManager.onBossBanished(this, by);
 		this.discard();

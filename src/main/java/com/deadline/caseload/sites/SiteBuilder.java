@@ -269,7 +269,7 @@ public abstract class SiteBuilder {
 						int len = 1 + rand.nextInt(4);
 						for (int i = 1; i <= len; i++) {
 							if (isAir(x + dx, height - i, z + dz)) {
-								set(x + dx, height - i, z + dz, i == len ? Blocks.HANGING_ROOTS : Blocks.MANGROVE_LEAVES.defaultBlockState().setValue(BlockStateProperties.PERSISTENT, true));
+								set(x + dx, height - i, z + dz, i == len ? Blocks.HANGING_ROOTS.defaultBlockState() : Blocks.MANGROVE_LEAVES.defaultBlockState().setValue(BlockStateProperties.PERSISTENT, true));
 							}
 						}
 					}

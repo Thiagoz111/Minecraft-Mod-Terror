@@ -1,0 +1,24 @@
+{
+  "model": {
+    "type": "minecraft:condition",
+    "property": "minecraft:custom_model_data",
+    "index": 0,
+    "on_true": {
+      "type": "minecraft:condition",
+      "property": "minecraft:custom_model_data",
+      "index": 1,
+      "on_true": {
+        "type": "minecraft:model",
+        "model": "deadline:item/flashlight_uv"
+      },
+      "on_false": {
+        "type": "minecraft:model",
+        "model": "deadline:item/flashlight_on"
+      }
+    },
+    "on_false": {
+      "type": "minecraft:model",
+      "model": "deadline:item/flashlight"
+    }
+  }
+}

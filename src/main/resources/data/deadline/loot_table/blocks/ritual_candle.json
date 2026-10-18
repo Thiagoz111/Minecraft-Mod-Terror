@@ -1,0 +1,68 @@
+{
+  "type": "minecraft:block",
+  "pools": [
+    {
+      "rolls": 1.0,
+      "bonus_rolls": 0.0,
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "deadline:ritual_candle",
+          "functions": [
+            {
+              "function": "minecraft:set_count",
+              "add": false,
+              "count": 2.0,
+              "conditions": [
+                {
+                  "condition": "minecraft:block_state_property",
+                  "block": "deadline:ritual_candle",
+                  "properties": {
+                    "candles": "2"
+                  }
+                }
+              ]
+            },
+            {
+              "function": "minecraft:set_count",
+              "add": false,
+              "count": 3.0,
+              "conditions": [
+                {
+                  "condition": "minecraft:block_state_property",
+                  "block": "deadline:ritual_candle",
+                  "properties": {
+                    "candles": "3"
+                  }
+                }
+              ]
+            },
+            {
+              "function": "minecraft:set_count",
+              "add": false,
+              "count": 4.0,
+              "conditions": [
+                {
+                  "condition": "minecraft:block_state_property",
+                  "block": "deadline:ritual_candle",
+                  "properties": {
+                    "candles": "4"
+                  }
+                }
+              ]
+            },
+            {
+              "function": "minecraft:explosion_decay"
+            }
+          ]
+        }
+      ],
+      "conditions": [
+        {
+          "condition": "minecraft:survives_explosion"
+        }
+      ]
+    }
+  ],
+  "random_sequence": "deadline:blocks/ritual_candle"
+}

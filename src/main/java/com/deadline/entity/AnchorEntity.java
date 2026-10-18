@@ -95,7 +95,7 @@ public class AnchorEntity extends Entity {
 		if (this.isRemoved()) {
 			return;
 		}
-		level.sendParticles(ParticleTypes.FLASH, this.getX(), this.getY() + 0.5, this.getZ(), 1, 0, 0, 0, 0);
+		level.sendParticles(ParticleTypes.END_ROD, this.getX(), this.getY() + 0.5, this.getZ(), 30, 0.2, 0.3, 0.2, 0.15);
 		level.sendParticles(ModParticles.HOLY_SPARK, this.getX(), this.getY() + 0.5, this.getZ(), 60, 0.4, 0.6, 0.4, 0.2);
 		level.sendParticles(ParticleTypes.LARGE_SMOKE, this.getX(), this.getY() + 0.5, this.getZ(), 25, 0.3, 0.3, 0.3, 0.05);
 		level.playSound(null, this.getX(), this.getY(), this.getZ(), ModSounds.ANCHOR_PURIFY, SoundSource.PLAYERS, 3.0F, 1.0F);

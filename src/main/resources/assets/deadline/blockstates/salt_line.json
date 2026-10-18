@@ -1,0 +1,21 @@
+{
+  "variants": {
+    "": [
+      {
+        "model": "deadline:block/salt_line"
+      },
+      {
+        "model": "deadline:block/salt_line",
+        "y": 90
+      },
+      {
+        "model": "deadline:block/salt_line",
+        "y": 180
+      },
+      {
+        "model": "deadline:block/salt_line",
+        "y": 270
+      }
+    ]
+  }
+}

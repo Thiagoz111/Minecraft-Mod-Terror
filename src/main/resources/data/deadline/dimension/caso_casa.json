@@ -1,0 +1,30 @@
+{
+  "type": "deadline:caso_casa",
+  "generator": {
+    "type": "minecraft:flat",
+    "settings": {
+      "biome": "deadline:bruma_casa",
+      "features": false,
+      "lakes": false,
+      "layers": [
+        {
+          "block": "minecraft:bedrock",
+          "height": 1
+        },
+        {
+          "block": "minecraft:stone",
+          "height": 58
+        },
+        {
+          "block": "minecraft:dirt",
+          "height": 3
+        },
+        {
+          "block": "minecraft:grass_block",
+          "height": 1
+        }
+      ],
+      "structure_overrides": []
+    }
+  }
+}

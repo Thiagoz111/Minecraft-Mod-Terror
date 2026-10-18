@@ -676,3 +676,68 @@ if __name__ == '__main__':
     names = list(ALL)
     imgs = [ALL[n]() for n in names]
     sheet(imgs, k=8, cols=7, labels=names).save(OUT + '/items2.png')
+
+
+# ---------------------------------------------------------------- extra variants
+def flashlight_uv():
+    img = flashlight(True)
+    px = img.load()
+    for y in range(32):
+        for x in range(32):
+            r, g, b, a = px[x, y]
+            if a and r > 200 and g > 200 and b > 120:  # beam + lens -> ultraviolet
+                px[x, y] = (min(255, int(r * 0.75)), int(g * 0.35), 255, a)
+            elif a and r > 180 and g > 170 and b < 200 and (x + y) > 28:
+                px[x, y] = (190, 90, 255, a)
+    return img
+
+
+EGG_COLORS = {
+    'llorona': ('#d8dbe0', '#11131a'), 'wendigo': ('#4e4037', '#d9cfb4'), 'poseida': ('#c2b7ae', '#5e090e'),
+    'payaso': ('#7d4c75', '#c42730'), 'monja': ('#181a24', '#f6d24a'), 'sombra': ('#0c0c12', '#b0141c'),
+    'muneca': ('#f2ece8', '#66284c'), 'anima': ('#3fbcb0', '#e8fff8'),
+}
+
+
+def spawn_egg(key):
+    base, spot = EGG_COLORS[key]
+    s = Sprite(S, seed=hash(key) % 1000)
+    m = Material(base) if False else None
+    from px import ramp
+    egg = Material(ramp(base, 7, spread=0.5), spec=0.35, shininess=10)
+    s.ellipse(16, 17.5, 9.2, 12.5, egg)
+    img = s.render()
+    px = img.load()
+    rng = np.random.default_rng(abs(hash(key)) % 2**31)
+    sc = hexc(spot)
+    for k in range(9):
+        cx, cy = rng.integers(10, 23), rng.integers(9, 27)
+        rad = rng.integers(1, 3)
+        for y in range(cy - rad, cy + rad + 1):
+            for x in range(cx - rad, cx + rad + 1):
+                if (x - cx) ** 2 + (y - cy) ** 2 <= rad * rad + 0.5 and px[x, y][3] and px[x, y] != (0, 0, 0, 0):
+                    c = px[x, y]
+                    lum = (c[0] + c[1] + c[2]) / 3 / 255
+                    px[x, y] = shade(sc, 0.6 + lum * 0.7)
+    for p in ((12, 9), (11, 10), (11, 11)):
+        px[p] = (255, 255, 255, 230)
+    return img
+
+
+def candle_item():
+    s = Sprite(S, seed=71)
+    s.rect(12, 10, 19, 29, BLACK_WAX, bevel=1.5)
+    s.ellipse(15.5, 10.5, 4.2, 1.6, BLACK_WAX, outline=False)
+    img = s.render()
+    px = img.load()
+    for p in ((13, 11), (13, 12), (13, 13), (18, 11), (18, 12)):
+        px[p] = (70, 70, 90, 255)  # wax drips
+    px[15, 8] = px[15, 9] = (40, 30, 30, 255)
+    for p, c in (((15, 3), (255, 240, 180)), ((15, 4), (255, 200, 80)), ((14, 5), (255, 140, 30)), ((15, 5), (255, 230, 150)), ((16, 5), (255, 140, 30)), ((15, 6), (255, 120, 20)), ((15, 7), (200, 60, 10))):
+        px[p] = c + (255,)
+    return with_glow(img, (255, 150, 40), radius=1.3, strength=0.4)
+
+
+ALL.update({'flashlight_uv': flashlight_uv, 'ritual_candle': candle_item})
+for _k in EGG_COLORS:
+    ALL[f'{_k}_spawn_egg'] = (lambda k=_k: spawn_egg(k))
