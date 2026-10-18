@@ -1,45 +1,13 @@
-net.minecraft.client.input.MouseButtonEvent |
-net.minecraft.client.input.KeyEvent |
-net.minecraft.client.gui.components.events.GuiEventListener | mouseClicked|keyPressed|mouseScrolled|mouseReleased|mouseDragged|charTyped
-net.minecraft.world.entity.projectile.throwableitemprojectile.ThrowableItemProjectile |
-net.minecraft.world.entity.projectile.Projectile$ProjectileFactory |
-net.minecraft.world.entity.LightningBolt | setVisualOnly|LightningBolt\(
-net.minecraft.world.entity.ai.navigation.WallClimberNavigation | WallClimberNavigation\(
-net.minecraft.world.entity.monster.Spider | onClimbable|isClimbing|setClimbing|createNavigation
-net.minecraft.world.entity.Mob | createNavigation|customServerAiStep|setNoAi|isNoAi|isAggressive|setAggressive|getHeadRotSpeed|finalizeSpawn|isSunBurnTick
-net.minecraft.world.entity.ai.goal.LeapAtTargetGoal | LeapAtTargetGoal\(
-net.minecraft.world.entity.ai.goal.AvoidEntityGoal | AvoidEntityGoal\(
-net.minecraft.world.entity.ai.goal.WaterAvoidingRandomStrollGoal | WaterAvoidingRandomStrollGoal\(
-net.minecraft.world.entity.ai.goal.LookAtPlayerGoal | LookAtPlayerGoal\(
-net.minecraft.world.entity.ai.goal.Goal | public
-net.minecraft.world.effect.MobEffects | DARKNESS|SLOWNESS|LEVITATION|NAUSEA|BLINDNESS|SLOWDOWN|CONFUSION|SPEED|GLOWING
-net.minecraft.core.particles.ParticleTypes | SOUL|SMOKE|END_ROD|SNOWFLAKE|DUST|FLAME|ASH|ENCHANT|FLASH|SCULK|SPLASH|FALLING_WATER|SPORE|POOF|ELECTRIC|ITEM_SNOWBALL|BUBBLE|DRIPPING|NOTE|CLOUD|SQUID|WITCH|EFFECT
-net.minecraft.core.particles.DustParticleOptions | DustParticleOptions\(
-net.minecraft.world.entity.EntityType$Builder | of\(|sized|fireImmune|clientTrackingRange|eyeHeight|build\(|noSummon|updateInterval
-net.minecraft.world.level.ClipContext | ClipContext\(
-net.minecraft.world.entity.Entity | getEyeY|getLookAngle|isSpectator|isInvisible|setGlowingTag|blockPosition|onClimbable|isInvulnerableTo|setInvulnerable|getRandom|position\(\)|distanceTo|setPos\(|isNoGravity|horizontalCollision|isShiftKeyDown|getId\(\)|getUUID|setYHeadRot|setYBodyRot|getYHeadRot|isRemoved|getX\(\)|getBbHeight|getBbWidth|isOnFire|igniteForSeconds|setRemainingFireTicks|addTag|hasPose|setPose|getXRot\(\)|hurt\(|ignoreExplosion|isPickable|isAttackable|interact\(|skipAttackInteraction|shouldRender|canBeCollidedWith|isPushable|push\(
-net.minecraft.server.level.ServerLevel | getEntity\(|getEntities\(|getRandomPlayer|getDayTime|dimension|getEntitiesOfClass|getPlayers|explode|strikeLightning
-net.minecraft.world.level.Level | getBrightness|isBrightOutside|isDarkOutside|getDayTime|dimension\(\)|getRandom|getEntitiesOfClass|clip\(|isEmptyBlock|getHeight\(|getMaxLocalRawBrightness|getEntities\(|getNearbyPlayers|getNearestEntity|getGameTime|players\(\)
-net.minecraft.world.level.LightLayer |
-net.minecraft.world.entity.ai.attributes.Attributes | MAX_HEALTH|MOVEMENT_SPEED|ATTACK_DAMAGE|FOLLOW_RANGE|KNOCKBACK_RESISTANCE|STEP_HEIGHT|SAFE_FALL|FLYING_SPEED|ATTACK_KNOCKBACK|ARMOR
-net.minecraft.world.item.ItemStack | set\(|get\(|getOrDefault|hurtAndBreak|isDamageableItem|setDamageValue|getDamageValue|getMaxDamage|shrink|copy\(|is\(|consume|getHoverName|has\(
-net.minecraft.core.component.DataComponents | CUSTOM_MODEL_DATA|CUSTOM_NAME|LORE|CUSTOM_DATA|MAX_DAMAGE|DAMAGE|ITEM_NAME|ENCHANTMENT_GLINT_OVERRIDE|MAX_STACK_SIZE|RARITY|ITEM_MODEL
-net.minecraft.world.level.block.state.BlockBehaviour | getCollisionShape|getShape|getVisualShape|codec|canSurvive|updateShape|entityInside|useWithoutItem|useItemOn|getRenderShape|isPathfindable|animateTick
-net.minecraft.world.phys.shapes.EntityCollisionContext |
-net.minecraft.world.level.block.CandleBlock | CandleBlock\(|LIT|CANDLES|MAX_CANDLES
-net.minecraft.world.level.block.Block | box\(|UPDATE_|registerDefaultState|createBlockStateDefinition|getStateForPlacement|popResource|codec|Block\(
-net.minecraft.world.level.saveddata.SavedData | setDirty|SavedData\(
-net.minecraft.world.level.storage.DimensionDataStorage | computeIfAbsent|get\(
-net.minecraft.server.MinecraftServer | getLevel\(|overworld|getPlayerList|getTickCount|levelKeys|getAllLevels
-net.minecraft.client.renderer.entity.state.ThrownItemRenderState |
-net.minecraft.client.renderer.item.ItemStackRenderState | submit|isEmpty|clear
-net.minecraft.client.renderer.item.ItemModelResolver | update
-net.minecraft.client.resources.sounds.SimpleSoundInstance | SimpleSoundInstance\(
-net.minecraft.client.resources.sounds.AbstractTickableSoundInstance |
-net.minecraft.client.KeyMapping | KeyMapping\(|consumeClick|isDown|Category|register|create
-net.minecraft.client.Camera | public
-net.minecraft.client.gui.screens.Screen | public|protected
-net.minecraft.world.entity.player.Player | getEyeY|hurtServer|isSpectator|playNotifySound|getName|setItemInHand|isLocalPlayer
-net.minecraft.world.entity.LivingEntity | getAttributeValue|getAttribute|isLookingAtMe|hasEffect|removeEffect|lookAt|getMaxHealth|setHealth|getHealth|isAlive|getLastHurtByMob|setSpeed|getArmorValue|onClimbable|setYBodyRot|canAttack
-net.minecraft.util.Mth | lerp\(|clamp\(|sin\(|cos\(|wrapDegrees|PI|DEG_TO_RAD|rotLerp
-net.minecraft.world.entity.Display$ItemDisplay | setItemStack|ItemDisplay\(
+net.minecraft.client.Camera#p | setRotation|setPosition|move\(|yRot|xRot|float
+net.minecraft.client.particle.SingleQuadParticle#p |
+net.minecraft.client.particle.SingleQuadParticle$Layer |
+net.minecraft.client.particle.Particle#p | protected|lifetime|gravity|friction|hasPhysics|rCol|alpha|age|xd|remove|tick|setLifetime|scale|setColor|setAlpha|getLightColor|roll
+net.minecraft.client.particle.SpriteSet |
+net.minecraft.client.renderer.GameRenderer#p | PostEffect|postEffect|setPostEffect|loadEffect
+net.minecraft.client.DeltaTracker | public
+net.minecraft.client.multiplayer.ClientLevel | playLocalSound|addParticle|getGameTime
+net.minecraft.client.gui.Font | width|lineHeight|split|drawInBatch|wordWrapHeight
+net.minecraft.client.Options | hideGui|getCameraType|keyUp|fov|guiScale
+net.minecraft.client.renderer.entity.LivingEntityRenderer#p | getRenderType|scale|setupRotations|isShaking|getShadowRadius|shouldShowName|getFlipDegrees
+net.minecraft.client.renderer.entity.EntityRenderer#p | getBlockLightLevel|shouldShowName|getShadowRadius|affectedByCulling|submitNameTag
+net.minecraft.client.renderer.entity.EntityRendererProvider |

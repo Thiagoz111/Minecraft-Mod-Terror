@@ -19,8 +19,9 @@ if [ -s tools/ci/probe-javap.txt ]; then
     pat="${pat#"${pat%%[![:space:]]*}"}"; pat="${pat%"${pat##*[![:space:]]}"}"
     [ -z "$cls" ] && continue
     echo "=== JAVAP $cls"
-    if [ -z "$pat" ]; then javap -cp "$CP" -public "$cls" 2>&1 | grep -v '^Compiled from' | sed -E 's/net\.minecraft\.([a-z]+\.)*//g; s/java\.(lang|util)\.//g'
-    else javap -cp "$CP" -public "$cls" 2>&1 | grep -E "$pat|^(public|abstract|final).*(class|interface|record|enum)" | sed -E 's/net\.minecraft\.([a-z]+\.)*//g; s/java\.(lang|util)\.//g'; fi
+    MODE=-public; case "$cls" in *'#p') MODE=-p; cls="${cls%#p}";; esac
+    if [ -z "$pat" ]; then javap -cp "$CP" $MODE "$cls" 2>&1 | grep -v '^Compiled from' | sed -E 's/net\.minecraft\.([a-z]+\.)*//g; s/java\.(lang|util)\.//g'
+    else javap -cp "$CP" $MODE "$cls" 2>&1 | grep -E "$pat|^(public|abstract|final).*(class|interface|record|enum)" | sed -E 's/net\.minecraft\.([a-z]+\.)*//g; s/java\.(lang|util)\.//g'; fi
   done < tools/ci/probe-javap.txt
 fi
 if [ -s tools/ci/probe-src.txt ]; then

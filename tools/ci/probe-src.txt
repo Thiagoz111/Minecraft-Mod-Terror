@@ -1,3 +1,2 @@
-net/minecraft/world/entity/projectile/throwableitemprojectile/Snowball.java
-net/minecraft/world/item/SnowballItem.java
-net/minecraft/world/level/block/CarpetBlock.java
+net/minecraft/client/particle/SoulParticle.java
+net/minecraft/client/particle/GlowParticle.java
