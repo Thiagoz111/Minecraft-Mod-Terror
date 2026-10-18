@@ -12,6 +12,9 @@
 		"main": ["com.deadline.DeadLine"],
 		"client": ["com.deadline.client.DeadLineClient"]
 	},
+	"mixins": [
+		{"config": "deadline.client.mixins.json", "environment": "client"}
+	],
 	"depends": {
 		"fabricloader": ">=0.19.5",
 		"minecraft": "~1.21.11",
