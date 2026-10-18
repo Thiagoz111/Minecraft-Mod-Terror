@@ -60,7 +60,10 @@ public final class ClientSmoke {
 			if (idle % 200 == 0) {
 				DeadLine.LOGGER.info("DEADLINE-CLIENT waiting, screen={}", mc.screen == null ? "none" : mc.screen.getClass().getName());
 			}
-			if (idle == 400 && mc.level == null) {
+			if (idle % 20 == 0 && mc.screen != null && pressConfirm(mc)) {
+				return;
+			}
+			if (idle == 600 && mc.level == null && mc.screen instanceof net.minecraft.client.gui.screens.TitleScreen) {
 				// quick-play did not start: open the world the way the world list does (dev-only, via reflection)
 				try {
 					Object flows = mc.createWorldOpenFlows();
@@ -105,6 +108,33 @@ public final class ClientSmoke {
 				DeadLine.LOGGER.error("DEADLINE-CLIENT FAIL step {}", index, t);
 			}
 		}
+	}
+
+	private static final java.util.Set<String> CONFIRM_KEYS = java.util.Set.of("selectWorld.backupJoinSkipButton", "gui.proceed",
+			"gui.continue", "gui.yes", "selectWorld.edit.backupCreated");
+
+	/** Clicks through "backup first?" / experimental-settings style prompts that block quick play. */
+	private static boolean pressConfirm(Minecraft mc) {
+		String cls = mc.screen.getClass().getSimpleName();
+		if (!(cls.contains("Confirm") || cls.contains("Backup") || cls.contains("Warning") || cls.contains("Experimental"))) {
+			return false;
+		}
+		for (var child : mc.screen.children()) {
+			if (child instanceof net.minecraft.client.gui.components.AbstractWidget w
+					&& w.getMessage().getContents() instanceof net.minecraft.network.chat.contents.TranslatableContents tc
+					&& CONFIRM_KEYS.contains(tc.getKey())) {
+				double x = w.getX() + w.getWidth() / 2.0;
+				double y = w.getY() + w.getHeight() / 2.0;
+				var ev = new net.minecraft.client.input.MouseButtonEvent(x, y, new net.minecraft.client.input.MouseButtonInfo(0, 0));
+				mc.screen.mouseClicked(ev, false);
+				if (mc.screen != null) {
+					mc.screen.mouseReleased(ev);
+				}
+				DeadLine.LOGGER.info("DEADLINE-CLIENT pressed {} on {}", tc.getKey(), cls);
+				return true;
+			}
+		}
+		return false;
 	}
 
 	private static void step(int wait, Consumer<Minecraft> a) {
