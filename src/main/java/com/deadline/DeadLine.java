@@ -39,6 +39,7 @@ public class DeadLine implements ModInitializer {
 		ModNetworking.init();
 
 		CommandRegistrationCallback.EVENT.register(DeadLineCommands::register);
+		SmokeTest.register();
 
 		ServerTickEvents.END_SERVER_TICK.register(server -> {
 			CaseManager.tick(server);

@@ -124,6 +124,9 @@ def face_decal(img, u0, v0, w, h):
                 px[u0 + i, v0 + j] = scale(px[u0 + i, v0 + j], 0.78)
 
 
+DEFAULT_MAT = dress_mat
+
+
 def build():
     r = Rig()
     skin = skin_mat

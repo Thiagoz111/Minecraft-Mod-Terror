@@ -206,7 +206,7 @@ class Model:
                 'pivot': b.pivot, 'rot': b.rot,
                 'cubes': [{'origin': c.origin, 'size': c.size, 'uv': c.uv, 'inflate': c.inflate, 'mirror': c.mirror} for c in b.cubes],
             })
-        return {'name': self.name, 'texW': self.tex_w, 'texH': self.tex_h, 'bones': bones}
+        return {'name': self.name, 'texW': self.tex_w, 'texH': self.tex_h, 'scale': self.scale, 'bones': bones}
 
     def to_java(self, package):
         def f(v):
@@ -218,9 +218,15 @@ class Model:
         lines = []
         fields = []
         lookups = []
+        scaled = abs(self.scale - 1.0) > 1e-6
+        top_var = 'root'
+        if scaled:
+            # Whole model authored at higher texel density, shrunk around the ground point (y=24).
+            lines.append('\t\tPartDefinition pScaleRoot = root.addOrReplaceChild("scale_root", CubeListBuilder.create(), PartPose.offset(0F, 24F, 0F).withScale(%s));' % f(self.scale))
+            top_var = 'pScaleRoot'
         for b in self.bones():
             var = 'p' + _camel(b.name)[0].upper() + _camel(b.name)[1:]
-            parent_var = 'root' if b.parent is None else 'p' + _camel(b.parent.name)[0].upper() + _camel(b.parent.name)[1:]
+            parent_var = top_var if b.parent is None else 'p' + _camel(b.parent.name)[0].upper() + _camel(b.parent.name)[1:]
             cl = 'CubeListBuilder.create()'
             for c in b.cubes:
                 cl += '.texOffs(%d, %d)' % c.uv
@@ -232,12 +238,13 @@ class Model:
                 if c.mirror:
                     cl += '.mirror(false)'
             rx, ry, rz = [math.radians(a) for a in b.rot]
+            py = b.pivot[1] - 24.0 if (scaled and b.parent is None) else b.pivot[1]
             pose = 'PartPose.offsetAndRotation(%s, %s, %s, %s, %s, %s)' % (
-                f(b.pivot[0]), f(b.pivot[1]), f(b.pivot[2]), f(rx), f(ry), f(rz))
+                f(b.pivot[0]), f(py), f(b.pivot[2]), f(rx), f(ry), f(rz))
             lines.append('\t\tPartDefinition %s = %s.addOrReplaceChild("%s", %s, %s);' % (var, parent_var, b.name, cl, pose))
             fields.append('\tprotected final ModelPart %s;' % _camel(b.name))
             if b.parent is None:
-                lookups.append('\t\tthis.%s = root.getChild("%s");' % (_camel(b.name), b.name))
+                lookups.append('\t\tthis.%s = %s.getChild("%s");' % (_camel(b.name), 'root.getChild("scale_root")' if scaled else 'root', b.name))
             else:
                 lookups.append('\t\tthis.%s = this.%s.getChild("%s");' % (_camel(b.name), _camel(b.parent.name), b.name))
         state = self.render_state
@@ -276,6 +283,7 @@ public abstract class {cls} extends EntityModel<{state}> {{
 }}
 '''
 
+    scale = 1.0
     render_state = 'LivingEntityRenderState'
     state_import = 'import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;'
     render_type = 'entityCutoutNoCull'

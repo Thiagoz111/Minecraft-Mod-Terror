@@ -55,6 +55,7 @@
     const holder = new THREE.Group();
     root.position.y = 24;
     holder.add(root);
+    if (data.scale && data.scale !== 1) holder.scale.setScalar(data.scale);
     // MC rotation helpers: set(part, xRot, yRot, zRot) in MC radians, added to rest pose
     function pose(name, xr, yr, zr, dx, dy, dz) {
       const g = groups[name]; if (!g) return;

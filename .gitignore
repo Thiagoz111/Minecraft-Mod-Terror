@@ -41,3 +41,4 @@ replay_*.log
 
 # python
 __pycache__/
+run-smoke/

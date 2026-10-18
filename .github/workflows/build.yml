@@ -19,6 +19,15 @@ jobs:
           chmod +x ./gradlew
           set -o pipefail
           ./gradlew build --console=plain 2>&1 | tee build.log
+      - name: server smoke test
+        run: |
+          mkdir -p run-smoke && echo "eula=true" > run-smoke/eula.txt
+          printf "online-mode=false\nlevel-type=minecraft\\:flat\nspawn-protection=0\n" > run-smoke/server.properties
+          timeout 600 ./gradlew runSmoke --console=plain > smoke.log 2>&1 || true
+          echo "=== SMOKE BEGIN"
+          grep -E "DEADLINE-SMOKE|ERROR|Exception|Caused by|Couldn't|Failed to|Invalid|Unknown|missing" smoke.log | grep -vE "^\s+at " | head -150
+          echo "=== SMOKE END"
+          grep -q "DEADLINE-SMOKE DONE failures=0" smoke.log
       - name: upload jar
         if: success()
         uses: actions/upload-artifact@v4

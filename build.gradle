@@ -15,6 +15,15 @@ repositories {
 loom {
 	splitEnvironmentSourceSets()
 
+	runs {
+		smoke {
+			server()
+			name = "Smoke Test"
+			vmArg "-Ddeadline.smoketest=true"
+			runDir "run-smoke"
+		}
+	}
+
 	mods {
 		"deadline" {
 			sourceSet sourceSets.main
