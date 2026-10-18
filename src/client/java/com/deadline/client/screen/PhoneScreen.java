@@ -64,6 +64,15 @@ public class PhoneScreen extends Screen {
 		super(Component.translatable("item.deadline.phone"));
 	}
 
+	/** Opens directly on an app (used by the screenshot test). app: home|calls|call|case|shop|bestiary|beast. */
+	public static PhoneScreen at(String app, int sel) {
+		PhoneScreen s = new PhoneScreen();
+		s.app = App.valueOf(app.toUpperCase(java.util.Locale.ROOT));
+		s.sel = sel;
+		s.age = 20;
+		return s;
+	}
+
 	@Override
 	protected void init() {
 		if (age == 0) {

@@ -22,6 +22,13 @@ loom {
 			vmArg "-Ddeadline.smoketest=true"
 			runDir "run-smoke"
 		}
+		clientSmoke {
+			client()
+			name = "Client Smoke"
+			vmArg "-Ddeadline.clientsmoke=true"
+			programArgs "--quickPlaySingleplayer", "smoke", "--width", "1280", "--height", "720"
+			runDir "run"
+		}
 	}
 
 	mods {

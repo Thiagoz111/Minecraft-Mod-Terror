@@ -36,6 +36,9 @@ import net.minecraft.world.phys.Vec3;
  * </ul>
  */
 public abstract class HauntEntity extends Monster {
+	/** Dev/screenshot mode: freezes special behaviours so creatures can be photographed. Never set in normal play. */
+	public static boolean SHOWCASE = false;
+
 	private static final EntityDataAccessor<Boolean> WEAKENED = SynchedEntityData.defineId(HauntEntity.class, EntityDataSerializers.BOOLEAN);
 	private static final EntityDataAccessor<Boolean> ANCHORED = SynchedEntityData.defineId(HauntEntity.class, EntityDataSerializers.BOOLEAN);
 	private static final EntityDataAccessor<Integer> STUN = SynchedEntityData.defineId(HauntEntity.class, EntityDataSerializers.INT);

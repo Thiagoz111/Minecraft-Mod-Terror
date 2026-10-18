@@ -62,6 +62,9 @@ public class MonjaEntity extends HauntEntity {
 	@Override
 	public void tick() {
 		super.tick();
+		if (HauntEntity.SHOWCASE) {
+			return;
+		}
 		if (!(this.level() instanceof ServerLevel level) || this.isWeakened()) {
 			return;
 		}

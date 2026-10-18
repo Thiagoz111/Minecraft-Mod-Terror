@@ -28,6 +28,19 @@ jobs:
           grep -E "DEADLINE-SMOKE|ERROR|Exception|Caused by|Couldn't|Failed to|Invalid|Unknown|missing" smoke.log | grep -vE "^\s+at " | head -150
           echo "=== SMOKE END"
           grep -q "DEADLINE-SMOKE DONE failures=0" smoke.log
+      - name: client screenshots
+        continue-on-error: true
+        run: |
+          sudo apt-get update -qq > /dev/null && sudo apt-get install -y -qq xvfb libgl1-mesa-dri > /dev/null
+          mkdir -p run/saves && rm -rf run/saves/smoke && cp -r run-smoke/world run/saves/smoke
+          printf "onboardAccessibility:false\nskipMultiplayerWarning:true\njoinedFirstServer:true\nrenderDistance:8\nsimulationDistance:6\nmaxFps:30\nsoundCategory_master:0.0\ntutorialStep:none\nguiScale:2\nnarrator:0\n" > run/options.txt
+          export LIBGL_ALWAYS_SOFTWARE=1
+          timeout 1500 xvfb-run -a -s "-screen 0 1280x720x24" ./gradlew runClientSmoke --console=plain > client.log 2>&1 || true
+          echo "=== CLIENT BEGIN"
+          grep -E "DEADLINE-CLIENT|ERROR|Exception|Caused by|Crash|OpenGL|GL_" client.log | grep -vE "^\s+at " | head -200
+          echo "=== CLIENT END"
+          python3 -m pip install -q pillow > /dev/null 2>&1 || true
+          python3 tools/ci/shots.py run/screenshots
       - name: upload jar
         if: success()
         uses: actions/upload-artifact@v4

@@ -57,6 +57,9 @@ public class AnimaEntity extends HauntEntity {
 	@Override
 	public void tick() {
 		super.tick();
+		if (HauntEntity.SHOWCASE) {
+			return;
+		}
 		this.setNoGravity(true);
 		if (this.level().isClientSide()) {
 			if (this.random.nextInt(4) == 0) {

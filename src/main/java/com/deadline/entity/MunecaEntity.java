@@ -47,6 +47,9 @@ public class MunecaEntity extends HauntEntity {
 	@Override
 	public void tick() {
 		super.tick();
+		if (HauntEntity.SHOWCASE) {
+			return;
+		}
 		if (!(this.level() instanceof ServerLevel level) || this.isStunned()) {
 			return;
 		}

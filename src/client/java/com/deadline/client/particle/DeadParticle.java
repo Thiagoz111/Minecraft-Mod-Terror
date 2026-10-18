@@ -85,13 +85,13 @@ public class DeadParticle extends SingleQuadParticle {
 	}
 
 	public static void registerAll() {
-		reg(ModParticles.ECTOPLASM, new Style(24, 44, 0.10F, 0.18F, -0.004F, 0.94F, true, true, 0.3F, 0.15F, 0.55F, 1.0F, 0.6F, 0.002F));
-		reg(ModParticles.HOLY_SPARK, new Style(10, 22, 0.05F, 0.10F, 0.15F, 0.9F, true, true, -0.5F, 0F, 1.0F, 0.92F, 0.6F, 0F));
-		reg(ModParticles.DEMON_SMOKE, new Style(30, 56, 0.18F, 0.32F, -0.012F, 0.93F, false, true, 1.2F, 0.2F, 0.32F, 0.12F, 0.14F, 0.003F));
-		reg(ModParticles.WISP, new Style(40, 70, 0.08F, 0.14F, -0.002F, 0.96F, true, true, 0F, 0.2F, 0.7F, 0.95F, 1.0F, 0.006F));
+		reg(ModParticles.ECTOPLASM, new Style(24, 44, 0.10F, 0.18F, -0.004F, 0.94F, true, true, 0.3F, 0.15F, 1.0F, 1.0F, 1.0F, 0.002F));
+		reg(ModParticles.HOLY_SPARK, new Style(10, 22, 0.05F, 0.10F, 0.15F, 0.9F, true, true, -0.5F, 0F, 1.0F, 1.0F, 1.0F, 0F));
+		reg(ModParticles.DEMON_SMOKE, new Style(30, 56, 0.18F, 0.32F, -0.012F, 0.93F, false, true, 1.2F, 0.2F, 1.0F, 1.0F, 1.0F, 0.003F));
+		reg(ModParticles.WISP, new Style(40, 70, 0.08F, 0.14F, -0.002F, 0.96F, true, true, 0F, 0.2F, 1.0F, 1.0F, 1.0F, 0.006F));
 		reg(ModParticles.SALT_SPARKLE, new Style(8, 16, 0.04F, 0.07F, 0.02F, 0.9F, true, true, 0F, 0F, 1.0F, 1.0F, 1.0F, 0F));
-		reg(ModParticles.BLOOD_DRIP, new Style(30, 44, 0.06F, 0.09F, 0.6F, 0.98F, false, true, 0F, 0F, 0.75F, 0.05F, 0.06F, 0F));
-		reg(ModParticles.HANDPRINT, new Style(90, 120, 0.22F, 0.26F, 0F, 0F, true, false, 0F, 0.2F, 0.75F, 0.45F, 1.0F, 0F));
-		reg(ModParticles.COLD_BREATH, new Style(26, 40, 0.10F, 0.16F, -0.003F, 0.92F, false, true, 1.0F, 0.1F, 0.88F, 0.94F, 1.0F, 0.002F));
+		reg(ModParticles.BLOOD_DRIP, new Style(30, 44, 0.06F, 0.09F, 0.6F, 0.98F, false, true, 0F, 0F, 1.0F, 1.0F, 1.0F, 0F));
+		reg(ModParticles.HANDPRINT, new Style(90, 120, 0.22F, 0.26F, 0F, 0F, true, false, 0F, 0.2F, 1.0F, 1.0F, 1.0F, 0F));
+		reg(ModParticles.COLD_BREATH, new Style(26, 40, 0.10F, 0.16F, -0.003F, 0.92F, false, true, 1.0F, 0.1F, 1.0F, 1.0F, 1.0F, 0.002F));
 	}
 }

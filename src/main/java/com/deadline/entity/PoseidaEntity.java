@@ -107,6 +107,9 @@ public class PoseidaEntity extends HauntEntity {
 	@Override
 	public void tick() {
 		super.tick();
+		if (HauntEntity.SHOWCASE) {
+			return;
+		}
 		if (!(this.level() instanceof ServerLevel level)) {
 			return;
 		}
