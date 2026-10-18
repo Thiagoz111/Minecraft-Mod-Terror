@@ -15,10 +15,19 @@ jobs:
           distribution: 'temurin'
       - uses: gradle/actions/setup-gradle@v4
       - name: build
-        run: chmod +x ./gradlew && ./gradlew build 
+        run: |
+          chmod +x ./gradlew
+          set -o pipefail
+          ./gradlew build --console=plain 2>&1 | tee build.log
       - name: upload jar
         if: success()
         uses: actions/upload-artifact@v4
         with:
           name: deadline-mod
           path: build/libs/
+      - name: error summary
+        if: failure()
+        run: |
+          echo "=== ERRORS BEGIN"
+          grep -E "error:|warning: \[|^\s+\^|\.java:[0-9]+|What went wrong|> Task .*FAILED|Exception|Caused by" build.log | grep -vE "^\s+at " | head -400
+          echo "=== ERRORS END"

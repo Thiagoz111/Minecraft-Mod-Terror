@@ -38,13 +38,13 @@ public abstract class MunecaModelBase extends EntityModel<LivingEntityRenderStat
 	public static LayerDefinition createBodyLayer() {
 		MeshDefinition mesh = new MeshDefinition();
 		PartDefinition root = mesh.getRoot();
-		PartDefinition body = root.addOrReplaceChild("body", CubeListBuilder.create().texOffs(0, 10).addBox(-2F, -4F, -1F, 4F, 5F, 2F, new CubeDeformation(0F)), PartPose.offsetAndRotation(0F, 17F, 0F, 0F, 0F, 0F));
-		PartDefinition skirt = body.addOrReplaceChild("skirt", CubeListBuilder.create().texOffs(40, 9).addBox(-3F, -1F, -2F, 6F, 4F, 4F, new CubeDeformation(0F)), PartPose.offsetAndRotation(0F, 1F, 0F, 0F, 0F, 0F));
-		PartDefinition head = body.addOrReplaceChild("head", CubeListBuilder.create().texOffs(0, 0).addBox(-2.5F, -5F, -2.5F, 5F, 5F, 5F, new CubeDeformation(0F)).texOffs(20, 0).addBox(-2.5F, -5F, -2.5F, 5F, 5F, 5F, new CubeDeformation(0.3F)).texOffs(40, 0).addBox(-3F, -4.5F, 1.5F, 6F, 8F, 1F, new CubeDeformation(0F)).texOffs(16, 10).addBox(1.5F, -6F, -1F, 3F, 2F, 1F, new CubeDeformation(0F)), PartPose.offsetAndRotation(0F, -4F, 0F, 0F, 0F, 0F));
-		PartDefinition rightArm = body.addOrReplaceChild("right_arm", CubeListBuilder.create().texOffs(54, 0).addBox(-0.5F, -0.5F, -0.5F, 1F, 5F, 1F, new CubeDeformation(0F)), PartPose.offsetAndRotation(-2.5F, -3.5F, 0F, 0F, 0F, -0.1745F));
-		PartDefinition leftArm = body.addOrReplaceChild("left_arm", CubeListBuilder.create().texOffs(58, 0).addBox(-0.5F, -0.5F, -0.5F, 1F, 5F, 1F, new CubeDeformation(0F)), PartPose.offsetAndRotation(2.5F, -3.5F, 0F, 0F, 0F, 0.1745F));
-		PartDefinition rightLeg = root.addOrReplaceChild("right_leg", CubeListBuilder.create().texOffs(60, 6).addBox(-0.5F, -1F, -0.5F, 1F, 4F, 1F, new CubeDeformation(0F)), PartPose.offsetAndRotation(-1F, 21F, 0F, 0F, 0F, 0F));
-		PartDefinition leftLeg = root.addOrReplaceChild("left_leg", CubeListBuilder.create().texOffs(12, 10).addBox(-0.5F, -1F, -0.5F, 1F, 4F, 1F, new CubeDeformation(0F)), PartPose.offsetAndRotation(1F, 21F, 0F, 0F, 0F, 0F));
+		PartDefinition pBody = root.addOrReplaceChild("body", CubeListBuilder.create().texOffs(0, 10).addBox(-2F, -4F, -1F, 4F, 5F, 2F, new CubeDeformation(0F)), PartPose.offsetAndRotation(0F, 17F, 0F, 0F, 0F, 0F));
+		PartDefinition pSkirt = pBody.addOrReplaceChild("skirt", CubeListBuilder.create().texOffs(40, 9).addBox(-3F, -1F, -2F, 6F, 4F, 4F, new CubeDeformation(0F)), PartPose.offsetAndRotation(0F, 1F, 0F, 0F, 0F, 0F));
+		PartDefinition pHead = pBody.addOrReplaceChild("head", CubeListBuilder.create().texOffs(0, 0).addBox(-2.5F, -5F, -2.5F, 5F, 5F, 5F, new CubeDeformation(0F)).texOffs(20, 0).addBox(-2.5F, -5F, -2.5F, 5F, 5F, 5F, new CubeDeformation(0.3F)).texOffs(40, 0).addBox(-3F, -4.5F, 1.5F, 6F, 8F, 1F, new CubeDeformation(0F)).texOffs(16, 10).addBox(1.5F, -6F, -1F, 3F, 2F, 1F, new CubeDeformation(0F)), PartPose.offsetAndRotation(0F, -4F, 0F, 0F, 0F, 0F));
+		PartDefinition pRightArm = pBody.addOrReplaceChild("right_arm", CubeListBuilder.create().texOffs(54, 0).addBox(-0.5F, -0.5F, -0.5F, 1F, 5F, 1F, new CubeDeformation(0F)), PartPose.offsetAndRotation(-2.5F, -3.5F, 0F, 0F, 0F, -0.1745F));
+		PartDefinition pLeftArm = pBody.addOrReplaceChild("left_arm", CubeListBuilder.create().texOffs(58, 0).addBox(-0.5F, -0.5F, -0.5F, 1F, 5F, 1F, new CubeDeformation(0F)), PartPose.offsetAndRotation(2.5F, -3.5F, 0F, 0F, 0F, 0.1745F));
+		PartDefinition pRightLeg = root.addOrReplaceChild("right_leg", CubeListBuilder.create().texOffs(60, 6).addBox(-0.5F, -1F, -0.5F, 1F, 4F, 1F, new CubeDeformation(0F)), PartPose.offsetAndRotation(-1F, 21F, 0F, 0F, 0F, 0F));
+		PartDefinition pLeftLeg = root.addOrReplaceChild("left_leg", CubeListBuilder.create().texOffs(12, 10).addBox(-0.5F, -1F, -0.5F, 1F, 4F, 1F, new CubeDeformation(0F)), PartPose.offsetAndRotation(1F, 21F, 0F, 0F, 0F, 0F));
 		return LayerDefinition.create(mesh, TEXTURE_WIDTH, TEXTURE_HEIGHT);
 	}
 }

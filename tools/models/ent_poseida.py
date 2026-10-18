@@ -115,8 +115,8 @@ def eyes_only(img, u0, v0, w, h):
 def build():
     r = Rig()
     skin = skin_mat
-    r.bone('root', (0, 12, 0))
-    r.bone('body', (0, 12, 0), parent='root', mat=gown_mat)
+    r.bone('base', (0, 12, 0))
+    r.bone('body', (0, 12, 0), parent='base', mat=gown_mat)
     r.box('body', (-3, 0, -1.5), (6, 9, 3))
     r.bone('gown', (0, 9, 0), parent='body', mat=gown_mat)
     r.box('gown', (-3.5, 8, -2), (7, 7, 4))
@@ -134,7 +134,7 @@ def build():
         r.bone(f'{side}_arm', (4 * sx, 1, 0), parent='body', mat=skin)
         r.box(f'{side}_arm', (x0, 0, -1), (2, 11, 2))
         r.box(f'{side}_arm', (x0, 0, -1), (2, 3, 2), mat=gown_mat, inflate=0.25)
-        r.bone(f'{side}_leg', (1.5 * sx, 13, 0), parent='root', mat=skin)
+        r.bone(f'{side}_leg', (1.5 * sx, 13, 0), parent='base', mat=skin)
         r.box(f'{side}_leg', (1.5 * sx - 1, 12, -1), (2, 12, 2))
     m = Model('poseida', 64, 64, r.roots)
     return m

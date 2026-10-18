@@ -38,13 +38,13 @@ public abstract class AnimaModelBase extends EntityModel<LivingEntityRenderState
 	public static LayerDefinition createBodyLayer() {
 		MeshDefinition mesh = new MeshDefinition();
 		PartDefinition root = mesh.getRoot();
-		PartDefinition body = root.addOrReplaceChild("body", CubeListBuilder.create().texOffs(24, 0).addBox(-3F, 0F, -1.5F, 6F, 8F, 3F, new CubeDeformation(0F)), PartPose.offsetAndRotation(0F, 0F, 0F, 0F, 0F, 0F));
-		PartDefinition head = body.addOrReplaceChild("head", CubeListBuilder.create().texOffs(0, 0).addBox(-3F, -6F, -3F, 6F, 6F, 6F, new CubeDeformation(0F)), PartPose.offsetAndRotation(0F, 0F, 0F, 0F, 0F, 0F));
-		PartDefinition tail1 = body.addOrReplaceChild("tail1", CubeListBuilder.create().texOffs(24, 11).addBox(-2.5F, 0F, -1.5F, 5F, 5F, 3F, new CubeDeformation(0F)), PartPose.offsetAndRotation(0F, 8F, 0F, 0F, 0F, 0F));
-		PartDefinition tail2 = tail1.addOrReplaceChild("tail2", CubeListBuilder.create().texOffs(40, 11).addBox(-2F, 0F, -1F, 4F, 5F, 2F, new CubeDeformation(0F)), PartPose.offsetAndRotation(0F, 5F, 0F, 0F, 0F, 0F));
-		PartDefinition tail3 = tail2.addOrReplaceChild("tail3", CubeListBuilder.create().texOffs(58, 0).addBox(-1F, 0F, -0.5F, 2F, 5F, 1F, new CubeDeformation(0F)), PartPose.offsetAndRotation(0F, 5F, 0F, 0F, 0F, 0F));
-		PartDefinition rightArm = body.addOrReplaceChild("right_arm", CubeListBuilder.create().texOffs(42, 0).addBox(-1F, -1F, -1F, 2F, 9F, 2F, new CubeDeformation(0F)), PartPose.offsetAndRotation(-4F, 1F, 0F, -0.5236F, 0F, -0.3491F));
-		PartDefinition leftArm = body.addOrReplaceChild("left_arm", CubeListBuilder.create().texOffs(50, 0).addBox(-1F, -1F, -1F, 2F, 9F, 2F, new CubeDeformation(0F)), PartPose.offsetAndRotation(4F, 1F, 0F, -0.5236F, 0F, 0.3491F));
+		PartDefinition pBody = root.addOrReplaceChild("body", CubeListBuilder.create().texOffs(24, 0).addBox(-3F, 0F, -1.5F, 6F, 8F, 3F, new CubeDeformation(0F)), PartPose.offsetAndRotation(0F, 0F, 0F, 0F, 0F, 0F));
+		PartDefinition pHead = pBody.addOrReplaceChild("head", CubeListBuilder.create().texOffs(0, 0).addBox(-3F, -6F, -3F, 6F, 6F, 6F, new CubeDeformation(0F)), PartPose.offsetAndRotation(0F, 0F, 0F, 0F, 0F, 0F));
+		PartDefinition pTail1 = pBody.addOrReplaceChild("tail1", CubeListBuilder.create().texOffs(24, 11).addBox(-2.5F, 0F, -1.5F, 5F, 5F, 3F, new CubeDeformation(0F)), PartPose.offsetAndRotation(0F, 8F, 0F, 0F, 0F, 0F));
+		PartDefinition pTail2 = pTail1.addOrReplaceChild("tail2", CubeListBuilder.create().texOffs(40, 11).addBox(-2F, 0F, -1F, 4F, 5F, 2F, new CubeDeformation(0F)), PartPose.offsetAndRotation(0F, 5F, 0F, 0F, 0F, 0F));
+		PartDefinition pTail3 = pTail2.addOrReplaceChild("tail3", CubeListBuilder.create().texOffs(58, 0).addBox(-1F, 0F, -0.5F, 2F, 5F, 1F, new CubeDeformation(0F)), PartPose.offsetAndRotation(0F, 5F, 0F, 0F, 0F, 0F));
+		PartDefinition pRightArm = pBody.addOrReplaceChild("right_arm", CubeListBuilder.create().texOffs(42, 0).addBox(-1F, -1F, -1F, 2F, 9F, 2F, new CubeDeformation(0F)), PartPose.offsetAndRotation(-4F, 1F, 0F, -0.5236F, 0F, -0.3491F));
+		PartDefinition pLeftArm = pBody.addOrReplaceChild("left_arm", CubeListBuilder.create().texOffs(50, 0).addBox(-1F, -1F, -1F, 2F, 9F, 2F, new CubeDeformation(0F)), PartPose.offsetAndRotation(4F, 1F, 0F, -0.5236F, 0F, 0.3491F));
 		return LayerDefinition.create(mesh, TEXTURE_WIDTH, TEXTURE_HEIGHT);
 	}
 }

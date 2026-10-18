@@ -15,7 +15,7 @@ import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
 public abstract class PoseidaModelBase extends EntityModel<LivingEntityRenderState> {
 	public static final int TEXTURE_WIDTH = 64;
 	public static final int TEXTURE_HEIGHT = 64;
-	protected final ModelPart root;
+	protected final ModelPart base;
 	protected final ModelPart body;
 	protected final ModelPart gown;
 	protected final ModelPart head;
@@ -28,32 +28,32 @@ public abstract class PoseidaModelBase extends EntityModel<LivingEntityRenderSta
 
 	protected PoseidaModelBase(ModelPart root) {
 		super(root, RenderTypes::entityCutoutNoCull);
-		this.root = root.getChild("root");
-		this.body = this.root.getChild("body");
+		this.base = root.getChild("base");
+		this.body = this.base.getChild("body");
 		this.gown = this.body.getChild("gown");
 		this.head = this.body.getChild("head");
 		this.hairBack = this.head.getChild("hair_back");
 		this.hairFront = this.head.getChild("hair_front");
 		this.rightArm = this.body.getChild("right_arm");
 		this.leftArm = this.body.getChild("left_arm");
-		this.rightLeg = this.root.getChild("right_leg");
-		this.leftLeg = this.root.getChild("left_leg");
+		this.rightLeg = this.base.getChild("right_leg");
+		this.leftLeg = this.base.getChild("left_leg");
 	}
 
 	@SuppressWarnings("unused")
 	public static LayerDefinition createBodyLayer() {
 		MeshDefinition mesh = new MeshDefinition();
 		PartDefinition root = mesh.getRoot();
-		PartDefinition root = root.addOrReplaceChild("root", CubeListBuilder.create(), PartPose.offsetAndRotation(0F, 12F, 0F, 0F, 0F, 0F));
-		PartDefinition body = root.addOrReplaceChild("body", CubeListBuilder.create().texOffs(0, 17).addBox(-3F, -12F, -1.5F, 6F, 9F, 3F, new CubeDeformation(0F)), PartPose.offsetAndRotation(0F, 0F, 0F, 0F, 0F, 0F));
-		PartDefinition gown = body.addOrReplaceChild("gown", CubeListBuilder.create().texOffs(18, 28).addBox(-3.5F, -1F, -2F, 7F, 7F, 4F, new CubeDeformation(0F)), PartPose.offsetAndRotation(0F, -3F, 0F, 0F, 0F, 0F));
-		PartDefinition head = body.addOrReplaceChild("head", CubeListBuilder.create().texOffs(18, 0).addBox(-3.5F, -7F, -3.5F, 7F, 7F, 7F, new CubeDeformation(0F)).texOffs(18, 14).addBox(-3.5F, -7F, -3.5F, 7F, 7F, 7F, new CubeDeformation(0.35F)), PartPose.offsetAndRotation(0F, -12F, 0F, 0F, 0F, 0F));
-		PartDefinition hairBack = head.addOrReplaceChild("hair_back", CubeListBuilder.create().texOffs(0, 0).addBox(-4F, -1F, 0F, 8F, 16F, 1F, new CubeDeformation(0F)), PartPose.offsetAndRotation(0F, -5F, 3.8F, 0F, 0F, 0F));
-		PartDefinition hairFront = head.addOrReplaceChild("hair_front", CubeListBuilder.create().texOffs(46, 27).addBox(-3.8F, -0.2F, -0.05F, 2F, 7F, 0F, new CubeDeformation(0F)).texOffs(50, 27).addBox(2F, -0.2F, -0.05F, 2F, 6F, 0F, new CubeDeformation(0F)), PartPose.offsetAndRotation(0F, -7F, -3.9F, 0F, 0F, 0F));
-		PartDefinition rightArm = body.addOrReplaceChild("right_arm", CubeListBuilder.create().texOffs(46, 14).addBox(-1F, -1F, -1F, 2F, 11F, 2F, new CubeDeformation(0F)).texOffs(54, 27).addBox(-1F, -1F, -1F, 2F, 3F, 2F, new CubeDeformation(0.25F)), PartPose.offsetAndRotation(-4F, -11F, 0F, 0F, 0F, 0F));
-		PartDefinition leftArm = body.addOrReplaceChild("left_arm", CubeListBuilder.create().texOffs(54, 14).addBox(-1F, -1F, -1F, 2F, 11F, 2F, new CubeDeformation(0F)).texOffs(0, 29).addBox(-1F, -1F, -1F, 2F, 3F, 2F, new CubeDeformation(0.25F)), PartPose.offsetAndRotation(4F, -11F, 0F, 0F, 0F, 0F));
-		PartDefinition rightLeg = root.addOrReplaceChild("right_leg", CubeListBuilder.create().texOffs(46, 0).addBox(-1F, -1F, -1F, 2F, 12F, 2F, new CubeDeformation(0F)), PartPose.offsetAndRotation(-1.5F, 1F, 0F, 0F, 0F, 0F));
-		PartDefinition leftLeg = root.addOrReplaceChild("left_leg", CubeListBuilder.create().texOffs(54, 0).addBox(-1F, -1F, -1F, 2F, 12F, 2F, new CubeDeformation(0F)), PartPose.offsetAndRotation(1.5F, 1F, 0F, 0F, 0F, 0F));
+		PartDefinition pBase = root.addOrReplaceChild("base", CubeListBuilder.create(), PartPose.offsetAndRotation(0F, 12F, 0F, 0F, 0F, 0F));
+		PartDefinition pBody = pBase.addOrReplaceChild("body", CubeListBuilder.create().texOffs(0, 17).addBox(-3F, -12F, -1.5F, 6F, 9F, 3F, new CubeDeformation(0F)), PartPose.offsetAndRotation(0F, 0F, 0F, 0F, 0F, 0F));
+		PartDefinition pGown = pBody.addOrReplaceChild("gown", CubeListBuilder.create().texOffs(18, 28).addBox(-3.5F, -1F, -2F, 7F, 7F, 4F, new CubeDeformation(0F)), PartPose.offsetAndRotation(0F, -3F, 0F, 0F, 0F, 0F));
+		PartDefinition pHead = pBody.addOrReplaceChild("head", CubeListBuilder.create().texOffs(18, 0).addBox(-3.5F, -7F, -3.5F, 7F, 7F, 7F, new CubeDeformation(0F)).texOffs(18, 14).addBox(-3.5F, -7F, -3.5F, 7F, 7F, 7F, new CubeDeformation(0.35F)), PartPose.offsetAndRotation(0F, -12F, 0F, 0F, 0F, 0F));
+		PartDefinition pHairBack = pHead.addOrReplaceChild("hair_back", CubeListBuilder.create().texOffs(0, 0).addBox(-4F, -1F, 0F, 8F, 16F, 1F, new CubeDeformation(0F)), PartPose.offsetAndRotation(0F, -5F, 3.8F, 0F, 0F, 0F));
+		PartDefinition pHairFront = pHead.addOrReplaceChild("hair_front", CubeListBuilder.create().texOffs(46, 27).addBox(-3.8F, -0.2F, -0.05F, 2F, 7F, 0F, new CubeDeformation(0F)).texOffs(50, 27).addBox(2F, -0.2F, -0.05F, 2F, 6F, 0F, new CubeDeformation(0F)), PartPose.offsetAndRotation(0F, -7F, -3.9F, 0F, 0F, 0F));
+		PartDefinition pRightArm = pBody.addOrReplaceChild("right_arm", CubeListBuilder.create().texOffs(46, 14).addBox(-1F, -1F, -1F, 2F, 11F, 2F, new CubeDeformation(0F)).texOffs(54, 27).addBox(-1F, -1F, -1F, 2F, 3F, 2F, new CubeDeformation(0.25F)), PartPose.offsetAndRotation(-4F, -11F, 0F, 0F, 0F, 0F));
+		PartDefinition pLeftArm = pBody.addOrReplaceChild("left_arm", CubeListBuilder.create().texOffs(54, 14).addBox(-1F, -1F, -1F, 2F, 11F, 2F, new CubeDeformation(0F)).texOffs(0, 29).addBox(-1F, -1F, -1F, 2F, 3F, 2F, new CubeDeformation(0.25F)), PartPose.offsetAndRotation(4F, -11F, 0F, 0F, 0F, 0F));
+		PartDefinition pRightLeg = pBase.addOrReplaceChild("right_leg", CubeListBuilder.create().texOffs(46, 0).addBox(-1F, -1F, -1F, 2F, 12F, 2F, new CubeDeformation(0F)), PartPose.offsetAndRotation(-1.5F, 1F, 0F, 0F, 0F, 0F));
+		PartDefinition pLeftLeg = pBase.addOrReplaceChild("left_leg", CubeListBuilder.create().texOffs(54, 0).addBox(-1F, -1F, -1F, 2F, 12F, 2F, new CubeDeformation(0F)), PartPose.offsetAndRotation(1.5F, 1F, 0F, 0F, 0F, 0F));
 		return LayerDefinition.create(mesh, TEXTURE_WIDTH, TEXTURE_HEIGHT);
 	}
 }
