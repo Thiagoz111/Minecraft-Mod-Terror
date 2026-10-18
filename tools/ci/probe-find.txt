@@ -1,1 +1,1 @@
-/Vex|EyesLayer|ThrownItemRenderer|/HumanoidModel|/PostChain|ItemCooldowns|/RenderTypes|EmissiveLayer|ModelLayers$|/EntityRenderers$|SpriteSet|/VillagerModel|/ZombieModel|/IllagerModel|/EndermanModel|CameraRenderState
+ThrowableItemProjectile|/Snowball$|ItemUseAnimation|EntitySpawnReason|/MeleeAttackGoal|/WaterAvoidingRandomStrollGoal|/LookAtPlayerGoal|/FloatGoal|/HurtByTargetGoal|/NearestAttackableTargetGoal|/RandomLookAroundGoal

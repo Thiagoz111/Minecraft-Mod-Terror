@@ -1,43 +1,20 @@
-net.minecraft.world.entity.Entity | teleport|hurtServer|addAdditionalSaveData|readAdditionalSaveData|snapTo|moveTo|level\(\)|discard|playSound|lookAt|isInWater|setNoGravity|setInvisible|getEyePosition|getViewVector|setDeltaMovement|spawnAtLocation|setYRot|setXRot|getYRot\(\)|setOnGround|resetFallDistance|getBoundingBox
-net.minecraft.world.entity.LivingEntity | hasLineOfSight|addEffect|heal\(|hurtServer|knockback|isDeadOrDying|getMainHandItem|startUsingItem|getUseItemRemainingTicks|getTicksUsingItem|isUsingItem|swing\(|tickDeath|die\(|getItemInHand|isLookingAtMe
-net.minecraft.world.entity.Mob | registerGoals|goalSelector|targetSelector|getTarget|setTarget|getNavigation|createMobAttributes|doHurtTarget|setPersistenceRequired|removeWhenFarAway|getLookControl|getMoveControl|checkDespawn|isPersistenceRequired|playAmbientSound|getAmbientSoundInterval
-net.minecraft.world.entity.monster.Monster |
+net.minecraft.world.entity.LivingEntity | hasLineOfSight|addEffect|heal\(|hurtServer|knockback|isDeadOrDying|getMainHandItem|startUsingItem|getUseItemRemainingTicks|getTicksUsingItem|isUsingItem|swing\(|tickDeath|die\(|getItemInHand|isLookingAtMe|createLivingAttributes
 net.minecraft.world.entity.ai.goal.MeleeAttackGoal | MeleeAttackGoal\(
 net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal | NearestAttackableTargetGoal\(
-net.minecraft.world.level.portal.TeleportTransition | TeleportTransition\(|DO_NOTHING|PLAY_PORTAL|PostDimensionTransition|static
-net.minecraft.world.item.Item | use\(|releaseUsing|getUseDuration|getUseAnimation|inventoryTick|onUseTick|finishUsingItem|useOn\(|interactLivingEntity|hurtEnemy|isFoil|isBarVisible
-net.minecraft.world.item.Item$Properties |
-net.minecraft.world.entity.projectile.ThrowableItemProjectile |
+net.minecraft.world.level.portal.TeleportTransition | TeleportTransition\(|DO_NOTHING|PLAY_PORTAL|static
+net.minecraft.world.item.Item | use\(|releaseUsing|getUseDuration|getUseAnimation|inventoryTick|onUseTick|finishUsingItem|useOn\(|interactLivingEntity|hurtEnemy|isFoil|postHurtEnemy|Item\(
 net.minecraft.world.entity.projectile.Projectile | onHit|onHitEntity|onHitBlock|shootFromRotation|spawnProjectile|getOwner|shoot\(
 net.minecraft.client.renderer.entity.LivingEntityRenderer | getRenderType|isShaking|shouldShowName|extractRenderState|scale|setupRotations|getFlipDegrees|addLayer|getWhiteOverlayProgress|getModel|LivingEntityRenderer\(
+net.minecraft.client.renderer.entity.MobRenderer | MobRenderer\(|shouldShowName
 net.minecraft.client.renderer.entity.EntityRenderer | submit|shouldRender|getBlockLightLevel|EntityRenderer\(|affectedByCulling
-net.minecraft.client.renderer.entity.state.LivingEntityRenderState |
-net.minecraft.client.renderer.entity.state.EntityRenderState |
-net.minecraft.client.model.EntityModel |
-net.minecraft.client.model.Model |
-net.minecraft.client.model.geom.ModelPart |
-net.minecraft.client.model.geom.PartPose |
-net.minecraft.client.model.geom.builders.CubeListBuilder |
-net.minecraft.client.model.geom.builders.PartDefinition |
-net.minecraft.client.model.geom.builders.LayerDefinition |
-net.minecraft.client.renderer.rendertype.RenderTypes | entity|eyes|energy|breeze|textBackground|lightning
-net.minecraft.client.gui.GuiGraphics | blit|fill|drawString|drawCenteredString|enableScissor|fillGradient|renderItem|pose\(|guiWidth|blitSprite|nextStratum|renderOutline|drawWordWrap
-net.minecraft.client.gui.screens.Screen | render|mouseClicked|keyPressed|init\(|isPauseGame|onClose|addRenderableWidget|renderBackground|mouseScrolled|tick\(|Screen\(
-net.minecraft.client.renderer.RenderPipelines | GUI
-net.minecraft.client.renderer.GameRenderer | PostEffect|postEffect|bobHurt|getMainCamera|displayItemActivation|clearPostEffect
-net.minecraft.world.level.saveddata.SavedDataType |
+net.minecraft.client.gui.GuiGraphics | blit|fill|drawString|drawCenteredString|enableScissor|fillGradient|renderItem|pose\(|guiWidth|blitSprite|nextStratum|renderOutline|drawWordWrap|textHighlight
+net.minecraft.client.gui.screens.Screen | render|mouseClicked|keyPressed|init\(|isPauseGame|onClose|addRenderableWidget|renderBackground|mouseScrolled|tick\(|Screen\(|renderTransparentBackground
 net.minecraft.world.level.storage.ValueInput | getInt|getString|getLong|getBoolean|read\(|getFloat|getDouble|child
-net.minecraft.world.level.storage.ValueOutput | putInt|putString|putLong|putBoolean|store\(|putFloat|child
-net.minecraft.sounds.SoundEvent | static
-net.minecraft.world.level.Level | playSound\(|playLocalSound|addParticle|getEntitiesOfClass|getNearestPlayer|getMaxLocalRawBrightness|isClientSide|setBlock\(|explode\(
-net.minecraft.server.level.ServerLevel | sendParticles|getServer|addFreshEntity|players\(\)|setDayTime|getDataStorage|tryAddFreshEntityWithPassengers
-net.minecraft.server.level.ServerPlayer | teleport|connection|sendSystemMessage|displayClientMessage|level\(\)|getRespawnConfig|setRespawnPosition|getRespawn
+net.minecraft.world.level.storage.ValueOutput | putInt|putString|putLong|putBoolean|store\(|putFloat|child|putDouble
+net.minecraft.world.level.Level | playSound\(|playLocalSound|addParticle|getEntitiesOfClass|getNearestPlayer|getMaxLocalRawBrightness|isClientSide|setBlock\(|explode\(|getRawBrightness
 net.minecraft.world.entity.EntityType | spawn\(|create\(
-net.minecraft.commands.Commands | literal|argument|LEVEL_|hasPermission
-net.minecraft.commands.CommandSourceStack | hasPermission|getPlayerOrException|sendSuccess|sendFailure|permissions|getServer\(\)|getLevel
-net.minecraft.world.item.component.CustomModelData |
-net.minecraft.client.renderer.entity.EntityRendererProvider$Context |
-net.minecraft.client.resources.sounds.SimpleSoundInstance | static
-net.minecraft.world.entity.player.Player | getCooldowns|displayClientMessage|isCreative|getInventory|addItem|sendOverlayMessage|getAbilities
-net.minecraft.world.item.ItemCooldowns |
-net.minecraft.world.damagesource.DamageSources | magic|indirectMagic|generic|mobAttack|source\(|playerAttack
+net.minecraft.world.damagesource.DamageSources | magic|indirectMagic|generic|mobAttack|source\(|playerAttack|thrown
+net.minecraft.client.renderer.SubmitNodeCollector |
+net.minecraft.client.renderer.OrderedSubmitNodeCollector |
+net.minecraft.client.Minecraft | getInstance|player|level|options|gameRenderer|setScreen|getWindow|font|getSoundManager|getDeltaTracker|isPaused|screen|hitResult|getCameraEntity|getTextureManager
+net.minecraft.client.Camera | position|getYRot|getXRot|isDetached|getEntity|forwardVector|blockPosition

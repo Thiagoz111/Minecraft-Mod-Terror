@@ -15,7 +15,8 @@ if [ -s tools/ci/probe-find.txt ]; then
 fi
 if [ -s tools/ci/probe-javap.txt ]; then
   while IFS='|' read -r cls pat; do
-    cls=$(echo "$cls" | xargs); pat=$(echo "$pat" | xargs)
+    cls="${cls#"${cls%%[![:space:]]*}"}"; cls="${cls%"${cls##*[![:space:]]}"}"
+    pat="${pat#"${pat%%[![:space:]]*}"}"; pat="${pat%"${pat##*[![:space:]]}"}"
     [ -z "$cls" ] && continue
     echo "=== JAVAP $cls"
     if [ -z "$pat" ]; then javap -cp "$CP" -public "$cls" 2>&1 | grep -v '^Compiled from' | sed -E 's/net\.minecraft\.([a-z]+\.)*//g; s/java\.(lang|util)\.//g'
