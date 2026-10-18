@@ -25,21 +25,21 @@ import net.minecraft.world.entity.MobCategory;
 
 public final class ModEntities {
 	public static final EntityType<LloronaEntity> LLORONA = register("llorona",
-			EntityType.Builder.of(LloronaEntity::new, MobCategory.MONSTER).sized(0.7F, 2.4F).fireImmune().clientTrackingRange(12));
+			EntityType.Builder.of(LloronaEntity::new, MobCategory.MONSTER).sized(0.8F, 2.7F).fireImmune().clientTrackingRange(12));
 	public static final EntityType<WendigoEntity> WENDIGO = register("wendigo",
-			EntityType.Builder.of(WendigoEntity::new, MobCategory.MONSTER).sized(0.9F, 3.2F).clientTrackingRange(12));
+			EntityType.Builder.of(WendigoEntity::new, MobCategory.MONSTER).sized(1.0F, 3.3F).clientTrackingRange(12));
 	public static final EntityType<PoseidaEntity> POSEIDA = register("poseida",
 			EntityType.Builder.of(PoseidaEntity::new, MobCategory.MONSTER).sized(0.6F, 1.5F).fireImmune().clientTrackingRange(12));
 	public static final EntityType<PayasoEntity> PAYASO = register("payaso",
-			EntityType.Builder.of(PayasoEntity::new, MobCategory.MONSTER).sized(0.7F, 2.6F).fireImmune().clientTrackingRange(12));
+			EntityType.Builder.of(PayasoEntity::new, MobCategory.MONSTER).sized(0.8F, 2.8F).fireImmune().clientTrackingRange(12));
 	public static final EntityType<MonjaEntity> MONJA = register("monja",
-			EntityType.Builder.of(MonjaEntity::new, MobCategory.MONSTER).sized(0.7F, 2.4F).fireImmune().clientTrackingRange(12));
+			EntityType.Builder.of(MonjaEntity::new, MobCategory.MONSTER).sized(0.8F, 2.7F).fireImmune().clientTrackingRange(12));
 	public static final EntityType<SombraEntity> SOMBRA = register("sombra",
-			EntityType.Builder.of(SombraEntity::new, MobCategory.MONSTER).sized(0.7F, 2.9F).fireImmune().clientTrackingRange(16));
+			EntityType.Builder.of(SombraEntity::new, MobCategory.MONSTER).sized(0.8F, 3.4F).fireImmune().clientTrackingRange(16));
 	public static final EntityType<MunecaEntity> MUNECA = register("muneca",
-			EntityType.Builder.of(MunecaEntity::new, MobCategory.MONSTER).sized(0.4F, 0.75F).fireImmune().clientTrackingRange(10));
+			EntityType.Builder.of(MunecaEntity::new, MobCategory.MONSTER).sized(0.45F, 0.8F).fireImmune().clientTrackingRange(10));
 	public static final EntityType<AnimaEntity> ANIMA = register("anima",
-			EntityType.Builder.of(AnimaEntity::new, MobCategory.MONSTER).sized(0.6F, 1.6F).fireImmune().clientTrackingRange(10));
+			EntityType.Builder.of(AnimaEntity::new, MobCategory.MONSTER).sized(0.7F, 1.9F).fireImmune().clientTrackingRange(10));
 	public static final EntityType<AnchorEntity> ANCHOR = register("anchor",
 			EntityType.Builder.<AnchorEntity>of(AnchorEntity::new, MobCategory.MISC).sized(0.7F, 0.9F).fireImmune().clientTrackingRange(10));
 	public static final EntityType<BalloonEntity> BALLOON = register("balloon",
