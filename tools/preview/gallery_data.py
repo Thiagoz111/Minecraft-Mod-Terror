@@ -1,0 +1,61 @@
+# -*- coding: utf-8 -*-
+"""Copy for the DEAD LINE preview gallery (Spanish, matches in-game lang)."""
+
+ENTITIES = [
+    ('llorona', 'La Llorona', 'Río de los Lamentos', 'Si su llanto suena lejos, está cerca. Si suena cerca, ya es tarde.',
+     ['Llanto invertido: el volumen te miente sobre la distancia', 'Grito que paraliza y nubla la vista', 'Te arrastra hacia el agua'],
+     'Agua bendita · Frasco de almas'),
+    ('wendigo', 'El Wendigo', 'Bosque Negro', 'Imita la voz de los que se perdieron. Nunca respondas a tu nombre en el bosque.',
+     ['Imita voces de pedido de ayuda', 'Acecha entre los árboles y embiste', 'Más rápido cuanto más hambre tiene'],
+     'Fuego · Bengalas'),
+    ('poseida', 'La Poseída', 'Casa Morales', 'Lucía tiene nueve años. Anoche la encontraron caminando por el techo.',
+     ['Camina por paredes y techos', 'Levita, gira la cabeza, habla en lenguas', 'Final: exorcismo con el Libro de Rituales'],
+     'Crucifijo · Exorcismo'),
+    ('payaso', 'Sonrisas', 'Parque Mundo Feliz', 'Cuando la caja musical deja de sonar, está detrás tuyo.',
+     ['Globos rojos marcan dónde estuvo', 'Se esconde y aparece de golpe', 'Su risa se escucha por todo el parque'],
+     'Destruir la caja musical'),
+    ('monja', 'Sor Agonía', 'Convento de Santa Inés', 'Solo se mueve en la oscuridad. Nunca apagues la linterna.',
+     ['Avanza únicamente cuando no hay luz', 'Aparece detrás tuyo en los pasillos', 'Las velas y el crucifijo la frenan'],
+     'Luz · Crucifijo · Rosario'),
+    ('sombra', 'Hombre Sombra', 'Cualquier lugar', 'Aparece cuando tu cordura se quiebra. Si lo mirás, se desvanece.',
+     ['Acecha desde el borde de tu visión', 'Te roba cordura si te toca', 'Solo existe con cordura baja'],
+     'Luz directa · Pastillas'),
+    ('muneca', 'Muñeca Maldita', 'Casa Morales', 'Solo se mueve cuando nadie la mira.',
+     ['Se congela cuando la mirás', 'Ataca por la espalda', 'Se ríe en la oscuridad'],
+     'Agua bendita'),
+    ('anima', 'Ánima', 'Todas las zonas', 'Almas en pena. Invisibles para el ojo, no para la cámara.',
+     ['Invisible salvo con cámara o linterna UV', 'Crea puntos fríos', 'Se puede capturar en el frasco'],
+     'Cámara · Frasco de almas'),
+]
+
+ITEMS = [
+    ('phone_ringing', 'Teléfono DEAD LINE', 'Recibís pedidos de ayuda. Al aceptar, te lleva al lugar del caso.'),
+    ('crucifix', 'Crucifijo Bendito', 'Mantené click derecho para repeler entidades en un cono de luz.'),
+    ('holy_water', 'Agua Bendita', 'Se arroja. Quema a los demonios y purifica objetos malditos.'),
+    ('salt', 'Sal Consagrada', 'Trazá líneas de sal que ninguna entidad puede cruzar.'),
+    ('emf_5', 'Detector EMF', 'Las luces se encienden según la cercanía de lo paranormal.'),
+    ('flashlight_on', 'Linterna', 'Ilumina de verdad. Modo UV revela huellas. Parpadea si hay algo cerca.'),
+    ('spirit_box', 'Spirit Box', 'Barre frecuencias de radio. A veces, alguien contesta.'),
+    ('camera', 'Cámara de Espíritus', 'El flash aturde y revela lo invisible.'),
+    ('ritual_book', 'Libro de Rituales', 'Mantené para recitar el exorcismo. No lo sueltes.'),
+    ('spirit_jar', 'Frasco de Almas', 'Atrapa a una entidad debilitada.'),
+    ('spirit_jar_full', 'Frasco con Alma', 'Trofeo del caso. Todavía se mueve adentro.'),
+    ('pills', 'Pastillas', 'Recuperan cordura.'),
+    ('silver_dagger', 'Daga de Plata', 'Arma ceremonial. Daño extra contra entidades.'),
+    ('rosary', 'Rosario', 'En la otra mano, frena la pérdida de cordura.'),
+    ('flare_lit', 'Bengala', 'Luz roja intensa. El Wendigo le teme al fuego.'),
+    ('baby_shoe', 'Zapatito Ahogado', 'Ancla de La Llorona.'),
+    ('bone_totem', 'Tótem de Hueso', 'Ancla del Wendigo.'),
+    ('music_box', 'Caja Musical', 'Ancla de Sonrisas.'),
+    ('inverted_rosary', 'Rosario Invertido', 'Ancla de Sor Agonía.'),
+    ('cursed_doll', 'Muñeca de Lucía', 'Ancla de La Poseída.'),
+]
+
+STATUS = [
+    ('done', 'Proyecto Fabric 1.21.11 compilando en GitHub Actions'),
+    ('done', '8 entidades modeladas y texturizadas'),
+    ('done', '30 texturas de ítems (32×32)'),
+    ('wip', 'Código Java: ítems, entidades, IA, teléfono, casos'),
+    ('todo', 'Sonidos: voces, gritos, ambientes, caja musical'),
+    ('todo', 'Lugares de cada caso y efectos visuales (VHS, jumpscares)'),
+]
