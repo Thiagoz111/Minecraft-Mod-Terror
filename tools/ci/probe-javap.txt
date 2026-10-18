@@ -1,13 +1,35 @@
-net.minecraft.client.Camera#p | setRotation|setPosition|move\(|yRot|xRot|float
-net.minecraft.client.particle.SingleQuadParticle#p |
-net.minecraft.client.particle.SingleQuadParticle$Layer |
-net.minecraft.client.particle.Particle#p | protected|lifetime|gravity|friction|hasPhysics|rCol|alpha|age|xd|remove|tick|setLifetime|scale|setColor|setAlpha|getLightColor|roll
-net.minecraft.client.particle.SpriteSet |
-net.minecraft.client.renderer.GameRenderer#p | PostEffect|postEffect|setPostEffect|loadEffect
-net.minecraft.client.DeltaTracker | public
-net.minecraft.client.multiplayer.ClientLevel | playLocalSound|addParticle|getGameTime
-net.minecraft.client.gui.Font | width|lineHeight|split|drawInBatch|wordWrapHeight
-net.minecraft.client.Options | hideGui|getCameraType|keyUp|fov|guiScale
-net.minecraft.client.renderer.entity.LivingEntityRenderer#p | getRenderType|scale|setupRotations|isShaking|getShadowRadius|shouldShowName|getFlipDegrees
-net.minecraft.client.renderer.entity.EntityRenderer#p | getBlockLightLevel|shouldShowName|getShadowRadius|affectedByCulling|submitNameTag
-net.minecraft.client.renderer.entity.EntityRendererProvider |
+net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry
+net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements
+net.fabricmc.fabric.api.client.rendering.v1.hud.HudElement
+net.fabricmc.fabric.api.client.particle.v1.ParticleFactoryRegistry
+net.fabricmc.fabric.api.client.particle.v1.ParticleFactoryRegistry$PendingParticleFactory
+net.fabricmc.fabric.api.client.particle.v1.FabricSpriteProvider
+net.fabricmc.fabric.api.client.rendering.v1.EntityModelLayerRegistry
+net.fabricmc.fabric.api.client.rendering.v1.EntityModelLayerRegistry$TexturedModelDataProvider
+net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry
+net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper
+net.minecraft.client.KeyMapping$Category
+net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking
+net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking$Context
+net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking$PlayPayloadHandler
+net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
+net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents$EndTick
+com.mojang.blaze3d.platform.Window|getGuiScaled|getWidth|getHeight
+net.minecraft.client.sounds.SoundManager|play|stop
+net.minecraft.client.particle.ParticleProvider
+net.minecraft.client.renderer.entity.layers.RenderLayer
+net.minecraft.client.renderer.entity.NoopRenderer
+net.minecraft.client.renderer.LightTexture|FULL|pack
+net.minecraft.client.renderer.texture.OverlayTexture|NO_OVERLAY|pack
+net.minecraft.client.model.geom.ModelLayerLocation
+net.minecraft.client.renderer.entity.state.ThrownItemRenderState
+net.minecraft.world.entity.projectile.ItemSupplier
+net.minecraft.client.renderer.entity.ItemRenderer|public
+net.minecraft.client.renderer.item.ItemStackRenderState|submit|clear
+net.minecraft.client.renderer.entity.EntityRenderer#p|itemModelResolver|Context|protected
+net.minecraft.client.player.LocalPlayer|getMainHandItem|getUseItem|yBob|xBob
+net.minecraft.client.gui.components.Button|builder|create
+net.minecraft.client.renderer.CubeMap
+net.minecraft.client.renderer.entity.state.HumanoidRenderState|attackTime|swinging
+net.minecraft.client.renderer.entity.state.LivingEntityRenderState#p
+net.minecraft.client.gui.Gui|render|Vignette|Overlay

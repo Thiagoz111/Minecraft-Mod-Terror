@@ -1,1 +1,1 @@
-/SingleQuadParticle|/ParticleRenderType$|/ParticleProvider$|post_effect|PostChain$|/Gui$|/DeltaTracker$|/ClientLevel$|/LocalPlayer$|/Options$|/Window$|/InputConstants$
+HudElementRegistry|VanillaHudElements|/HudElement$|ParticleFactoryRegistry|ParticleProviderRegistry|FabricSpriteProvider|EntityModelLayerRegistry|EntityRendererRegistry|KeyBindingHelper|ClientPlayNetworking$|ClientTickEvents$|/EntityRenderers$|/NoopRenderer$|/LightTexture$|/OverlayTexture$|/ModelLayerLocation$|/RenderLayer$

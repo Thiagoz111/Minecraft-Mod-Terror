@@ -1,2 +1,2 @@
-net/minecraft/client/particle/SoulParticle.java
-net/minecraft/client/particle/GlowParticle.java
+net/minecraft/client/renderer/entity/state/ThrownItemRenderState.java
+net/minecraft/client/renderer/entity/NoopRenderer.java

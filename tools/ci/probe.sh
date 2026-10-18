@@ -4,7 +4,12 @@
 set -u
 JARS=$(find ~/.gradle/caches .gradle -name 'minecraft-*.jar' ! -name '*-sources.jar' 2>/dev/null | grep -i mapping | sort -u)
 SRCS=$(find ~/.gradle/caches .gradle -name 'minecraft-*-sources.jar' 2>/dev/null | sort -u)
+FJARS=$(find .gradle ~/.gradle/caches -path '*remapped*' -name 'fabric-*.jar' 2>/dev/null | sort -u)
+[ -z "$FJARS" ] && FJARS=$(find ~/.gradle/caches -name 'fabric-*.jar' 2>/dev/null | sort -u)
+JARS="$JARS
+$FJARS"
 CP=$(echo "$JARS" | tr '\n' ':')
+echo "=== FJARS"; echo "$FJARS" | head -5
 echo "=== PROBE BEGIN"
 if [ -s tools/ci/probe-find.txt ]; then
   ALL=$(for j in $JARS; do unzip -Z1 "$j"; done | grep '\.class$' | grep -v '\$' | sed 's/\.class$//' | sort -u)
