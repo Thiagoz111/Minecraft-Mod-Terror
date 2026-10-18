@@ -37,7 +37,8 @@ jobs:
           export LIBGL_ALWAYS_SOFTWARE=1
           timeout 1500 xvfb-run -a -s "-screen 0 1280x720x24" ./gradlew runClientSmoke --console=plain > client.log 2>&1 || true
           echo "=== CLIENT BEGIN"
-          grep -E "DEADLINE-CLIENT|ERROR|Exception|Caused by|Crash|OpenGL|GL_" client.log | grep -vE "^\s+at " | head -200
+          ls -la run/saves/smoke | head -20
+          grep -iE "quick|saves|Preparing|level|world|DEADLINE-CLIENT|ERROR|Exception|Caused by|Crash" client.log | grep -vE "^\s+at |resource path" | cut -c1-400 | head -200
           echo "=== CLIENT END"
           python3 -m pip install -q pillow > /dev/null 2>&1 || true
           python3 tools/ci/shots.py run/screenshots

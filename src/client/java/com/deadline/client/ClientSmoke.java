@@ -56,7 +56,22 @@ public final class ClientSmoke {
 
 	private static void tick(Minecraft mc) {
 		if (mc.player == null || mc.level == null || mc.getSingleplayerServer() == null) {
-			if (++idle == 20 * 300) {
+			++idle;
+			if (idle % 200 == 0) {
+				DeadLine.LOGGER.info("DEADLINE-CLIENT waiting, screen={}", mc.screen == null ? "none" : mc.screen.getClass().getName());
+			}
+			if (idle == 400 && mc.level == null) {
+				// quick-play did not start: open the world the way the world list does (dev-only, via reflection)
+				try {
+					Object flows = mc.createWorldOpenFlows();
+					java.lang.reflect.Method m = flows.getClass().getMethod("openWorld", String.class, Runnable.class);
+					m.invoke(flows, "smoke", (Runnable) () -> DeadLine.LOGGER.error("DEADLINE-CLIENT openWorld cancelled"));
+					DeadLine.LOGGER.info("DEADLINE-CLIENT opening world via WorldOpenFlows");
+				} catch (Throwable t) {
+					DeadLine.LOGGER.error("DEADLINE-CLIENT openWorld failed", t);
+				}
+			}
+			if (idle == 20 * 300) {
 				DeadLine.LOGGER.error("DEADLINE-CLIENT FAIL never joined a world");
 				mc.stop();
 			}
