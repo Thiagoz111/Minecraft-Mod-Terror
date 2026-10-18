@@ -639,7 +639,7 @@ def build():
     box('coattails', (0.5, 0, 0), (8, 22, 0))
 
     # ---------------- ruff: two tiers of pleated panels around the neck
-    bone('ruff', at('body', 0, -28, -0.5), 'body', rot=(-LEAN + 4, 0, 0))
+    bone('ruff', at('body', 0, -22, -3), 'body', rot=(-LEAN + 10, 0, 0))
     tiers = [  # (count, radius, width, length, droop, y offset, phase, kinds)
         (9, 4.5, 11, 13, 34, 1.0, 0.0, ('purple', 'mustard')),
         (9, 3.5, 9, 10, 18, -1.0, 20.0, ('white',)),
@@ -655,8 +655,8 @@ def build():
             box(pn, (-wdt / 2, 0, -ln), (wdt, 0, ln))
 
     # ---------------- neck + head
-    NECK = 24
-    bone('neck', at('body', 0, -27, -1.5), 'body', rot=(NECK, 0, 0), mat=neck_mat)
+    NECK = 34
+    bone('neck', at('body', 0, -21, -4), 'body', rot=(NECK, 0, 0), mat=neck_mat)
     box('neck', (-4, -9, -4), (8, 10, 8))
     HEAD_ROT = (-(LEAN + NECK) + 6, 0, 7)
     head = bone('head', at('neck', 0, -8, -1), 'neck', rot=HEAD_ROT, mat=head_mat)
@@ -702,7 +702,7 @@ def build():
         box('jaw', (9.8 * sx, -4, FZ + 1), (0, 4, 14), mat=teeth_mat(0, 4, 'z', 215 + sx, grow=-1), ref='head')
 
     # tiny dented top hat, jammed askew
-    bone('hat', at('head', 5, -21, FZ + 12), 'head', rot=(-8, 0, 22), mat=hat_mat)
+    bone('hat', at('head', 6, -20.5, FZ + 11), 'head', rot=(-10, 0, 30), mat=hat_mat)
     box('hat', (-6.5, -1, -6), (13, 1, 12))
     box('hat', (-4.5, -10, -4), (5, 9, 8))
     box('hat', (0.5, -8, -4), (4, 7, 8))
@@ -716,10 +716,10 @@ def build():
         mbox(hn, sx, (-13, -13, -5), (9, 9, 10))
         mbox(hn, sx, (-12, 3, -5), (8, 9, 10))
         mbox(hn, sx, (-16, -4, -4), (6, 9, 8))
-        mbox(hn, sx, (-15, -16, 0), (10, 30, 0))
+        mbox(hn, sx, (-15, -12, 0), (10, 24, 0))
 
     # ---------------- arms: long, with puffed shoulders and frilled cuffs
-    ARM = {'right': ((-LEAN - 30, 0, 6), (-55, 0, 0), (10, 0, 0)), 'left': ((-LEAN + 10, 0, -4), (-14, 0, 0), (-6, 0, 0))}
+    ARM = {'right': ((-LEAN - 8, 0, 9), (-42, 0, 0), (14, 0, 0)), 'left': ((-LEAN - 4, 0, -5), (-12, 0, 0), (-4, 0, 0))}
     for side, sx in (('right', -1), ('left', 1)):
         ra, rf, rh = ARM[side]
         arm = bone(f'{side}_arm', at('body', 12.5 * sx, -25, 0), 'body', rot=ra, mat=suit_mat)
@@ -741,8 +741,8 @@ def build():
     # balloon on a string, held up from the right hand
     ra, rf, rh = ARM['right']
     net = ra[0] + LEAN + rf[0] + rh[0]
-    bone('balloon_string', at('right_hand', 0, 5, 0), 'right_hand', rot=(-net, 0, -14), mat=string_mat)
-    SL = 46
+    bone('balloon_string', at('right_hand', 0, 5, 0), 'right_hand', rot=(-net, 0, -22), mat=string_mat)
+    SL = 38
     box('balloon_string', (0, -SL, -0.5), (0, SL, 1))
     box('balloon_string', (-0.5, -SL, 0), (1, SL, 0))
     bone('balloon', at('balloon_string', 0, -SL, 0), 'balloon_string', rot=(0, 0, 10), mat=balloon_mat)
@@ -806,7 +806,8 @@ POSES = {
         'neck': (0.2, 0, 0, 0, 0, 0),
         'right_arm': (-0.3, 0, 0.7, 0, 0, 0),
         'left_arm': (-0.3, 0, -0.8, 0, 0, 0),
-        'right_hair': (0, 0, 0.2, 0, 0, 0),
+        'hair_right': (0, 0, 0.2, 0, 0, 0),
+        'hair_left': (0, 0, -0.2, 0, 0, 0),
     },
 }
 ANIM_NOTES = """

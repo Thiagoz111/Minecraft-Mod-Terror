@@ -228,9 +228,16 @@ def whisperize(x, seed=0, smooth_bins=7):
 
 def breath(inhale, exhale, seed=0, rasp=0.0, low=1.0, gap=0.06, gain_in=0.8):
     """One breath cycle. low < 1 lowers the noise bands (bigger creature), rasp adds vocal-fry grit."""
-    a = dsp.noise(inhale, 'white', seed)
-    a = dsp.bandpass(a, 700 * low, 3600 * low, 2)
-    a = dsp.peak(a, 1700 * low, 8, 3) * dsp.env_points(n_of(inhale), [(0, 0), (0.55, 0.8), (0.88, 1.0), (1, 0)])
+    parts = []
+    if inhale >= 0.04:
+        a = dsp.noise(inhale, 'white', seed)
+        a = dsp.bandpass(a, 700 * low, 3600 * low, 2)
+        a = dsp.peak(a, 1700 * low, 8, 3) * dsp.env_points(n_of(inhale), [(0, 0), (0.55, 0.8), (0.88, 1.0), (1, 0)])
+        parts.append(norm(a, gain_in))
+    if exhale < 0.04:
+        return parts[0] if parts else dsp.silence(0.01)
+    if parts and gap:
+        parts.append(dsp.silence(gap))
     b = dsp.noise(exhale, 'pink', seed + 1)
     b = dsp.bandpass(b, 180 * low, 2200 * low, 2)
     b = dsp.peak(b, 650 * low, 6, 2)
@@ -241,7 +248,8 @@ def breath(inhale, exhale, seed=0, rasp=0.0, low=1.0, gap=0.06, gain_in=0.8):
         b = b * ((1 - rasp) + rasp * 3.0 * fry)
         b = b + rasp * 0.4 * vowel(dsp.osc(fr * 2, nb / SR, 'saw')[:nb] * 0.3, 'u') * np.abs(b).mean() * 8
     b = b * dsp.env_points(nb, [(0, 0), (0.12, 1.0), (0.5, 0.65), (1, 0)])
-    return dsp.concat(norm(a, gain_in), dsp.silence(gap), norm(b, 1.0))
+    parts.append(norm(b, 1.0))
+    return dsp.concat(*parts)
 
 
 def sob(seed=0, dur=0.32, voiced=0.35):
@@ -250,8 +258,15 @@ def sob(seed=0, dur=0.32, voiced=0.35):
     g = dsp.bandpass(dsp.noise(dur, 'white', seed), 1100, 5200, 2) * dsp.env_points(n, [(0, 0), (0.18, 1), (0.55, 0.5), (1, 0)])
     r = dsp.rng(seed)
     f = dsp.glide(r.uniform(360, 420), r.uniform(560, 680), dur)
-    sq = vowel(dsp.osc(f, dur, 'saw'), 'e') * dsp.env_points(n, [(0, 0), (0.25, 0), (0.45, 1), (0.8, 0.4), (1, 0)])
-    return norm(g, 1.0) * 0.8 + norm(sq, voiced)
+    sq = vowel(dsp.osc(f, dur, 'saw') + 0.4 * dsp.noise(dur, 'white', seed + 5), 'e')
+    sq *= dsp.env_points(n, [(0, 0), (0.25, 0), (0.45, 1), (0.8, 0.4), (1, 0)])
+    return (norm(g, 0.8) + norm(sq, voiced)) * 0.42
+
+
+def shaky_exhale(seed=0, dur=0.8):
+    """Crying 'hhh-hh-hh': broken exhale."""
+    x = breath(0.0, dur, seed, low=1.25)
+    return dsp.tremolo(x, 8.5, 0.75) * 0.35
 
 
 def tts_n(text, voice, speed=0.9, peak=0.7):
