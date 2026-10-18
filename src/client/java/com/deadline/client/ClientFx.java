@@ -1,5 +1,7 @@
 package com.deadline.client;
 
+import com.deadline.DeadLine;
+import com.deadline.client.mixin.GameRendererAccessor;
 import com.deadline.client.screen.PhoneScreen;
 import com.deadline.net.FxPayload;
 import com.deadline.net.PhoneDataPayload;
@@ -22,6 +24,8 @@ public final class ClientFx {
 
 	private static final RandomSource RNG = RandomSource.create();
 	private static int heartbeatCooldown;
+	private static String postEffect = null;
+	private static int postCheck;
 	private static int ringCooldown;
 
 	public static void onFx(FxPayload p) {
@@ -158,6 +162,8 @@ public final class ClientFx {
 			return;
 		}
 
+		updatePostEffect(mc);
+
 		// the phone keeps ringing until it is picked up
 		if (ClientState.callTicks > 0) {
 			ClientState.callTicks--;
@@ -182,6 +188,28 @@ public final class ClientFx {
 					ClientState.redFlash = Math.max(ClientState.redFlash, 0.18F * (1F - s / 20F));
 				}
 			}
+		}
+	}
+
+	/** Screen shader: VHS camera look, or a failing mind (desaturation + red fringing). */
+	private static void updatePostEffect(Minecraft mc) {
+		float s = ClientState.sanityShown;
+		String want = ClientState.vhs ? "vhs" : s < 15F ? "insanity_2" : s < 30F ? "insanity_1" : null;
+		Identifier current = mc.gameRenderer.currentPostEffect();
+		boolean ours = current != null && DeadLine.MOD_ID.equals(current.getNamespace());
+		if (want == null) {
+			if (postEffect != null && ours) {
+				mc.gameRenderer.clearPostEffect();
+			}
+			postEffect = null;
+			return;
+		}
+		Identifier id = DeadLine.id(want);
+		if (!want.equals(postEffect) || (++postCheck % 40 == 0 && !id.equals(current))) {
+			if (current == null || ours) {
+				((GameRendererAccessor) mc.gameRenderer).deadline$setPostEffect(id);
+			}
+			postEffect = want;
 		}
 	}
 

@@ -394,7 +394,7 @@ public final class DeadLineHud {
 		// flicker frames
 		boolean flick = ((int) life) % 5 == 3;
 		int tint = flick ? 0xFF6060 : 0xFFFFFF;
-		g.blit(RenderPipelines.GUI_TEXTURED, jumpscareTexture(ClientState.jumpscareKey), x, y, 0F, 0F, size, size, 256, 256, 256, 256, alpha | tint);
+		g.blit(RenderPipelines.GUI_TEXTURED, jumpscareTexture(ClientState.jumpscareKey), x, y, 0F, 0F, size, size, 512, 512, 512, 512, alpha | tint);
 		drawStatic(g, w, h, 0.25F * (1F - k));
 	}
 }

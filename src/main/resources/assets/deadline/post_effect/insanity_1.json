@@ -1,0 +1,76 @@
+{
+  "targets": {
+    "swap": {}
+  },
+  "passes": [
+    {
+      "vertex_shader": "minecraft:core/screenquad",
+      "fragment_shader": "deadline:post/haunt",
+      "inputs": [
+        {
+          "sampler_name": "In",
+          "target": "minecraft:main"
+        }
+      ],
+      "output": "swap",
+      "uniforms": {
+        "HauntConfig": [
+          {
+            "name": "Aberration",
+            "type": "float",
+            "value": 1.6
+          },
+          {
+            "name": "Desaturate",
+            "type": "float",
+            "value": 0.45
+          },
+          {
+            "name": "Vignette",
+            "type": "float",
+            "value": 0.45
+          },
+          {
+            "name": "Warp",
+            "type": "float",
+            "value": 0.0
+          },
+          {
+            "name": "Tint",
+            "type": "vec3",
+            "value": [
+              1.08,
+              0.92,
+              0.92
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "vertex_shader": "minecraft:core/screenquad",
+      "fragment_shader": "minecraft:post/blit",
+      "inputs": [
+        {
+          "sampler_name": "In",
+          "target": "swap"
+        }
+      ],
+      "uniforms": {
+        "BlitConfig": [
+          {
+            "name": "ColorModulate",
+            "type": "vec4",
+            "value": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ]
+          }
+        ]
+      },
+      "output": "minecraft:main"
+    }
+  ]
+}

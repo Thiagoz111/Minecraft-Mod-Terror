@@ -7,6 +7,7 @@ import com.deadline.client.ClientState;
 import com.deadline.client.hud.DeadLineHud;
 import com.deadline.net.PhoneActionPayload;
 import com.deadline.net.PhoneDataPayload;
+import com.deadline.registry.ModSounds;
 import java.util.ArrayList;
 import java.util.List;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
@@ -306,6 +307,8 @@ public class PhoneScreen extends Screen {
 			hits.add(new Hit(SX + 4, y, SW - 8, 38, () -> {
 				sel = idx;
 				app = App.CALL;
+				// the caller's voice message, through a bad line
+				Minecraft.getInstance().getSoundManager().play(SimpleSoundInstance.forUI(ModSounds.PHONE_VOICE, 1.0F, 0.9F));
 			}));
 			y += 42;
 		}
@@ -488,7 +491,7 @@ public class PhoneScreen extends Screen {
 	}
 
 	private void portrait(GuiGraphics g, String key, int x, int y, int size, boolean known) {
-		g.blit(RenderPipelines.GUI_TEXTURED, DeadLineHud.jumpscareTexture(key), x, y, 0F, 0F, size, size, 256, 256, 256, 256,
+		g.blit(RenderPipelines.GUI_TEXTURED, DeadLineHud.jumpscareTexture(key), x, y, 0F, 0F, size, size, 512, 512, 512, 512,
 				known ? 0xFFFFFFFF : 0xFF000000);
 	}
 

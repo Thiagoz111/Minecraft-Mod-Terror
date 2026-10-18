@@ -28,14 +28,20 @@ const renderer = new THREE.WebGLRenderer({canvas: document.getElementById('c'), 
 renderer.setSize(W, H);
 renderer.setScissorTest(true);
 const img = new Image();
-img.onload = () => {
+function start() {
   const tex = new THREE.Texture(img); tex.needsUpdate = true;
   const cells = [];
   for (const v of SPEC.views) {
     const scene = new THREE.Scene();
     const dark = v.dark;
-    scene.background = new THREE.Color(dark ? 0x07060a : 0x2a2632);
-    if (dark) {
+    scene.background = new THREE.Color(v.portrait ? 0x000000 : dark ? 0x07060a : 0x2a2632);
+    if (v.portrait) {
+      scene.add(new THREE.AmbientLight(0x9a90aa, 0.55));
+      const under = new THREE.DirectionalLight(0xffe0b8, 1.7); under.position.set(0.25, -0.55, 1.0); scene.add(under);
+      const fill = new THREE.DirectionalLight(0xc8d0ff, 0.35); fill.position.set(-0.8, 0.5, 0.8); scene.add(fill);
+      const rimR = new THREE.DirectionalLight(0xff2a2a, 1.3); rimR.position.set(1.2, 0.8, -1.0); scene.add(rimR);
+      const rimL = new THREE.DirectionalLight(0x6a8cff, 0.4); rimL.position.set(-1.2, 0.4, -0.6); scene.add(rimL);
+    } else if (dark) {
       scene.fog = new THREE.Fog(0x07060a, 40, 220);
       scene.add(new THREE.AmbientLight(0x9a94b8, 0.35));
       const moon = new THREE.DirectionalLight(0xbfc8ff, 0.5); moon.position.set(-1, 1.4, 0.6); scene.add(moon);
@@ -48,6 +54,13 @@ img.onload = () => {
     const built = MCViewer.buildModel(THREE, SPEC.data, tex);
     if (SPEC.pose) for (const [k, p] of Object.entries(SPEC.pose)) built.pose(k, ...p);
     scene.add(built.object);
+    if (v.portrait && window.__glowTex) {
+      const gb = MCViewer.buildModel(THREE, SPEC.data, window.__glowTex);
+      const gm = new THREE.MeshBasicMaterial({ map: window.__glowTex, transparent: true, alphaTest: 0.04, side: THREE.DoubleSide, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+      gb.object.traverse(o => { if (o.isMesh) o.material = gm; });
+      if (SPEC.pose) for (const [k, p] of Object.entries(SPEC.pose)) gb.pose(k, ...p);
+      scene.add(gb.object);
+    }
     built.object.updateMatrixWorld(true);
     let box = new THREE.Box3().setFromObject(built.object);
     if (v.focus && built.groups[v.focus]) {
@@ -58,11 +71,12 @@ img.onload = () => {
     const size = new THREE.Vector3(), center = new THREE.Vector3();
     box.getSize(size); box.getCenter(center);
     const cam = new THREE.PerspectiveCamera(v.fov || 28, 1, 0.5, 2000);
-    const ext = Math.max(size.y, size.x * 1.1, size.z * 0.8) * (v.focus ? 1.25 : 1.0);
+    const ext = Math.max(size.y, size.x * 1.1, size.z * 0.8) * (v.zoom || (v.focus ? 1.25 : 1.0));
     const dist = ext / (2 * Math.tan((cam.fov * Math.PI / 180) / 2)) * 1.15;
     const a = v.angle * Math.PI / 180, el = (v.elev || 8) * Math.PI / 180;
     cam.position.set(center.x + Math.sin(a) * Math.cos(el) * dist, center.y + Math.sin(el) * dist, center.z + Math.cos(a) * Math.cos(el) * dist);
     cam.lookAt(center);
+    scene.traverse(o => { if (o.userData && o.userData.rel) { const r = o.userData.rel; o.position.set(center.x + r[0] * dist, center.y + r[1] * dist, center.z + r[2] * dist); } });
     cells.push({scene, cam, ...v});
   }
   for (const c of cells) {
@@ -71,6 +85,12 @@ img.onload = () => {
     renderer.render(c.scene, c.cam);
   }
   window.__done = true;
+}
+img.onload = () => {
+  if (!SPEC.glow) { start(); return; }
+  const gi = new Image();
+  gi.onload = () => { window.__glowTex = new THREE.Texture(gi); window.__glowTex.needsUpdate = true; start(); };
+  gi.src = SPEC.glow;
 };
 img.src = SPEC.png;
 </script></body></html>'''
@@ -82,8 +102,9 @@ def _png_uri(im):
     return 'data:image/png;base64,' + base64.b64encode(b.getvalue()).decode()
 
 
-def render_spec(data, texture, views, w, h, out, pose=None):
-    spec = {'data': data, 'png': _png_uri(texture), 'views': views, 'w': w, 'h': h, 'pose': pose}
+def render_spec(data, texture, views, w, h, out, pose=None, glow=None):
+    spec = {'data': data, 'png': _png_uri(texture), 'views': views, 'w': w, 'h': h, 'pose': pose,
+            'glow': _png_uri(glow) if glow is not None else None}
     html = PAGE % {'three': THREE, 'viewer': os.path.join(HERE, '..', 'preview', 'mcviewer.js'), 'spec': json.dumps(spec)}
     fd, path = tempfile.mkstemp(suffix='.html', dir=SP + '/render')
     with os.fdopen(fd, 'w') as fh:
@@ -110,6 +131,13 @@ def render_views(model, texture, out, focus_bone='head', pose=None, cell=300):
         views.append({'angle': 32, 'focus': focus_bone, 'elev': 10, 'x': cell * 2, 'y': row2, 'w': cell, 'h': int(cell * 1.4)})
     views.append({'angle': 20, 'dark': True, 'x': cell * 3, 'y': row2, 'w': cell * 2, 'h': int(cell * 1.4)})
     render_spec(data, texture, views, cell * 5, row2 + int(cell * 1.4), out, pose)
+
+
+def render_portrait(model, texture, out, focus_bone='head', pose=None, glow=None, size=512, angle=12, elev=-7, zoom=1.0):
+    """Jumpscare / bestiary portrait: tight face close-up, black background, horror under-lighting + red rim."""
+    views = [{'angle': angle, 'focus': focus_bone, 'elev': elev, 'portrait': True, 'zoom': zoom, 'fov': 34,
+              'x': 0, 'y': 0, 'w': size, 'h': size}]
+    render_spec(model.to_json(), texture, views, size, size, out, pose, glow)
 
 
 def render(models, out, w=1400, h=560):

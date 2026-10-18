@@ -27,10 +27,14 @@ public class DeadLineClient implements ClientModInitializer {
 
 		ClientPlayNetworking.registerGlobalReceiver(FxPayload.TYPE, (payload, ctx) -> ClientFx.onFx(payload));
 		ClientPlayNetworking.registerGlobalReceiver(PhoneDataPayload.TYPE, (payload, ctx) -> ClientFx.onPhoneData(payload));
-		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> ClientState.reset());
+		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
+			ClientState.reset();
+			ClientAmbience.reset();
+		});
 		ClientTickEvents.END_CLIENT_TICK.register(mc -> {
 			DeadLineKeys.tick(mc);
 			ClientFx.tick(mc);
+			ClientAmbience.tick(mc);
 		});
 
 		HudElementRegistry.attachElementAfter(VanillaHudElements.MISC_OVERLAYS, DeadLine.id("backdrop"), DeadLineHud::renderBackdrop);
