@@ -1,2 +1,1 @@
-net/minecraft/client/renderer/entity/state/ThrownItemRenderState.java
-net/minecraft/client/renderer/entity/NoopRenderer.java
+net/minecraft/client/Screenshot.java

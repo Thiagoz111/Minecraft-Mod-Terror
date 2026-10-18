@@ -1,1 +1,1 @@
-HudElementRegistry|VanillaHudElements|/HudElement$|ParticleFactoryRegistry|ParticleProviderRegistry|FabricSpriteProvider|EntityModelLayerRegistry|EntityRendererRegistry|KeyBindingHelper|ClientPlayNetworking$|ClientTickEvents$|/EntityRenderers$|/NoopRenderer$|/LightTexture$|/OverlayTexture$|/ModelLayerLocation$|/RenderLayer$
+/Screenshot$|/RenderTarget$|BlockRenderLayerMap|/ChunkSectionLayer$|/QuickPlay$|/IntegratedServer$
