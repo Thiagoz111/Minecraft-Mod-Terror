@@ -52,10 +52,10 @@ ITEMS = [
 ]
 
 STATUS = [
-    ('done', 'Proyecto Fabric 1.21.11 compilando en GitHub Actions'),
-    ('done', '8 entidades modeladas y texturizadas'),
-    ('done', '30 texturas de ítems (32×32)'),
-    ('wip', 'Código Java: ítems, entidades, IA, teléfono, casos'),
-    ('todo', 'Sonidos: voces, gritos, ambientes, caja musical'),
-    ('todo', 'Lugares de cada caso y efectos visuales (VHS, jumpscares)'),
+    ('done', 'Proyecto Fabric 1.21.11 compilando + test de servidor con los 5 lugares'),
+    ('wip', 'Rediseño total de las 8 criaturas (deformes, caras, 2× resolución) — se actualiza en vivo'),
+    ('done', 'HUD: cordura con electrocardiograma, objetivo, llamadas entrantes, modo cámara VHS'),
+    ('done', 'Teléfono: llamadas, caso activo, tienda y bestiario'),
+    ('wip', 'Sonidos: voces en español, gritos, ambientes, caja musical'),
+    ('wip', 'Capturas reales del juego desde CI'),
 ]

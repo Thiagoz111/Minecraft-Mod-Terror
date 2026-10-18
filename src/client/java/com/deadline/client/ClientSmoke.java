@@ -35,7 +35,7 @@ public final class ClientSmoke {
 	private ClientSmoke() {
 	}
 
-	private record Step(int wait, Consumer<Minecraft> action) {
+	private record Step(int delay, Consumer<Minecraft> action) {
 	}
 
 	private static final List<Step> STEPS = new ArrayList<>();
@@ -80,7 +80,7 @@ public final class ClientSmoke {
 			return;
 		}
 		Step s = STEPS.get(index);
-		if (++timer >= s.wait) {
+		if (++timer >= s.delay) {
 			timer = 0;
 			index++;
 			try {

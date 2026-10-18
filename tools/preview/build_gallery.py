@@ -27,7 +27,12 @@ def build(out):
     models = {}
     for key, *_ in ENTITIES:
         data = json.load(open(os.path.join(HERE, 'models', key + '.json')))
-        models[key] = {'data': data, 'tex': uri(os.path.join(TEX, 'entity', key + '.png'))}
+        snap = os.path.join(HERE, 'tex', key + '.png')
+        tex = snap if os.path.exists(snap) else os.path.join(TEX, 'entity', key + '.png')
+        models[key] = {'data': data, 'tex': uri(tex)}
+        glow = os.path.join(HERE, 'tex', key + '_eyes.png')
+        if os.path.exists(glow):
+            models[key]['glow'] = uri(glow)
     emf = [uri(os.path.join(TEX, 'item', f'emf_{i}.png')) for i in range(6)]
     ents = [dict(key=k, name=n, place=p, quote=q, traits=t, weak=w) for k, n, p, q, t, w in ENTITIES]
     item_cards = []
@@ -158,21 +163,25 @@ const EMF = %%EMF%%;
   setInterval(() => { i = (i + 1) % 12; img.src = EMF[i < 6 ? i : 11 - i]; }, 260); })();
 
 const S = Math.sin;
-const ANIM = {
-  llorona: (p, t, alt) => { p('body', 0, 0, 0, 0, -1.5 + S(t * 1.6) * 1.2, 0); p('hair_back', S(t * 1.3) * .06, 0, 0); p('skirt3', S(t * 1.7) * .05, 0, S(t) * .04);
-    if (alt) { p('right_arm', -1.45, 0, -.2); p('left_arm', -1.45, 0, .2); p('head', .25, 0, S(t * 9) * .08); } else { p('right_arm', -0.28 + S(t) * .05, 0, -.12); p('left_arm', -0.28 - S(t) * .05, 0, .12); } },
-  wendigo: (p, t, alt) => { p('torso', 0.66 + S(t * 1.2) * .03, 0, 0); p('head', 0.31 + (alt ? -.5 : 0), S(t * 3) * (alt ? .25 : .05), 0); p('jaw', alt ? .7 + S(t * 20) * .1 : .14 + S(t * 1.5) * .05, 0, 0); },
-  poseida: (p, t, alt) => { if (alt) { p('root', -1.57, 0, 0, 0, -1, 0); p('right_arm', 1.57, 0, -.25); p('left_arm', 1.57, 0, .25); p('right_leg', 1.57, 0, -.25); p('left_leg', 1.57, 0, .25); p('head', 1.2, S(t * 6) * .3, 0); }
-    else { p('head', 0, 0, S(t * 0.8) * .35 + (S(t * 13) > .97 ? .4 : 0)); p('right_arm', 0, 0, -.06); p('left_arm', 0, 0, .06); } },
-  payaso: (p, t, alt) => { p('balloon_string', S(t * 1.1) * .08, 0, S(t * .9) * .06); p('head', 0, alt ? S(t * 7) * .5 : 0, S(t * .7) * .18); p('body', 0, 0, S(t * .7) * .03); },
-  monja: (p, t, alt) => { p('body', 0, 0, 0, 0, -1 + S(t * 1.3) * .8, 0); p('robe3', S(t * 1.5) * .05, 0, 0); if (alt) { p('right_arm', -1.5, 0, -.1); p('left_arm', -1.5, 0, .1); p('head', 0, 0, .35); } },
-  sombra: (p, t, alt) => { p('body', 0, 0, S(t * .6) * .02); p('head', 0, alt ? 1.2 : S(t * .5) * .2, 0); },
-  muneca: (p, t, alt) => { p('head', 0, 0, alt ? .55 : S(t * .8) * .12); },
-  anima: (p, t, alt) => { p('body', 0, 0, 0, 0, -2 + S(t * 1.4) * 1.5, 0); p('tail1', S(t * 2) * .15, 0, 0); p('tail2', S(t * 2 - .7) * .2, 0, 0); p('tail3', S(t * 2 - 1.4) * .25, 0, 0); p('right_arm', -.52 + S(t) * .2, 0, -.35); p('left_arm', -.52 - S(t) * .2, 0, .35); },
-};
-const ALT_LABEL = { llorona: 'Persecución', wendigo: 'Grito', poseida: 'Caminata araña', payaso: 'Risa', monja: 'Ataque', sombra: 'Te mira', muneca: 'Ladeo', anima: 'Flotar' };
-
-let renderer, scene, camera, current = null, yaw = 0.5, pitch = 0.12, auto = true, alt = false, height = 40;
+const POSE_ES = { attack: 'Ataque', scream: 'Grito', spider: 'Araña', headturn: 'Cabeza girada', float: 'Levitar', laugh: 'Risa', burn: 'Quemándose', reach: 'Te alcanza', creep: 'Acecho', crawl: 'Arrastrarse', chase: 'Persecución', hunt: 'Caza', idle: 'Reposo' };
+// generic idle: breathing + slow head drift; a selected pose blends in on top
+function animate(cur, t) {
+  const fns = cur.glow ? [cur.pose, cur.glow.pose] : [cur.pose];
+  const g = cur.groups, P = cur.poseName ? (cur.data.poses || {})[cur.poseName] : null;
+  cur.blend += ((P ? 1 : 0) - cur.blend) * 0.08;
+  for (const n of Object.keys(g)) fns.forEach(f => f(n, 0, 0, 0, 0, 0, 0));
+  const idle = { head: [S(t * .7) * .05, S(t * .45) * .14, S(t * .6) * .05, 0, 0, 0], neck: [S(t * .9) * .03, 0, 0, 0, 0, 0],
+    jaw: [Math.max(0, S(t * 1.3)) * .12, 0, 0, 0, 0, 0], body: [S(t * 1.6) * .015, 0, 0, 0, S(t * 1.6) * .4, 0], torso: [S(t * 1.6) * .02, 0, 0, 0, 0, 0] };
+  const names = new Set([...Object.keys(idle), ...Object.keys(P || cur.lastP || {})]);
+  if (P) cur.lastP = P;
+  const L = cur.lastP || {};
+  for (const n of names) {
+    const a = idle[n] || [0, 0, 0, 0, 0, 0], b = L[n] || null;
+    const v = a.map((x, i) => b ? x * (1 - cur.blend) + (b[i] || 0) * cur.blend + (i < 3 ? x * .3 * cur.blend : 0) : x);
+    fns.forEach(f => f(n, ...v));
+  }
+}
+let renderer, scene, camera, current = null, yaw = 0.5, pitch = 0.12, auto = true, night = false, height = 40, amb, key, rim, torch;
 const screen = document.getElementById('screen');
 function initGL() {
   try { renderer = new THREE.WebGLRenderer({ antialias: false, alpha: true }); } catch (e) { screen.querySelector('#osd').textContent = 'SIN WEBGL'; return false; }
@@ -180,9 +189,10 @@ function initGL() {
   screen.prepend(renderer.domElement);
   scene = new THREE.Scene();
   scene.fog = new THREE.Fog(0x0c0a0e, 120, 260);
-  scene.add(new THREE.AmbientLight(0xd6cede, 1.05));
-  const key = new THREE.DirectionalLight(0xfff1dc, 1.0); key.position.set(-40, 80, 60); scene.add(key);
-  const rim = new THREE.DirectionalLight(0xc7252f, 0.55); rim.position.set(50, 20, -60); scene.add(rim);
+  amb = new THREE.AmbientLight(0xd6cede, 1.05); scene.add(amb);
+  key = new THREE.DirectionalLight(0xfff1dc, 1.0); key.position.set(-40, 80, 60); scene.add(key);
+  rim = new THREE.DirectionalLight(0xc7252f, 0.55); rim.position.set(50, 20, -60); scene.add(rim);
+  torch = new THREE.PointLight(0xffd29a, 0, 220, 1.4); scene.add(torch);
   const floor = new THREE.Mesh(new THREE.CircleGeometry(26, 40), new THREE.MeshBasicMaterial({ color: 0x15111a }));
   floor.rotation.x = -Math.PI / 2; scene.add(floor);
   camera = new THREE.PerspectiveCamera(30, 1, 1, 600);
@@ -190,32 +200,52 @@ function initGL() {
 }
 function fit() { if (!renderer) return; const r = screen.getBoundingClientRect(); renderer.setSize(r.width, r.height, false); camera.aspect = r.width / r.height; camera.updateProjectionMatrix(); }
 const loader = typeof THREE !== 'undefined' ? new THREE.TextureLoader() : null;
+function setNight(on) {
+  night = on; if (!amb) return;
+  amb.intensity = on ? 0.34 : 1.05; key.intensity = on ? 0.12 : 1.0; rim.intensity = on ? 0.5 : 0.55; torch.intensity = on ? 3.2 : 0;
+  scene.fog.color.set(on ? 0x050407 : 0x0c0a0e); scene.fog.near = on ? 60 : 120; scene.fog.far = on ? 190 : 260;
+}
 function show(key) {
   document.querySelectorAll('#roster button').forEach(b => b.setAttribute('aria-pressed', b.dataset.key === key));
   const e = ENTS.find(x => x.key === key);
   document.getElementById('dossier').innerHTML = `<div class="place">${e.place.toUpperCase()}</div><h3>${e.name}</h3><blockquote>${e.quote}</blockquote><ul>${e.traits.map(t => `<li>${t}</li>`).join('')}</ul><div class="weak">DEBILIDAD: <b>${e.weak}</b></div>`;
-  alt = false; renderCtrl(key);
-  if (!renderer) return;
-  if (current) scene.remove(current.object);
+  if (!renderer) { renderCtrl(key); return; }
   const m = MODELS[key];
   loader.load(m.tex, tex => {
     const built = MCViewer.buildModel(THREE, m.data, tex);
-    if (current) scene.remove(current.object);
-    current = Object.assign(built, { key });
-    scene.add(built.object);
-    const box = new THREE.Box3().setFromObject(built.object); height = box.max.y - box.min.y;
+    let glow = null;
+    const finish = () => {
+      if (current) { scene.remove(current.object); if (current.glow) scene.remove(current.glow.object); }
+      current = Object.assign(built, { key, data: m.data, poseName: null, blend: 0, lastP: null, glow });
+      scene.add(built.object);
+      if (glow) scene.add(glow.object);
+      const box = new THREE.Box3().setFromObject(built.object); height = box.max.y - box.min.y;
+      renderCtrl(key);
+    };
+    if (!m.glow) { finish(); return; }
+    loader.load(m.glow, gt => {
+      glow = MCViewer.buildModel(THREE, m.data, gt);
+      const gm = new THREE.MeshBasicMaterial({ map: gt, transparent: true, alphaTest: 0.04, side: THREE.DoubleSide, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+      glow.object.traverse(o => { if (o.isMesh) o.material = gm; });
+      finish();
+    });
   });
 }
 function renderCtrl(key) {
   const c = document.getElementById('ctrl');
-  c.innerHTML = `<button type="button" id="b-auto" aria-pressed="${auto}">AUTO-GIRO</button><button type="button" id="b-alt" aria-pressed="${alt}">${ALT_LABEL[key]}</button>`;
+  const poses = current && current.key === key ? Object.keys(current.data.poses || {}) : [];
+  const cur = current && current.key === key ? current.poseName : null;
+  c.innerHTML = `<button type="button" id="b-auto" aria-pressed="${auto}">AUTO-GIRO</button><button type="button" id="b-night" aria-pressed="${night}">NOCHE</button>` +
+    `<button type="button" data-pose="" aria-pressed="${!cur}">REPOSO</button>` +
+    poses.map(p => `<button type="button" data-pose="${p}" aria-pressed="${cur === p}">${(POSE_ES[p] || p).toUpperCase()}</button>`).join('');
   c.querySelector('#b-auto').onclick = () => { auto = !auto; renderCtrl(key); };
-  c.querySelector('#b-alt').onclick = () => { alt = !alt; renderCtrl(key); };
+  c.querySelector('#b-night').onclick = () => { setNight(!night); renderCtrl(key); };
+  c.querySelectorAll('[data-pose]').forEach(b => b.onclick = () => { if (current) current.poseName = b.dataset.pose || null; renderCtrl(key); });
 }
 const roster = document.getElementById('roster');
 ENTS.forEach(e => { const li = document.createElement('li'); li.innerHTML = `<button type="button" data-key="${e.key}">${e.name}<span>${MODELS[e.key].data.texW}×${MODELS[e.key].data.texH}</span></button>`; li.firstChild.onclick = () => show(e.key); roster.appendChild(li); });
 let drag = null;
-screen.addEventListener('pointerdown', ev => { drag = { x: ev.clientX, y: ev.clientY, yaw, pitch }; screen.setPointerCapture(ev.pointerId); auto = false; renderCtrl(current ? current.key : 'llorona'); });
+screen.addEventListener('pointerdown', ev => { if (ev.target.closest('#ctrl')) return; drag = { x: ev.clientX, y: ev.clientY, yaw, pitch }; screen.setPointerCapture(ev.pointerId); auto = false; renderCtrl(current ? current.key : 'llorona'); });
 screen.addEventListener('pointermove', ev => { if (!drag) return; yaw = drag.yaw - (ev.clientX - drag.x) * 0.01; pitch = Math.max(-0.3, Math.min(0.9, drag.pitch + (ev.clientY - drag.y) * 0.006)); });
 screen.addEventListener('pointerup', () => drag = null);
 const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -225,10 +255,11 @@ function loop(now) {
   const s = Math.floor(t); document.getElementById('clock').textContent = '00:' + String(Math.floor(s / 60) % 60).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
   if (renderer) {
     if (auto && !reduce) yaw += 0.006;
-    if (current && ANIM[current.key]) ANIM[current.key](current.pose, reduce ? 0 : t, alt);
+    if (current) animate(current, reduce ? 0 : t);
     const d = Math.max(90, height * 2.6), cy = height * 0.55;
     camera.position.set(Math.sin(yaw) * Math.cos(pitch) * d, cy + Math.sin(pitch) * d, Math.cos(yaw) * Math.cos(pitch) * d);
     camera.lookAt(0, cy, 0);
+    if (torch) torch.position.set(camera.position.x * 0.55, cy + 4, camera.position.z * 0.55);
     renderer.render(scene, camera);
   }
   requestAnimationFrame(loop);
