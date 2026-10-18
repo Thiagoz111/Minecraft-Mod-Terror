@@ -15,7 +15,9 @@ jobs:
           java-version: '25'
           distribution: 'temurin'
       - uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: true
       - name: decompile
-        run: chmod +x ./gradlew && ./gradlew genSources 2>&1 | grep -vE "^\s+at " | tail -60
+        run: chmod +x ./gradlew && ./gradlew genSources -q > /dev/null 2>&1
       - name: probe
         run: bash tools/ci/probe.sh

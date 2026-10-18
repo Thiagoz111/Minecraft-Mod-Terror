@@ -1,0 +1,1 @@
+/Vex|EyesLayer|ThrownItemRenderer|/HumanoidModel|/PostChain|ItemCooldowns|/RenderTypes|EmissiveLayer|ModelLayers$|/EntityRenderers$|SpriteSet|/VillagerModel|/ZombieModel|/IllagerModel|/EndermanModel|CameraRenderState

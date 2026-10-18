@@ -1,4 +1,0 @@
-setPostEffect|loadEffect\(
-public static Item registerItem\(
-public static Block register\(
-private static <T extends Entity> EntityType<T> register\(
