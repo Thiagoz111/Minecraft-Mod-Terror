@@ -1,0 +1,518 @@
+{
+ "phone.ring": {
+  "subtitle": "subtitles.deadline.phone.ring",
+  "sounds": [
+   "deadline:phone/ring"
+  ]
+ },
+ "phone.vibrate": {
+  "subtitle": "subtitles.deadline.phone.vibrate",
+  "sounds": [
+   "deadline:phone/vibrate"
+  ]
+ },
+ "phone.notify": {
+  "subtitle": "subtitles.deadline.phone.notify",
+  "sounds": [
+   "deadline:phone/notify"
+  ]
+ },
+ "phone.accept": {
+  "subtitle": "subtitles.deadline.phone.accept",
+  "sounds": [
+   "deadline:phone/accept"
+  ]
+ },
+ "phone.hangup": {
+  "subtitle": "subtitles.deadline.phone.hangup",
+  "sounds": [
+   "deadline:phone/hangup"
+  ]
+ },
+ "phone.voice": {
+  "subtitle": "subtitles.deadline.phone.voice",
+  "sounds": [
+   "deadline:phone/voice_1",
+   "deadline:phone/voice_2",
+   "deadline:phone/voice_3",
+   "deadline:phone/voice_4",
+   "deadline:phone/voice_5",
+   "deadline:phone/voice_6"
+  ]
+ },
+ "teleport.whoosh": {
+  "subtitle": "subtitles.deadline.teleport.whoosh",
+  "sounds": [
+   "deadline:teleport/whoosh"
+  ]
+ },
+ "ambient.casa": {
+  "subtitle": "subtitles.deadline.ambient.casa",
+  "sounds": [
+   {
+    "name": "deadline:ambient/casa",
+    "stream": true
+   }
+  ]
+ },
+ "ambient.rio": {
+  "subtitle": "subtitles.deadline.ambient.rio",
+  "sounds": [
+   {
+    "name": "deadline:ambient/rio",
+    "stream": true
+   }
+  ]
+ },
+ "ambient.bosque": {
+  "subtitle": "subtitles.deadline.ambient.bosque",
+  "sounds": [
+   {
+    "name": "deadline:ambient/bosque",
+    "stream": true
+   }
+  ]
+ },
+ "ambient.parque": {
+  "subtitle": "subtitles.deadline.ambient.parque",
+  "sounds": [
+   {
+    "name": "deadline:ambient/parque",
+    "stream": true
+   }
+  ]
+ },
+ "ambient.convento": {
+  "subtitle": "subtitles.deadline.ambient.convento",
+  "sounds": [
+   {
+    "name": "deadline:ambient/convento",
+    "stream": true
+   }
+  ]
+ },
+ "ambient.whispers": {
+  "subtitle": "subtitles.deadline.ambient.whispers",
+  "sounds": [
+   "deadline:ambient/whispers_1",
+   "deadline:ambient/whispers_2",
+   "deadline:ambient/whispers_3",
+   "deadline:ambient/whispers_4"
+  ]
+ },
+ "ambient.stinger": {
+  "subtitle": "subtitles.deadline.ambient.stinger",
+  "sounds": [
+   "deadline:ambient/stinger_1",
+   "deadline:ambient/stinger_2",
+   "deadline:ambient/stinger_3",
+   "deadline:ambient/stinger_4"
+  ]
+ },
+ "music.case": {
+  "subtitle": "subtitles.deadline.music.case",
+  "sounds": [
+   {
+    "name": "deadline:music/case",
+    "stream": true
+   }
+  ]
+ },
+ "sanity.heartbeat": {
+  "subtitle": "subtitles.deadline.sanity.heartbeat",
+  "sounds": [
+   "deadline:sanity/heartbeat"
+  ]
+ },
+ "sanity.whisper": {
+  "subtitle": "subtitles.deadline.sanity.whisper",
+  "sounds": [
+   "deadline:sanity/whisper_1",
+   "deadline:sanity/whisper_2",
+   "deadline:sanity/whisper_3",
+   "deadline:sanity/whisper_4",
+   "deadline:sanity/whisper_5"
+  ]
+ },
+ "sanity.footsteps": {
+  "subtitle": "subtitles.deadline.sanity.footsteps",
+  "sounds": [
+   "deadline:sanity/footsteps_1",
+   "deadline:sanity/footsteps_2",
+   "deadline:sanity/footsteps_3"
+  ]
+ },
+ "sanity.knock": {
+  "subtitle": "subtitles.deadline.sanity.knock",
+  "sounds": [
+   "deadline:sanity/knock_1",
+   "deadline:sanity/knock_2",
+   "deadline:sanity/knock_3"
+  ]
+ },
+ "sanity.breath": {
+  "subtitle": "subtitles.deadline.sanity.breath",
+  "sounds": [
+   "deadline:sanity/breath_1",
+   "deadline:sanity/breath_2"
+  ]
+ },
+ "crucifix.activate": {
+  "subtitle": "subtitles.deadline.crucifix.activate",
+  "sounds": [
+   "deadline:crucifix/activate"
+  ]
+ },
+ "crucifix.repel": {
+  "subtitle": "subtitles.deadline.crucifix.repel",
+  "sounds": [
+   "deadline:crucifix/repel"
+  ]
+ },
+ "holy_water.throw": {
+  "subtitle": "subtitles.deadline.holy_water.throw",
+  "sounds": [
+   "deadline:holy_water/throw"
+  ]
+ },
+ "holy_water.splash": {
+  "subtitle": "subtitles.deadline.holy_water.splash",
+  "sounds": [
+   "deadline:holy_water/splash"
+  ]
+ },
+ "holy_water.sizzle": {
+  "subtitle": "subtitles.deadline.holy_water.sizzle",
+  "sounds": [
+   "deadline:holy_water/sizzle"
+  ]
+ },
+ "salt.place": {
+  "subtitle": "subtitles.deadline.salt.place",
+  "sounds": [
+   "deadline:salt/place"
+  ]
+ },
+ "emf.beep": {
+  "subtitle": "subtitles.deadline.emf.beep",
+  "sounds": [
+   "deadline:emf/beep"
+  ]
+ },
+ "flashlight.click": {
+  "subtitle": "subtitles.deadline.flashlight.click",
+  "sounds": [
+   "deadline:flashlight/click"
+  ]
+ },
+ "flashlight.flicker": {
+  "subtitle": "subtitles.deadline.flashlight.flicker",
+  "sounds": [
+   "deadline:flashlight/flicker"
+  ]
+ },
+ "spirit_box.static": {
+  "subtitle": "subtitles.deadline.spirit_box.static",
+  "sounds": [
+   "deadline:spirit_box/static"
+  ]
+ },
+ "spirit_box.voice": {
+  "subtitle": "subtitles.deadline.spirit_box.voice",
+  "sounds": [
+   "deadline:spirit_box/voice_1",
+   "deadline:spirit_box/voice_2",
+   "deadline:spirit_box/voice_3",
+   "deadline:spirit_box/voice_4",
+   "deadline:spirit_box/voice_5",
+   "deadline:spirit_box/voice_6",
+   "deadline:spirit_box/voice_7",
+   "deadline:spirit_box/voice_8"
+  ]
+ },
+ "camera.flash": {
+  "subtitle": "subtitles.deadline.camera.flash",
+  "sounds": [
+   "deadline:camera/flash"
+  ]
+ },
+ "ritual.chant": {
+  "subtitle": "subtitles.deadline.ritual.chant",
+  "sounds": [
+   "deadline:ritual/chant"
+  ]
+ },
+ "ritual.complete": {
+  "subtitle": "subtitles.deadline.ritual.complete",
+  "sounds": [
+   "deadline:ritual/complete"
+  ]
+ },
+ "jar.capture": {
+  "subtitle": "subtitles.deadline.jar.capture",
+  "sounds": [
+   "deadline:jar/capture"
+  ]
+ },
+ "pills.swallow": {
+  "subtitle": "subtitles.deadline.pills.swallow",
+  "sounds": [
+   "deadline:pills/swallow"
+  ]
+ },
+ "flare.ignite": {
+  "subtitle": "subtitles.deadline.flare.ignite",
+  "sounds": [
+   "deadline:flare/ignite"
+  ]
+ },
+ "flare.burn": {
+  "subtitle": "subtitles.deadline.flare.burn",
+  "sounds": [
+   "deadline:flare/burn"
+  ]
+ },
+ "llorona.cry": {
+  "subtitle": "subtitles.deadline.llorona.cry",
+  "sounds": [
+   "deadline:llorona/cry_1",
+   "deadline:llorona/cry_2",
+   "deadline:llorona/cry_3"
+  ]
+ },
+ "llorona.wail": {
+  "subtitle": "subtitles.deadline.llorona.wail",
+  "sounds": [
+   "deadline:llorona/wail_1",
+   "deadline:llorona/wail_2",
+   "deadline:llorona/wail_3"
+  ]
+ },
+ "llorona.scream": {
+  "subtitle": "subtitles.deadline.llorona.scream",
+  "sounds": [
+   "deadline:llorona/scream"
+  ]
+ },
+ "llorona.hurt": {
+  "subtitle": "subtitles.deadline.llorona.hurt",
+  "sounds": [
+   "deadline:llorona/hurt"
+  ]
+ },
+ "llorona.death": {
+  "subtitle": "subtitles.deadline.llorona.death",
+  "sounds": [
+   "deadline:llorona/death"
+  ]
+ },
+ "wendigo.growl": {
+  "subtitle": "subtitles.deadline.wendigo.growl",
+  "sounds": [
+   "deadline:wendigo/growl_1",
+   "deadline:wendigo/growl_2"
+  ]
+ },
+ "wendigo.mimic": {
+  "subtitle": "subtitles.deadline.wendigo.mimic",
+  "sounds": [
+   "deadline:wendigo/mimic_1",
+   "deadline:wendigo/mimic_2",
+   "deadline:wendigo/mimic_3",
+   "deadline:wendigo/mimic_4"
+  ]
+ },
+ "wendigo.scream": {
+  "subtitle": "subtitles.deadline.wendigo.scream",
+  "sounds": [
+   "deadline:wendigo/scream"
+  ]
+ },
+ "wendigo.hurt": {
+  "subtitle": "subtitles.deadline.wendigo.hurt",
+  "sounds": [
+   "deadline:wendigo/hurt"
+  ]
+ },
+ "wendigo.death": {
+  "subtitle": "subtitles.deadline.wendigo.death",
+  "sounds": [
+   "deadline:wendigo/death"
+  ]
+ },
+ "wendigo.step": {
+  "subtitle": "subtitles.deadline.wendigo.step",
+  "sounds": [
+   "deadline:wendigo/step"
+  ]
+ },
+ "poseida.giggle": {
+  "subtitle": "subtitles.deadline.poseida.giggle",
+  "sounds": [
+   "deadline:poseida/giggle_1",
+   "deadline:poseida/giggle_2"
+  ]
+ },
+ "poseida.demon": {
+  "subtitle": "subtitles.deadline.poseida.demon",
+  "sounds": [
+   "deadline:poseida/demon_1",
+   "deadline:poseida/demon_2",
+   "deadline:poseida/demon_3",
+   "deadline:poseida/demon_4",
+   "deadline:poseida/demon_5"
+  ]
+ },
+ "poseida.crack": {
+  "subtitle": "subtitles.deadline.poseida.crack",
+  "sounds": [
+   "deadline:poseida/crack_1",
+   "deadline:poseida/crack_2"
+  ]
+ },
+ "poseida.scream": {
+  "subtitle": "subtitles.deadline.poseida.scream",
+  "sounds": [
+   "deadline:poseida/scream"
+  ]
+ },
+ "poseida.hurt": {
+  "subtitle": "subtitles.deadline.poseida.hurt",
+  "sounds": [
+   "deadline:poseida/hurt"
+  ]
+ },
+ "poseida.death": {
+  "subtitle": "subtitles.deadline.poseida.death",
+  "sounds": [
+   "deadline:poseida/death"
+  ]
+ },
+ "payaso.laugh": {
+  "subtitle": "subtitles.deadline.payaso.laugh",
+  "sounds": [
+   "deadline:payaso/laugh_1",
+   "deadline:payaso/laugh_2",
+   "deadline:payaso/laugh_3"
+  ]
+ },
+ "payaso.musicbox": {
+  "subtitle": "subtitles.deadline.payaso.musicbox",
+  "sounds": [
+   "deadline:payaso/musicbox"
+  ]
+ },
+ "payaso.honk": {
+  "subtitle": "subtitles.deadline.payaso.honk",
+  "sounds": [
+   "deadline:payaso/honk"
+  ]
+ },
+ "payaso.hurt": {
+  "subtitle": "subtitles.deadline.payaso.hurt",
+  "sounds": [
+   "deadline:payaso/hurt"
+  ]
+ },
+ "payaso.death": {
+  "subtitle": "subtitles.deadline.payaso.death",
+  "sounds": [
+   "deadline:payaso/death"
+  ]
+ },
+ "balloon.pop": {
+  "subtitle": "subtitles.deadline.balloon.pop",
+  "sounds": [
+   "deadline:balloon/pop"
+  ]
+ },
+ "monja.whisper": {
+  "subtitle": "subtitles.deadline.monja.whisper",
+  "sounds": [
+   "deadline:monja/whisper_1",
+   "deadline:monja/whisper_2",
+   "deadline:monja/whisper_3"
+  ]
+ },
+ "monja.hiss": {
+  "subtitle": "subtitles.deadline.monja.hiss",
+  "sounds": [
+   "deadline:monja/hiss"
+  ]
+ },
+ "monja.scream": {
+  "subtitle": "subtitles.deadline.monja.scream",
+  "sounds": [
+   "deadline:monja/scream"
+  ]
+ },
+ "monja.hurt": {
+  "subtitle": "subtitles.deadline.monja.hurt",
+  "sounds": [
+   "deadline:monja/hurt"
+  ]
+ },
+ "monja.death": {
+  "subtitle": "subtitles.deadline.monja.death",
+  "sounds": [
+   "deadline:monja/death"
+  ]
+ },
+ "sombra.appear": {
+  "subtitle": "subtitles.deadline.sombra.appear",
+  "sounds": [
+   "deadline:sombra/appear"
+  ]
+ },
+ "sombra.vanish": {
+  "subtitle": "subtitles.deadline.sombra.vanish",
+  "sounds": [
+   "deadline:sombra/vanish"
+  ]
+ },
+ "muneca.giggle": {
+  "subtitle": "subtitles.deadline.muneca.giggle",
+  "sounds": [
+   "deadline:muneca/giggle_1",
+   "deadline:muneca/giggle_2"
+  ]
+ },
+ "muneca.creak": {
+  "subtitle": "subtitles.deadline.muneca.creak",
+  "sounds": [
+   "deadline:muneca/creak"
+  ]
+ },
+ "anima.moan": {
+  "subtitle": "subtitles.deadline.anima.moan",
+  "sounds": [
+   "deadline:anima/moan_1",
+   "deadline:anima/moan_2"
+  ]
+ },
+ "jumpscare": {
+  "subtitle": "subtitles.deadline.jumpscare",
+  "sounds": [
+   "deadline:jumpscare_1",
+   "deadline:jumpscare_2"
+  ]
+ },
+ "anchor.purify": {
+  "subtitle": "subtitles.deadline.anchor.purify",
+  "sounds": [
+   "deadline:anchor/purify"
+  ]
+ },
+ "anchor.pulse": {
+  "subtitle": "subtitles.deadline.anchor.pulse",
+  "sounds": [
+   "deadline:anchor/pulse"
+  ]
+ },
+ "case.solved": {
+  "subtitle": "subtitles.deadline.case.solved",
+  "sounds": [
+   "deadline:case/solved"
+  ]
+ }
+}

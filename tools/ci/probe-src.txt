@@ -1,4 +1,3 @@
-net/minecraft/client/model/monster/vex/VexModel.java
-net/minecraft/client/renderer/entity/VexRenderer.java
-net/minecraft/client/renderer/entity/layers/EyesLayer.java
-net/minecraft/client/renderer/entity/ThrownItemRenderer.java
+net/minecraft/world/entity/projectile/throwableitemprojectile/Snowball.java
+net/minecraft/world/item/SnowballItem.java
+net/minecraft/world/level/block/CarpetBlock.java
