@@ -108,17 +108,28 @@ def _uri(path):
 
 
 def load_models(keys=None):
-    data = json.load(open(os.path.join(HERE, 'out', 'preview.json')))
+    """Merge every out/preview_*.json (each kit build writes its own) and turn textures into data URIs."""
+    import glob
+    data = {'models': {}, 'cubes': {}, 'kits': {}}
+    for p in sorted(glob.glob(os.path.join(HERE, 'out', 'preview_*.json')), key=os.path.getmtime):
+        d = json.load(open(p))
+        data['models'].update(d['models'])
+        data['cubes'].update(d['cubes'])
+        data['kits'].update(d['kits'])
     kinds = {b['key']: b for kit in data['kits'].values() for b in kit}
     models = {}
     for k, m in data['models'].items():
         if keys and k not in keys:
             continue
-        models[k] = {'elements': m['elements'], 'tex': _uri(m['texture']), 'light': kinds.get(k, {}).get('light', 0)}
+        info = kinds.get(k, {})
+        models[k] = {'elements': m['elements'], 'tex': _uri(m['texture']), 'light': info.get('light', 0),
+                     'translucent': info.get('render') == 'translucent'}
     for k, faces in data['cubes'].items():
         if keys and k not in keys:
             continue
-        models[k] = {'cube': {f: _uri(p) for f, p in faces.items()}, 'light': kinds.get(k, {}).get('light', 0)}
+        info = kinds.get(k, {})
+        models[k] = {'cube': {f: _uri(p) for f, p in faces.items()}, 'light': info.get('light', 0),
+                     'translucent': info.get('render') == 'translucent'}
     return data, models
 
 

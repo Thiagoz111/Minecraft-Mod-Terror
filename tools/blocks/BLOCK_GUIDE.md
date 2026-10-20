@@ -9,12 +9,13 @@ flashlight. It must look better than any Minecraft map or furniture mod.
 ## Files
 * `tools/blocks/bkit.py` — the framework (read its docstring: coordinates, face orientation, classes).
 * `tools/blocks/kit_<case>_<theme>.py` — one module per kit theme; importing it registers its blocks.
-* `tools/blocks/build_blocks.py` — exports everything (textures/models/blockstates/items/lang/Java).
+* `tools/blocks/build_blocks.py <kit>` — exports only `kit_<kit>*.py` (fast, isolated from other kits being edited).
+  `build_blocks.py --all` (run by the lead, not by kit designers) also regenerates the Java registry and lang.
 * `tools/blocks/brender.py` — previews: `showroom <kit>` (every block of a kit) and `scene <file>` (a room mock-up,
   rendered by day and at night with a flashlight).
 * `tools/blocks/scenes/<name>.py` — room mock-ups (`SCENE = dict(blocks=[(x, y, z, key, facing), ...], camera=..., target=...)`).
 
-Loop: edit kit -> `python3 tools/blocks/build_blocks.py` -> `python3 tools/blocks/brender.py showroom <kit>` and
+Loop: edit kit -> `python3 tools/blocks/build_blocks.py <kit>` -> `python3 tools/blocks/brender.py showroom <kit>` and
 `... scene tools/blocks/scenes/<room>.py` -> Read the PNGs in the scratchpad `blocks/` folder -> judge -> repeat.
 
 ## Block types (bkit classes)
@@ -52,4 +53,4 @@ Loop: edit kit -> `python3 tools/blocks/build_blocks.py` -> `python3 tools/block
 * Every important story clue/prop is its own block (e.g. the family photo with scratched faces, the blackboard with
   writing, the streamer's ring light).
 * No z-fighting (offset overlapping faces by >= 0.01), no gaps, no floating parts, no missing faces seen from the player.
-* Name every block in Spanish (rioplatense) and English.
+* Name every block in Spanish (rioplatense) and English. Prefix keys with the location: `casa_`, `colegio_`, `hosp_`.

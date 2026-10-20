@@ -188,26 +188,37 @@ C_ART = [
 
 
 def knit_v(ctx, u, w):
-    """Stockinette: wales run along the body (u = along-length index, w = across index)."""
-    v = 0.56 + face_light(ctx) * 0.9
-    v += 0.07 if (u + (w % 2)) % 2 == 0 else -0.03     # the V's of each stitch
-    if w % 2 == 1:
-        v -= 0.03
-    v += (hash3(u, w, ord(ctx.face[0]), 5) - 0.5) * 0.05
+    """Stockinette: wales run along the body (u = along-length index, w = across index).
+
+    Each wale is a light row of V's; every V is broken by a darker texel every 2 stitches, alternating
+    between wales so the rows read as interlocking loops rather than stripes."""
+    v = 0.58 + face_light(ctx) * 0.9
+    if (u + w) % 2 == 0:
+        v += 0.06
+    else:
+        v -= 0.04
     return v
+
+
+def roundness(ctx):
+    """Side faces of the barrel: lighter on the shoulder of the curve, darker toward the belly."""
+    if ctx.face in ('west', 'east'):
+        return (0.45 - ctx.t) * 0.22
+    return 0.0
+
+
+CABLE = [          # rope cable, 4 stitches across, repeats every 4 rows along the spine
+    "dLLm",
+    "LLmd",
+    "Lmdd",
+    "mddL",
+]
 
 
 def cable_v(ctx, u, k):
-    """Rope cable 4 stitches wide: light strands twisting every 4 rows, dark crossings."""
-    v = 0.6 + face_light(ctx) * 0.9
-    ph = (u + k) % 4
-    if ph in (0, 1):
-        v += 0.12
-    else:
-        v -= 0.06
-    if (u + (3 - k)) % 4 == 3:
-        v -= 0.08
-    return v
+    v = 0.62 + face_light(ctx) * 0.9
+    ch = CABLE[u % 4][k]
+    return v + {'L': 0.12, 'm': 0.0, 'd': -0.14}[ch]
 
 
 def rib_v(ctx, w):
@@ -245,7 +256,7 @@ def sweater_mat(ctx):
             mid = (n - 4) // 2
             k = across - mid
             if 0 <= k < 4:
-                return pick(SWEATER, cable_v(ctx, u, k))
+                return pick(SWEATER, 0.4)               # under the raised cable
             if k in (-1, 4):
                 return pick(SWEATER, 0.38 + face_light(ctx) * 0.9 + (0.05 if u % 2 else 0))   # purl gutter
             return pick(SWEATER, knit_v(ctx, u, across))
@@ -254,7 +265,7 @@ def sweater_mat(ctx):
     u = (ctx.w - 1 - ctx.i) if f == 'west' else ctx.i
     j = ctx.j
     if u <= 1 or u >= ctx.w - 2:
-        return pick(SWEATER, rib_v(ctx, j))
+        return pick(SWEATER, rib_v(ctx, j) + roundness(ctx))
     if t == 'shell_w':
         # white intarsia C, centred on the barrel
         ci = ctx.i - (ctx.w - 5) // 2
@@ -265,10 +276,16 @@ def sweater_mat(ctx):
                 return pick(YARN, 0.62 + face_light(ctx) + (0.12 if (ci + cj) % 2 == 0 else 0))
             if ch == 'w':
                 return YARN[1]
-        # a cable band along the top of each side
-        if j in (0,):
-            return pick(SWEATER, 0.4 + face_light(ctx) * 0.9)
-    return pick(SWEATER, knit_v(ctx, u, j))
+    return pick(SWEATER, knit_v(ctx, u, j) + roundness(ctx))
+
+
+def cable_mat(ctx):
+    f = ctx.face
+    if f == 'top':
+        return pick(SWEATER, cable_v(ctx, ctx.j, min(3, ctx.i)))
+    if f in ('west', 'east'):
+        return pick(SWEATER, 0.5 + face_light(ctx) * 0.9 + (0.1 if ctx.i % 4 < 2 else -0.06))
+    return pick(SWEATER, 0.45 + face_light(ctx) * 0.9)
 
 
 # ------------------------------------------------------------------ neck, collar, tag
@@ -325,6 +342,16 @@ def skull_mat(ctx):
     return coat(ctx, 0.6)
 
 
+def cheek_mat(ctx):
+    """Chubby jowls under the eyes: light muzzle colour blending into the coat at the back."""
+    x, y, z = A(ctx)
+    v = coat_v(ctx, 0.6)
+    if ctx.face == 'bottom':
+        return pick(LIGHT, v - 0.05)
+    c = pick(COAT, v)
+    return mix(c, pick(LIGHT, v), clamp(0.9 - (z + 15) * 0.15))
+
+
 def dome_mat(ctx):
     return coat(ctx, 0.62)
 
@@ -345,8 +372,8 @@ def muzzle_mat(ctx):
     if f in ('west', 'east'):
         c = pick(LIGHT, coat_v(ctx, 0.56))
         u = (ctx.w - 1 - ctx.i) if f == 'west' else ctx.i   # 0 = front
-        if (u, ctx.j) in ((1, 1), (3, 1), (2, 0)):
-            c = pick(COAT, 0.32)                        # whisker dots
+        if (u, ctx.j) in ((3, 1),):
+            c = pick(LIGHT, 0.3)                        # whisker dot
         return c
     return pick(LIGHT, coat_v(ctx, 0.5))
 
@@ -368,18 +395,18 @@ def nose_mat(ctx):
 def lips_mat(ctx):
     f = ctx.face
     if f == 'front':
-        rows = ["..K..", ".K.K."]
+        rows = ["..K..", "KK.KK"]
         c = art(rows, {'K': NOSE[1]}, ctx)
         return c or pick(LIGHT, coat_v(ctx, 0.62))
     if f in ('west', 'east'):
         u = (ctx.w - 1 - ctx.i) if f == 'west' else ctx.i   # 0 = front
         c = pick(LIGHT, coat_v(ctx, 0.58))
         if ctx.j == ctx.h - 1 and u < ctx.w - 1:
-            c = NOSE[1]                                 # black lip edge
+            c = NOSE[2]                                 # black lip edge
         if ctx.j == ctx.h - 2 and u == ctx.w - 1:
-            c = NOSE[1]                                 # ...curling up at the corner: a smile
-        if ctx.j == 0 and u in (1, 3):
-            c = pick(COAT, 0.34)                        # whisker dots
+            c = NOSE[2]                                 # ...curling up at the corner: a smile
+        if ctx.j == 0 and u in (2, 4):
+            c = pick(LIGHT, 0.3)                        # whisker dots
         return c
     if f == 'bottom':
         # roof of the mouth: pink with ridges
@@ -424,22 +451,20 @@ def teeth_mat(rows):
 # eyes: 4 x 5, the same glint side on both eyes (key light from the upper left)
 EYE_ART = [
     "cKKKc",
-    "KWWPK",
-    "PWWPP",
-    "PPPPP",
-    "PPIIw",
-    "cIIIc",
+    "KWWIK",
+    "KWPPI",
+    "IPPPI",
+    "LIPIw",
+    "cLLLc",
 ]
 
 
 def eye_mat(ctx):
     f = ctx.face
     if f == 'front':
-        return art(EYE_ART, {'c': lambda c: pick(COAT, 0.42), 'K': EYE[0], 'P': EYE[1], 'W': WHITE,
-                             'w': GLINT2, 'I': EYE[4]}, ctx, EYE[1])
-    if f == 'top':
-        return pick(COAT, 0.36)                         # lid
-    return EYE[1] if ctx.j < ctx.h - 1 else EYE[3]
+        return art(EYE_ART, {'c': lambda c: pick(COAT, 0.42), 'K': EYE[0], 'P': EYE[0], 'W': WHITE,
+                             'w': GLINT2, 'I': EYE[3], 'L': EYE[5]}, ctx, EYE[1])
+    return pick(COAT, 0.4 + face_light(ctx))            # lids blend into the face
 
 
 EYE_GLOW = [(i, j, WHITE if ch == 'W' else GLINT2) for j, row in enumerate(EYE_ART) for i, ch in enumerate(row)
@@ -547,6 +572,7 @@ def build():
     # sweater: two shells (open belly), ribbed cuff rings at the neck and the tail end
     box('body', (-5, 12, -4.5), (10, 7, 17), mat=sweater_mat, inflate=0.55, name='shell_w')
     box('body', (-4, 11, -4.5), (8, 9, 17), mat=sweater_mat, inflate=0.55, name='shell_t')
+    box('body', (-2, 9.8, -3.5), (4, 1, 15), mat=cable_mat, name='cable')
     box('body', (-5, 12, -5.2), (10, 7, 1), mat=sweater_mat, inflate=0.85, name='cuff')
     box('body', (-4, 11, -5.2), (8, 9, 1), mat=sweater_mat, inflate=0.85, name='cuff')
     box('body', (-5, 12, 12.2), (10, 7, 1), mat=sweater_mat, inflate=0.8, name='cuff')
@@ -583,10 +609,11 @@ def build():
     bone('head', (0, 11, -8.5), parent='neck', mat=skull_mat)
     box('head', (-6, 4, -16), (12, 9, 9), name='skull')
     box('head', (-5, 3, -15), (10, 1, 7), mat=dome_mat, name='dome')
+    box('head', (-6.5, 9, -15.2), (13, 3, 7), mat=cheek_mat, name='cheek')
     box('head', (-2.5, 9.5, -23), (5, 2, 7), mat=muzzle_mat, name='muzzle')
     box('head', (-2.5, 9, -23.6), (5, 2, 1), mat=nose_mat, name='nose')
     for sd, x0 in (('r', -6.5), ('l', 1.5)):
-        box('head', (x0, 5, -16.6), (5, 6, 1), mat=eye_mat, name='eye', side=sd,
+        box('head', (x0, 5, -16.3), (5, 6, 1), mat=eye_mat, name='eye', side=sd,
             decals={'eyes:front': at(EYE_GLOW)})
     box('head', (-2.5, 11.5, -22.7), (5, 2, 0), mat=teeth_mat(["TgggT", "TtttT"]), name='teeth')
     box('head', (-2, 11.7, -22.4), (4, 2, 6), mat=mouth_mat, name='mouth')
@@ -609,11 +636,11 @@ def build():
     for sd, sx in (('right', -1), ('left', 1)):
         e = f'{sd}_ear'
         ex = 6.0 * sx
-        bone(e, (ex, 5.0, -11), parent='head', rot=(0, 0, 9 * -sx), mat=ear_mat)
+        bone(e, (ex, 5.0, -10.5), parent='head', rot=(0, -10 * sx, 12 * -sx), mat=ear_mat)
         x0 = ex if sx > 0 else ex - 2
-        box(e, (x0, 4.5, -14), (2, 10, 6), name='ear', side=sd[0])
-        box(e, (x0, 14.5, -13), (2, 2, 4), name='lobe', side=sd[0])
-        box(e, (x0, 3.9, -13.5), (2, 2, 5), inflate=0.25, name='fold', side=sd[0])
+        box(e, (x0, 4.5, -13.5), (2, 10, 6), name='ear', side=sd[0])
+        box(e, (x0, 14.5, -12.5), (2, 2, 4), name='lobe', side=sd[0])
+        box(e, (x0, 3.9, -13), (2, 2, 5), inflate=0.25, name='fold', side=sd[0])
 
     m = Model('choripan', 128, 128, r.roots)
     m.scale = 0.5

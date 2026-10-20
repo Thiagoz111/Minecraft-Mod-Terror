@@ -25,9 +25,12 @@ SOUNDS = {'wood': 'WOOD', 'stone': 'STONE', 'wool': 'WOOL', 'metal': 'METAL', 'g
 
 
 def load_kits(only=None):
+    """Import kit modules. only=['casa'] imports just kit_casa*.py (so a broken kit elsewhere can't block you)."""
     mods = []
     for path in sorted(glob.glob(os.path.join(HERE, 'kit_*.py'))):
         name = os.path.basename(path)[:-3]
+        if only and not any(name.startswith('kit_' + o) for o in only):
+            continue
         mods.append(importlib.import_module(name))
     return mods
 
@@ -142,44 +145,38 @@ public final class ModBlocksGen {{
 
 
 def main():
-    only = sys.argv[1:] or None
-    load_kits()
+    args = sys.argv[1:]
+    full = not args or args == ['--all']
+    only = None if full else args
+    load_kits(only)
     blocks = list(bkit.REGISTRY)
     keys = [b.key for b in blocks]
     dup = {k for k in keys if keys.count(k) > 1}
     assert not dup, f'duplicate block keys {dup}'
     preview = {'models': {}, 'cubes': {}, 'cube_textures': {}, 'doors': {}}
     shapes = {}
-    order = sorted(blocks, key=lambda b: {'cube': 0, 'slab': 1, 'stairs': 1}.get(b.kind, 2))
-    for b in order:
-        if only and b.kit not in only and b.kind not in ('cube',):
-            continue
+    for b in sorted(blocks, key=lambda b: {'cube': 0, 'slab': 1, 'stairs': 1}.get(b.kind, 2)):
         res = bkit.EXPORTERS[b.kind](b, preview)
         if b.kind == 'furniture':
             shapes[b.key] = res
-    # shapes for furniture not re-exported this run: recompute cheaply from parts
-    for b in blocks:
-        if b.kind == 'furniture' and b.key not in shapes:
-            if b.collision == 'full':
-                shapes[b.key] = [(0, 0, 0, 16, 16, 16)]
-            elif b.collision == 'auto':
-                shapes[b.key] = [c for c in (bkit._clip(p.frm + p.to) for p in b.parts if not p.rot and min(p.size()) >= 0.01) if c]
-            else:
-                shapes[b.key] = []
-    os.makedirs(os.path.dirname(JAVA), exist_ok=True)
-    open(JAVA, 'w').write(java(blocks, shapes))
     os.makedirs(OUT, exist_ok=True)
-    langs = {f'block.deadline.{b.key}': (b.name_es, b.name_en) for b in blocks}
-    langs['itemGroup.deadline_build'] = ('DEAD LINE · Construcción', 'DEAD LINE · Building')
-    json.dump(langs, open(os.path.join(OUT, 'lang_blocks.json'), 'w'), ensure_ascii=False, indent=1)
-    # preview data (models with texture paths) for render tools
     data = {'models': {}, 'cubes': preview['cubes'], 'kits': {}}
     for k, m in preview['models'].items():
         data['models'][k] = {'elements': m['elements'], 'texture': os.path.join(bkit.ASSETS, 'textures/block', k + '.png')}
     for b in blocks:
-        data['kits'].setdefault(b.kit, []).append({'key': b.key, 'kind': b.kind, 'name': b.name_es, 'light': b.light})
-    json.dump(data, open(os.path.join(OUT, 'preview.json'), 'w'))
-    print(f'{len(blocks)} blocks exported; Java -> {JAVA}')
+        data['kits'].setdefault(b.kit, []).append({'key': b.key, 'kind': b.kind, 'name': b.name_es, 'light': b.light,
+                                                   'render': b.render})
+    tag = 'all' if full else '_'.join(only)
+    json.dump(data, open(os.path.join(OUT, f'preview_{tag}.json'), 'w'))
+    if full:
+        os.makedirs(os.path.dirname(JAVA), exist_ok=True)
+        open(JAVA, 'w').write(java(blocks, shapes))
+        langs = {f'block.deadline.{b.key}': (b.name_es, b.name_en) for b in blocks}
+        langs['itemGroup.deadline_build'] = ('DEAD LINE · Construcción', 'DEAD LINE · Building')
+        json.dump(langs, open(os.path.join(OUT, 'lang_blocks.json'), 'w'), ensure_ascii=False, indent=1)
+        print(f'{len(blocks)} blocks exported; Java -> {JAVA}')
+    else:
+        print(f'{len(blocks)} blocks exported for kits {only} (Java/lang only regenerate with --all)')
 
 
 if __name__ == '__main__':
