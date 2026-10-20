@@ -2955,7 +2955,7 @@ GL = {   # stained glass colour ramps (dark -> light)
     'flesh': Ramp('#8a5c40', '#a8765a', '#c49376', '#d9ae90', '#e8c6a8'),
     'purple': Ramp('#24102e', '#371845', '#4c235e', '#633279'),
     'brown': Ramp('#2a170c', '#3e2312', '#55321b'),
-    'pale': Ramp('#7f8f86', '#98a69c', '#b2bdb2', '#c8d0c4', '#dbe0d3'),
+    'pale': Ramp('#9aa89e', '#b0bdb2', '#c6d0c4', '#d8dfd2', '#e7ebe0'),
 }
 LEAD = np.array(C('#141216'))
 STONE_T = np.array(C('#8a8276'))
@@ -3134,9 +3134,7 @@ def vitral_glass(name, piece):
         img = vit_img(name)
         col = np.clip(np.floor((14 - x) * 2).astype(int), 0, 23)
         row = np.clip(off + np.floor((16 - y) * 2).astype(int), 0, 95)
-        if face == 'south':
-            col = 23 - col   # seen from outside the design is mirrored, as in real glass
-        a = img[row, col]
+        a = img[row, col]   # same orientation on both faces: inscriptions read from inside and outside
         return np.clip(a, 0, 255).round().astype(np.uint8)
     return p
 
@@ -3214,8 +3212,6 @@ def roseton_glass(gx, gy):
         img = vit_img('rose') if 'rose' in _VIT else _VIT.setdefault('rose', roseton())
         col = np.clip(gx * 32 + np.floor((16 - x) * 2).astype(int), 0, 63)
         row = np.clip(gy * 32 + np.floor((16 - y) * 2).astype(int), 0, 63)
-        if face == 'south':
-            col = 63 - col
         return np.clip(img[row, col], 0, 255).round().astype(np.uint8)
     return p
 
@@ -3245,7 +3241,7 @@ def roseton_parts(gx, gy):
 
 
 # =============================================================================================== CRYPT NICHES, HOLE, PLATES
-MARBLE = Ramp('#6e6a64', '#8e8a83', '#aaa69e', '#c0bcb3', '#d2cec5', '#e0ddd5', '#ebe9e2')
+MARBLE = Ramp('#56524b', '#6e695f', '#868073', '#9b9485', '#ada596', '#bcb4a4', '#c8c1b1')
 
 
 def plaque_paint(lines, base_ramp=MARBLE, ink='#2a2724', broken=False, seed=0):

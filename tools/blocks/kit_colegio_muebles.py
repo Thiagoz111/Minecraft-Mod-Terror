@@ -2609,3 +2609,389 @@ F('cortina_blanca', 'Cortina blanca', 'White curtain', cortina_parts(), render='
 F('silla_monja', 'Silla de la celadora', "Nun's chair", silla_monja_parts())
 F('ropero_abajo', 'Ropero con espejo (abajo)', 'Wardrobe with mirror (bottom)', ropero_parts('inf'))
 F('ropero_arriba', 'Ropero con espejo (arriba)', 'Wardrobe with mirror (top)', ropero_parts('sup'), env=())
+
+
+# ============================================================================================ REFECTORY
+def table_top_tone(seed, off):
+    """Scrubbed pine refectory top: worn pale centre, knife cuts, soup/wine rings."""
+    base = wood(PINO, seed=seed, base=5, axis=0, boards=(2, 7), off=off, wear=0.6, knots=0.3)
+    rings = [(hh(seed, n, 1) * 32 + off[0] * 2, hh(seed, n, 2) * 26 + 3, 2.2 + hh(seed, n, 3) * 1.6) for n in range(2)]
+
+    def t(ctx):
+        r = base(ctx)
+        if ctx.face != 'up':
+            return r
+        X, Z = ctx.pos[0] * 2 + off[0] * 2, ctx.pos[2] * 2
+        for (cx, cz, rr) in rings:
+            d = math.hypot(X - cx, Z - cz)
+            if abs(d - rr) < 0.5 and hh(int(X), int(Z)) < 0.8:
+                return (PINO, r[1] - 2)
+        if hh(int(X) // 3, int(Z), seed, 5) < 0.02:
+            return (PINO, r[1] + 2)                  # knife cuts
+        return r
+    return t
+
+
+def mesa_larga_parts(kind):
+    """Long refectory table segment (long axis = x). kind: 'extremo' (legs at x=0 end), 'centro', 'puesta'."""
+    off = (0, 0, 0) if kind == 'extremo' else (16, 0, 0)
+    mTop = fin(table_top_tone(401, off))
+    mW = fin(wood(PINO, seed=403, base=4, off=off, wear=0.4))
+    mL = fin(outline(wood(PINO, seed=405, base=3, axis=1)))
+    x0 = 0.4 if kind == 'extremo' else 0.0
+    P = [
+        box((x0, 11.0, 0.8), (16, 12.0, 15.2), mTop),
+        box((x0 + 0.8, 9.4, 1.6), (16, 11.0, 2.2), mW), box((x0 + 0.8, 9.4, 13.8), (16, 11.0, 14.4), mW),   # aprons
+        box((x0 + 0.8, 2.2, 7.4), (16, 3.0, 8.6), mW),                                                    # long stretcher
+    ]
+    if kind == 'extremo':
+        P.append(box((1.2, 9.4, 2.2), (1.8, 11.0, 13.8), mW))
+        for z in (1.8, 12.8):
+            P += [box((1.3, 0.0, z), (2.7, 9.4, z + 1.4), mL),
+                  box((1.1, 6.0, z - 0.2), (2.9, 7.0, z + 1.6), mL), box((1.1, 2.6, z - 0.2), (2.9, 3.4, z + 1.6), mL),
+                  box((1.0, 0.0, z - 0.3), (3.0, 0.6, z + 1.7), mL)]
+        P.append(box((1.6, 2.2, 3.2), (2.4, 3.0, 12.8), mW))
+    if kind == 'puesta':
+        P += place_setting(3.5, 1.4, north=True) + place_setting(9.0, 9.0, north=False)
+    return P
+
+
+def enamel_tone(rim_rows=1, inside=False, seed=0, soot=False):
+    """White enamel with a navy rim, black chips showing iron, soot at the bottom."""
+    def t(ctx):
+        P = tp(ctx)
+        if ctx.face == 'up' and inside:
+            d = max(abs(ctx.s - 0.5), abs(ctx.t - 0.5)) * 2
+            if d > 0.82:
+                return (EBLUE, 3)
+            return (ENAMEL, 3 if d > 0.55 else 2)
+        if ctx.face not in ('up', 'down') and ctx.j < rim_rows:
+            return (EBLUE, 3 - (hh(ctx.i, seed) < 0.15))
+        if vn(P[0] / 2.0, P[1] / 2.0, P[2] / 2.0, seed + 411) > 0.8:
+            return (IRON, 1)
+        k = 5 + (1 if 0.3 < ctx.s < 0.5 else 0)
+        if soot and ctx.face not in ('up',) and ctx.j > ctx.h - 3:
+            return (BAKE, 3 + (hh(ctx.i, ctx.j) > 0.5))
+        return (ENAMEL, k)
+    return t
+
+
+def plate_tone(seed=0):
+    def t(ctx):
+        if ctx.face != 'up':
+            return (ENAMEL, 4) if ctx.face != 'down' else (EBLUE, 2)
+        d = max(abs(ctx.s - 0.5), abs(ctx.t - 0.5)) * 2
+        if d > 0.86:
+            return (EBLUE, 3)
+        if hh(ctx.i, ctx.j, seed) < 0.03:
+            return (IRON, 1)
+        return (ENAMEL, 5 if d > 0.6 else 6)
+    return t
+
+
+def place_setting(x, z, north=True, y=12.0):
+    """Enamel plate + bowl, spoon, fork and a tin mug, laid toward the sitter (north or south side)."""
+    mPl = fin(plate_tone(x), ao=0.3, dust=0.6)
+    mBo = fin(enamel_tone(1, inside=True, seed=int(x * 7)), ao=0.4, dust=0.5)
+    mNi = fin(brass(NICKEL, base=5, seed=int(x)), ao=0.2, dust=0.4)
+    mMug = fin(enamel_tone(1, inside=True, seed=int(x * 3) + 1), ao=0.4, dust=0.5)
+    P = [box((x, y, z), (x + 5.0, y + 0.4, z + 5.0), mPl),
+         box((x + 1.2, y + 0.4, z + 1.2), (x + 3.8, y + 1.8, z + 3.8), mBo),
+         box((x + 5.6, y, z + 0.8), (x + 6.0, y + 0.15, z + 4.0), mNi), box((x + 5.45, y, z + 0.3), (x + 6.15, y + 0.2, z + 1.2), mNi),
+         box((x - 1.0, y, z + 0.8), (x - 0.6, y + 0.15, z + 4.0), mNi), box((x - 1.15, y, z + 0.3), (x - 0.45, y + 0.2, z + 1.0), mNi)]
+    mz = z + (0.4 if north else 3.0)
+    P += [box((x + 6.6, y, mz), (x + 8.4, y + 2.2, mz + 1.8), mMug),
+          box((x + 8.4, y + 0.6, mz + 0.6), (x + 8.9, y + 1.8, mz + 1.2), fin(enamel_tone(0, seed=3), ao=0))]
+    return P
+
+
+def banco_largo_parts(kind):
+    """Long bench segment; the sitter looks north (toward the table). kind: 'extremo' | 'centro'."""
+    off = (0, 0, 0) if kind == 'extremo' else (16, 0, 0)
+    mS = fin(wood(PINO, seed=421, base=4, axis=0, off=off, worn_pal=RAW, wear=0.6, boards=(2, 7)))
+    mW = fin(outline(wood(PINO, seed=423, base=3)))
+    x0 = 0.4 if kind == 'extremo' else 0.0
+    P = [box((x0, 7.0, 1.6), (16, 8.0, 8.6), mS),
+         box((x0 + 1.0, 6.0, 2.2), (16, 7.0, 2.8), mW), box((x0 + 1.0, 6.0, 7.4), (16, 7.0, 8.0), mW),
+         box((x0 + 1.6, 2.6, 4.6), (16, 3.4, 5.6), mW)]
+    if kind == 'extremo':
+        P += [box((1.2, 3.8, 2.0), (2.4, 7.0, 8.2), mW),
+              box((1.2, 0.0, 2.0), (2.4, 3.8, 3.6), mW), box((1.2, 0.0, 6.6), (2.4, 3.8, 8.2), mW)]
+    return P
+
+
+def candelero_mesa_parts(lit):
+    P = candelero_altar_parts(lit)
+    return shift(P, dy=-4.0)
+
+
+def stack_plates_parts():
+    P = []
+    mPl = fin(plate_tone(5), ao=0.5, dust=0.7)
+    for n in range(6):
+        P.append(box((3.0 + (n % 2) * 0.2, -4.0 + n * 0.45, 3.0), (8.0 + (n % 2) * 0.2, -3.6 + n * 0.45, 8.0), mPl))
+    mBo = fin(enamel_tone(1, inside=True, seed=9), ao=0.5, dust=0.7)
+    for n in range(3):
+        P.append(box((9.0, -4.0 + n * 1.0, 6.0), (12.4, -2.9 + n * 1.0, 9.4), mBo))
+    mNi = fin(brass(NICKEL, base=5, seed=11), ao=0.3, dust=0.5)
+    for n in range(4):
+        P.append(box((4.0 + n * 0.8, -4.0, 10.0), (4.4 + n * 0.8, -3.85, 14.0), mNi))
+    return P
+
+
+def libro_parts(y, rot):
+    """Big open book (Vidas de Santas) for the reading lectern."""
+    mPg = fin(score_book_tone, ao=0.4, dust=0.6)
+    mC = fin(painted(LEATHER_B, base=3, seed=431, wear=0.5))
+    return [box((0.6, y, 4.0), (15.4, y + 0.5, 14.0), mC, rot=rot),
+            box((1.2, y + 0.5, 4.4), (8.0, y + 1.3, 13.6), mPg, rot=rot),
+            box((8.0, y + 0.5, 4.4), (14.8, y + 1.3, 13.6), mPg, rot=rot),
+            box((7.6, y + 1.3, 8.0), (8.2, y + 1.35, 14.6), fin(flat(VELVET_R, 5), ao=0), rot=rot)]   # ribbon
+
+
+def score_book_tone(ctx):
+    if ctx.face != 'up':
+        return (PAPER, 5 if ctx.j % 2 else 6)
+    i, j, w = ctx.i, ctx.j, ctx.w
+    if j in (2, 3) and 2 <= i < w - 2:
+        return INK_RED if (i // 2) % 2 == 0 else (PAPER, 6)       # rubric heading
+    if j > 4 and j % 2 == 1 and 1 < i < w - 2 and hh(i // 3, j, 7) > 0.18:
+        return mix(T(PAPER, 6), INK, 0.6)
+    return (PAPER, 7 - (ctx.edge() == 0))
+
+
+def atril_lectura_parts():
+    P = [p for p in atril_parts('vacio') if p.size()[0] < 19]
+    P += libro_parts(15.8, ('x', 22.5, (8.0, 15.0, 9.0)))
+    return P
+
+
+# ============================================================================================ KITCHEN
+def stove_top_tone(ctx):
+    """Cast-iron hob: concentric removable rings, soot and rust bloom."""
+    if ctx.face != 'up':
+        return None
+    X = ctx.pos[0] * 2 + (32 if ctx.block.key.endswith('_der') else 0)
+    Z = ctx.pos[2] * 2
+    k = 2
+    for (cx, cz, r) in ((16, 15, 8.5), (40, 13, 7.0)):
+        d = math.hypot(X - cx, Z - cz)
+        if d < r:
+            if abs(d - r + 0.5) < 0.6 or abs(d - r * 0.6) < 0.5 or abs(d - r * 0.25) < 0.5:
+                return (IRON, 0)
+            k = 3 if d < r * 0.25 else 2
+    if hh(int(X), int(Z), 5) < 0.04:
+        return (RUST, 2)
+    return (IRON, k)
+
+
+def stove_parts(side):
+    """Cocina económica (cast-iron wood stove, 2 blocks). Front faces north; top at 12/16."""
+    mI = fin(iron(seed=441, rust=0.3, base=2))
+    mIt = fin(lambda c: stove_top_tone(c) or iron(seed=442, base=2)(c), ao=0.4, dust=0.8)
+    mN = fin(brass(NICKEL, base=5, seed=443), dust=0.5)
+    mDoor = fin(panels(iron(seed=444, base=3, rust=0.2), rects=((2, 2, -2, -2),), faces=('north',)))
+    x0, x1 = (0.4, 16.0) if side == 'izq' else (0.0, 15.6)
+    P = [
+        box((x0 + 0.4, 1.6, 2.0), (x1 - (0.4 if side == 'der' else 0), 11.2, 15.0), mI),    # body
+        box((x0, 11.2, 1.4), (x1, 12.0, 15.6), mIt),                                         # hob
+        box((x0, 10.6, 1.4), (x1, 11.2, 2.0), mN),                                           # nickel trim band
+        box((x0, 9.4, 0.2), (x1, 9.9, 0.7), mN),                                             # towel rail
+    ]
+    lx = 1.4 if side == 'izq' else 14.0
+    P += [box((lx, 0.0, 2.4), (lx + 1.4, 1.6, 3.8), mI), box((lx, 0.0, 13.0), (lx + 1.4, 1.6, 14.4), mI),
+          box((lx + 0.4, 9.4, 0.7), (lx + 1.0, 9.9, 2.0), mN)]
+    if side == 'izq':
+        P += [box((2.4, 5.6, 1.6), (8.6, 10.0, 2.0), mDoor),                                 # firebox door
+              box((3.4, 7.6, 1.2), (7.6, 8.2, 1.6), mN),                                     # draught slider
+              box((2.4, 2.2, 1.6), (8.6, 5.0, 2.0), mDoor),                                  # ash drawer
+              box((4.6, 3.4, 1.2), (6.4, 3.9, 1.6), mN),
+              box((9.4, 2.2, 1.6), (15.6, 10.0, 2.0), mDoor),                                # warming oven
+              box((10.0, 6.0, 1.2), (11.0, 6.6, 1.6), mN),
+              box((5.0, 12.0, 10.6), (9.0, 32.0, 14.6), fin(iron(seed=446, rust=0.4, base=2))),   # flue pipe
+              box((4.6, 22.0, 10.2), (9.4, 22.8, 15.0), mI),                                 # pipe collar
+              box((9.0, 24.6, 12.3), (10.6, 25.2, 12.9), mN)]                                # damper key
+        # dented aluminium kettle (pava) on the hob
+        mA = fin(brass(NICKEL, base=4, seed=447, tarnish=0.5))
+        P += [box((10.0, 12.0, 5.0), (14.4, 15.2, 9.4), mA), box((10.6, 15.2, 5.6), (13.8, 15.8, 8.8), mA),
+              box((11.6, 15.8, 6.6), (12.8, 16.4, 7.8), fin(painted(BAKE, base=3, seed=448))),
+              box((8.0, 13.2, 6.8), (10.0, 14.0, 7.6), mA, rot=('z', 45, (10.0, 13.6, 7.2))),          # spout
+              box((11.9, 15.8, 4.8), (12.5, 17.8, 9.6), fin(painted(BAKE, base=2, seed=449)))]         # handle
+    else:
+        P += [box((1.0, 2.2, 1.6), (13.0, 10.0, 2.0), mDoor),                                # oven door
+              box((3.0, 8.6, 1.0), (11.0, 9.1, 1.6), mN),                                    # handle bar
+              box((6.3, 5.0, 1.2), (7.7, 6.4, 1.6), fin(flat(ENAMEL, 6), ao=0)),             # thermometer dial
+              box((6.9, 5.6, 1.15), (7.1, 6.3, 1.2), fin(flat(INK and BAKE, 2), ao=0))]
+    return P
+
+
+def olla_parts(y=-4.0, big=False):
+    mE = fin(enamel_tone(1, seed=451, soot=True), ao=0.5, dust=0.6)
+    mL = fin(enamel_tone(0, seed=452), ao=0.4, dust=0.8)
+    mK = fin(painted(BAKE, base=3, seed=453))
+    s = 1.0 if not big else 1.3
+    a, b = 8 - 4.5 * s, 8 + 4.5 * s
+    P = [box((a, y, a), (b, y + 6.0 * s, b), mE),
+         box((a - 0.3, y + 6.0 * s, a - 0.3), (b + 0.3, y + 6.5 * s, b + 0.3), fin(flat(EBLUE, 3))),
+         box((a + 0.3, y + 6.5 * s, a + 0.3), (b - 0.3, y + 6.9 * s, b - 0.3), mL),
+         box((7.3, y + 6.9 * s, 7.3), (8.7, y + 7.8 * s, 8.7), mK),
+         box((a - 1.3, y + 4.4 * s, 7.2), (a, y + 5.0 * s, 8.8), mK), box((b, y + 4.4 * s, 7.2), (b + 1.3, y + 5.0 * s, 8.8), mK)]
+    return P
+
+
+def ollas_piso_parts():
+    mA = fin(brass(NICKEL, base=4, seed=461, tarnish=0.6), dust=0.8)
+    P = [box((1.6, 0.0, 2.4), (10.4, 8.0, 11.2), mA),                # big aluminium stock pot
+         box((1.3, 8.0, 2.1), (10.7, 8.6, 11.5), mA),
+         box((0.4, 6.0, 6.0), (1.6, 6.6, 7.6), mA), box((10.4, 6.0, 6.0), (11.6, 6.6, 7.6), mA)]
+    P += shift(olla_parts(0.0), dx=4.0, dz=4.0)[:0]
+    P += shift(olla_parts(8.6), dx=-2.0, dz=-1.2)                     # smaller pot stacked on top
+    mLa = fin(brass(NICKEL, base=5, seed=463))
+    P += [box((11.8, 0.0, 10.0), (15.2, 1.6, 13.4), fin(enamel_tone(1, inside=True, seed=7), ao=0.4)),   # basin
+          box((12.4, 1.6, 11.4), (12.9, 9.5, 11.9), mLa, rot=('z', -22.5, (12.6, 1.6, 11.6)))]           # ladle
+    return P
+
+
+def key_shape(kind):
+    """Pixel art of hanging keys (cutout). kind: 'hierro' | 'bronce' | 'etiqueta'."""
+    rows = {
+        'hierro': ['.###.', '#...#', '#...#', '.###.', '..#..', '..#..', '..#..', '..#..', '..###', '..#..', '..##.'],
+        'bronce': ['.###.', '#.#.#', '.###.', '..#..', '..#..', '..#..', '..##.', '..#..', '..##.'],
+    }[kind if kind != 'etiqueta' else 'hierro']
+    return rows
+
+
+def key_tone(kind, tag=None):
+    rows = key_shape(kind)
+    p = IRON if kind != 'bronce' else BRASS
+
+    def t(ctx):
+        i, j = ctx.i, ctx.j
+        if tag and j >= 11:
+            jj = j - 11
+            if 0 <= jj < 6 and 0 <= i < ctx.w:
+                if (jj, i) in ((2, 1), (2, 2), (2, 3), (3, 1), (3, 3)):
+                    return INK if tag != 'red' else INK_RED
+                return T(PAPER, 6 - (jj == 5)) if tag != 'red' else T(VELVET_R, 6)
+        if j < len(rows) and i < len(rows[0]) and rows[j][i] == '#':
+            return T(p, 6 if (i + j) % 3 == 0 else 4)
+        if tag and j == 10 and i == 2:
+            return T(PAPER, 3)
+        return None
+    return t
+
+
+def tablero_llaves_parts(missing=False):
+    mB = fin(panels(wood(PINO, seed=471, base=4, axis=0, boards=(1, 7)), rects=((1, 1, -1, -1),), faces=('north',), bevel=0))
+    mT = fin(wood(PINO, seed=473, base=5, axis=0))
+    mH = fin(brass(seed=475, base=4, sheen=False))
+    P = [box((1.0, 2.0, 15.0), (15.0, 14.0, 16.0), mB),
+         box((0.6, 14.0, 14.2), (15.4, 15.0, 16.0), mT),             # little roof
+         box((7.4, 15.0, 15.4), (8.6, 15.8, 16.0), M_IRON)]
+    n = 0
+    for r, y in enumerate((12.0, 8.4, 4.8)):
+        for c, x in enumerate((3.0, 6.4, 9.8, 13.0)):
+            P.append(box((x - 0.3, y, 14.2), (x + 0.3, y + 0.5, 15.0), mH))            # hook
+            P.append(box((x - 0.3, y + 0.5, 14.2), (x + 0.3, y + 0.9, 14.6), mH))
+            lab = fin(lambda ctx, n=n: (PAPER, 6) if ctx.edge() else (PAPER, 4), ao=0)
+            P.append(box((x - 0.9, y - 3.4, 14.95), (x + 0.9, y - 2.8, 15.0), lab, faces=('north',)))  # paper labels
+            key_ = (r, c)
+            if key_ == (0, 2):         # the office key: brass with a red tag
+                if not missing:
+                    P.append(plane((x - 1.25, y - 8.4, 14.5), (x + 1.25, y + 0.4, 14.5), key_tone('bronce', 'red')))
+                n += 1
+                continue
+            if hh(r, c, 3) < 0.25:
+                n += 1
+                continue
+            kind = 'hierro' if hh(r, c) < 0.6 else 'bronce'
+            tag = 'paper' if hh(r, c, 5) < 0.5 else None
+            P.append(plane((x - 1.25, y - (8.4 if tag else 5.2), 14.5), (x + 1.25, y + 0.4, 14.5), key_tone(kind, tag)))
+            n += 1
+    return P
+
+
+def castigos_tone():
+    """Punishment list pinned to the kitchen wall: CASTIGOS header, date, handwritten lines, Albornoz in red."""
+    head = set(draw_text(F35, 'CASTIGOS', 0, 2))
+    hw = max(x for x, y in head) + 1
+    date = set(draw_text(F35, '18/6/84', 0, 9))
+    dw = max(x for x, y in date) + 1
+    alb = set(draw_text(F35, 'ALBORNOZ', 0, 0))
+
+    def t(ctx):
+        i, j, w, h = ctx.i, ctx.j, ctx.w, ctx.h
+        if ctx.face != 'north':
+            return T(PAPER, 5)
+        base = cloth(PAPER, base=7, seed=481, folds=0, weave=False, stains=0.4, stain_col=hx('#8a6a3a'))(ctx)
+        if ctx.edge() == 0:
+            base = mix(base, hx('#6a5a40'), 0.35)
+        if j == h // 3 and hh(i, 3) < 0.7:
+            base = mix(base, hx('#7a6a50'), 0.25)                 # fold line
+        ox = (w - hw) // 2
+        if (i - ox, j) in head:
+            return INK
+        if (i - (w - dw - 2), j) in date:
+            return mix(INK, base, 0.25)
+        # handwritten lines
+        lines = (16, 21, 26, 31, 36)
+        for n, ly in enumerate(lines):
+            if n == 3:
+                if (i - 2, j - ly + 4) in alb:
+                    return INK_RED
+                if j == ly + 1 and 2 <= i < 33:
+                    return INK_RED                                # underlined twice
+                continue
+            if ly - 2 <= j <= ly and 2 <= i < w - 3:
+                seg = hh(i // 3, n, 9)
+                if j == ly and seg > 0.22 and (i + n) % 5 != 0:
+                    return mix(INK_BLUE, base, 0.15)
+                if j == ly - 1 and hh(i, n, 2) < 0.35 and seg > 0.22:
+                    return mix(INK_BLUE, base, 0.25)
+                if j == ly - 2 and hh(i, n, 4) < 0.12:
+                    return mix(INK_BLUE, base, 0.3)
+        if j == h - 4 and w // 2 <= i < w - 3 and hh(i, 7) < 0.75:
+            return INK                                            # signature
+        if j == h - 5 and w // 2 + 2 <= i < w - 4 and hh(i, 8) < 0.4:
+            return INK
+        return base
+    return t
+
+
+def lista_castigos_parts():
+    return [box((0.6, -4.0, 15.55), (15.4, 15.0, 15.65), fin(castigos_tone(), ao=0, dust=0), faces=('north', 'south')),
+            box((7.6, 13.6, 15.0), (8.4, 14.4, 15.55), fin(flat(NICKEL, 6), ao=0)),          # pin
+            box((12.6, -4.0, 15.2), (15.4, -2.6, 15.55), fin(flat(PAPER, 5), ao=0), rot=('y', 22.5, (14.0, -3.3, 15.4)))]  # curled corner
+
+
+def cano_parts():
+    mI = fin(iron(seed=491, rust=0.45, base=2))
+    return [box((5.0, 0.0, 10.6), (9.0, 16.0, 14.6), mI), box((4.6, 7.0, 10.2), (9.4, 7.8, 15.0), mI)]
+
+
+# ============================================================================================ register: refectory + kitchen
+F('mesa_larga_extremo', 'Mesa larga del refectorio (punta)', 'Long refectory table (end)', mesa_larga_parts('extremo'))
+F('mesa_larga_centro', 'Mesa larga del refectorio (tramo)', 'Long refectory table (middle)', mesa_larga_parts('centro'))
+F('mesa_larga_puesta', 'Mesa larga del refectorio puesta', 'Long refectory table (set)', mesa_larga_parts('puesta'))
+F('banco_largo_extremo', 'Banco largo (punta)', 'Long bench (end)', banco_largo_parts('extremo'))
+F('banco_largo_centro', 'Banco largo (tramo)', 'Long bench (middle)', banco_largo_parts('centro'))
+F('cubiertos_mesa', 'Plato, tazón y cubiertos (sobre mesa)', 'Place setting (on a table)', place_setting(5.0, 8.4, y=-4.0),
+  collision='none', sound='ceramic')
+F('pila_platos', 'Pila de platos (sobre mesa)', 'Stack of plates (on a table)', stack_plates_parts(), collision='none',
+  sound='ceramic')
+F('candelero_mesa', 'Candelero encendido (sobre mesa)', 'Table candlestick, lit (on a table)', candelero_mesa_parts(True),
+  light=12, collision='none', sound='metal')
+F('candelero_mesa_apagado', 'Candelero apagado (sobre mesa)', 'Table candlestick, unlit (on a table)',
+  candelero_mesa_parts(False), collision='none', sound='metal')
+F('atril_lectura', 'Atril con "Vidas de Santas"', 'Reading lectern with "Lives of the Saints"', atril_lectura_parts())
+F('cocina_hierro_izq', 'Cocina económica de hierro (izquierda)', 'Cast-iron wood stove (left)', stove_parts('izq'), sound='metal')
+F('cocina_hierro_der', 'Cocina económica de hierro (derecha)', 'Cast-iron wood stove (right)', stove_parts('der'), sound='metal')
+F('cano_estufa', 'Caño de la cocina', 'Stove pipe', cano_parts(), env=(), sound='metal')
+F('olla', 'Olla enlozada (sobre mesa o cocina)', 'Enamel pot (on a table or the stove)', olla_parts(), collision='none',
+  sound='metal')
+F('ollas_piso', 'Ollas en el piso', 'Pots on the floor', ollas_piso_parts(), sound='metal')
+F('tablero_llaves', 'Tablero de llaves', 'Key board', tablero_llaves_parts(), env=('wall',), collision='none')
+F('tablero_llaves_falta', 'Tablero de llaves (falta la del despacho)', 'Key board (office key taken)',
+  tablero_llaves_parts(True), env=('wall',), collision='none')
+F('lista_castigos', 'Lista de castigos', 'Punishment list', lista_castigos_parts(), env=('wall',), collision='none',
+  sound='paper')

@@ -43,7 +43,7 @@ TAN = pal('#7d4320', '#9a5728', '#b46c33', '#c98243', '#d99a57', '#e6b16d', '#f0
 SKIN = pal('#26141f', '#3e2232', '#583443', '#734b55', '#8e6568', '#ab8282', '#c69e99', '#d9b6ab', '#e9cdbf')
 PURPLE = hx('#4a2b52')
 ORGAN = pal('#2c0f22', '#4a1a2e', '#66283a', '#7e3a46')
-HUMAN = pal('#271a1d', '#443034', '#654a4c', '#876866', '#a8857f', '#c3a198', '#d9bcb0', '#ead4c8')
+HUMAN = pal('#241815', '#3f2b25', '#5e4537', '#7e6049', '#9c7c60', '#b69a7a', '#cbb393', '#dccbad')
 VEIN = pal('#3b3468', '#4f4583', '#6a578f')
 BONE = pal('#6e6252', '#9c907c', '#c9bea8', '#e6dcc8', '#f8f2e4')
 RAW = pal('#2e050b', '#561019', '#80202a', '#a8383e', '#c95a5a', '#e08a82')
@@ -178,7 +178,12 @@ def link_fur(ctx):
             return pick(FUR, v - (0.06 if edge(ctx) == 0 else 0))
         if edge(ctx) == 0:
             return pick(FUR, v - 0.16)
-        return pick(RAW, 0.38 + hash3(ctx.i, ctx.j, 3, 9) * 0.2)      # the cut meat (mostly hidden in the skin tube)
+        r = max(abs(lx - w / 2), abs(ly - h / 2))
+        if r < 4.0:
+            return mix(pick(SKIN, 0.42), PURPLE, 0.3)               # where the skin tube dives in
+        if r < 5.0 + hash3(ctx.i, ctx.j, 3, 9) * 0.9:
+            return pick(RAW, 0.42 + hash3(ctx.i, ctx.j, 3, 9) * 0.2)  # thin raw ring
+        return pick(FUR, v - 0.2)                                    # fur folding in over the cut
     across = lx if f in ('top', 'bottom') else ly
     for k, (torn, dist) in enumerate(((tf, lz), (tb, d - lz))):
         if not torn or dist >= 1.0:
@@ -605,8 +610,8 @@ def eye_px(i, j, side):
         hot = (i == (pi if side == 'r' else pi + 1)) and j == 3
         return PUPIL if hot else PUPIL_D
     c = EYE_COLS[ch]
-    if ch in 'abc' and abs(i - (pi + 0.5)) <= 1.6 and 2 <= j <= 5:
-        c = mix(c, BLOODSHOT, 0.28)                 # faint pink ring round the pinpoint
+    if ch in 'abc' and ((j in (3, 4) and i in (pi - 1, pi + 2)) or (j in (2, 5) and i in (pi, pi + 1))):
+        c = mix(c, BLOODSHOT, 0.2)                  # faint pink ring round the pinpoint
     # bloodshot threads creeping in from the outer corner
     if side == 'r' and (i, j) in ((1, 4), (1, 3), (2, 5)):
         c = mix(c, BLOODSHOT, 0.5)
@@ -795,8 +800,7 @@ def flap_mat(ctx):
 
 NOSE_ART = [               # right half; column 2 is the cut seam side.  '.' = transparent (rounded corner)
     ".sS",
-    "dNk",
-    ".kN",
+    "kNd",
 ]
 
 
@@ -820,7 +824,7 @@ def nose_mat(ctx):
             return None
         if i == 2:
             return RAW[3]
-        return NOSE[7] if (i == 1 and ctx.j == 1) else NOSE[4]
+        return NOSE[7] if (i == 2 and ctx.j == 0) else NOSE[5] if i == 1 and ctx.j == 0 else NOSE[3]
     if f == 'bottom':
         return NOSE[0]
     return NOSE[2]
@@ -1026,7 +1030,7 @@ ARMS = {
     (3, 'left'): dict(seg='hips', elbow=(16.0, -10.0, 8.0), wrist=(21.0, 16.0), hand='claw', yaw=-20,
                       fingers=(5, 6, 5, 4)),
 }
-HAND_DROP = {'flat': 2.0, 'twist': 2.0, 'fist': 4.0}      # wrist pivot height above the floor; claw: 1 + finger
+HAND_DROP = {'flat': 2.0, 'twist': 2.0, 'fist': 4.2}      # wrist pivot height above the floor; claw: 1 + finger
 ARM_GEOM = {}                # filled by build(): lengths + forearm frame per arm (used by the pose IK)
 
 
@@ -1179,8 +1183,8 @@ def build():
         ub, lb = f'jaw_upper_{side}', f'jaw_lower_{side}'
         b.lbone(ub, 'head', (0.5 * sx, -1, -13), rot=(-3, 3 * -sx, 0), mat=flap_mat)
         x0 = -6.0 if sx < 0 else 0.0
-        box(ub, (x0, -5, -14), (5, 5, 14), name='flap', upper=True, sx=sx)
-        box(ub, (-3.0 if sx < 0 else 0.0, -5.5, -16), (3, 3, 2), mat=nose_mat, name='nose', sx=sx)
+        box(ub, (x0, -4, -14), (5, 4, 14), name='flap', upper=True, sx=sx)
+        box(ub, (-3.0 if sx < 0 else 0.0, -4.3, -16), (3, 2, 2), mat=nose_mat, name='nose', sx=sx)
         box(ub, (-5.7 if sx < 0 else 4.7, 0, -13), (0, 3, 12), mat=teeth_mat, name='teeth', down=True,
             fang_at=11, step=2, off=0)
         box(ub, (-2.3 if sx < 0 else 1.3, 0, -12.5), (0, 2, 11), mat=teeth_mat, name='teeth', down=True,
@@ -1202,9 +1206,9 @@ def build():
             box(lb, (-5.1, 4, -12), (0, 5, 1), mat=drool_mat, name='drool')
 
     # black tongue lolling out of the front
-    b.lbone('tongue', 'head', (0, -0.5, -8), mat=tongue_mat)
+    b.lbone('tongue', 'head', (0, -0.5, -8), rot=(0, -13, 0), mat=tongue_mat)
     box('tongue', (-2.5, -0.5, -20), (5, 1, 20), name='tongue')
-    b.lbone('tongue_tip', 'tongue', (0, 0, -20), rot=(52, 6, 0), mat=tongue_mat)
+    b.lbone('tongue_tip', 'tongue', (0, 0, -20), rot=(62, -10, 18), mat=tongue_mat)
     box('tongue_tip', (-2.5, -0.5, -9), (5, 1, 9), name='tongue')
     box('tongue_tip', (-1.5, -0.5, -12), (3, 1, 3), name='tongue')
 
@@ -1232,9 +1236,9 @@ def build():
         W, Hh, infl = LINK[par][4], LINK[par][5], LINK[par][6]
         top = -Hh / 2 - infl
         b.lbone(name, par, (0, top, zc), mat=shred_mat)
-        box(name, (-W / 2 - 0.6, -0.6, -1.5), (W + 1, 1, 3), name='band', inflate=0.1)
-        box(name, (-W / 2 - 0.7, 0.2, -2.0), (0, lr, 4), name='strip', yarn=(k % 2 == 0))
-        box(name, (W / 2 + 0.7, 0.2, -1.5), (0, ll, 3), name='strip', yarn=(k % 2 == 1))
+        box(name, (-W / 2 - 0.6, -0.6, -1.0), (W + 1, 1, 2), name='band', inflate=0.1)
+        box(name, (-W / 2 - 0.7, 0.2, -1.5), (0, lr, 3), name='strip', yarn=(k % 2 == 0))
+        box(name, (W / 2 + 0.7, 0.2, -1.0), (0, ll, 2), name='strip', yarn=(k % 2 == 1))
 
     # ---------------- three pairs of human arms
     ARM_GEOM.clear()

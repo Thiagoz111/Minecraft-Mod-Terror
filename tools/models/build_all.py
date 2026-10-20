@@ -16,7 +16,7 @@ JAVA = os.path.join(ROOT, 'src/client/java/com/deadline/client/model/gen')
 PREV = os.path.join(ROOT, 'tools/preview/models')
 PREV_TEX = os.path.join(ROOT, 'tools/preview/tex')
 PKG = 'com.deadline.client.model.gen'
-KEYS = ['llorona', 'wendigo', 'poseida', 'payaso', 'monja', 'sombra', 'muneca', 'anima']
+KEYS = ['monja', 'poseida', 'sombra', 'muneca', 'anima']
 JAVA_RESERVED = set(keyword.kwlist) | {'default', 'new', 'public', 'private', 'static', 'final', 'class', 'int', 'float', 'root'}
 
 
@@ -77,7 +77,7 @@ def build_balloon():
 
 
 if __name__ == '__main__':
-    keys = sys.argv[1:] or KEYS + ['balloon']
+    keys = sys.argv[1:] or KEYS
     out = [build_balloon() if k == 'balloon' else build_one(k) for k in keys]
     for o in out:
         print(json.dumps({k: v for k, v in o.items() if k != 'bone_names'}))

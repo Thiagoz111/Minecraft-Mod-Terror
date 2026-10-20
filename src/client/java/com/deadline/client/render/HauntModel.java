@@ -57,7 +57,7 @@ public abstract class HauntModel extends EntityModel<HauntRenderState> {
 	}
 
 	protected final Map<String, float[]> pose(String name) {
-		return poses().get(name);
+		return poses().getOrDefault(name, Map.of());
 	}
 
 	/** Builds a pose table from ("bone", float[6]) pairs. */

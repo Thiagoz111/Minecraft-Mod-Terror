@@ -396,8 +396,8 @@ def timbre():
     exc = signal.fftconvolve(imp, half_sine(0.00035))[:n]
     f0 = 905.0
     modes = []
-    for ra, a, d in [(1.0, 1.0, 1.9), (2.31, .85, 2.8), (2.72, .6, 3.4), (4.06, .55, 4.8), (5.21, .42, 6.2),
-                     (6.64, .3, 8.5), (8.17, .2, 11), (9.75, .12, 15), (11.6, .07, 19)]:
+    for ra, a, d in [(1.0, 1.0, 3.2), (2.31, .85, 4.2), (2.72, .6, 4.8), (4.06, .55, 6.5), (5.21, .42, 8.0),
+                     (6.64, .3, 10.5), (8.17, .2, 13), (9.75, .12, 17), (11.6, .07, 21)]:
         for sp in (-0.0021, 0.0021):  # split doublets -> the shimmering beat of a real gong
             modes.append((f0 * ra * (1 + sp + r.uniform(-4e-4, 4e-4)), d, a * 0.5))
     gong = excite(exc, modes, 3.0, seed=12)[:n]
@@ -412,7 +412,7 @@ def timbre():
     coil = dsp.lowpass(np.tanh(4 * np.sin(TWO_PI * 100 * tt)) * on, 900, 2)
     y = norm(gong) + 0.22 * norm(clicks) * on + 0.2 * norm(housing) + 0.03 * coil
     y = dsp.drive(y * 1.25, 1.7)  # full volume, a little overdriven
-    y = verb(y, 'hall', wet=0.16, decay=1.6)
+    y = verb(y, 'hall', wet=0.09, decay=1.6)
     return y
 
 
@@ -454,26 +454,24 @@ def bronze_bell(f, dur, seed, strength=1.0, decay_scale=1.0):
 
 
 def campana():
-    x = bronze_bell(146.8, 10.0, 21, strength=1.0)
+    x = bronze_bell(146.8, 9.6, 21, strength=1.0)
     x = dsp.lowpass(x, 7500, 2)  # up in the tower
-    x = verb(x, 'torre', wet=0.33)
-    n = len(x)
-    x *= env_pts(n, [(0, 1), (7.6, 1), (n / SR, 0)]) ** 1.5
+    x = fit(verb(x, 'torre', wet=0.33), N(9.6))
+    x *= env_pts(len(x), [(0, 1), (5.8, 1), (9.6, 0)]) ** 2
     return x
 
 
 def campana_triple():
-    total = 10.5
+    total = 9.4
     out = np.zeros(N(total), np.float32)
-    for k, (t0, s, ds) in enumerate([(0.0, 0.92, 0.85), (2.35, 0.96, 0.9), (4.7, 1.12, 1.35)]):
+    for k, (t0, s, ds) in enumerate([(0.0, 0.92, 0.85), (2.2, 0.96, 0.9), (4.4, 1.12, 1.35)]):
         b = bronze_bell(146.8, total - t0, 31 + k, strength=s, decay_scale=ds)
         tb = taxis(len(b))
         sub = np.sin(TWO_PI * 49 * tb * (1 + 0.04 * np.exp(-tb * 6))) * np.exp(-tb * 2.4) * np.minimum(1, tb / 0.01)
         add(out, b + 0.22 * sub, t0, 1.0 if k < 2 else 1.08)
     out = dsp.lowpass(out, 7500, 2)
-    out = verb(out, 'torre', wet=0.35)
-    n = len(out)
-    out *= env_pts(n, [(0, 1), (8.2, 1), (n / SR, 0)]) ** 1.5
+    out = fit(verb(out, 'torre', wet=0.35), N(total))
+    out *= env_pts(len(out), [(0, 1), (7.0, 1), (total, 0)]) ** 2
     return out
 
 
@@ -484,7 +482,8 @@ def horn(x, sat=1.6):
     y = dsp.lowpass(y, 5200, 4)
     y = dsp.peak(y, 1750, 6.0, 1.3)
     y = dsp.peak(y, 3100, 3.0, 2.0)
-    return dsp.drive(y * sat, 1.4)
+    y = dsp.drive(y * sat, 1.4)
+    return dsp.lowpass(y, 5000, 4)  # the horn cannot reproduce the distortion's top end either
 
 
 def chime_note(f, seed, dur=2.0):
@@ -519,7 +518,7 @@ def pa_chime():
     y = horn(src)
     # several horns around the building: the hall hears the nearest one plus the others late and dull
     y = y + 0.4 * delay(dsp.lowpass(y, 3200, 2), 0.083, len(y)) + 0.22 * delay(dsp.lowpass(y, 2300, 2), 0.205, len(y))
-    y = verb(y, 'hall', wet=0.32)
+    y = verb(y, 'hall', wet=0.24)
     return y
 
 
@@ -587,7 +586,7 @@ def viento(v):
         add(rat, cr, 1.55, 0.35)
     y = 0.6 * norm(body) + 0.35 * norm(rumble) + 0.33 * norm(whistle) * 0.8
     y = fit(y, len(rat)) + 0.55 * norm(rat)
-    return verb(y, 'dormitorio', wet=0.22)
+    return verb(y, 'dormitorio', wet=0.12)
 
 
 # ====================================================================== 5. plaster dust
@@ -597,15 +596,19 @@ def polvo():
     t = taxis(n)
     r = dsp.rng(31)
     out = np.zeros(n + N(0.4), np.float32)
-    lam = 1100 * np.minimum(1, t / 0.08) * np.exp(-np.maximum(0, t - 0.08) / 0.55) + 70 * np.exp(-t / 1.4)
+    # grit pattering on the tiles: a sparse-ish rain of micro-impacts, each grain its own size (pitch)
+    lam = 420 * np.minimum(1, t / 0.06) * np.exp(-np.maximum(0, t - 0.06) / 0.5) + 45 * np.exp(-t / 1.2)
+    lam *= 0.6 + 0.4 * (snoise(n, 6, 35) > -0.3)  # it comes in little gushes
     idx = poisson_times(lam, 32)
-    amps = np.minimum(1.0, r.exponential(0.25, len(idx)))
+    amps = np.minimum(1.0, r.exponential(0.22, len(idx)))
     imp = np.zeros(n, np.float32)
     np.add.at(imp, idx, amps)
-    grit = dsp.highpass(signal.fftconvolve(imp, burst(0.0004, 33, 2.0))[:n], 2200, 2)
-    tile = excite(imp, [(3300, 420, 1), (5200, 520, .7), (7600, 700, .5), (1900, 300, .4)], 0.03)[:n]
-    hiss = bp(white(n, 34), 1600, 9000) * smooth(lam / 1100, 0.05) ** 0.8
-    out[:n] += 0.5 * norm(grit) + 0.35 * norm(tile) + 0.06 * norm(hiss) * 1.4
+    grit = dsp.highpass(signal.fftconvolve(imp, burst(0.0003, 33, 2.0))[:n], 2500, 2)
+    pings = np.zeros(n + N(0.05), np.float32)
+    for j, i in enumerate(idx[::3]):
+        add(pings, glass_ping(3000 + j, r.uniform(2500, 9000), r.uniform(250, 600), 1.0, 0.4), i / SR, amps[3 * j] * 0.5)
+    hiss = bp(white(n, 34), 2000, 8000) * smooth(lam / 420, 0.08) ** 1.2
+    out[:n] += 0.55 * norm(grit) + 0.35 * norm(pings[:n]) + 0.035 * norm(hiss)
     # plaster cracking loose up there
     for j in range(9):
         add(out, knock(700 + j, [(900, 140, 1), (1700, 180, .7), (2900, 240, .5)], 0.06, click=0.5), 0.004 * j * j * 0.4, 0.25 * (1 - j / 10))
@@ -615,11 +618,11 @@ def polvo():
             m = [(r.uniform(1500, 2200), 150, 1), (r.uniform(2600, 3400), 200, .7), (r.uniform(4000, 5200), 260, .5),
                  (r.uniform(600, 900), 90, .4)]
             add(out, knock(730 + 7 * k + j, m, 0.08, contact=0.0004, click=0.6), tf + tb, ab * 0.8)
-    return verb(out, 'hall', wet=0.28)
+    return verb(out, 'hall', wet=0.14)
 
 
 # ====================================================================== 6. door slam
-PANEL = [(68, 9, .9), (96, 12, 1.0), (143, 16, .9), (205, 20, .8), (290, 26, .7), (410, 32, .55), (590, 40, .45),
+PANEL = [(68, 16, .9), (96, 20, 1.0), (143, 25, .9), (205, 30, .8), (290, 34, .7), (410, 38, .55), (590, 44, .45),
          (830, 55, .35), (1180, 70, .25), (1700, 95, .18), (2500, 130, .12)]
 METAL = [(1620, 25, .5), (2750, 35, 1), (4100, 45, .8), (5650, 60, .6), (7300, 80, .4)]
 
@@ -635,8 +638,8 @@ def door_impact(seed, amp=1.0):
     body = norm(excite(exc, detune(PANEL, r, 0.05), 1.2)[:n])
     crack = dsp.highpass(burst(0.014, seed + 1, 3.0), 1200, 2)
     tb = taxis(n)
-    sub = np.sin(TWO_PI * np.cumsum(48 * (1 + 0.5 * np.exp(-tb * 25))) / SR) * np.exp(-tb * 7) * np.minimum(1, tb / 0.003)
-    y = body + 0.5 * fit(norm(crack), n) + 0.55 * sub
+    sub = np.sin(TWO_PI * np.cumsum(48 * (1 + 0.5 * np.exp(-tb * 25))) / SR) * np.exp(-tb * 11) * np.minimum(1, tb / 0.003)
+    y = body + 0.65 * fit(norm(crack), n) + 0.5 * sub
     return (y * amp).astype(np.float32)
 
 
@@ -743,7 +746,7 @@ def tiza_escribe(v):
         squeak = st in 'cu' and r.random() < sq * 2.2 or r.random() < sq * 0.5
         tap = (1.0 if first else r.uniform(0.35, 0.7)) * (1.6 if st == 'd' else 1.0)
         add(out, chalk_stroke(1000 * v + 7 * j, d, pres, s, squeak and st != 'd', tap), t0)
-    return verb(out, 'aula', wet=0.2)
+    return verb(out, 'aula', wet=0.07)
 
 
 def tiza_rompe():
@@ -769,7 +772,7 @@ def tiza_rompe():
     nr = N(0.22)
     roll = bp(white(nr, 79), 2500, 7000) * grain(nr, 60, 80, 3.0) * np.linspace(1, 0, nr) ** 2
     add(out, norm(roll), rollt, 0.06)
-    return verb(out, 'aula', wet=0.2)
+    return verb(out, 'aula', wet=0.12)
 
 
 # ====================================================================== 8. sixteen chairs
@@ -861,7 +864,7 @@ def farol_revienta(v):
             ts = tp + 0.15 + r.uniform(0, 0.8)
             ns = N(r.uniform(0.01, 0.04))
             add(out, dsp.highpass(white(ns, 1700 + j), 2500, 2) * np.linspace(1, 0, ns), ts, 0.12)
-    return verb(out, 'pasillo', wet=0.32)
+    return verb(out, 'pasillo', wet=0.24)
 
 
 # ====================================================================== 10. lights out
@@ -900,7 +903,7 @@ def luces_fuera():
     add(out, np.sin(TWO_PI * 46 * tb) * np.exp(-tb * 5.5) * np.minimum(1, tb / 0.004), t0, 0.7)
     for k, tt in enumerate([1.25, 1.95, 2.75]):  # cooling glass and filaments ticking in the dark
         add(out, glass_ping(107 + k, r.uniform(3800, 6500), 260, 1.0, 0.6), tt, 0.05)
-    return verb(out, 'hall', wet=0.38)
+    return verb(out, 'hall', wet=0.3)
 
 
 # ====================================================================== 11. dragged chair (dormitory)
@@ -943,7 +946,7 @@ def silla_arrastra(v):
     add(y, cr, 0.55 if v == 1 else 0.95, 0.25)
     end = 1.45 if v == 1 else 1.43
     add(y, knock(132 + v, HEAVY_CHAIR + FLOOR, 0.6, contact=0.004, click=0.15), end, 0.85)
-    return verb(y, 'dormitorio', wet=0.3)
+    return verb(y, 'dormitorio', wet=0.15)
 
 
 # ====================================================================== 12. swivel chair
@@ -973,7 +976,7 @@ def silla_gira():
     add(y, knock(128, [(140, 20, .8), (260, 28, 1), (520, 40, .7), (980, 60, .45), (1800, 90, .25)], 0.4, contact=0.003, click=0.2), 1.87, 0.55)
     tsp = taxis(N(0.7))
     add(y, np.sin(TWO_PI * 330 * tsp * (1 + 0.004 * np.sin(TWO_PI * 6 * tsp))) * np.exp(-tsp * 8), 1.875, 0.06)
-    return verb(y, 'direccion', wet=0.28)
+    return verb(y, 'direccion', wet=0.12)
 
 
 # ====================================================================== 13. bakelite phone
@@ -1013,7 +1016,7 @@ def telefono_ring():
     y = norm(ya) + 0.9 * norm(yb) + 0.22 * norm(case) + 0.04 * arm + 0.12 * norm(clicks)
     y = dsp.drive(y, 1.4)
     y = fold(y, L)
-    return cverb(y, 'direccion', wet=0.16)
+    return cverb(y, 'direccion', wet=0.1)
 
 
 # ====================================================================== 14. phone line transition
@@ -1078,7 +1081,7 @@ def mate_sorbo():
     out[:len(gourd)] += 0.12 * norm(gourd)[:len(out)]
     # lips leaving the bombilla
     add(out, knock(160, [(900, 120, 1), (1800, 160, .5)], 0.05, contact=0.0006, click=0.3), 1.49, 0.25)
-    return verb(out, 'direccion', wet=0.12)
+    return verb(out, 'direccion', wet=0.06)
 
 
 # ====================================================================== 16. confessional grille
@@ -1098,8 +1101,8 @@ def confesionario_rejilla():
     add(out, norm(scrape), ts, 0.25)
     booth = [(160, 25, .8), (260, 30, 1), (420, 40, .7), (700, 55, .5), (1150, 80, .3), (2300, 120, .2)]
     add(out, knock(176, booth, 0.4, contact=0.0012, click=0.35), ts + ln, 1.0)
-    y = verb(out, 'caja', wet=0.35)
-    return verb(y, 'capilla', wet=0.12)
+    y = verb(out, 'caja', wet=0.3)
+    return verb(y, 'capilla', wet=0.1, decay=3.0)
 
 
 # ====================================================================== 17. mirror cracking
@@ -1134,7 +1137,7 @@ def espejo_raja():
         tc = 1.85 + r.uniform(0, 0.3)
         for j, (tb, ab) in enumerate(bounces(270 + k, r.uniform(0.15, 0.35), 3, (0.03, 0.06))):
             add(out, glass_ping(280 + 5 * k + j, r.uniform(4500, 9000), amp=ab), tc + tb)
-    return verb(out, 'banos', wet=0.33)
+    return verb(out, 'banos', wet=0.22)
 
 
 # ====================================================================== 18. brick wall collapse
@@ -1195,7 +1198,7 @@ def muro_cae():
     lam = 30 * env_pts(n, [(0, 0), (1.8, 0), (2.1, 1), (3.1, .1), (3.6, 0)])
     for j, i in enumerate(poisson_times(lam, 243)):
         add(out, brick(700 + j, r.uniform(.03, .1), 0.1), i / SR)
-    return verb(out, 'cripta', wet=0.4)
+    return verb(out, 'cripta', wet=0.22)
 
 
 # ====================================================================== 19. stone lid
@@ -1229,7 +1232,7 @@ def tumba_tapa():
     add(out, np.sin(TWO_PI * 52 * tb) * np.exp(-tb * 8) * np.minimum(1, tb / 0.005), 2.31, 0.5)
     for j in range(10):
         add(out, brick(230 + j, r.uniform(.02, .06), 0.0), 2.33 + r.exponential(0.15))
-    return verb(out, 'cripta', wet=0.36)
+    return verb(out, 'cripta', wet=0.2)
 
 
 # ====================================================================== 20. the ruler breaks
@@ -1331,7 +1334,7 @@ def ui_amonestacion():
         ding += a * (np.sin(TWO_PI * f0 * ra * tb) + 0.5 * np.sin(TWO_PI * (f0 * ra + 3.5) * tb + 1.0)) * np.exp(-tb * d)
     ding *= np.minimum(1, tb / 0.0008)
     add(out, norm(ding), 0.175, 0.55)
-    return verb(out, 'direccion', wet=0.1)
+    return verb(out, 'direccion', wet=0.08)
 
 
 # ====================================================================== 22. quill + stamp
@@ -1366,7 +1369,7 @@ def madre_pluma():
     add(out, stamp(291, heavy=1.3), ts, 1.4)
     nl = N(0.05)  # rubber peeling off the paper
     add(out, bp(white(nl, 292), 900, 3500) * grain(nl, 300, 293, 2.5) * np.linspace(1, 0, nl), ts + 0.24, 0.15)
-    return verb(out, 'aula', wet=0.2, decay=1.4)
+    return verb(out, 'aula', wet=0.08, decay=1.4)
 
 
 # ====================================================================== 23. sleepers breathing (loop)
@@ -1469,7 +1472,7 @@ def alumna_pasos(v):
         tc = r.uniform(0.3, 2.2)
         add(out, creak(0.18, 340 + j + 5 * v, 45, 30, ((300, 35, 1), (700, 50, .6), (1300, 80, .3)), hiss=0.0), tc, 0.12)
     out *= env_pts(n, [(0, 0), (0.12, 1), (dur - 0.3, 1), (dur + 0.1, 0), (n / SR, 0)])
-    return verb(out, 'pasillo', wet=0.3)
+    return verb(out, 'pasillo', wet=0.2)
 
 
 # ====================================================================== event table + build
