@@ -193,10 +193,10 @@ def knit_v(ctx, u, w):
     Each wale is a light row of V's; every V is broken by a darker texel every 2 stitches, alternating
     between wales so the rows read as interlocking loops rather than stripes."""
     v = 0.58 + face_light(ctx) * 0.9
-    if (u + w) % 2 == 0:
-        v += 0.06
+    if w % 2 == 0:
+        v += 0.06 if u % 2 == 0 else 0.0           # light wale, a V every 2 stitches
     else:
-        v -= 0.04
+        v -= 0.05 if u % 2 == 0 else 0.02          # the shadow between wales
     return v
 
 
@@ -367,7 +367,7 @@ def muzzle_mat(ctx):
         return mix(c, pick(LIGHT, v), 0.25)
     if f == 'front':
         if ctx.j == ctx.h - 1 and ctx.i == ctx.w // 2:
-            return NOSE[2]                              # philtrum
+            return COAT[1]                              # philtrum
         return pick(LIGHT, coat_v(ctx, 0.6))
     if f in ('west', 'east'):
         c = pick(LIGHT, coat_v(ctx, 0.56))
@@ -395,16 +395,16 @@ def nose_mat(ctx):
 def lips_mat(ctx):
     f = ctx.face
     if f == 'front':
-        rows = ["..K..", "KK.KK"]
-        c = art(rows, {'K': NOSE[1]}, ctx)
+        rows = ["..K..", ".K.K."]
+        c = art(rows, {'K': COAT[1]}, ctx)
         return c or pick(LIGHT, coat_v(ctx, 0.62))
     if f in ('west', 'east'):
         u = (ctx.w - 1 - ctx.i) if f == 'west' else ctx.i   # 0 = front
         c = pick(LIGHT, coat_v(ctx, 0.58))
         if ctx.j == ctx.h - 1 and u < ctx.w - 1:
-            c = NOSE[2]                                 # black lip edge
+            c = COAT[1]                                 # dark lip edge
         if ctx.j == ctx.h - 2 and u == ctx.w - 1:
-            c = NOSE[2]                                 # ...curling up at the corner: a smile
+            c = COAT[1]                                 # ...curling up at the corner: a smile
         if ctx.j == 0 and u in (2, 4):
             c = pick(LIGHT, 0.3)                        # whisker dots
         return c
@@ -451,10 +451,10 @@ def teeth_mat(rows):
 # eyes: 4 x 5, the same glint side on both eyes (key light from the upper left)
 EYE_ART = [
     "cKKKc",
-    "KWWIK",
-    "KWPPI",
-    "IPPPI",
-    "LIPIw",
+    "KWWpK",
+    "KWWpI",
+    "IpPPI",
+    "iIIIw",
     "cLLLc",
 ]
 
@@ -462,8 +462,8 @@ EYE_ART = [
 def eye_mat(ctx):
     f = ctx.face
     if f == 'front':
-        return art(EYE_ART, {'c': lambda c: pick(COAT, 0.42), 'K': EYE[0], 'P': EYE[0], 'W': WHITE,
-                             'w': GLINT2, 'I': EYE[3], 'L': EYE[5]}, ctx, EYE[1])
+        return art(EYE_ART, {'c': lambda c: pick(COAT, 0.42), 'K': EYE[0], 'P': EYE[0], 'p': EYE[1], 'W': WHITE,
+                             'w': GLINT2, 'I': EYE[3], 'i': EYE[4], 'L': EYE[5]}, ctx, EYE[1])
     return pick(COAT, 0.4 + face_light(ctx))            # lids blend into the face
 
 
