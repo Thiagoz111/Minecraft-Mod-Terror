@@ -486,26 +486,91 @@ def stamp(dst, m, x, y):
 
 
 # =============================================================================================== base painters
-def lime_idx(v, base=6, seed=0, inset=7, rough=1.0):
-    """Whitewashed lime plaster: soft clustered tones, faint brush streaks, a few bumps and pits."""
-    common = fbm(N, N, 7001 + seed, cells=2, octaves=4)
-    var = fbm(N, N, 7100 + seed + 37 * v, cells=2, octaves=4)
-    n = eblend(common, var, inset)
-    idx = posterize(n, [(0.60, 1), (0.42, -1), (0.31, -1)], base)
-    st = eblend(fbm(N, N, 7002 + seed, cells=2, octaves=2, ax=0.5, ay=4),
-                fbm(N, N, 7200 + seed + 37 * v, cells=2, octaves=2, ax=0.5, ay=4), inset)
-    idx += ((st > 0.68) & (n > 0.44) & (n < 0.60)).astype(int)
+def cweight(w=N, h=N, p=0.6):
+    """0 on the border, 1 in the middle, rounded iso-lines (variant blending without square artefacts)."""
+    Y, X = np.mgrid[0:h, 0:w]
+    return (np.sin(math.pi * (X + 0.5) / w) * np.sin(math.pi * (Y + 0.5) / h)) ** p
+
+
+def rank(n):
+    """Histogram-equalise a field to 0..1 (thresholds then mean area fractions)."""
+    r = n.ravel().argsort().argsort().reshape(n.shape)
+    return r / max(1, n.size - 1)
+
+
+def cblend(common, var, p=0.6):
+    t = cweight(common.shape[1], common.shape[0], p)
+    return rank(common) * (1 - t) + rank(var) * t
+
+
+def poisson(seed, count, mind, w=N, h=N, keep=None, wrap=True):
+    """Blue-noise points (periodic distance). keep(x, y) -> bool filters candidate positions."""
+    rng = np.random.default_rng(seed)
+    pts = []
+    tries = 0
+    while len(pts) < count and tries < count * 60:
+        tries += 1
+        x, y = rng.uniform(0, w), rng.uniform(0, h)
+        if keep is not None and not keep(x, y):
+            continue
+        ok = True
+        for (px, py) in pts:
+            dx, dy = abs(px - x), abs(py - y)
+            if wrap:
+                dx, dy = min(dx, w - dx), min(dy, h - dy)
+            if dx * dx + dy * dy < mind * mind:
+                ok = False
+                break
+        if ok:
+            pts.append((x, y))
+    return [(int(x), int(y)) for x, y in pts]
+
+
+# little hand-drawn relief clumps for render/plaster (body pixels '#'; the light catches the pixel above each column)
+CLUMPS = [['##'], ['###'], ['.##', '##.'], ['##.', '.##'], ['##', '#.'], ['#'], ['###', '.#.'], ['.#', '##'], ['##']]
+
+
+def relief(idx, seed_common, seed_var, count=26, mind=5.0, body=-1, light=1, shade=0, edge=4, w=N, h=N):
+    """Scatter hand-drawn clumps: darker body, lit top rim (and optional shaded bottom). Border clumps are shared by
+    every variant (same seed) so variants tile together."""
+    bd = border_dist(w, h)
+    near = poisson(seed_common, int(count * 0.55), mind, w, h, keep=lambda x, y: bd[int(y), int(x)] < edge)
+    far = poisson(seed_var, int(count * 0.6), mind, w, h, keep=lambda x, y: bd[int(y), int(x)] >= edge + 2)
+    rng = np.random.default_rng(seed_var + 3)
+    rngc = np.random.default_rng(seed_common + 3)
+    out = idx.copy()
+    for pts, r in ((near, rngc), (far, rng)):
+        for (x, y) in pts:
+            st = CLUMPS[r.integers(0, len(CLUMPS))]
+            for j, row in enumerate(st):
+                for i, ch in enumerate(row):
+                    if ch == '#':
+                        X, Y = (x + i) % w, (y + j) % h
+                        out[Y, X] += body
+                        above = st[j - 1][i] if j > 0 and i < len(st[j - 1]) else '.'
+                        if above != '#':
+                            out[(Y - 1) % h, X] += light - body if False else light
+                        below = st[j + 1][i] if j + 1 < len(st) and i < len(st[j + 1]) else '.'
+                        if shade and below != '#':
+                            out[(Y + 1) % h, X] += shade
+    return out
+
+
+def lime_idx(v, base=6, seed=0, rough=1.0, big=1):
+    """Whitewashed lime plaster: very soft large tonal shapes, a stucco relief of small clumps, pits."""
+    common = fbm(N, N, 7001 + seed, cells=2, octaves=3)
+    var = fbm(N, N, 7100 + seed + 37 * v, cells=2, octaves=3)
+    n = cblend(common, var)
+    idx = posterize(n, [(0.80, big), (0.14, -big)], base)
+    # mid-scale mottling (3-6 px organic clusters), one step only
+    m2 = cblend(fbm(N, N, 7003 + seed, cells=4, octaves=3), fbm(N, N, 7300 + seed + 37 * v, cells=4, octaves=3))
+    idx += np.where((m2 > 0.80) & (idx <= base), 1, 0) - np.where((m2 < 0.16) & (idx >= base), 1, 0)
     if rough:
-        rng = np.random.default_rng(9000 + seed + v)
-        for _ in range(int(9 * rough)):
-            x, y = (int(q) for q in rng.integers(3, 28, 2))
-            if rng.random() < 0.55:      # bump: lit top, shaded bottom
-                idx[y, x] += 1
-                idx[y + 1, x] -= 1
-            else:                        # pit
-                idx[y, x] -= 1
-                if rng.random() < 0.5:
-                    idx[y, x + 1] -= 1
+        idx = relief(idx, 7400 + seed, 7500 + seed + 37 * v, count=int(30 * rough), mind=4.2, body=-1, light=1)
+        pits = poisson(7600 + seed + 37 * v, int(6 * rough), 7, keep=lambda x, y: border_dist(N, N)[int(y), int(x)] >= 3)
+        for (x, y) in pits:
+            idx[y, x] -= 2
+            idx[(y + 1) % N, x] += 1
     return idx
 
 
@@ -560,14 +625,14 @@ def p_revoque(v):
         m = path_mask(pts)
         idx -= np.where(m, 3, 0)
         idx += np.where(nb(m, 1, 0) & ~m, 1, 0)
-    if v == 3:   # two old nail holes with rust bleed
+    if v == 3:   # two old nail holes with a faint rust bleed
         for (x, y) in ((9, 11), (22, 19)):
             idx[y, x] -= 4
             idx[y - 1, x] += 1
     cv.put(CAL, idx)
     if v == 3:
         for (x, y) in ((9, 11), (22, 19)):
-            cv.tint('#7a4a26', 0.35, (cv.X == x) & (cv.Y > y) & (cv.Y < y + 5))
+            cv.tint('#7a4a26', 0.16, (cv.X == x) & (cv.Y > y) & (cv.Y < y + 4))
     return cv.out()
 
 

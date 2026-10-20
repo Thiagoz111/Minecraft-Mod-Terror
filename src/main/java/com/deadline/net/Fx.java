@@ -72,8 +72,8 @@ public final class Fx {
 	}
 
 	/**
-	 * La Llorona's curse: the farther she is the closer she sounds, and when she is near
-	 * her cry seems to come from far away.
+	 * Distance-inverted sound: the farther the source is the closer it sounds, and when it is near
+	 * it seems to come from far away.
 	 */
 	public static void invertedSound(ServerPlayer p, Entity source, SoundEvent sound, float volume) {
 		Vec3 eye = p.getEyePosition();

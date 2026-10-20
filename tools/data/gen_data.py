@@ -29,10 +29,7 @@ def write(path, obj):
 CASE_ENV = {
     # key: fog, water, water_fog, particles, sky_light, fog_end, mood_delay
     'casa': ('#120f16', '#4a0b0e', '#1a0608', 'minecraft:white_ash', 0.004, 2.0, 40.0),
-    'rio': ('#0d1614', '#1b2b24', '#08100d', 'minecraft:white_ash', 0.008, 2.0, 32.0),
-    'bosque': ('#0b100c', '#1f2a2a', '#0a100f', 'minecraft:white_ash', 0.006, 1.5, 36.0),
-    'parque': ('#160d14', '#2a1a28', '#0c070b', 'minecraft:ash', 0.01, 2.0, 44.0),
-    'convento': ('#0a0b12', '#141a2a', '#05070d', 'minecraft:white_ash', 0.005, 1.5, 36.0),
+    'colegio': ('#0a0b12', '#141a2a', '#05070d', 'minecraft:white_ash', 0.005, 1.5, 36.0),
 }
 
 
@@ -114,8 +111,8 @@ def ref(m):
 
 
 SIMPLE_ITEMS = ['crucifix', 'holy_water', 'salt', 'spirit_box', 'camera', 'ritual_book', 'spirit_jar', 'spirit_jar_full',
-                'pills', 'rosary', 'baby_shoe', 'bone_totem', 'music_box', 'inverted_rosary', 'cursed_doll']
-EGGS = ['llorona', 'wendigo', 'poseida', 'payaso', 'monja', 'sombra', 'muneca', 'anima']
+                'pills', 'rosary', 'inverted_rosary', 'cursed_doll']
+EGGS = ['monja', 'poseida', 'sombra', 'muneca', 'anima']
 
 
 def items():

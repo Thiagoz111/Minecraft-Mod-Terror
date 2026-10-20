@@ -1,9 +1,9 @@
 {
-  "type": "deadline:caso_convento",
+  "type": "deadline:caso_colegio",
   "generator": {
     "type": "minecraft:flat",
     "settings": {
-      "biome": "deadline:bruma_convento",
+      "biome": "deadline:bruma_colegio",
       "features": false,
       "lakes": false,
       "layers": [

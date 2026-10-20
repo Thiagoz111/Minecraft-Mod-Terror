@@ -2,10 +2,7 @@ package com.deadline.caseload;
 
 import com.deadline.DeadLine;
 import com.deadline.caseload.sites.ConventSite;
-import com.deadline.caseload.sites.ForestSite;
 import com.deadline.caseload.sites.MoralesHouseSite;
-import com.deadline.caseload.sites.ParkSite;
-import com.deadline.caseload.sites.RiverSite;
 import com.deadline.caseload.sites.SiteBuilder;
 import com.deadline.registry.ModEntities;
 import com.deadline.registry.ModItems;
@@ -17,13 +14,10 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.Level;
 
-/** Every haunted location the hotline can send you to. */
+/** Every haunted location the hotline can send you to (case 1: the girls' school, case 2: the Morales house). */
 public enum CaseType {
-	CASA_MORALES("casa", 2, 5, 1200, MoralesHouseSite::new, () -> ModEntities.POSEIDA, () -> ModItems.CURSED_DOLL),
-	RIO_LAMENTOS("rio", 2, 4, 1000, RiverSite::new, () -> ModEntities.LLORONA, () -> ModItems.BABY_SHOE),
-	BOSQUE_NEGRO("bosque", 3, 4, 1400, ForestSite::new, () -> ModEntities.WENDIGO, () -> ModItems.BONE_TOTEM),
-	PARQUE_FELIZ("parque", 3, 4, 1500, ParkSite::new, () -> ModEntities.PAYASO, () -> ModItems.MUSIC_BOX),
-	CONVENTO("convento", 4, 4, 1800, ConventSite::new, () -> ModEntities.MONJA, () -> ModItems.INVERTED_ROSARY);
+	COLEGIO("colegio", 3, 4, 1800, ConventSite::new, () -> ModEntities.MONJA, () -> ModItems.INVERTED_ROSARY),
+	CASA_MORALES("casa", 4, 5, 1600, MoralesHouseSite::new, () -> ModEntities.POSEIDA, () -> ModItems.CURSED_DOLL);
 
 	public static final Codec<CaseType> CODEC = Codec.STRING.xmap(CaseType::byKey, CaseType::key);
 
@@ -90,7 +84,7 @@ public enum CaseType {
 				return t;
 			}
 		}
-		return CASA_MORALES;
+		return COLEGIO;
 	}
 
 	public static CaseType forLevel(ResourceKey<Level> dim) {

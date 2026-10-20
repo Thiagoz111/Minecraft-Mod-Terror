@@ -55,38 +55,11 @@
    }
   ]
  },
- "ambient.rio": {
-  "subtitle": "subtitles.deadline.ambient.rio",
+ "ambient.colegio": {
+  "subtitle": "subtitles.deadline.ambient.colegio",
   "sounds": [
    {
-    "name": "deadline:ambient/rio",
-    "stream": true
-   }
-  ]
- },
- "ambient.bosque": {
-  "subtitle": "subtitles.deadline.ambient.bosque",
-  "sounds": [
-   {
-    "name": "deadline:ambient/bosque",
-    "stream": true
-   }
-  ]
- },
- "ambient.parque": {
-  "subtitle": "subtitles.deadline.ambient.parque",
-  "sounds": [
-   {
-    "name": "deadline:ambient/parque",
-    "stream": true
-   }
-  ]
- },
- "ambient.convento": {
-  "subtitle": "subtitles.deadline.ambient.convento",
-  "sounds": [
-   {
-    "name": "deadline:ambient/convento",
+    "name": "deadline:ambient/colegio",
     "stream": true
    }
   ]
@@ -272,80 +245,6 @@
    "deadline:flare/burn"
   ]
  },
- "llorona.cry": {
-  "subtitle": "subtitles.deadline.llorona.cry",
-  "sounds": [
-   "deadline:llorona/cry_1",
-   "deadline:llorona/cry_2",
-   "deadline:llorona/cry_3"
-  ]
- },
- "llorona.wail": {
-  "subtitle": "subtitles.deadline.llorona.wail",
-  "sounds": [
-   "deadline:llorona/wail_1",
-   "deadline:llorona/wail_2",
-   "deadline:llorona/wail_3"
-  ]
- },
- "llorona.scream": {
-  "subtitle": "subtitles.deadline.llorona.scream",
-  "sounds": [
-   "deadline:llorona/scream"
-  ]
- },
- "llorona.hurt": {
-  "subtitle": "subtitles.deadline.llorona.hurt",
-  "sounds": [
-   "deadline:llorona/hurt"
-  ]
- },
- "llorona.death": {
-  "subtitle": "subtitles.deadline.llorona.death",
-  "sounds": [
-   "deadline:llorona/death"
-  ]
- },
- "wendigo.growl": {
-  "subtitle": "subtitles.deadline.wendigo.growl",
-  "sounds": [
-   "deadline:wendigo/growl_1",
-   "deadline:wendigo/growl_2"
-  ]
- },
- "wendigo.mimic": {
-  "subtitle": "subtitles.deadline.wendigo.mimic",
-  "sounds": [
-   "deadline:wendigo/mimic_1",
-   "deadline:wendigo/mimic_2",
-   "deadline:wendigo/mimic_3",
-   "deadline:wendigo/mimic_4"
-  ]
- },
- "wendigo.scream": {
-  "subtitle": "subtitles.deadline.wendigo.scream",
-  "sounds": [
-   "deadline:wendigo/scream"
-  ]
- },
- "wendigo.hurt": {
-  "subtitle": "subtitles.deadline.wendigo.hurt",
-  "sounds": [
-   "deadline:wendigo/hurt"
-  ]
- },
- "wendigo.death": {
-  "subtitle": "subtitles.deadline.wendigo.death",
-  "sounds": [
-   "deadline:wendigo/death"
-  ]
- },
- "wendigo.step": {
-  "subtitle": "subtitles.deadline.wendigo.step",
-  "sounds": [
-   "deadline:wendigo/step"
-  ]
- },
  "poseida.giggle": {
   "subtitle": "subtitles.deadline.poseida.giggle",
   "sounds": [
@@ -386,44 +285,6 @@
   "subtitle": "subtitles.deadline.poseida.death",
   "sounds": [
    "deadline:poseida/death"
-  ]
- },
- "payaso.laugh": {
-  "subtitle": "subtitles.deadline.payaso.laugh",
-  "sounds": [
-   "deadline:payaso/laugh_1",
-   "deadline:payaso/laugh_2",
-   "deadline:payaso/laugh_3"
-  ]
- },
- "payaso.musicbox": {
-  "subtitle": "subtitles.deadline.payaso.musicbox",
-  "sounds": [
-   "deadline:payaso/musicbox"
-  ]
- },
- "payaso.honk": {
-  "subtitle": "subtitles.deadline.payaso.honk",
-  "sounds": [
-   "deadline:payaso/honk"
-  ]
- },
- "payaso.hurt": {
-  "subtitle": "subtitles.deadline.payaso.hurt",
-  "sounds": [
-   "deadline:payaso/hurt"
-  ]
- },
- "payaso.death": {
-  "subtitle": "subtitles.deadline.payaso.death",
-  "sounds": [
-   "deadline:payaso/death"
-  ]
- },
- "balloon.pop": {
-  "subtitle": "subtitles.deadline.balloon.pop",
-  "sounds": [
-   "deadline:balloon/pop"
   ]
  },
  "monja.whisper": {

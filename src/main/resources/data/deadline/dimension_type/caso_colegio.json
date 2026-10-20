@@ -2,7 +2,7 @@
   "ambient_light": 0.0,
   "attributes": {
     "minecraft:audio/ambient_sounds": {
-      "loop": "deadline:ambient.bosque",
+      "loop": "deadline:ambient.colegio",
       "mood": {
         "block_search_extent": 8,
         "offset": 2.0,
@@ -30,16 +30,16 @@
     "minecraft:gameplay/respawn_anchor_works": false,
     "minecraft:gameplay/sky_light_level": 1.5,
     "minecraft:visual/sky_color": "#050508",
-    "minecraft:visual/fog_color": "#0b100c",
+    "minecraft:visual/fog_color": "#0a0b12",
     "minecraft:visual/fog_start_distance": 2.0,
     "minecraft:visual/fog_end_distance": 36.0,
-    "minecraft:visual/water_fog_color": "#0a100f",
+    "minecraft:visual/water_fog_color": "#05070d",
     "minecraft:visual/ambient_particles": [
       {
         "particle": {
           "type": "minecraft:white_ash"
         },
-        "probability": 0.006
+        "probability": 0.005
       }
     ]
   },

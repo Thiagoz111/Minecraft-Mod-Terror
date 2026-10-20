@@ -701,13 +701,13 @@ def ecto_mat(ctx):
     if f == 'top' and k > 1:
         return None
     ex = across(ctx) if f in ('front', 'back', 'top', 'bottom') else across(ctx) * 0.6 + 0.4
-    v = 0.92 - k * 0.05 - ex * ex * 0.42 - p * 0.05 + face_light(ctx) * 0.7
+    v = 0.95 - k * 0.03 - ex * ex * 0.42 - p * 0.05 + face_light(ctx) * 0.7
     col = int(math.floor(lx if f in ('front', 'back', 'top', 'bottom') else lz))
     if f in ('front', 'back') and (col + k) % 3 == 0 and ex > 0.3:
         v -= 0.06                              # flow lines
     c = pick(GHOST, v)
     c = mix(c, CYAN, clamp(ex ** 2 * 0.6 + k * 0.04))
-    a = {1: 186, 2: 172, 3: 156, 4: 140}[k] - p * 10 - ex * 14
+    a = {1: 186, 2: 176, 3: 166, 4: 160}[k] - p * 10 - ex * 14
     return A(fres(c, ctx, 0.4), a)
 
 
@@ -832,6 +832,20 @@ def eyes_throat(img, u0, v0, w, h):
                 px[u0 + i, v0 + j] = GLOW_THROAT
 
 
+GLOW_CRACK = (16, 96, 106, 255)
+
+
+def crack_glow(x0, y0):
+    """Soul-light leaking through the main skull crack (front face whose top-left texel is design cell x0, y0)."""
+    def fn(img, u0, v0, w, h):
+        px = img.load()
+        for j in range(h):
+            for i in range(w):
+                if (x0 + i, y0 + j) in CRACK:
+                    px[u0 + i, v0 + j] = GLOW_CRACK
+    return fn
+
+
 def eyes_soul(img, u0, v0, w, h):
     px = img.load()
     for j in range(h):
@@ -911,9 +925,9 @@ def build():
     bone('head', (0, -25, 2), parent='neck', rot=(-6, 0, 5))
     wall = {'eyes:east': eyes_wall, 'eyes:west': eyes_wall}
     B('head', (-7, -31, -6), (14, 5, 10), 'vault')
-    B('head', (-5, -33, -5), (10, 2, 9), 'vault_hi')
-    B('head', (-3, -35, -3.5), (6, 2, 7), 'crown')
-    B('head', (-5, -32, -7), (10, 4, 1), 'forehead')
+    B('head', (-5, -33, -5), (10, 2, 9), 'vault_hi', decals={'eyes:front': crack_glow(-5, -33)})
+    B('head', (-3, -35, -3.5), (6, 2, 7), 'crown', decals={'eyes:front': crack_glow(-3, -35)})
+    B('head', (-5, -32, -7), (10, 4, 1), 'forehead', decals={'eyes:front': crack_glow(-5, -32)})
     B('head', (-7, -26, -4), (14, 9, 5), 'midface', decals={'eyes:front': eyes_sockets})
     B('head', (-7, -25, -6), (1, 6, 2), 'rim', decals={'eyes:east': eyes_wall})
     B('head', (6, -25, -6), (1, 6, 2), 'rim', decals={'eyes:west': eyes_wall})
@@ -1027,9 +1041,9 @@ def build():
     B('tail1', (-4, 1.5, 1.5), (8, 7, 6), 'tail')
     bone('tail2', (0, 8, 4.5), parent='tail1', rot=(14, 0, -24))
     B('tail2', (-3, 7.5, 2.5), (6, 6, 4), 'tail')
-    bone('tail3', (0, 13, 4.5), parent='tail2', rot=(14, 0, 42))
+    bone('tail3', (0, 13, 4.5), parent='tail2', rot=(14, 0, 48))
     B('tail3', (-2, 12.5, 3), (4, 6, 3), 'tail')
-    bone('tail4', (0, 18, 4.5), parent='tail3', rot=(12, 0, 30))
+    bone('tail4', (0, 18, 4.5), parent='tail3', rot=(12, 0, 38))
     B('tail4', (-1, 17.5, 3.5), (2, 5, 2), 'tail')
     B('tail4', (-2, 19, 4.5), (2, 10, 0), 'ribbon')
     B('tail4', (0.4, 19, 4.4), (2, 8, 0), 'ribbon')
@@ -1115,10 +1129,10 @@ POSES = {
         'body': (0.12, 0, 0, 0, 0, -1.5),
         'head': (0.05, 0, 0, 0, 0, 0),
         'jaw': (-0.08, 0, 0, 0, 4.0, -0.5),
-        'right_arm': (-0.85, -0.12, -0.05, 0, 0, 0),
-        'left_arm': (-1.0, 0.06, 0.05, 0, 0, 0),
-        'right_forearm': (0.42, 0, 0, 0, 0, 0),
-        'left_forearm': (0.5, 0, 0, 0, 0, 0),
+        'right_arm': (-1.24, -0.12, -0.47, 0, 0, 0),
+        'left_arm': (-1.36, 0.08, 0.5, 0, 0, 0),
+        'right_forearm': (0.95, 0, 0, 0, 0, 0),
+        'left_forearm': (1.0, 0, 0, 0, 0, 0),
         'right_hand': (-0.75, 0, 0, 0, 0, 0),
         'left_hand': (-0.8, 0, 0, 0, 0, 0),
         'right_finger_1': (-0.3, 0, -0.25, 0, 0, 0), 'right_finger_4': (-0.4, 0, 0.3, 0, 0, 0),

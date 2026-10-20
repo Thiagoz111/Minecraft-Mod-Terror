@@ -42,7 +42,7 @@ public class PhoneScreen extends Screen {
 	private static final int SH = 308;
 	private static final int TOP = SY + 12;
 
-	private static final String[] BEASTS = {"poseida", "llorona", "wendigo", "payaso", "monja", "sombra", "muneca", "anima"};
+	private static final String[] BEASTS = {"monja", "poseida", "sombra", "muneca", "anima"};
 
 	private enum App {
 		HOME, CALLS, CALL, CASE, SHOP, BESTIARY, BEAST

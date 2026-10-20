@@ -83,10 +83,7 @@ public final class ClientState {
 	/** Row of a case in phone/avatars.png. */
 	public static int caseRow(String caseKey) {
 		return switch (caseKey) {
-			case "rio" -> 1;
-			case "bosque" -> 2;
-			case "parque" -> 3;
-			case "convento" -> 4;
+			case "colegio" -> 4;
 			default -> 0;
 		};
 	}
@@ -94,16 +91,13 @@ public final class ClientState {
 	/** Entity hunted in a case (bestiary / jumpscare key). */
 	public static String caseEntity(String caseKey) {
 		return switch (caseKey) {
-			case "rio" -> "llorona";
-			case "bosque" -> "wendigo";
-			case "parque" -> "payaso";
-			case "convento" -> "monja";
+			case "colegio" -> "monja";
 			default -> "poseida";
 		};
 	}
 
 	public static CaseType caseType(String caseKey) {
 		CaseType t = CaseType.byKey(caseKey);
-		return t == null ? CaseType.CASA_MORALES : t;
+		return t == null ? CaseType.COLEGIO : t;
 	}
 }

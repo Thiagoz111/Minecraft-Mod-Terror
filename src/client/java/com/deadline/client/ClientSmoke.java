@@ -223,9 +223,9 @@ public final class ClientSmoke {
 		// --- HUD + phone
 		step(40, mc -> {
 			ClientState.sanity = ClientState.sanityShown = 24F;
-			ClientState.objCase = "rio";
+			ClientState.objCase = "colegio";
 			ClientState.objStage = 1;
-			ClientState.callCase = "parque";
+			ClientState.callCase = "colegio";
 			ClientState.callCaller = 1;
 			ClientState.callTicks = 20 * 20;
 		});
@@ -239,8 +239,7 @@ public final class ClientSmoke {
 			ClientState.vhs = false;
 			ClientState.callTicks = 0;
 			ClientState.phone = new PhoneDataPayload(false, 1250, 3, 64F, 0b10111,
-					List.of(new PhoneDataPayload.Request("parque", 1, 95), new PhoneDataPayload.Request("convento", 0, 620),
-							new PhoneDataPayload.Request("rio", 3, 1800)), "", 0, 0, 0);
+					List.of(new PhoneDataPayload.Request("colegio", 1, 95), new PhoneDataPayload.Request("casa", 0, 620)), "", 0, 0, 0);
 			mc.setScreen(PhoneScreen.at("home", 0));
 		});
 		shot(20, "phone_home");
@@ -255,13 +254,13 @@ public final class ClientSmoke {
 		step(1, mc -> mc.setScreen(PhoneScreen.at("beast", 1)));
 		shot(10, "phone_beast");
 		step(1, mc -> {
-			ClientState.phone = new PhoneDataPayload(false, 1250, 3, 18F, 0b10111, List.of(), "rio", 0, 1, 2);
+			ClientState.phone = new PhoneDataPayload(false, 1250, 3, 18F, 0b10111, List.of(), "colegio", 0, 1, 2);
 			mc.setScreen(PhoneScreen.at("case", 0));
 		});
 		shot(10, "phone_case");
 		step(1, mc -> {
 			mc.setScreen(null);
-			ClientState.jumpscareKey = "payaso";
+			ClientState.jumpscareKey = "monja";
 			ClientState.jumpscareTicks = 16;
 		});
 		shot(2, "jumpscare");
@@ -289,9 +288,8 @@ public final class ClientSmoke {
 		step(1, mc -> mc.options.hideGui = true);
 
 		// --- creature studio (daylight, flat world)
-		String[] keys = {"llorona", "wendigo", "poseida", "payaso", "monja", "sombra", "muneca", "anima"};
-		List<EntityType<?>> types = List.of(ModEntities.LLORONA, ModEntities.WENDIGO, ModEntities.POSEIDA, ModEntities.PAYASO,
-				ModEntities.MONJA, ModEntities.SOMBRA, ModEntities.MUNECA, ModEntities.ANIMA);
+		String[] keys = {"monja", "poseida", "sombra", "muneca", "anima"};
+		List<EntityType<?>> types = List.of(ModEntities.MONJA, ModEntities.POSEIDA, ModEntities.SOMBRA, ModEntities.MUNECA, ModEntities.ANIMA);
 		for (int i = 0; i < keys.length; i++) {
 			EntityType<?> type = types.get(i);
 			String key = keys[i];

@@ -23,7 +23,7 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.Vec3;
 
-/** Road flare: lands and burns bright red for 30 seconds. Lights the dark, scares the Wendigo. */
+/** Road flare: lands and burns bright red for 30 seconds. Lights the dark and keeps the dead away. */
 public class FlareEntity extends ThrowableItemProjectile {
 	private static final EntityDataAccessor<Boolean> BURNING = SynchedEntityData.defineId(FlareEntity.class, EntityDataSerializers.BOOLEAN);
 	private static final int BURN_TIME = 600;

@@ -57,10 +57,7 @@ public final class ClientAmbience {
 
 	private static SoundEvent ambienceFor(String key) {
 		return switch (key) {
-			case "rio" -> ModSounds.AMBIENT_RIO;
-			case "bosque" -> ModSounds.AMBIENT_BOSQUE;
-			case "parque" -> ModSounds.AMBIENT_PARQUE;
-			case "convento" -> ModSounds.AMBIENT_CONVENTO;
+			case "colegio" -> ModSounds.AMBIENT_COLEGIO;
 			default -> ModSounds.AMBIENT_CASA;
 		};
 	}

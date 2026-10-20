@@ -69,16 +69,10 @@ public final class ModItems {
 	public static final Item EXORCIST_SKIRT = register("exorcist_skirt", Item::new, new Item.Properties().rarity(Rarity.UNCOMMON).humanoidArmor(EXORCIST, ArmorType.LEGGINGS));
 	public static final Item EXORCIST_BOOTS = register("exorcist_boots", Item::new, new Item.Properties().rarity(Rarity.UNCOMMON).humanoidArmor(EXORCIST, ArmorType.BOOTS));
 
-	public static final AnchorItem BABY_SHOE = register("baby_shoe", AnchorItem::new, new Item.Properties().stacksTo(1).rarity(Rarity.RARE));
-	public static final AnchorItem BONE_TOTEM = register("bone_totem", AnchorItem::new, new Item.Properties().stacksTo(1).rarity(Rarity.RARE));
-	public static final AnchorItem MUSIC_BOX = register("music_box", AnchorItem::new, new Item.Properties().stacksTo(1).rarity(Rarity.RARE));
 	public static final AnchorItem INVERTED_ROSARY = register("inverted_rosary", AnchorItem::new, new Item.Properties().stacksTo(1).rarity(Rarity.RARE));
 	public static final AnchorItem CURSED_DOLL = register("cursed_doll", AnchorItem::new, new Item.Properties().stacksTo(1).rarity(Rarity.RARE));
 
-	public static final Item LLORONA_SPAWN_EGG = egg("llorona", ModEntities.LLORONA);
-	public static final Item WENDIGO_SPAWN_EGG = egg("wendigo", ModEntities.WENDIGO);
 	public static final Item POSEIDA_SPAWN_EGG = egg("poseida", ModEntities.POSEIDA);
-	public static final Item PAYASO_SPAWN_EGG = egg("payaso", ModEntities.PAYASO);
 	public static final Item MONJA_SPAWN_EGG = egg("monja", ModEntities.MONJA);
 	public static final Item SOMBRA_SPAWN_EGG = egg("sombra", ModEntities.SOMBRA);
 	public static final Item MUNECA_SPAWN_EGG = egg("muneca", ModEntities.MUNECA);

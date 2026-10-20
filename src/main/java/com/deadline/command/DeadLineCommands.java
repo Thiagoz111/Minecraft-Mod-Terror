@@ -36,7 +36,7 @@ import net.minecraft.server.level.ServerPlayer;
  * </pre>
  */
 public final class DeadLineCommands {
-	private static final String[] SCARES = {"llorona", "wendigo", "poseida", "payaso", "monja", "sombra", "muneca"};
+	private static final String[] SCARES = {"monja", "poseida", "sombra", "muneca", "anima"};
 
 	private DeadLineCommands() {
 	}
