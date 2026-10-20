@@ -16,6 +16,7 @@ import com.deadline.item.SpiritBoxItem;
 import com.deadline.item.SpiritJarItem;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 import net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroup;
 import net.minecraft.core.Registry;
@@ -23,6 +24,9 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.tags.ItemTags;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.Item;
@@ -30,6 +34,10 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Rarity;
 import net.minecraft.world.item.SpawnEggItem;
 import net.minecraft.world.item.ToolMaterial;
+import net.minecraft.world.item.equipment.ArmorMaterial;
+import net.minecraft.world.item.equipment.ArmorType;
+import net.minecraft.world.item.equipment.EquipmentAssets;
+import net.minecraft.world.entity.player.Player;
 
 public final class ModItems {
 	private static final List<Item> TAB_ORDER = new ArrayList<>();
@@ -49,6 +57,17 @@ public final class ModItems {
 	public static final Item SILVER_DAGGER = register("silver_dagger", Item::new, new Item.Properties().sword(ToolMaterial.IRON, 3.0F, -2.2F).rarity(Rarity.UNCOMMON));
 	public static final Item ROSARY = register("rosary", Item::new, new Item.Properties().stacksTo(1));
 	public static final FlareItem FLARE = register("flare", FlareItem::new, new Item.Properties().stacksTo(16));
+
+	/** The exorcist's suit: cassock, skirt and boots use the `deadline:exorcista` equipment asset; the hat is a 3D item model. */
+	public static final ArmorMaterial EXORCIST = new ArmorMaterial(25,
+			Map.of(ArmorType.BOOTS, 2, ArmorType.LEGGINGS, 4, ArmorType.CHESTPLATE, 5, ArmorType.HELMET, 2, ArmorType.BODY, 5),
+			18, SoundEvents.ARMOR_EQUIP_LEATHER, 0.5F, 0.0F, ItemTags.REPAIRS_LEATHER_ARMOR,
+			ResourceKey.create(EquipmentAssets.ROOT_ID, DeadLine.id("exorcista")));
+	public static final Item EXORCIST_HAT = register("exorcist_hat", Item::new, new Item.Properties().stacksTo(1).rarity(Rarity.UNCOMMON)
+			.equippable(EquipmentSlot.HEAD).attributes(EXORCIST.createAttributes(ArmorType.HELMET)));
+	public static final Item EXORCIST_CASSOCK = register("exorcist_cassock", Item::new, new Item.Properties().rarity(Rarity.UNCOMMON).humanoidArmor(EXORCIST, ArmorType.CHESTPLATE));
+	public static final Item EXORCIST_SKIRT = register("exorcist_skirt", Item::new, new Item.Properties().rarity(Rarity.UNCOMMON).humanoidArmor(EXORCIST, ArmorType.LEGGINGS));
+	public static final Item EXORCIST_BOOTS = register("exorcist_boots", Item::new, new Item.Properties().rarity(Rarity.UNCOMMON).humanoidArmor(EXORCIST, ArmorType.BOOTS));
 
 	public static final AnchorItem BABY_SHOE = register("baby_shoe", AnchorItem::new, new Item.Properties().stacksTo(1).rarity(Rarity.RARE));
 	public static final AnchorItem BONE_TOTEM = register("bone_totem", AnchorItem::new, new Item.Properties().stacksTo(1).rarity(Rarity.RARE));
@@ -91,6 +110,12 @@ public final class ModItems {
 
 	private static Item egg(String name, EntityType<?> type) {
 		return register(name + "_spawn_egg", SpawnEggItem::new, new Item.Properties().spawnEgg(type));
+	}
+
+	/** True when the player wears the four pieces of the exorcist's suit (set bonus: slower sanity loss). */
+	public static boolean wearsSuit(Player p) {
+		return p.getItemBySlot(EquipmentSlot.HEAD).is(EXORCIST_HAT) && p.getItemBySlot(EquipmentSlot.CHEST).is(EXORCIST_CASSOCK)
+				&& p.getItemBySlot(EquipmentSlot.LEGS).is(EXORCIST_SKIRT) && p.getItemBySlot(EquipmentSlot.FEET).is(EXORCIST_BOOTS);
 	}
 
 	public static void init() {

@@ -1,0 +1,15 @@
+{
+ "variants": {
+  "": [
+   {
+    "model": "deadline:block/colegio_revoque_humedad_0"
+   },
+   {
+    "model": "deadline:block/colegio_revoque_humedad_1"
+   },
+   {
+    "model": "deadline:block/colegio_revoque_humedad_2"
+   }
+  ]
+ }
+}

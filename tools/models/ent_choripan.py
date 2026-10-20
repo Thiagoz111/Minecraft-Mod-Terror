@@ -5,23 +5,28 @@ Authored at 2x texel density (model.scale = 0.5).  +Y down, ground y = 24, faces
 Design
 ------
 The dog the audience has to fall in love with before he turns into a 4.5-block worm-dog, so every
-choice is about charm.  A long low red sausage (three stepped cubes give the round barrel, a
-separate keel gives the proud dachshund prow chest), four stubby legs with toe-bean paws, a plush
-oversized head held forward on a short neck, huge floppy ears that hang to chest level and a long
-whip tail carried up in a happy curve.
+choice is about charm.  About 0.62 blocks tall and 1.24 blocks from nose to rump (plus the tail).
+A long low red sausage (three stepped cubes -- core, taller/narrower barrel, prow keel -- give the round
+profile and the proud dachshund chest), four stubby legs with toe-bean paws, a plush oversized head
+(12 wide, puppy proportions) held forward on a short neck, huge floppy ears that hang to chest level,
+chubby jowls, and a long whip tail (two bones) carried up in a happy curve.
 
-Face (the 'aww' close-up): big glossy dark-brown eyes on their own protruding cubes, each with a
-2x2 white glint top-left and a 1-px glint bottom-right (both glints sit in the emissive 'eyes' layer,
-so the eyes sparkle in the flashlight at night), a warm brown iris crescent at the bottom.  Little tan
-eyebrow tufts sit on their own bones above the eyes (worried / tilted / furrowed).  A narrow muzzle,
-a big shiny black nose with nostrils, an omega-shaped mouth with black lip edges that curl up into a
-smile at the corners, whisker dots.  The upper lip is its own bone so it can lift into a snarl and
-show the small white teeth and canines behind it; the jaw opens and a pink tongue bone pokes out.
+Face (the 'aww' close-up): big glossy brown eyes (5x6) on their own slightly protruding cubes, each with
+a 2x2 white glint tucked in the top-left corner, a 1-px glint bottom-right and a warm brown lower iris;
+the eyes wrap round the corner of the skull (with a glint) so the profile still has an eye.  All glints
+are in the emissive 'eyes' layer, so the eyes sparkle in the flashlight at night.  Little tan eyebrow
+tufts on their own bones (puppy-worried at rest, raised in 'tilt', furrowed in 'growl').  A long narrow
+muzzle, a big shiny black nose with nostrils and a wet leather bulb on top, a soft philtrum and mouth
+corners, dark lip edges that curl up into a smile, whisker dots.  The upper lip is its own bone so it
+lifts into a snarl over small white teeth and canines; the jaw opens and a pink tongue bone pokes out.
+Coat: #7a3a1c -> #c06a33 hue-shifted ramp painted as directional hair strokes, darker dorsal stripe,
+cream chest blaze / muzzle / cheeks, pink tummy, dark tail tip, pink inner ears.
 
-Outfit: the red cable-knit sweater the Nona knitted: two shells over the barrel, a rope cable down the
-spine flanked by purl gutters, stockinette sides with a white intarsia 'C', ribbed cuffs at the neck and
-tail end, and an open belly (dog sweaters are) so 'belly_up' shows a pink tummy.  A celeste collar
-(stitched, gold buckle) with a small gold name tag on its own swinging bone.
+Outfit: the red cable-knit sweater the Nona knitted: two shells over the barrel, a raised rope cable
+down the spine between purl gutters, Aran side panels (a rope cable, a purl column, then the white
+intarsia 'C' on stockinette, mirrored), ribbed rolled cuffs at the neck and tail end, and an open belly
+(dog sweaters are) so 'belly_up' and 'beg' show the pink tummy.  A celeste collar (white saddle stitch,
+gold buckle on the right) with a small gold name tag on its own swinging bone.
 """
 import math
 
@@ -119,16 +124,29 @@ def art(rows, cols, ctx, default=None):
 
 
 # ------------------------------------------------------------------ fur
+VERTICAL_FUR = ('leg', 'paw', 'thigh', 'ear', 'lobe', 'fold', 'neck')
+
+
 def fur_noise(ctx, k=0.09):
-    """Short fur: 2-texel clumps along the body with a soft streak, no static."""
+    """Smooth short coat: 1-texel strokes 3 texels long in the direction the hair lies (back along the body and
+    head, down the legs and ears), each stroke a little lighter or darker than its neighbours.  No static."""
     x, y, z = A(ctx)
-    a = hash3(math.floor(x * 0.5 + 0.3), math.floor(y * 1.0), math.floor(z * 0.5), 11)
-    b = hash3(math.floor(x), math.floor(y * 0.5), math.floor(z), 23)
-    return (a - 0.5) * k + (b - 0.5) * k * 0.6
+    xi = math.floor(x)
+    if tag(ctx) in VERTICAL_FUR:
+        zi = math.floor(z)
+        off = hash3(xi, zi, 0, 3) * 3
+        a = hash3(xi, math.floor((y + off) / 3.0), zi, 11)
+    else:
+        yi = math.floor(y)
+        off = hash3(xi, yi, 0, 3) * 3
+        a = hash3(xi, yi, math.floor((z + off) / 3.0), 11)
+    return (a - 0.5) * k * 1.1
 
 
 def coat_v(ctx, base=0.6):
     v = base + face_light(ctx) * 1.05 + fur_noise(ctx)
+    if ctx.face in ('west', 'east') and 0 not in ctx.cube.size:
+        v += (0.35 - ctx.t) * 0.08                  # soft sheen on the upper half of every side
     if edge(ctx) == 0 and ctx.face not in ('top',) and 0 not in ctx.cube.size:
         v -= 0.05
     return v
@@ -237,8 +255,7 @@ def sweater_mat(ctx):
     if t == 'cuff':
         if f in ('front', 'back'):
             # ribbed rolled edge: ribs run around the opening
-            u = ctx.i if ctx.w >= ctx.h else ctx.j
-            return pick(SWEATER, rib_v(ctx, ctx.i + ctx.j * 0) - 0.02)
+            return pick(SWEATER, rib_v(ctx, ctx.i) - 0.02)
         if f in ('west', 'east'):
             return pick(SWEATER, rib_v(ctx, ctx.j))
         return pick(SWEATER, rib_v(ctx, ctx.i))
@@ -274,10 +291,10 @@ def sweater_mat(ctx):
     if u <= 0 or u >= ctx.w - 1:
         return pick(SWEATER, rib_v(ctx, j) + rnd)
     if t == 'shell_w':
-        if 1 <= u <= 4 or 12 <= u <= 15:
-            k = (u - 1) if u <= 4 else (3 - (u - 12))           # mirrored twist on the two cables
+        if 1 <= u <= 3 or 11 <= u <= 13:
+            k = (u - 1) if u <= 3 else (2 - (u - 11))           # mirrored twist on the two cables
             return pick(SWEATER, cable_v(ctx, j, k) + rnd)
-        if u in (5, 11):
+        if u in (4, 10):
             return pick(SWEATER, 0.4 + face_light(ctx) * 0.9 + (0.06 if j % 2 else -0.02) + rnd)  # purl
         ci = ctx.i - (ctx.w - 5) // 2
         cj = j - 1
@@ -397,6 +414,13 @@ NOSE_ART = ["dSsKd", "KNdNK"]
 
 def nose_mat(ctx):
     f = ctx.face
+    if tag(ctx) == 'bulb':
+        # leather bulb on top of the nose: the wet shine lives here
+        if f == 'front':
+            return [NOSE[5], NOSE[6], NOSE[4]][min(2, ctx.i)]
+        if f == 'top':
+            return NOSE[6] if ctx.i == 1 else NOSE[4]
+        return NOSE[3]
     if f == 'front':
         return art(NOSE_ART, {'S': NOSE[6], 's': NOSE[4], 'K': NOSE[2], 'N': NOSE[0], 'd': NOSE[1]}, ctx, NOSE[2])
     if f == 'top':
@@ -563,7 +587,7 @@ def tail_mat(ctx):
 # ------------------------------------------------------------------ module contract
 DEFAULT_MAT = body_mat
 FOCUS = 'head'
-DZ = -2.0          # authoring z -> model z (recentres the long dog on the entity origin)
+DZ = -0.5          # authoring z -> model z (recentres the long dog on the entity origin)
 HY = 1.0           # the whole head subtree sits this much lower than authored
 HEAD_BONES = {'head', 'lips', 'jaw', 'tongue', 'right_brow', 'left_brow', 'right_ear', 'left_ear'}
 
@@ -584,18 +608,18 @@ def build():
         return r.bone(name, (pivot[0], pivot[1] + dy, pivot[2] + DZ), parent=parent, rot=rot, mat=mat)
 
     # ---------------- body (root, pivot at the hips so sit / beg rotate around the rump)
-    bone('body', (0, 16, 13), mat=body_mat)
-    box('body', (-5, 12, -6), (10, 7, 24), name='core')
-    box('body', (-4, 11, -4.5), (8, 9, 21), name='tall')
+    bone('body', (0, 16, 11), mat=body_mat)
+    box('body', (-5, 12, -6), (10, 7, 22), name='core')
+    box('body', (-4, 11, -4.5), (8, 9, 19), name='tall')
     box('body', (-2, 19, -6.6), (4, 2, 8), name='keel')
     # sweater: two shells (open belly), ribbed cuff rings at the neck and the tail end
-    box('body', (-5, 12, -4.5), (10, 7, 17), mat=sweater_mat, inflate=0.55, name='shell_w')
-    box('body', (-4, 11, -4.5), (8, 9, 17), mat=sweater_mat, inflate=0.55, name='shell_t')
-    box('body', (-2, 9.8, -3.5), (4, 1, 15), mat=cable_mat, name='cable')
+    box('body', (-5, 12, -4.5), (10, 7, 15), mat=sweater_mat, inflate=0.55, name='shell_w')
+    box('body', (-4, 11, -4.5), (8, 9, 15), mat=sweater_mat, inflate=0.55, name='shell_t')
+    box('body', (-2, 9.8, -3.5), (4, 1, 13), mat=cable_mat, name='cable')
     box('body', (-5, 12, -5.2), (10, 7, 1), mat=sweater_mat, inflate=0.85, name='cuff')
     box('body', (-4, 11, -5.2), (8, 9, 1), mat=sweater_mat, inflate=0.85, name='cuff')
-    box('body', (-5, 12, 12.2), (10, 7, 1), mat=sweater_mat, inflate=0.8, name='cuff')
-    box('body', (-4, 11, 12.2), (8, 9, 1), mat=sweater_mat, inflate=0.8, name='cuff')
+    box('body', (-5, 12, 10.2), (10, 7, 1), mat=sweater_mat, inflate=0.8, name='cuff')
+    box('body', (-4, 11, 10.2), (8, 9, 1), mat=sweater_mat, inflate=0.8, name='cuff')
 
     # ---------------- legs
     for sd, sx in (('right', -1), ('left', 1)):
@@ -606,16 +630,16 @@ def build():
         box(fl, (cx - 2, 22, -5.5), (4, 2, 4), name='paw', side=sd[0])
         bl = f'{sd}_back_leg'
         cx = 3.0 * sx
-        bone(bl, (cx, 16, 14.5), parent='body', mat=leg_mat)
-        box(bl, (cx - 2 + 0.6 * sx, 14.5, 12), (4, 5, 5), name='thigh', side=sd[0])
-        box(bl, (cx - 1.5 + 0.3 * sx, 19.5, 13.5), (3, 3, 3), name='leg', side=sd[0])
-        box(bl, (cx - 1.5 + 0.3 * sx, 22, 12.5), (3, 2, 4), name='paw', side=sd[0])
+        bone(bl, (cx, 16, 12.5), parent='body', mat=leg_mat)
+        box(bl, (cx - 2 + 0.6 * sx, 14.5, 10), (4, 5, 5), name='thigh', side=sd[0])
+        box(bl, (cx - 1.5 + 0.3 * sx, 19.5, 11.5), (3, 3, 3), name='leg', side=sd[0])
+        box(bl, (cx - 1.5 + 0.3 * sx, 22, 10.5), (3, 2, 4), name='paw', side=sd[0])
 
     # ---------------- tail (raised, happy curve)
-    bone('tail', (0, 12.8, 17.5), parent='body', rot=(32, 0, 0), mat=tail_mat)
-    box('tail', (-1.5, 11.3, 17), (3, 3, 6), name='base')
-    bone('tail_tip', (0, 12.8, 22.5), parent='tail', rot=(18, 0, 0), mat=tail_mat)
-    box('tail_tip', (-1, 11.8, 22), (2, 2, 5), name='tip')
+    bone('tail', (0, 12.8, 15.5), parent='body', rot=(32, 0, 0), mat=tail_mat)
+    box('tail', (-1.5, 11.3, 15), (3, 3, 6), name='base')
+    bone('tail_tip', (0, 12.8, 20.5), parent='tail', rot=(18, 0, 0), mat=tail_mat)
+    box('tail_tip', (-1, 11.8, 20), (2, 2, 5), name='tip')
 
     # ---------------- neck, collar, tag
     bone('neck', (0, 13, -4.5), parent='body', mat=neck_mat)
@@ -632,6 +656,7 @@ def build():
     box('head', (-6.5, 9, -15.2), (13, 3, 7), mat=cheek_mat, name='cheek')
     box('head', (-2.5, 9.5, -23), (5, 2, 7), mat=muzzle_mat, name='muzzle')
     box('head', (-2.5, 9, -23.6), (5, 2, 1), mat=nose_mat, name='nose')
+    box('head', (-1.5, 8.5, -23.3), (3, 1, 1), mat=nose_mat, name='bulb')
     for sd, x0 in (('r', -6.5), ('l', 1.5)):
         box('head', (x0, 5, -16.3), (5, 6, 1), mat=eye_mat, name='eye', side=sd,
             decals={'eyes:front': at(EYE_GLOW)})
@@ -669,7 +694,7 @@ def build():
 
 POSES = {
     'sit': {'body': (-0.34, 0, 0, 0, 3.06, 0),
-            'right_front_leg': (0.34, 0, 0.04, 0, 2.2, 0), 'left_front_leg': (0.34, 0, -0.04, 0, 2.2, 0),
+            'right_front_leg': (0.34, 0, 0.04, 0, 1.6, 0), 'left_front_leg': (0.34, 0, -0.04, 0, 1.6, 0),
             'right_back_leg': (-1.25, 0.25, 0, 0, 1.6, 0), 'left_back_leg': (-1.25, -0.25, 0, 0, 1.6, 0),
             'neck': (0.16, 0, 0, 0, 0, 0), 'head': (0.08, 0, 0, 0, 0, 0),
             'tail': (-0.95, 0.6, 0, 0, 0, 0), 'tail_tip': (-0.25, 0.35, 0, 0, 0, 0)},
@@ -698,4 +723,65 @@ POSES = {
               'tail': (-0.6, 0, 0, 0, 0, 0), 'body': (0.06, 0, 0, 0, 0.6, 0)},
 }
 
-ANIM_NOTES = """TODO"""
+ANIM_NOTES = """Choripan (normal form) -- animation notes.  Units: radians, offsets in model texels (2x density
+inside scale_root, so 2 texels = 1 vanilla pixel).  t = ageInTicks, s = walk speed 0..1, all poses are ADDED to the
+rest pose.  He is the comic relief and the audience's sweetheart: everything is bouncy, quick and overshooting
+(springs, never linear eases), and the TAIL NEVER STOPS unless he is scared or growling.
+
+Bones (17)
+* body (root, pivot at the HIPS): the sausage + sweater + raised spine cable.  Idle: breathing dy = sin(t*0.16)*0.15
+  and xRot = sin(t*0.16)*0.012.  Walk (wolf-like follow AI): low trot, dy = -abs(sin(walk*2))*0.35*s, roll
+  zRot = sin(walk)*0.04*s; the long body never pitches while walking.  Run: add xRot = sin(walk*2)*0.05 (the
+  sausage rocks like a see-saw around the hips).  Sit / beg / belly_up move it through the poses below.
+* right_front_leg, left_front_leg, right_back_leg, left_back_leg: one bone per stubby leg (pivot at the shoulder /
+  hip, thigh haunch is part of the back leg).  Walk: diagonal pairs (right_front with left_back), xRot =
+  +-sin(walk)*0.9*s -- big swings on short legs make the comic 'scurry'; at s > 0.7 switch to a gallop (front pair
+  together, back pair together, half a cycle apart).  Idle: still; every 6-10 s lift one front paw (xRot -0.5,
+  dy -0.5) for 10 ticks.
+* tail, tail_tip: THE happiness meter.  Wag = yRot sin(t*1.4)*0.55 on tail and the same with 2 ticks of lag and
+  x1.4 amplitude on tail_tip (a whip).  Excited (player near, holding food, after a pet): frequency x1.6, amplitude
+  0.8, and let the body follow with zRot = -tail.yRot*0.08 (the whole butt wags).  Scared / growl: tail xRot -0.6
+  (low), no wag.  In sit / beg / belly_up the tail lies on the floor and sweeps it (yRot only).
+* neck: carries the head.  Takes 40% of the head-look pitch.  Sniff: neck xRot +0.35 (nose down) while walking.
+* tag: the gold name tag on the celeste collar.  Pendulum from the body motion: xRot = spring(-body accel)*0.6,
+  plus a tiny jingle (xRot 0.25) on every footstep; zRot follows head shakes.
+* head: 60% of the head-look (yaw and pitch).  Tilt on demand (pose 'tilt'), alternating sides, when the player
+  talks (voice capture), crouches or calls him.  Sneeze: head xRot +0.3 snap + body dy +0.4 in 2 ticks.
+  Transformation start (beat 9): from 'sit', head yRot ramps to PI over 20 ticks with a 2-tick hitch every 45
+  degrees (wet cracks) -- then the demon model takes over.
+* lips: the upper lip/flews.  Only moves for the snarl: dy -1.4, xRot -0.1 (pose 'growl') reveals the upper
+  teeth and canines; add a quiver dy += sin(t*3)*0.15 while growling.
+* jaw: lower jaw (pivot at the hinge).  Bark: xRot 0.35 open in 1 tick, close in 2 (with a head jolt xRot -0.08).
+  Pant (warm, after running, beg / belly_up): xRot 0.12 + sin(t*0.9)*0.06.  Growl: 0.07 (teeth just apart).
+* tongue: hidden inside the mouth at rest.  Pant / beg: pose values (xRot 0.6, dy 0.6, dz -1.7) so it hangs out
+  over the chin, bobbing with the pant.  belly_up: lolls out the side (yRot 0.85).  Lick (after a treat):
+  dz -2 and xRot -0.3 then back, 6 ticks.
+* right_brow, left_brow: the little tan eyebrow tufts.  Default: inner ends up (puppy eyes).  Worried / dog-sense:
+  both dy -0.4 and inner ends rise more (zRot +-0.15).  Tilt: the brow on the raised side lifts (dy -0.4).
+  Growl: furrowed (zRot -+0.45, dy +0.3).  Random 'eyebrow dance' every 4-8 s: one brow dy -0.3 for 8 ticks.
+* right_ear, left_ear: huge floppy ears, pivot at the top of the skull.  Spring pendulums: zRot/xRot follow head
+  and body acceleration with 3-4 ticks of lag and overshoot (amplitude up to 0.6 while running so they flap like
+  wings).  Alert (a sound, hallucination tell): both xRot -0.3, yRot outward 0.2 (ears perked).  Tilt: the ear on
+  the high side flips up (zRot -+0.9) showing the pink inside.  Growl: pinned back (yRot +-0.4).
+* Emissive layer 'eyes': the 2x2 + 1px glints on both eyes and a 1px glint where each eye wraps round the side of
+  the skull.  Keep them full-bright so the eyes sparkle in the flashlight; this is his whole charm at night.
+
+Poses
+* sit: hips on the floor, chest up, front legs straight (pose stretches them 1.6 to keep the paws on the floor),
+  hind legs folded forward, tail curled on the floor to one side.  Use when the player stands still near him, and
+  as the starting pose of the transformation.
+* beg: sitting up on his hind legs, belly out (the open-bellied sweater shows his pink tummy), front paws curled in
+  front of the chest showing the toe beans, head up, tongue out.  Trigger: player holding any chorizo / choripan
+  item within 4 blocks.  Animate: paws paddle (front legs xRot +-0.15, alternating, 6-tick period), body sways
+  zRot sin(t*0.3)*0.05.
+* belly_up: on his back for 'rascar la panza' (right-click while sitting): legs in the air, hind legs splayed, head
+  upside down with the chin up and the tongue lolling, ears flopped onto the floor.  Animate: the legs kick
+  (random leg xRot +-0.3 bursts, the classic leg-scratch reflex while being rubbed), tail sweeps the floor, body
+  wiggles zRot +-0.1.
+* tilt: the confused head tilt (0.38 rad) with one ear flipped up and one brow raised.
+* growl: dog-sense tell.  Head and neck low, body dropped 0.6 at the front, upper lip lifted over small teeth,
+  furrowed brows, ears pinned back, tail low and still.  Hold it facing the stairs / empty corner where the
+  hallucination will happen; rumble jaw quiver.  Funny because he is tiny and wearing a sweater.
+
+Close-up portrait = FOCUS 'head' in rest or 'tilt': big wet eyes, black shiny nose, brows, floppy ears.
+"""

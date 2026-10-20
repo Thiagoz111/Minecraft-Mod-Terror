@@ -1,0 +1,15 @@
+{
+ "variants": {
+  "": [
+   {
+    "model": "deadline:block/colegio_tablas_0"
+   },
+   {
+    "model": "deadline:block/colegio_tablas_1"
+   },
+   {
+    "model": "deadline:block/colegio_tablas_2"
+   }
+  ]
+ }
+}

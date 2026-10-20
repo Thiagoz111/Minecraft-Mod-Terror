@@ -175,14 +175,19 @@ def torn_fur(ctx, v):
             return pick(FUR, v - 0.22)
         return pick(RAW, 0.65 - e * 0.12 + hash3(ctx.i, ctx.j, 3, 9) * 0.15)
     across = lx if f in ('top', 'bottom') else ly
-    for torn, dist in ((tf, lz), (tb, d - lz)):
+    for k, (torn, dist) in enumerate(((tf, lz), (tb, d - lz))):
         if not torn:
             continue
-        jag = 0.5 + hash3(math.floor(across), cseed(ctx), 1 if torn is tf else 2, 13) * 1.9
-        if dist < jag - 0.9:
+        jag = 0.35 + hash3(math.floor(across), cseed(ctx), 1 + k, 13) * 1.35
+        if dist < jag - 0.55:
             return pick(RAW, 0.55 + hash3(math.floor(across), 2, 3, 4) * 0.25)
         if dist < jag:
-            return pick(FUR, v - 0.2)
+            return pick(FUR, v - 0.22)
+        # blood trickling down the flank from the torn rim
+        if f in ('west', 'east') and dist < 1.0:
+            col = math.floor(lz) + 31 * k + cseed(ctx)
+            if hash3(col, 7, 1, 77) > 0.55 and ly < 2.0 + hash3(col, 8, 2, 78) * 5.0:
+                return pick(RAW, 0.3 if ly > 1.5 else 0.42)
     return pick(FUR, v)
 
 
@@ -351,8 +356,8 @@ def arm_mat(ctx):
         return pick(RAW, 0.55 + hash3(ctx.i, ctx.j, 2, 3) * 0.2)
     if t in ('upper', 'fore'):
         c = pick(HUMAN, v)
-        if f in ('front', 'west', 'east', 'back') and vein_hit(ctx, ly, lx + lz, cseed(ctx)):
-            c = mix(c, VEIN[1], 0.5)
+        if f in ('west', 'back') and vein_hit(ctx, ly, lx + lz, cseed(ctx)):
+            c = mix(c, VEIN[1], 0.3)
         if t == 'fore' and ly > h - 3:
             c = mix(c, DIRT, 0.25)                  # filthy wrists
         if t == 'upper' and ly < 2:
@@ -652,22 +657,28 @@ def flap_mat(ctx):
     outer_face = 'west' if sx < 0 else 'east'
     seam_face = 'east' if sx < 0 else 'west'
     v = 0.5 + face_light(ctx) * 1.05
+    deep = lz / max(1.0, d) * 0.28                   # darker toward the throat
     if f == seam_face:
-        # the cut: raw flesh with a gum line toward the mouth
+        # the cut: striated raw flesh, a gum line with a row of small inner teeth toward the mouth
         gum_edge = (ly > h - 1.0) if up else (ly < 1.0)
         if gum_edge:
-            return pick(GUM, 0.62)
-        return pick(RAW, 0.5 + hash3(ctx.i, ctx.j, 9, 9) * 0.25 - (0.12 if (lz < 1 and up) else 0))
+            if int(lz) % 2 == 0 and lz < d - 3:
+                return pick(TEETH, 0.6)
+            return pick(GUM, 0.62 - deep)
+        vv = 0.52 + hash3(ctx.i, ctx.j, 9, 9) * 0.12 - deep
+        if int(ly) % 2 == 0:
+            vv -= 0.14                               # muscle striations
+        return pick(RAW, vv)
     inner_face = 'bottom' if up else 'top'
     if f == inner_face:
         # gums/palate (upper) or the floor of the mouth (lower); teeth sockets on the outer row
         seam_col = (lx > w - 1.0) if sx < 0 else (lx < 1.0)
         out_col = (lx < 1.0) if sx < 0 else (lx > w - 1.0)
         if out_col:
-            return pick(GUM, 0.72 if int(lz) % 2 else 0.5)
+            return pick(GUM, (0.72 if int(lz) % 2 else 0.5) - deep)
         if seam_col:
-            return pick(RAW, 0.55)
-        return pick(GUM, 0.4 + (0.16 if int(lz) % 2 == 0 else 0) + (0.08 if up else -0.05))
+            return pick(RAW, 0.55 - deep)
+        return pick(GUM, 0.42 + (0.16 if int(lz) % 2 == 0 else 0) + (0.08 if up else -0.05) - deep)
     if f == 'back':
         return pick(RAW, 0.35)
     # outside: muzzle fur (darker toward the nose), black lip line on the mouth edge
@@ -767,6 +778,26 @@ def drool_mat(ctx):
     if ctx.j == ctx.h - 1:
         return TONGUE[5]
     return TONGUE[2] if ctx.j % 3 else TONGUE[4]
+
+
+WHISKER = [
+    "k.....",
+    ".kk...",
+    "...kk.",
+    "kk...k",
+    "..kkk.",
+]
+
+
+def whisker_mat(ctx):
+    """Three wiry dog whiskers fanning out of the muzzle (a front-facing zero-thickness plane)."""
+    if ctx.face != 'front':
+        return None
+    sx = ctx.cube.sx
+    i = ctx.i if sx > 0 else ctx.w - 1 - ctx.i
+    if WHISKER[ctx.j][i] != 'k':
+        return None
+    return LIP[2] if i < 3 else pick(FUR, 0.18)
 
 
 def ear_mat(ctx):
@@ -1004,6 +1035,7 @@ def build():
         box(ub, H(-1.8 if sx < 0 else 1.8, -1, -25), (0, 2, 11), mat=teeth_mat, name='teeth', down=True)
         box(ub, H(-5.2 if sx < 0 else 1.2, -1, -26.6), (4, 3, 0), mat=teeth_mat, name='teeth', down=True,
             canine=True)
+        box(ub, H(-11.5 if sx < 0 else 5.5, -5, -21), (6, 5, 0), mat=whisker_mat, name='whisker', sx=sx)
 
         bone(lb, H(0.5 * sx, 0, -6), parent='head', rot=(4, 3 * -sx, 0), mat=flap_mat)
         lx0 = -4.5 if sx < 0 else 0.5
@@ -1011,6 +1043,7 @@ def build():
         box(lb, H(-4.1 if sx < 0 else 4.1, -3, -25), (0, 3, 11), mat=teeth_mat, name='teeth', down=False)
         box(lb, H(-4.1 if sx < 0 else 1.1, -3, -25.6), (3, 3, 0), mat=teeth_mat, name='teeth', down=False,
             canine=True)
+        box(lb, H(-1.4 if sx < 0 else 1.4, -2, -24), (0, 2, 12), mat=teeth_mat, name='teeth', down=False)
         # a string of black drool from the corner of the mouth
         box(lb, H(-4.6 if sx < 0 else 4.6, 4, -18 if sx < 0 else -15), (0, 4 if sx < 0 else 6, 1),
             mat=drool_mat, name='drool')
@@ -1094,7 +1127,7 @@ def build():
             tx = Sx + 3.5 if sx < 0 else Sx - 3.5 - 4
             box(hb, (tx, hy + 1, Sz - 4), (4, 1, 1), name='thumb', tipx=1 if sx < 0 else -1)
 
-    m = Model('choripan_demonio', 256, 256, r.roots)
+    m = Model('choripan_demonio', 256, 224, r.roots)
     m.scale = 0.5
     return m
 
@@ -1120,7 +1153,7 @@ def _praying_hands():
     out = {}
     for side, sx in (('right', -1), ('left', 1)):
         Hw = np.array([[0, -sx, 0], [0, 0, 1], [-sx, 0, 0]], float)
-        out.update(arm_ik(1, side, (1.3 * sx, -13.0, -37.0), (sx * 1.0, -0.5, 0.6), Hw))
+        out.update(arm_ik(1, side, (2.0 * sx, 3.0, -39.0), (sx * 1.0, -0.6, 0.5), Hw))
     return out
 
 
@@ -1136,47 +1169,98 @@ def _folded_arms(seg_dz):
     return out
 
 
+SEGMENT_Z = {'seg1': -36.0, **{n[0]: float(n[2]) for n in SEGMENTS}}
+
+
+def _world(pose):
+    """World matrices of every bone with `pose` (radians / texels) added to the rest pose."""
+    m = build()
+    for bn in m.bones():
+        if bn.name in pose:
+            q = pose[bn.name]
+            bn.rot = tuple(bn.rot[k] + math.degrees(q[k]) for k in range(3))
+            bn.pivot = (bn.pivot[0] + q[3], bn.pivot[1] + q[4], bn.pivot[2] + q[5])
+    return {bn.name: m.world_matrix(bn) for bn in m.bones()}
+
+
+EAR_REST = {'right_ear': (8.0, 24.0, 10.0), 'left_ear': (8.0, -24.0, -10.0)}
+
+
+def _hang_ears(pose, swing=0.0):
+    """Add ear deltas to `pose` so both ears hang under gravity wherever the head ends up
+    (`swing` = extra backward fling in degrees, e.g. a lunge)."""
+    wm = _world(pose)
+    Rh = wm['head'][:3, :3]
+    f = Rh @ np.array([0.0, 0.0, -1.0])
+    yaw = math.atan2(-f[0], -f[2])
+    for ear, rest in EAR_REST.items():
+        Rrest = R_deg(*rest)
+        Rt = rot_matrix(0.0, yaw, 0.0) @ R_deg(swing, 0, 0) @ Rrest
+        loc = euler_zyx(Rh.T @ Rt)
+        pose[ear] = tuple(_wrap(loc[k] - rest[k]) for k in range(3)) + (0.0, 0.0, 0.0)
+    return pose
+
+
 def make_poses():
     poses = {}
-    jaws70 = {'jaw_upper_right': P(-33, 24, 8), 'jaw_upper_left': P(-33, -24, -8),
-              'jaw_lower_right': P(37, 24, -6), 'jaw_lower_left': P(37, -24, 6)}
+    jaws70 = {'jaw_upper_right': P(-26, 34, -12), 'jaw_upper_left': P(-26, -34, 12),
+              'jaw_lower_right': P(32, 28, 14), 'jaw_lower_left': P(32, -28, -14)}
     # lunge: neck thrown forward, jaws open 70 deg into a 4-petal maw, ears flung back, front legs reaching
     poses['lunge'] = _merge(jaws70, {
         'neck': P(27, 0, 0), 'head': P(-14, 0, 0, 0, 0, -3),
         'tongue': P(-8, 0, 0), 'tongue_tip': P(-34, 0, 0),
-        'right_ear': P(48, 0, -12), 'left_ear': P(48, 0, 12), 'right_ear_tip': P(25), 'left_ear_tip': P(25),
+        'right_ear_tip': P(25), 'left_ear_tip': P(25),
         'seg1': P(0, 0, 0, 0, 2.5, 0), 'seg2': P(-4), 'seg3': P(-3), 'seg4': P(4), 'seg5': P(3),
         'front_right_leg': P(-48, 0, 0), 'front_left_leg': P(-40, 0, 0),
         'front_right_paw': P(30), 'front_left_paw': P(25),
         'tail': P(10, 26, 0), 'tail_tip': P(0, 20, 0),
     }, arm_ik(1, 'right', (-17.0, 21.0, -26.0), (-1.0, -1.0, 0.0)),
         arm_ik(1, 'left', (17.0, 21.0, -22.0), (1.0, -1.0, 0.0)))
-    # coil: every link yawed the same way (alternating strength) so the body curls ~1 turn around the
-    # victim on its left; the head turns in toward the centre, jaws half open
-    yaw = [('seg2', 52), ('seg3', 38), ('seg4', 52), ('seg5', 38), ('seg6', 52), ('hips', 40)]
-    coil = {n: P(-3 if k % 2 else 3, a, 0) for k, (n, a) in enumerate(yaw)}
-    coil.update({'seg1': P(0, 25, 0), 'neck': P(8, -38, 0), 'head': P(-6, -30, 10),
-                 'jaw_upper_right': P(-14, 10, 0), 'jaw_upper_left': P(-14, -10, 0),
-                 'jaw_lower_right': P(16, 10, 0), 'jaw_lower_left': P(16, -10, 0),
-                 'tail': P(0, 35, 0), 'tail_tip': P(0, 25, 0), 'tongue_tip': P(-15)})
+    _hang_ears(poses['lunge'], 50)
+    # coil ("long hug"): every link yawed the same way, alternating strong/soft, with a slight rise and
+    # fall, so the body spirals ~3/4 of a turn round the victim on its LEFT (+X); the head rears up and
+    # turns in to look down at them; the inner human arms reach in and grab at chest height
+    yaw = [('seg2', 40), ('seg3', 32), ('seg4', 40), ('seg5', 32), ('seg6', 40), ('hips', 30)]
+    coil = {n: P(-4 if k % 2 else 3, a, 0) for k, (n, a) in enumerate(yaw)}
+    coil.update({'seg1': P(0, 30, 0), 'neck': P(-30, -55, 0), 'head': P(55, -20, 8),
+                 'jaw_upper_right': P(-16, 14, 0), 'jaw_upper_left': P(-16, -14, 0),
+                 'jaw_lower_right': P(20, 14, 0), 'jaw_lower_left': P(20, -14, 0),
+                 'tail': P(0, 40, 0), 'tail_tip': P(0, 30, 0), 'tongue_tip': P(-10)})
+    wm = _world(coil)
+    piv = [wm[n][:3, 3] for n in ('seg1', 'seg2', 'seg3', 'seg4', 'seg5', 'seg6', 'hips')]
+    cen = np.mean(np.array(piv), axis=0)
+    for idx, seg, *_ in ARMS:
+        M = wm[seg]
+        segR = M[:3, :3]
+        segT = M[:3, 3] - segR @ np.array([0.0, SEG_C[seg], SEGMENT_Z[seg]])
+        S = segR @ arm_rig(idx, 'left')['S'] + segT
+        dirc = cen - S
+        dirc[1] = 0.0
+        dirc = dirc / np.linalg.norm(dirc)
+        Wt = cen - dirc * 9.0
+        Wt[1] = -6.0 - idx * 5.0
+        b = math.atan2(-dirc[0], -dirc[2])
+        coil.update(arm_ik(idx, 'left', Wt, (0.0, -1.0, 0.0), rot_matrix(0.0, b, 0.0), segR, segT))
+    _hang_ears(coil)
     poses['coil'] = coil
     # vomit: neck arched up, snout to the sky, all four flaps peeled open, tongue out, legs braced
     poses['vomit'] = _merge({
         'jaw_upper_right': P(-30, 26, 10), 'jaw_upper_left': P(-30, -26, -10),
         'jaw_lower_right': P(34, 26, -8), 'jaw_lower_left': P(34, -26, 8),
         'neck': P(-24, 0, 0), 'head': P(-30, 0, 0), 'tongue': P(6), 'tongue_tip': P(20),
-        'right_ear': P(36, 0, -6), 'left_ear': P(36, 0, 6),
         'seg1': P(0, 0, 0, 0, -1.5, 0), 'seg2': P(4), 'seg3': P(4), 'seg4': P(-3), 'seg5': P(-3),
         'front_right_leg': P(-22, 0, 8), 'front_left_leg': P(-22, 0, -8),
         'front_right_paw': P(18), 'front_left_paw': P(18), 'tail': P(-20, 0, 0)})
+    _hang_ears(poses['vomit'], 10)
     # beg: the funniest one.  The chest sits up straight on the planted body, the stubby front paws beg,
     # the head does the dog tilt, the first pair of human hands are pressed together, the tail wags
     beg = _sit_up(72)
-    beg.update({'neck': P(50, 0, 0), 'head': P(22, 8, 22), 'right_ear': P(0, 0, 10), 'left_ear': P(0, 0, 18),
-                'front_right_leg': P(48, 0, 6), 'front_left_leg': P(52, 0, -6),
-                'front_right_paw': P(62), 'front_left_paw': P(58),
-                'tail': P(-8, 34, 0), 'tail_tip': P(0, 22, 0), 'tongue_tip': P(6, -10, 0)})
+    beg.update({'neck': P(62, 0, 0), 'head': P(6, 6, 22),
+                'front_right_leg': P(-6, 0, 4), 'front_left_leg': P(-9, 0, -4),
+                'front_right_paw': P(140), 'front_left_paw': P(146),
+                'tail': P(-8, 34, 0), 'tail_tip': P(0, 22, 0), 'tongue_tip': P(10, -32, 0)})
     beg.update(_praying_hands())
+    _hang_ears(beg)
     poses['beg'] = beg
     # stretch: half length.  Every link slides 10.5 texels into the one in front (the skin bands and part
     # of each fur link disappear), the neck telescopes in, the human arms fold over the back
@@ -1195,4 +1279,80 @@ def make_poses():
 
 POSES = make_poses()
 
-ANIM_NOTES = """(written once the rig is final)"""
+ANIM_NOTES = """Choripan, version completa -- animation notes.  Units: radians, offsets in model texels (2x density
+inside scale_root: 2 texels = 1 vanilla pixel).  t = ageInTicks, s = walk speed 0..1.  Every pose value is ADDED to the
+rest pose (apply(POSE_X, w)).  Golden rule: it is a monster that is still a dog -- the TAIL WAGS IN EVERY STATE (even
+while biting, coiling or vomiting) and the ears/tongue flop with dog physics.  Entity length ~4.7 blocks (nose z -75,
+tail tip z +78), height ~1.35 blocks; the origin sits under seg3/seg4.
+
+Bones (parent in brackets)
+* seg1 (ROOT, pivot at the front of the chest): chest + sweater remnant + the two real dachshund legs.  Follows the
+  entity body yaw.  Idle: breathing dy = sin(t*0.08)*0.4.  Chase: dy bob = -abs(sin(walk))*0.8*s, small roll
+  zRot = sin(walk)*0.05.
+* seg2, seg3, seg4, seg5, seg6, hips [each the child of the previous link; pivot at the FRONT of the link, inside the
+  stretched skin band]: the snake chain.  Drive yRot from a position-history buffer: each link's yaw = (heading of the
+  path point N ticks behind the previous link) - (previous link heading), N ~ 3 ticks per link at full speed, clamped
+  to +-0.9 per joint.  Add a travelling undulation while moving: yRot += sin(t*0.45 - k*0.9)*0.12*s (k = link index),
+  xRot += sin(t*0.3 - k*0.8)*0.04 (a lazy vertical wave).  The pink skin band + 2 rib ridges (rest pose authored 6 texels
+  long, overlapping 3 texels into the link in front) opens on the OUTSIDE of every bend -- that's the money shot.
+* neck [seg1, pivot inside the chest top, rest pitched 35 deg up]: takes 40% of look(); chase: xRot +0.2 (head lower,
+  forward).  Can stretch: offsets on 'head' along its z (pose 'lunge' uses dz -3).
+* head [neck, pivot at the neck joint under the back of the skull, rest +35 to level it]: 60% of look().  The DOG HEAD
+  TILT (zRot +-0.4 snapped in 3 ticks, held 20 ticks) whenever it hears the player's voice / a thrown item lands.
+* jaw_upper_right, jaw_upper_left [head, hinge at the back-inner edge of each upper muzzle half, by the eyes]:
+  the upper half of the split muzzle, each carrying half of the black nose, overbite needle teeth and whiskers.
+  Open = xRot negative (front rises) + yRot outward (right +, left -) + zRot outward.  Rest is ajar (3 deg) so the
+  needle slit always shows.  Idle: a twitch every 3-6 s: both upper flaps yRot +-0.08 for 4 ticks (the nose "unzips").
+* jaw_lower_right, jaw_lower_left [head, hinge at the throat under the skull]: the two lower halves, nose-to-throat.
+  Open = xRot positive + yRot outward.  Chase: the four flaps breathe open/closed: w = 0.15 + 0.15*sin(t*0.5),
+  apply(POSE_LUNGE jaws only, w).  Attack (lunge bite): snap to the full 'lunge' jaw values in 3 ticks, CLAMP shut
+  (back to rest) in 2 ticks on hit, chomp sound.  Always move the 4 flaps together, upper/lower mirrored.
+* tongue [head, root on the floor of the mouth]: black tongue, lies in the lip slit.  Pant while idle/chasing:
+  xRot = sin(t*0.6)*0.05, dz = -abs(sin(t*0.6))*1.0.
+* tongue_tip [tongue, hangs out of the front, rest 52 deg down]: dog-lolling pendulum, lagged 3 ticks behind the head
+  (xRot/yRot +-0.25, zRot from head roll).  'lunge' shoots it forward (xRot -0.6).
+* right_ear, left_ear [head, attached low on the back of the skull, turned 24 deg toward the front]: limp pendulums.
+  Counter-rotate against head pitch/roll so they keep hanging (the poses already include this), lag 4 ticks,
+  amplitude up to 0.5; fling back (xRot +0.9) on the lunge.  right_ear_tip, left_ear_tip [ear]: second pendulum stage,
+  2 ticks more lag, half amplitude -- the floppiest thing on the model; they nearly sweep the floor.
+* front_right_leg, front_left_leg [seg1]: the original short, bowed dachshund legs.  Normal quadruped trot,
+  xRot = +-cos(walk*1.4)*0.9*s (fast, tiny steps -- comic next to the long arms).  front_right_paw, front_left_paw
+  [leg]: turned-out feet; flex xRot +0.4 on the back swing; 'beg' curls them down 140 deg (the begging wrists).
+* arm_1_right/left [seg3], arm_2_right/left [seg5], arm_3_right/left [hips]: the human upper arms bursting from the
+  flanks (torn fur collar at the shoulder).  forearm_K_side [arm]: elbow knob + too-long forearm.  hand_K_side
+  [forearm]: flat palm, 4 over-long fingers with black nails, splayed thumb.  Rest stance: elbows above the spine like a
+  spider, palms flat on the floor.  Walk as a wave from front to back: pair K lifts when sin(walk*0.9 - K*1.6) > 0:
+  arm zRot += 0.35*lift*(right +, left -) (raises the elbow), forearm zRot -= 0.5*lift (folds), hand xRot -0.3*lift
+  (palm peels off the floor, fingers last).  Left/right of a pair alternate (phase + PI).  Idle: one random finger
+  hand tap every 2-4 s (hand xRot -0.15 for 2 ticks) -- drumming fingers.  Pose tables re-target them by IK (coil:
+  the left arms grab inward; beg: pair 1 presses its palms together; stretch: all folded over the back).
+* tail [hips], tail_tip [tail]: the tiny dachshund tail, carried up.  WAG ALWAYS: tail yRot = sin(t*1.6)*0.6,
+  tail_tip yRot = sin(t*1.6 - 0.8)*0.5; faster (t*2.4) when it sees food/a thrown item, slow (t*0.8) when hurt.
+* shred_1 [seg2], shred_2 [seg3], shred_3 [seg4], shred_4 [seg5]: strips of the Nona's red sweater hanging off the
+  spine (band + side strips + loose yarn, zero-thickness planes).  Flutter: zRot = sin(t*0.35 + k)*0.08, xRot = -0.25*s
+  (streaming back in the chase).
+* Emissive layer 'eyes': the milk-white eye discs (dim glow) + the red pinpoint pupils.  Optional: shrink the pupils'
+  apparent glow (alpha pulse 0.7..1.0) when it begs, full bright when it lunges.
+
+Poses
+* lunge: neck thrown forward and the head pushed 3 texels along it, chest dips, the muzzle peels open ~70 deg in four
+  petals (eyes stay visible above the maw), tongue shoots out, ears flung back, front paws and the first pair of arms
+  reach forward.  Ease in 3 ticks, hold 6, snap shut.
+* coil: the "long hug".  Every link yaws the same way (alternating ~0.7 / 0.55 rad, slight alternating pitch) so the
+  body rings ~3/4 of a turn round a victim on its LEFT; the neck rears up and the head looks down into the ring, jaws
+  half open; the three left arms reach in and grab at chest height.  In game, feed the real coil from the path buffer
+  (the victim's position) and use this table as the target shape; spiral 1.5 turns by adding dy per link.
+* vomit: neck arched up, snout to the sky, all four flaps peeled wide, tongue lolling, front legs braced, back
+  humped.  Spawn the black ectoplasm column at the head pivot + 18 texels along the snout direction.  Hold while the
+  'choripan.vomit' sound plays, add a shudder (seg2..seg6 yRot +-0.05 at t*3).
+* beg: THE gag.  seg1 is pitched up 72 deg around the chest's back end (offset already in the table) and seg2 counter-
+  rotates so the rest of the 8-legged body stays planted; the stubby paws hang curled in front of the chest, the head
+  does the dog tilt, the first pair of human hands press together "por favor" between the paws, tongue out, tail
+  wagging hard (keep the wag running on top).  Blend in over 10 ticks when the player holds a chorizo/choripan.
+* stretch: the transformation.  w = 1 is HALF length: every link slides 10.5 texels into the one in front (the skin
+  bands and ribs vanish inside the fur), the neck telescopes in (head dz +7), and all six human arms are folded over
+  the back like a resting spider's legs.  Script: start at w = 1 (also scale the arm/forearm/hand bones from 0 to 1
+  over the first 40% of the effect so they "sprout"), then ease w 1 -> 0 one link at a time from the FRONT
+  (seg2 first, hips last, 8 ticks apart) with a 'choripan.crack' per link -- the slinky going down the stairs.
+  Reverse it (0 -> 1, then scale everything down) for the post-choripan "boing" retraction.
+"""

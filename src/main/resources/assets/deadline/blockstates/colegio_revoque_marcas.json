@@ -1,0 +1,18 @@
+{
+ "variants": {
+  "": [
+   {
+    "model": "deadline:block/colegio_revoque_marcas_0"
+   },
+   {
+    "model": "deadline:block/colegio_revoque_marcas_1"
+   },
+   {
+    "model": "deadline:block/colegio_revoque_marcas_2"
+   },
+   {
+    "model": "deadline:block/colegio_revoque_marcas_3"
+   }
+  ]
+ }
+}

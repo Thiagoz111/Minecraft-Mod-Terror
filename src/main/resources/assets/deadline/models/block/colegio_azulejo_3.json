@@ -1,0 +1,12 @@
+{
+ "parent": "minecraft:block/cube",
+ "textures": {
+  "particle": "deadline:block/colegio_azulejo_3",
+  "north": "deadline:block/colegio_azulejo_3",
+  "south": "deadline:block/colegio_azulejo_3",
+  "east": "deadline:block/colegio_azulejo_3",
+  "west": "deadline:block/colegio_azulejo_3",
+  "up": "deadline:block/colegio_azulejo_3",
+  "down": "deadline:block/colegio_azulejo_3"
+ }
+}

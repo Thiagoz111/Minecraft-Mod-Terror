@@ -1,0 +1,12 @@
+{
+ "parent": "minecraft:block/cube",
+ "textures": {
+  "particle": "deadline:block/colegio_tablas_0",
+  "north": "deadline:block/colegio_tablas_0",
+  "south": "deadline:block/colegio_tablas_0",
+  "east": "deadline:block/colegio_tablas_0",
+  "west": "deadline:block/colegio_tablas_0",
+  "up": "deadline:block/colegio_tablas_0",
+  "down": "deadline:block/colegio_tablas_0"
+ }
+}

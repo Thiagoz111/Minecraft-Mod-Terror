@@ -270,6 +270,24 @@ public final class ClientSmoke {
 			mc.options.hideGui = true;
 		});
 
+		// --- exorcist suit: third person front/back and the sleeve in first person
+		step(5, mc -> server(mc, p -> {
+			com.deadline.caseload.CaseManager.suitUp(p);
+			p.setItemSlot(net.minecraft.world.entity.EquipmentSlot.MAINHAND, net.minecraft.world.item.ItemStack.EMPTY);
+			p.setYRot(180F);
+			p.setXRot(10F);
+		}));
+		step(10, mc -> mc.options.setCameraType(net.minecraft.client.CameraType.THIRD_PERSON_FRONT));
+		shot(20, "suit_front");
+		step(1, mc -> mc.options.setCameraType(net.minecraft.client.CameraType.THIRD_PERSON_BACK));
+		shot(15, "suit_back");
+		step(1, mc -> {
+			mc.options.setCameraType(net.minecraft.client.CameraType.FIRST_PERSON);
+			mc.options.hideGui = false;
+		});
+		shot(15, "suit_first_person");
+		step(1, mc -> mc.options.hideGui = true);
+
 		// --- creature studio (daylight, flat world)
 		String[] keys = {"llorona", "wendigo", "poseida", "payaso", "monja", "sombra", "muneca", "anima"};
 		List<EntityType<?>> types = List.of(ModEntities.LLORONA, ModEntities.WENDIGO, ModEntities.POSEIDA, ModEntities.PAYASO,

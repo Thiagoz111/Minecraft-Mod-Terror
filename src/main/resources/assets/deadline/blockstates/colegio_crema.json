@@ -1,0 +1,15 @@
+{
+ "variants": {
+  "": [
+   {
+    "model": "deadline:block/colegio_crema_0"
+   },
+   {
+    "model": "deadline:block/colegio_crema_1"
+   },
+   {
+    "model": "deadline:block/colegio_crema_2"
+   }
+  ]
+ }
+}

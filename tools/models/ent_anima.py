@@ -42,8 +42,9 @@ CYAN_D = hx('#127e8c')
 TEAR = hx('#011419')
 SOUL = [hx('#7fe9e0'), hx('#c4fff7'), hx('#f2fffd')]
 GLOW_EYE = (236, 255, 252, 255)
-GLOW_EYE2 = (96, 236, 244, 255)
-GLOW_RING = (14, 74, 84, 255)
+GLOW_EYE2 = (24, 108, 120, 255)
+GLOW_EYE_MID = (150, 246, 246, 255)
+GLOW_RING = (8, 46, 54, 255)
 GLOW_THROAT = (12, 70, 80, 255)
 GLOW_THROAT2 = (26, 128, 138, 255)
 GLOW_SOUL = (120, 226, 222, 255)
@@ -150,8 +151,8 @@ HIDDEN_BACK = ('forehead', 'brow', 'rim', 'bridge', 'cheekbone', 'maxilla')
 def socket_d(x, y):
     """Normalised distance to the nearest eye-socket centre (< 1 inside the socket)."""
     best = 9.0
-    for sx, sy in ((-2.9, -22.5), (2.9, -22.1)):
-        best = min(best, ((x - sx) / 2.35) ** 2 + ((y - sy) / 3.7) ** 2)
+    for sx, sy, rx, ry in ((-3.2, -22.8, 2.3, 3.3), (3.4, -22.0, 2.5, 3.8)):   # the left one droops, bigger
+        best = min(best, ((x - sx) / rx) ** 2 + ((y - sy) / ry) ** 2)
     return best
 
 
@@ -176,6 +177,10 @@ def skull_mat(ctx):
         return A(pick(VOID, 0.75), 208)     # roof of the sockets
     if t in ('crown', 'vault_hi') and f == 'bottom':
         return None
+    if f == 'top' and t == 'vault_hi' and abs(x) < 3 and -3.5 < z < 3.5:
+        return None                             # under the crown
+    if f == 'top' and t == 'vault' and abs(x) < 5 and -5 < z < 4:
+        return None                             # under the upper vault
     if t == 'rim' and f in ('top', 'bottom'):
         return None
     if f == 'front':
@@ -211,7 +216,7 @@ def skull_mat(ctx):
         elif t == 'rim':
             v = 0.5                             # orbit rim: darker ring around the socket
         elif t == 'bridge':
-            return A(pick(VOID, 0.82 - j * 0.08), 206)
+            v = 0.5 - j * 0.04                  # thin, dark nasal bone: two separate holes
         elif t == 'cheekbone':
             v = 0.92
             if j == 0:
@@ -278,10 +283,10 @@ def midface_mat(ctx):
             if dd > 0.62:
                 return A(VOID[4], 210)          # darker-cyan inner wall ring
             return A(VOID[0], 210)
-        if dd < 1.45:
-            return A(pick(GHOST, 0.42), 208)    # rim of the hole
-        v = 0.6 - clamp((y + 19.5) / 2.5) * 0.15
-        return A(pick(GHOST, v), 208)           # recessed bone between and around the sockets
+        if dd < 1.35:
+            return A(pick(GHOST, 0.5), 208)     # rim of the hole
+        v = 0.8 - clamp((y + 19.5) / 2.5) * 0.15 - clamp(abs(x) - 5.5) * 0.12
+        return A(pick(GHOST, v), 208)           # recessed bone plate around the sockets
     if f == 'top':
         return None                             # buried under the vault
     if f == 'back':
@@ -342,7 +347,9 @@ def throat_mat(ctx):
     """Mouth void: black core, darker cyan toward the cheeks (head throat + the jaw's 3-deep gullet)."""
     x, y, z = apos(ctx)
     f = ctx.face
-    if f in ('front', 'top'):
+    if f == 'top':
+        return None                             # coplanar with the midface underside / never seen
+    if f == 'front':
         dd = abs(x) / 3.0
         c = mix(VOID[0], VOID[4], clamp(dd * dd * 1.2 - 0.15))
         return A(c, 210)
@@ -448,6 +455,8 @@ def bone_mat(ctx):
     j, H = ctx.j, ctx.h
     lit = face_light(ctx) * 0.9
     if t in ('ribf', 'ribs'):
+        if t == 'ribs' and f == 'front':
+            return None                         # hidden behind the front slat
         if f == 'back':
             return None if t == 'ribf' else A(pick(GHOST, 0.3), 150)
         v = 0.56 + lit
@@ -474,6 +483,8 @@ def bone_mat(ctx):
             v -= 0.14
         return A(fres(mix(pick(GHOST, v), CYAN, 0.16), ctx, 0.35), 168)
     if t in ('vert', 'spine'):
+        if t == 'spine' and f == 'front':
+            return None                         # flush against the backplate
         v = 0.66 + lit
         if j == H - 1:
             v -= 0.22
@@ -491,6 +502,8 @@ def bone_mat(ctx):
         v = 0.55 + lit
         return A(fres(pick(GHOST, v), ctx, 0.5), 176)
     if t == 'scap':
+        if f == 'front':
+            return None                         # flush against the backplate
         v = 0.7 - j / max(1, H) * 0.3 + lit
         if j == 0:
             v += 0.08
@@ -580,7 +593,7 @@ def arm_mat(ctx):
     side = 1 if x > 0 else -1
     deep = 0.0
     if t == 'upper':
-        v = 0.66 - p * 0.1 + lit
+        v = 0.56 - p * 0.06 + lit
         if f in ('front', 'back'):
             v += 0.16 * (1 - across(ctx) ** 2)   # humerus ridge
             # meandering vein down the arm
@@ -642,8 +655,10 @@ def arm_mat(ctx):
             v -= 0.14                           # knuckle crease
         deep = 0.16 if not tipseg else 0.24
         a = 166 if not tipseg else 156
-    if f in ('front', 'back') and t in ('upper', 'fore', 'palm'):
-        pass
+    if f in ('front', 'back') and t in ('upper', 'fore'):
+        # x-ray read: the bone inside glows denser than the translucent flesh around it
+        bone_col = (across(ctx) < 0.4) if t == 'upper' else (i == 0 or i == W - 1)
+        a += 16 if bone_col else -20
     c = pick(GHOST, v)
     c = mix(c, CYAN, 0.35 * across(ctx) ** 3)
     if deep:
@@ -711,19 +726,32 @@ def hair_mat(ctx):
     p0 = 1 - ly / max(1, h)        # 0 at the root end of this segment, 1 at its far end
     p = (seg + p0) / 3.0
     sib = t == 'lock2'
+    if t == 'mane':
+        # a ragged veil of hair floating up behind the skull: every column ends at its own length
+        u, W = plane_u(ctx)
+        end = 0.45 + 0.55 * h2(u, 7, 83)
+        if u in (0, W - 1):
+            end *= 0.6
+        if p0 > end:
+            return None
+        v = 0.36 + p0 * 0.5 + (h2(u, 9, 84) - 0.5) * 0.18
+        c = pick(HAIR, v)
+        if p0 > end - 0.2:
+            c = mix(c, CYAN, 0.45)
+        return A(c, 160 - p0 * 45)
     if not tapered(ctx, p0 * 0.55 + seg * 0.15, lean=(len(n) + int(ctx.cube.origin[0] * 2) + sib) % 2):
         return None
     u, W = plane_u(ctx)
     s = h2(u, len(n) + int(ctx.cube.origin[2] * 3) + sib * 5, 81)
-    v = 0.3 + p * 0.68 + (s - 0.5) * 0.16 - (0.08 if sib else 0.0)
-    if u == 0 and W > 1:
-        v -= 0.08
+    v = 0.5 + p * 0.46 + (s - 0.5) * 0.14 - (0.06 if sib else 0.0)
+    if W > 1 and (u == 0 or u == W - 1):
+        v -= 0.1                                 # darker strand edges, luminous core line
     c = pick(HAIR, v)
-    if p > 0.62:
-        c = mix(c, CYAN, (p - 0.62) * 1.1)
-    if seg == 2 and p0 > 0.75:
-        c = mix(c, hx('#d8fff8'), (p0 - 0.75) * 1.6)
-    return A(c, 200 - p * 88)
+    if p > 0.5:
+        c = mix(c, CYAN, (p - 0.5) * 0.9)
+    if seg == 2 and p0 > 0.6:
+        c = mix(c, hx('#d8fff8'), (p0 - 0.6) * 1.4)
+    return A(c, 176 - p * 66 - (12 if sib else 0))
 
 
 def anima_mat(ctx):
@@ -761,24 +789,25 @@ DEFAULT_MAT = anima_mat
 
 # ------------------------------------------------------------------ emissive decals (layer 'eyes')
 def eyes_sockets(img, u0, v0, w, h):
-    """Midface front (x -6..6, y -26..-17): a faint darker-cyan ring on the socket walls and a burning 2x2
+    """Midface front (x -7..7, y -26..-17): a faint darker-cyan ring on the socket walls and a burning 2x2
     pupil with a 1-texel halo deep in each socket, staring slightly inward (at the viewer); the left one a
     texel lower -- asymmetric and wrong."""
     px = img.load()
     for j in range(h):
         for i in range(w):
-            x, y = -6 + i + 0.5, -26 + j + 0.5
+            x, y = -7 + i + 0.5, -26 + j + 0.5
             dd = socket_d(x, y)
             if 0.62 < dd < 1.0:
                 px[u0 + i, v0 + j] = GLOW_RING
-    for (ci, cj) in ((2, 3), (8, 4)):
+    for (ci, cj) in ((4, 3), (8, 4)):   # right pupil / left pupil one texel lower
         for (i, j) in ((ci - 1, cj), (ci - 1, cj + 1), (ci + 2, cj), (ci + 2, cj + 1),
                        (ci, cj - 1), (ci + 1, cj - 1), (ci, cj + 2), (ci + 1, cj + 2)):
             if 0 <= i < w and 0 <= j < h:
                 px[u0 + i, v0 + j] = GLOW_EYE2
         for (i, j) in ((ci, cj), (ci + 1, cj), (ci, cj + 1), (ci + 1, cj + 1)):
             if 0 <= i < w and 0 <= j < h:
-                px[u0 + i, v0 + j] = GLOW_EYE
+                hot = (i == ci + 1 and j == cj) if ci < w // 2 else (i == ci and j == cj)
+                px[u0 + i, v0 + j] = GLOW_EYE if hot else GLOW_EYE_MID
 
 
 def eyes_wall(img, u0, v0, w, h):
@@ -812,14 +841,20 @@ def eyes_soul(img, u0, v0, w, h):
 
 
 # ------------------------------------------------------------------ build
-# hair chains: root (x, y, z), segments [(length, back deg, out deg, width)], sibling lock (dx, dz, dlen, w)
+# hair chains: root (x, y, z), segments [(length, back deg, out deg, width)], sibling locks [(dx, dz, dlen, w)]
 HAIR_CHAINS = [
-    ((-6.2, -30.5, -3.0), [(6, 8, 30, 4), (5, 30, 24, 3), (8, 40, 14, 2)], (-1.0, 1.6, 1, 2)),   # right temple
-    ((6.2, -30.0, -2.5), [(6, 10, 32, 4), (6, 22, 20, 3), (8, 44, 12, 2)], (1.0, 1.6, -1, 2)),   # left temple
-    ((-3.0, -34.0, -1.0), [(5, 36, 10, 3), (6, 38, 10, 2), (8, 36, 6, 2)], (-1.2, 1.8, 1, 2)),   # right crown
-    ((2.6, -34.2, 0.0), [(5, 40, 8, 3), (6, 34, 14, 2), (8, 40, 8, 2)], (1.2, 1.8, 1, 2)),       # left crown
-    ((0.0, -33.5, 2.5), [(5, 52, -4, 3), (7, 30, 8, 2), (9, 26, -8, 2)], (1.4, 1.6, -1, 2)),     # back centre
-    ((4.6, -33.0, -4.4), [(4, -26, 34, 3), (5, -122, 8, 2), (8, -26, -6, 2)], (-1.0, 0.8, -1, 1)),  # falls forward
+    ((-7.2, -29.5, -2.5), [(6, 8, 22, 2), (6, 40, -34, 2), (8, 50, 30, 1)],
+     [(-2.0, 1.4, 2, 1), (1.4, 2.6, -2, 1)]),                                               # right temple
+    ((7.2, -29.0, -2.0), [(7, 6, 14, 2), (6, 44, -30, 2), (7, 46, 34, 1)],
+     [(2.0, 1.2, -1, 1), (-1.4, 2.4, 2, 1)]),                                               # left temple
+    ((-3.2, -34.0, -1.5), [(5, 30, 26, 2), (6, 40, -28, 2), (8, 36, 22, 1)],
+     [(-1.8, 1.6, 1, 1), (1.2, 2.8, -1, 1)]),                                               # right crown
+    ((2.8, -34.2, -0.5), [(5, 36, 18, 2), (6, 36, -24, 2), (8, 42, 26, 1)],
+     [(1.8, 1.6, 1, 1), (-1.2, 2.6, -2, 1)]),                                               # left crown
+    ((0.0, -33.5, 2.5), [(6, 50, -4, 10), (7, 30, 8, 2), (9, 26, -8, 2)],
+     [(1.8, 1.4, -1, 1), (-1.8, 1.0, 1, 1)]),                                               # back mane
+    ((6.4, -31.5, -4.6), [(3, -20, 4, 2), (5, -128, -14, 2), (8, -22, -4, 2)],
+     [(-1.0, 0.7, -1, 1)]),                                                                 # falls over the brow
 ]
 
 
@@ -879,12 +914,12 @@ def build():
     B('head', (-5, -33, -5), (10, 2, 9), 'vault_hi')
     B('head', (-3, -35, -3.5), (6, 2, 7), 'crown')
     B('head', (-5, -32, -7), (10, 4, 1), 'forehead')
-    B('head', (-6, -26, -4), (12, 9, 5), 'midface', decals={'eyes:front': eyes_sockets})
-    B('head', (-6, -25, -6), (1, 6, 2), 'rim', decals={'eyes:east': eyes_wall})
-    B('head', (5, -25, -6), (1, 6, 2), 'rim', decals={'eyes:west': eyes_wall})
+    B('head', (-7, -26, -4), (14, 9, 5), 'midface', decals={'eyes:front': eyes_sockets})
+    B('head', (-7, -25, -6), (1, 6, 2), 'rim', decals={'eyes:east': eyes_wall})
+    B('head', (6, -25, -6), (1, 6, 2), 'rim', decals={'eyes:west': eyes_wall})
     B('head', (-0.5, -26, -6.5), (1, 5, 2), 'bridge', decals=dict(wall))
     B('head', (-4, -17.5, -7.5), (8, 2, 3), 'maxilla')
-    B('head', (-3, -17, -4.4), (6, 18, 3), 'throat')    # the upper gullet: 3 deep, ends at the rest chin
+    B('head', (-3, -17, -4.4), (6, 9, 3), 'throat')     # the upper gullet: 3 deep (the jaw's gullet does the rest)
     for tx, ty, th in ((-3, -15.5, 2), (-1.8, -15.5, 4), (-0.5, -15.5, 1), (1.2, -15.5, 3), (2.2, -15.5, 1)):
         B('head', (tx, ty, -7), (1, th, 1), 'tooth')
 
@@ -916,24 +951,25 @@ def build():
     B('jaw', (-1, -1, -8), (2, 2, 3), 'chinpt')
     B('jaw', (-4, -6, -7.5), (2, 3, 3), 'corner')   # the mouth narrows to a point at the bottom
     B('jaw', (2, -6, -7.5), (2, 3, 3), 'corner')
-    B('jaw', (-3, -14, -5.4), (6, 12, 3), 'throat', decals={'eyes:front': eyes_throat})
+    B('jaw', (-3, -16, -5.4), (6, 14, 3), 'throat', decals={'eyes:front': eyes_throat})
     for tx, th in ((-1.8, 5), (-0.6, 2), (1.0, 4)):
         B('jaw', (tx, -4 - th, -7.6), (1, th, 1), 'tooth')
 
     # ---------------- hair: 3-segment chains (two locks each) that rise first, then curl back
     bone('hair', (0, -34, 0), parent='head')
-    for k, ((hx_, hy, hz), segs, (sdx, sdz, sdl, sw)) in enumerate(HAIR_CHAINS):
+    for k, ((hx_, hy, hz), segs, sibs) in enumerate(HAIR_CHAINS):
         sgn = 1 if hx_ > 0 else -1
         parent = 'hair'
         y0 = hy
         for s, (ln, back, out, wd) in enumerate(segs):
             nm = 'hair_%d' % (k + 1) + ('', '_mid', '_tip')[s]
             bone(nm, (hx_, y0, hz), parent=parent, rot=(-back, 0, out * sgn))
-            B(nm, (hx_ - wd / 2.0, y0 - ln, hz), (wd, ln, 0), 'lock')
+            B(nm, (hx_ - wd / 2.0, y0 - ln, hz), (wd, ln, 0), 'mane' if wd > 4 else 'lock')
             if s < 2:
                 B(nm, (hx_, y0 - ln + 1, hz - 1), (0, ln - 1, 2), 'lock')
-            ls = max(2, ln + sdl)
-            B(nm, (hx_ + sdx - sw / 2.0, y0 - ls, hz + sdz), (sw, ls, 0), 'lock2')
+            for q, (sdx, sdz, sdl, sw) in enumerate(sibs):
+                ls = max(2, ln + sdl * (1 if s % 2 == 0 else -1))
+                B(nm, (hx_ + sdx - sw / 2.0, y0 - ls, hz + sdz + q * 0.1), (sw, ls, 0), 'lock2')
             parent = nm
             y0 -= ln
 
@@ -968,8 +1004,8 @@ def build():
             B(tnm, (X(fx, 1), fy + lp + ld, 1.05 + AZ), (1, lc, 1), 'claw')
 
     # (xRot forward<0, yRot, zRot outward>0), forearm bend, wrist droop, finger curls (proximal, distal)
-    arm('right', -1, (-56, 10, 10), -26, 30, ((14, 22), (24, 34), (32, 42), (42, 54)))
-    arm('left', 1, (-48, 6, 13), -32, 32, ((18, 26), (30, 38), (26, 34), (38, 50)))
+    arm('right', -1, (-24, 14, 30), -64, 30, ((14, 22), (24, 34), (32, 42), (42, 54)))
+    arm('left', 1, (-20, 10, 32), -68, 32, ((18, 26), (30, 38), (26, 34), (38, 50)))
 
     # ---------------- shroud: long tapering ribbons that continue the body's taper below the waist
     bone('shroud_front', (0, 1, 1.6), parent='body', rot=(-6, 0, 0))
@@ -999,7 +1035,7 @@ def build():
     B('tail4', (0.4, 19, 4.4), (2, 8, 0), 'ribbon')
     B('tail4', (0, 19.5, 3), (0, 9, 3), 'ribbon')
 
-    m = Model('anima', 256, 128, r.roots)
+    m = Model('anima', 256, 64, r.roots)
     m.scale = 0.5
     m.render_type = 'entityTranslucentEmissive'
     return m
@@ -1042,12 +1078,12 @@ POSES = {
         'jaw': (-0.14, 0, 0, 0, 7.5, -1.5),
         'cheek_right': (0, 0, 0.1, 0, 1.0, 0),
         'cheek_left': (0, 0, -0.1, 0, 1.0, 0),
-        'right_arm': (-0.95, -0.25, 0.42, 0, 0, 0),
-        'left_arm': (-1.05, 0.25, -0.42, 0, 0, 0),
-        'right_forearm': (-0.2, 0, 0, 0, 0, 0),
-        'left_forearm': (-0.15, 0, 0, 0, 0, 0),
-        'right_hand': (-0.1, 0, 0, 0, 0, 0),
-        'left_hand': (-0.1, 0, 0, 0, 0, 0),
+        'right_arm': (-1.2, 0.12, -0.36, 0, 0, 0),
+        'left_arm': (-1.28, -0.18, 0.42, 0, 0, 0),
+        'right_forearm': (0.12, 0, 0, 0, 0, 0),
+        'left_forearm': (0.16, 0, 0, 0, 0, 0),
+        'right_hand': (-0.75, 0, 0, 0, 0, 0),
+        'left_hand': (-0.75, 0, 0, 0, 0, 0),
         'right_finger_1': (0.3, 0, 0, 0, 0, 0), 'right_finger_2': (0.35, 0, 0, 0, 0, 0),
         'right_finger_3': (0.35, 0, 0, 0, 0, 0), 'right_finger_4': (0.3, 0, 0, 0, 0, 0),
         'left_finger_1': (0.3, 0, 0, 0, 0, 0), 'left_finger_2': (0.35, 0, 0, 0, 0, 0),

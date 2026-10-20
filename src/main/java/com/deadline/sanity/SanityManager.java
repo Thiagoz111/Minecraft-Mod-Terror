@@ -88,6 +88,9 @@ public final class SanityManager {
 		if (delta < 0 && rosary) {
 			delta *= 0.5F;
 		}
+		if (delta < 0 && ModItems.wearsSuit(p)) {
+			delta *= 0.65F;
+		}
 		if (delta != 0) {
 			add(p, delta);
 		}

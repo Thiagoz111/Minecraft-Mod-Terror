@@ -1,0 +1,14 @@
+{
+ "layers": {
+  "humanoid": [
+   {
+    "texture": "deadline:exorcista"
+   }
+  ],
+  "humanoid_leggings": [
+   {
+    "texture": "deadline:exorcista"
+   }
+  ]
+ }
+}

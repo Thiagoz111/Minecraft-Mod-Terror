@@ -1,0 +1,15 @@
+{
+ "variants": {
+  "": [
+   {
+    "model": "deadline:block/colegio_damero_0"
+   },
+   {
+    "model": "deadline:block/colegio_damero_1"
+   },
+   {
+    "model": "deadline:block/colegio_damero_2"
+   }
+  ]
+ }
+}

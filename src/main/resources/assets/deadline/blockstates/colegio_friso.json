@@ -1,0 +1,18 @@
+{
+ "variants": {
+  "": [
+   {
+    "model": "deadline:block/colegio_friso_0"
+   },
+   {
+    "model": "deadline:block/colegio_friso_1"
+   },
+   {
+    "model": "deadline:block/colegio_friso_2"
+   },
+   {
+    "model": "deadline:block/colegio_friso_3"
+   }
+  ]
+ }
+}

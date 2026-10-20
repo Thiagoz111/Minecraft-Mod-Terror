@@ -25,6 +25,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntitySpawnReason;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -84,6 +85,7 @@ public final class CaseManager {
 	}
 
 	public static void giveKit(ServerPlayer p, boolean full) {
+		suitUp(p);
 		give(p, new ItemStack(ModItems.PHONE));
 		give(p, new ItemStack(ModItems.FLASHLIGHT));
 		give(p, new ItemStack(ModItems.CRUCIFIX));
@@ -99,6 +101,25 @@ public final class CaseManager {
 			give(p, new ItemStack(ModItems.ROSARY));
 			give(p, new ItemStack(ModItems.SILVER_DAGGER));
 			give(p, new ItemStack(ModItems.FLARE, 4));
+		}
+	}
+
+	/** Dresses the player in the exorcist's suit (pieces go to the inventory when a slot is already taken). */
+	public static void suitUp(ServerPlayer p) {
+		equip(p, EquipmentSlot.HEAD, ModItems.EXORCIST_HAT);
+		equip(p, EquipmentSlot.CHEST, ModItems.EXORCIST_CASSOCK);
+		equip(p, EquipmentSlot.LEGS, ModItems.EXORCIST_SKIRT);
+		equip(p, EquipmentSlot.FEET, ModItems.EXORCIST_BOOTS);
+	}
+
+	private static void equip(ServerPlayer p, EquipmentSlot slot, net.minecraft.world.item.Item item) {
+		if (p.getItemBySlot(slot).is(item) || p.getInventory().contains(new ItemStack(item))) {
+			return;
+		}
+		if (p.getItemBySlot(slot).isEmpty()) {
+			p.setItemSlot(slot, new ItemStack(item));
+		} else {
+			give(p, new ItemStack(item));
 		}
 	}
 

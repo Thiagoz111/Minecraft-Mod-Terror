@@ -1,0 +1,15 @@
+{
+ "variants": {
+  "": [
+   {
+    "model": "deadline:block/colegio_damero_faltante_0"
+   },
+   {
+    "model": "deadline:block/colegio_damero_faltante_1"
+   },
+   {
+    "model": "deadline:block/colegio_damero_faltante_2"
+   }
+  ]
+ }
+}

@@ -1,0 +1,18 @@
+{
+ "variants": {
+  "": [
+   {
+    "model": "deadline:block/colegio_revoque_0"
+   },
+   {
+    "model": "deadline:block/colegio_revoque_1"
+   },
+   {
+    "model": "deadline:block/colegio_revoque_2"
+   },
+   {
+    "model": "deadline:block/colegio_revoque_3"
+   }
+  ]
+ }
+}

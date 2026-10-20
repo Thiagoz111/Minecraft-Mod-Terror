@@ -1,0 +1,12 @@
+{
+ "parent": "minecraft:block/cube",
+ "textures": {
+  "particle": "deadline:block/colegio_revoque_marcas_3_north",
+  "north": "deadline:block/colegio_revoque_marcas_3_north",
+  "south": "deadline:block/colegio_revoque_marcas_3_north",
+  "east": "deadline:block/colegio_revoque_marcas_3_north",
+  "west": "deadline:block/colegio_revoque_marcas_3_north",
+  "up": "deadline:block/colegio_revoque_marcas_3_up",
+  "down": "deadline:block/colegio_revoque_marcas_3_up"
+ }
+}

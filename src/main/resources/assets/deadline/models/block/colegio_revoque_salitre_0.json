@@ -1,0 +1,12 @@
+{
+ "parent": "minecraft:block/cube",
+ "textures": {
+  "particle": "deadline:block/colegio_revoque_salitre_0_north",
+  "north": "deadline:block/colegio_revoque_salitre_0_north",
+  "south": "deadline:block/colegio_revoque_salitre_0_north",
+  "east": "deadline:block/colegio_revoque_salitre_0_north",
+  "west": "deadline:block/colegio_revoque_salitre_0_north",
+  "up": "deadline:block/colegio_revoque_salitre_0_up",
+  "down": "deadline:block/colegio_revoque_salitre_0_up"
+ }
+}

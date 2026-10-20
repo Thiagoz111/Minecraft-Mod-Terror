@@ -1,0 +1,18 @@
+{
+ "variants": {
+  "": [
+   {
+    "model": "deadline:block/colegio_azulejo_0"
+   },
+   {
+    "model": "deadline:block/colegio_azulejo_1"
+   },
+   {
+    "model": "deadline:block/colegio_azulejo_2"
+   },
+   {
+    "model": "deadline:block/colegio_azulejo_3"
+   }
+  ]
+ }
+}

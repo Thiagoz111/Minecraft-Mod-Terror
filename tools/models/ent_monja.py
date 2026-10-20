@@ -4,8 +4,9 @@ Authored at 2x texel density (model.scale = 0.5).  +Y down, ground y = 24, faces
 
 Design (round 3)
 ----------------
-Silhouette: a tall black A.  A small, tight head (~30 % of the height) in a white coif whose opening is a
-pointed gothic arch; the black hood is chamfered into a soft dome and flows into two wide veil drapes that fall
+Silhouette: a tall black A.  A small, tight head (~30 % of the height) in an off-white coif whose opening is an
+oval (chamfered top corners, wimple slabs converging under the chin); the black hood has a sloped crown and
+flows into two wide veil drapes that fall
 over the shoulders and flare out to elbow level, so from the front the head pours into a black triangle with
 the white guimpe (shoulder bib) in the middle.  Under it a tapered bodice (14 -> 10 -> 8) is cinched by a
 leather cincture, cloth bulging over the belt, hips widen again and a long robe of eight torn panels (tops tucked
@@ -13,8 +14,8 @@ under the hips) falls to a shredded hem that floats two texels above the ground.
 chest to the hem, front and back, so the habit reads as one continuous garment.  Long arms end in bell sleeves
 built from three flared cloth panels with a pitch-black inside, out of which come grey bony hands with knuckled
 fingers and horn-tipped claws reaching below the knees.  Inverted wooden cross on an iron chain on the chest,
-bone rosary hanging to the knee from the front-left of the cincture, barbed wire around the coif band with two
-short rusted nails driven in at the temples.
+bone rosary hanging to the knee from the front-left of the cincture, barbed wire wrapped round the coif band,
+bleeding down the wimple at the temples.
 
 Face (one pixel-art mask, FACE, projected onto the layered face cubes): corpse-white, the lit planes
 (forehead, brow, cheekbones, muzzle, chin) at the top of the ramp with greys only in the creases; a near-black
@@ -52,11 +53,10 @@ CLAW = [hx('#0e0304'), hx('#260709'), hx('#3e1211'), hx('#5e2c1e'), hx('#8a5a3a'
 EMBER = [hx('#2a0300'), hx('#6e1200'), hx('#c23a00'), hx('#ff7a0a'), hx('#ffc23a'), hx('#fff3b8')]
 MOUTH = [hx('#020102'), hx('#0c0305'), hx('#1e070c'), hx('#3a0f16'), hx('#5c1d28'), hx('#86343f')]
 LIP = [hx('#030204'), hx('#120a0f'), hx('#21161d'), hx('#33252e')]
-TEETH = [hx('#2a241b'), hx('#4c4333'), hx('#76694f'), hx('#a09276'), hx('#c8bc9c'), hx('#e6dec5')]
+TEETH = [hx('#2a241b'), hx('#4c4333'), hx('#7a6d54'), hx('#b3a98e'), hx('#dcd6c2'), hx('#f6f3e8')]
 WOOD = [hx('#170d07'), hx('#2a190d'), hx('#432914'), hx('#5f3d1f'), hx('#7c542c'), hx('#9a6e3c'),
         hx('#c4955c'), hx('#e0b47a')]
 IRON = [hx('#0f0f12'), hx('#212126'), hx('#38383f'), hx('#55555e'), hx('#7a7a84'), hx('#a2a2ac')]
-RUSTC = [hx('#1c0b05'), hx('#35160a'), hx('#562710'), hx('#7a3c18'), hx('#a05a2a'), hx('#d08a4e')]
 RUST = hx('#5a2a12')
 LEATHER = [hx('#0a0605'), hx('#170e0b'), hx('#251812'), hx('#36241a'), hx('#4a3224'), hx('#5e4130')]
 BONE = [hx('#3a3226'), hx('#5c5140'), hx('#837559'), hx('#a89878'), hx('#c9bb9a'), hx('#e2d8bd'), hx('#f4eedc')]
@@ -342,30 +342,35 @@ def jaw_mat(ctx):
     return skin_mat(ctx)
 
 
-# teeth: 'T' needle, 't' rotten / back-row tooth, 'g' gum.  13 wide (x -6.5..6.5), corners hidden in the wimple
+# teeth: 'T' needle / fang, 't' rotten back-row tooth.  13 wide (x -6.5..6.5), corners hidden in the wimple.
+# Irregular widths, gaps and lengths (a broken stub, two fangs); the lower row sits BEHIND the upper row on
+# mostly the same columns, so the black gaps survive when the jaw is closed and the two rows meet tip to tip
+# like a trap when it drops.
 UPPER_TEETH = [
-    "TgTTgTTgTTgTT",
-    ".TTT.TT.TTT.T",
-    "..T..T...T.T.",
-    "..T......T...",
+    ".TT.TT.T.TTT.",
+    ".TT.TT...TTT.",
+    "..T..T....T..",
+    "..T..T....T..",
+    "..T.......T..",
 ]
 UPPER_TEETH_2 = [
-    "....t..t.....",
-    "....t..t.....",
-    ".......t.....",
+    "...t..t.t....",
+    "...t....t....",
+    "........t....",
+    ".............",
     ".............",
 ]
 LOWER_TEETH = [
-    "...T....T....",
-    "..TT..T.TT...",
-    ".TTT.TT.TTT..",
-    "TTgTTgTTgTTgT",
+    ".....T.......",
+    "..T..T.T..T..",
+    ".TT.TT.TT.TT.",
+    ".TT.TT.TTTTT.",
 ]
 LOWER_TEETH_2 = [
     ".............",
-    ".....t....t..",
-    ".....t.t..t..",
-    ".....t.t..t..",
+    "...t......t..",
+    "...t..t...t..",
+    "...t..t...t..",
 ]
 TEETH_ROWS = {'upper_teeth': UPPER_TEETH, 'upper_teeth_2': UPPER_TEETH_2,
               'lower_teeth': LOWER_TEETH, 'lower_teeth_2': LOWER_TEETH_2}
@@ -379,13 +384,16 @@ def teeth_mat(ctx):
     ch = rows[ctx.j][ctx.i] if ctx.j < len(rows) and ctx.i < len(rows[ctx.j]) else '.'
     if ch == '.':
         return None
-    if ch == 'g':
-        return pick(MOUTH, 0.75)
     up = t.startswith('upper')
+    root = ctx.j == 0 if up else ctx.j == ctx.h - 1
+    if ch == 't':
+        return pick(TEETH, 0.3)
+    if root:
+        return TEETH[2]                                     # dark root line separates teeth from the lip
     tip = ctx.j / max(1, ctx.h - 1) if up else 1 - ctx.j / max(1, ctx.h - 1)
-    v = 0.97 - tip * 0.28 if ch == 'T' else 0.4 - tip * 0.15
-    if ch == 'T' and hash3(ctx.i, 0, 1 if up else 2, 33) > 0.84:
-        v -= 0.3
+    v = 0.99 - tip * 0.22
+    if hash3(ctx.i, 0, 1 if up else 2, 33) > 0.86:
+        v -= 0.35                                           # one rotten brown tooth
     return pick(TEETH, v)
 
 
@@ -445,14 +453,6 @@ def iron_mat(ctx):
     return c
 
 
-def nail_mat(ctx):
-    """Rusted nail: rust-brown with a 1-px bright edge on the head."""
-    v = 0.45 + face_light(ctx) * 1.2
-    if ctx.face in ('front', 'top', 'west') and (ctx.i == 0 or ctx.j == 0):
-        v += 0.42
-    return pick(RUSTC, v)
-
-
 def leather_mat(ctx):
     v = 0.5 + face_light(ctx) * 1.2
     if ctx.j in (0, ctx.h - 1) and ctx.face not in ('top', 'bottom'):
@@ -484,9 +484,9 @@ def string_mat(ctx):
 GX0, GY0 = -9.5, -60
 FACE = [
     # 0123456789012345678
-    "q.Q...Q..Q...Q..Q.q",   # r0  y-60  coif band: barbed wire wrapped round the head (barbs up)
-    "iHiIiHiIiHiIiHiIiHi",   # r1  y-59  twisted wire with steel glints
-    ".BQ.B.Q..Q.B.Q..QB.",   # r2  y-58  barbs down, blood where they bite
+    "XXXQ...Q...Q...QXXX",   # r0  y-60  coif band: barbed wire wrapped round the head (barbs up);
+    "XxiIiHiIiHiIiHiIixX",   # r1  y-59  the black veil drapes over the band's corners (X/x)
+    "xBQ.B.Q...Q.B.Q.QBx",   # r2  y-58  barbs down, blood where they bite
     ".B.kk47B888774kk.B.",   # r3  y-57  forehead (oval top: chamfered corners)
     ".b.k478b8878c74k.b.",   # r4        blood drip c7, crack c12 -> c10
     ".B.4v78B788c77v4.d.",   # r5        black veins creeping in at the temples
@@ -520,7 +520,7 @@ FPAL = {
     'c': CRACK, 'v': VEIN, 'V': VEIN2,
     'L': LIP[0], 'l': LIP[2],
     'B': BLOOD[2], 'b': BLOOD[4], 'd': DRIED,
-    'i': IRON[1], 'I': IRON[2], 'H': IRON[5], 'Q': (20, 20, 26, 255),
+    'i': IRON[1], 'I': IRON[2], 'H': IRON[5], 'Q': (20, 20, 26, 255), 'X': VEILC[2], 'x': VEILC[3],
 }
 GLOWPAL = {'e': (150, 30, 0, 255), 'r': EMBER[2], 'o': EMBER[3], 'y': EMBER[4], 'W': EMBER[5],
            'h': (70, 12, 0, 255)}
@@ -651,7 +651,7 @@ def build():
         box('chest', (-1, yy, 7.8), (2, 2, 2), mat=bone_mat, name='vertebra')
     box('chest', (-4, -31, -5.0), (8, 10, 1), name='scap')
     # guimpe: rounded off-white shoulder bib, blood-soaked lower edge
-    box('chest', (-10, -38, -5.6), (20, 10, 10), mat=linen_mat, name='bib')
+    box('chest', (-10, -38, -5.6), (20, 10, 11), mat=linen_mat, name='bib')
 
     # ---------------- inverted wooden cross on a chain, over the guimpe and scapular
     bone('cross', (0, -37, -5.8), parent='chest', rot=(-4, 0, 3), mat=wood_mat)
@@ -671,20 +671,20 @@ def build():
     fbox('head', (-6.5, -46, -8.75), (4, 3, 2), name='cheek')
     fbox('head', (2.5, -46, -8.75), (4, 3, 2), name='cheek')
     fbox('head', (-3.5, -45.75, -9.25), (7, 4, 4), name='muzzle')
-    box('head', (-6.5, -42, -8.5), (13, 4, 0), mat=teeth_mat, name='upper_teeth')
-    box('head', (-6.5, -42, -7.6), (13, 4, 0), mat=teeth_mat, name='upper_teeth_2')
-    box('head', (-5.5, -41.75, -6.5), (11, 5, 7), mat=throat_mat, name='throat')
+    box('head', (-6.5, -42, -8.5), (13, 5, 0), mat=teeth_mat, name='upper_teeth')
+    box('head', (-6.5, -42, -7.6), (13, 5, 0), mat=teeth_mat, name='upper_teeth_2')
+    box('head', (-5.5, -41.5, -6.5), (11, 5, 7), mat=throat_mat, name='throat')
     # coif: band, wimple sides, lower wimple hiding the jaw corners, chin wrap
-    fbox('head', (-9.5, -60, -9.5), (19, 3, 18), mat=linen_mat, name='band')
-    fbox('head', (-9.5, -57, -9.5), (3, 12, 6), mat=linen_mat, name='wimple')
-    fbox('head', (6.5, -57, -9.5), (3, 12, 6), mat=linen_mat, name='wimple')
-    box('head', (-5.5, -36, -7.5), (11, 5, 9), mat=linen_mat, name='gorget')
+    fbox('head', (-9.5, -60, -9.5), (19, 3, 11), mat=linen_mat, name='band')
+    fbox('head', (-9.75, -57, -9.5), (3, 12, 6), mat=linen_mat, name='wimple')
+    fbox('head', (6.75, -57, -9.5), (3, 12, 6), mat=linen_mat, name='wimple')
+    box('head', (-5.5, -36, -7.5), (11, 6, 9), mat=linen_mat, name='gorget')
     # black hood: low crown, sides, back
-    box('head', (-8, -61.25, -10), (16, 2, 11), mat=veil_mat, name='hood')
+    box('head', (-9, -61.25, -10), (18, 2, 11), mat=veil_mat, name='hood')
     box('head', (-5, -62, -8.5), (10, 1, 8), mat=veil_mat, name='peak')
-    box('head', (-11, -59, -9), (3, 23, 18), mat=veil_mat, name='hood')
-    box('head', (8, -59, -9), (3, 23, 18), mat=veil_mat, name='hood')
-    box('head', (-9.5, -60, 7.5), (19, 22, 2), mat=veil_mat, name='hood')
+    box('head', (-11, -60.5, -9), (3, 24, 18), mat=veil_mat, name='hood')
+    box('head', (8, -60.5, -9), (3, 24, 18), mat=veil_mat, name='hood')
+    box('head', (-9.5, -58.5, 7.5), (19, 21, 2), mat=veil_mat, name='hood')
     for side, sx in (('right', -1), ('left', 1)):
         # inner chamfers: the coif opening becomes an oval instead of a rectangle
         ab = f'arch_{side}'
@@ -694,18 +694,14 @@ def build():
         wb = f'wimple_{side}'
         bone(wb, (9.5 * sx, -46, -9.75), parent='head', rot=(0, 0, 13 * sx), mat=linen_mat)
         box(wb, (9.5 * sx - (0 if sx < 0 else 3), -46, -9.75), (3, 14, 6), name='wim_' + side[0])
-        # chamfered hood corners: the white coif and the black hood lose their square corners
-        hb = f'hood_{side}'
-        bone(hb, (8.5 * sx, -58.5, 0), parent='head', rot=(0, 0, 45 * sx), mat=veil_mat)
-        box(hb, (8.5 * sx - 2.5, -60.5, -10.25), (5, 4, 17), name='chamfer')
     bone('hood_peak', (0, -61, 0.5), parent='head', rot=(-16, 0, -2), mat=veil_mat)
     box('hood_peak', (-8, -61, -0.5), (16, 3, 11), name='peak')
 
     # ---------------- jaw: hinge in the wimple, drops onto a black gullet
-    bone('jaw', (0, -40, -4), parent='head', rot=(5, 0, 0), mat=jaw_mat)
+    bone('jaw', (0, -40, -4), parent='head', rot=(5, 0, -3), mat=jaw_mat)
     fbox('jaw', (-6.5, -39, -9), (13, 3, 6), name='jaw')
-    box('jaw', (-6.5, -43, -8.7), (13, 4, 0), mat=teeth_mat, name='lower_teeth')
-    box('jaw', (-6.5, -43, -7.9), (13, 4, 0), mat=teeth_mat, name='lower_teeth_2')
+    box('jaw', (-6.5, -42.5, -8.1), (13, 4, 0), mat=teeth_mat, name='lower_teeth')
+    box('jaw', (-6.5, -42.5, -7.3), (13, 4, 0), mat=teeth_mat, name='lower_teeth_2')
     fbox('jaw', (-3.5, -36, -8.5), (7, 1, 4), name='chin')
 
     # ---------------- veil: upper drape behind the hood, long back veil, side drapes over the shoulders
@@ -753,7 +749,7 @@ def build():
             fy = hy + 6
             l1, l2 = flen[f]
             bone(fb, (cx, fy, az), parent=hand, rot=(4 + f * 2, 0, (f - 1.5) * 6 * sx), mat=hand_mat)
-            box(fb, (cx - 0.5, fy - 0.5, az - 0.5), (1, 1, 1), inflate=0.45, name='knuckle')
+            box(fb, (cx - 0.5, fy - 0.5, az - 0.8), (1, 1, 1), inflate=0.45, name='knuckle')
             box(fb, (cx - 0.5, fy, az - 0.5), (1, l1, 1), inflate=0.32, name='phal')
             tb = fb + '_tip'
             bone(tb, (cx, fy + l1, az), parent=fb, rot=(10 + f * 3, 0, 0), mat=hand_mat)
@@ -767,7 +763,7 @@ def build():
         box(th, (tx - 0.5, hy + 1, az - 1.5), (1, 6, 1), inflate=0.3, name='phal')
         box(th, (tx - 0.5, hy + 6.8, az - 1.7), (1, 4, 1), mat=claw_mat, inflate=0.12)
 
-    m = Model('monja', 256, 192, r.roots)
+    m = Model('monja', 256, 176, r.roots)
     m.scale = 0.5
     return m
 
@@ -791,7 +787,7 @@ POSES = {
         'chest': (-0.1, 0, 0, 0, 0, 0),
         'neck': (-0.05, 0, 0, 0, 0, 0),
         'head': (-0.1, 0, 0.3, 0, 0, 0),
-        'jaw': (0.7, 0, 0, 0, 1.5, -0.5),
+        'jaw': (0.42, 0, 0.06, 0, 2.6, -1.5),
         'veil': (0.25, 0, 0, 0, 0, 0),
         'veil_lower': (0.2, 0, 0, 0, 0, 0),
         'veil_right': (0, 0, 0.25, 0, 0, 0),
@@ -813,7 +809,7 @@ POSES = {
         'chest': (-0.2, 0, 0, 0, 0, 0),
         'neck': (-0.15, 0, 0, 0, 0, 0),
         'head': (-0.4, 0, 0.12, 0, 0, 0),
-        'jaw': (0.8, 0, 0, 0, 1.0, -0.5),
+        'jaw': (0.6, 0, 0, 0, 2.6, -1.2),
         'veil': (0.3, 0, 0, 0, 0, 0),
         'veil_lower': (0.25, 0, 0, 0, 0, 0),
         'veil_right': (0, 0, 0.3, 0, 0, 0),
@@ -893,22 +889,23 @@ TORSO
   + sin(t*0.07 - 1.0)*0.06, zRot = sin(t*0.05)*0.08.  Chase +0.3*s.  Burn jitters zRot sin(t*3)*0.05.
 * neck -- short neck hidden in the linen wimple.  Idle creak yRot sin(t*0.03)*0.08.  Attack -0.05, scream -0.15.
   'Owl turn': when the player looks away, neck yRot may go to +-1.4 over 40 ticks.
-* head -- skull + face cubes, coif (band with barbed wire, wimple, chin wrap / gorget), black hood; FOCUS bone
-  and jumpscare portrait (its cubes reach y -32 so the dropped jaw stays in frame).  Follows look yaw/pitch
+* head -- skull + face cubes (brow, cheekbones, muzzle, upper teeth, black gullet), coif (band with barbed wire,
+  upper wimple, chin wrap / gorget), black hood (sides, back, crown, small peak); FOCUS bone and jumpscare
+  portrait (the gorget reaches y -30 so the dropped jaw stays inside the frame).  Follows look yaw/pitch
   (clamp yaw +-0.9, neck adds the rest).  SIGNATURE: snap tilts -- every 60-120 ticks zRot jumps +-0.6..1.57 in
   1-2 ticks, holds 20-40, drifts back over 30.  Idle micro-twitch zRot += 0.15 for 1 tick (3 %/tick).  Attack
   (-0.1, 0, 0.3) snapped instantly.  Scream (-0.4, 0, 0.12).  Burn (0.35, 0.35, 0).  Reach (0.05, 0, -0.25).
 * jaw -- mandible with the black lower lip, lower needle teeth (two rows), dark red tongue on top and the
-  pointed chin; hinge at (0, -40, -4) inside the wimple.  Idle: slack tremble xRot = 0.05 + sin(t*0.9)*0.02,
-  slowly opening to 0.35 while she stares at the player.  Glide 0.15.  Attack (0.6, 0, 0, 0, +1, -0.5): unhinges
-  down onto the black gullet.  Scream (0.8, 0, 0, 0, +1, -0.5) + shiver sin(t*2.5)*0.04.  Burn 0.45 (gasping).
-* arch_right / arch_left -- linen slabs (rest zRot -+34 deg) that cut the coif opening into a gothic pointed
-  arch.  STATIC (never animate; they are part of the coif).
-* hood_right / hood_left -- black chamfer slabs (rest zRot -+45 deg) rounding the hood and coif corners.
-  Static; in scream they may lift zRot -+0.08 with the veil.
-* hood_peak -- the soft gathered fold on the crown.  Static; tiny flutter sin(t*0.05)*0.03 in chase.
-* nail_right / nail_left -- two short rusted nails driven into the coif at the temples (blood runs from them
-  down the wimple).  Static.  Burn: jitter yRot sin(t*3.3)*0.06 as if they glow.
+  pointed chin; hinge at (0, -40, -4) inside the wimple, rest slightly crooked (zRot -3 deg).  Idle: slack
+  tremble xRot = 0.05 + sin(t*0.9)*0.02, slowly opening to 0.35 while she stares at the player.  Glide 0.15.
+  Attack (0.42, 0, 0.06, 0, +2.6, -1.5): the jaw DISLOCATES (drops 2.6 texels and juts forward) and unhinges
+  down onto the black gullet.  Scream (0.6, 0, 0, 0, +2.6, -1.2) + shiver sin(t*2.5)*0.04.  Burn 0.45 (gasping).
+* arch_right / arch_left -- linen chamfer slabs (rest zRot -+45 deg) cutting the top corners of the coif
+  opening so the face sits in an oval.  STATIC (part of the coif; never animate).
+* wimple_right / wimple_left -- lower wimple slabs (rest zRot -+13 deg) converging under the chin; they hide the
+  jaw corners and close the oval.  Static (the jaw slides out in front of them).
+* hood_peak -- the sloped back of the crown (rest xRot -16 deg) leading into the veil.  Static; tiny flutter
+  xRot sin(t*0.05)*0.03 in chase, +0.1 in scream (lifted by the head throw).
 
 VEIL
 * veil -- upper veil block falling from the back of the hood to the nape (child of head).  Trails opposite the
@@ -924,22 +921,26 @@ VEIL
 ARMS -- right_* is -X (viewer's left).  Rest: long arms hanging slightly away from the bodice inside the veil
 drapes, right shoulder lower, hands dangling beside the robe below the knees.
 * right_arm / left_arm -- shoulder cap + upper sleeve; pivots at the shoulders.  Idle sway xRot
-  sin(t*0.05 + side)*0.04.  Glide drift back +0.15*s.  Chase: reach forward -1.35*s (see 'reach').  Attack
-  right (-2.6, 0, 0.6) / left (-2.4, 0, -0.7): flung up and out so the claws frame the face.  Scream
-  (0.3, 0, +-0.45).  Burn right (-2.3, -0.3, -0.3) / left (-2.1, 0.3, 0.3) so the forearms cross over the face.
+  sin(t*0.05 + side)*0.04.  Glide drift back +0.15*s.  Chase: reach forward -1.35*s (see 'reach').  NOTE: once
+  an arm is raised past horizontal the sign of 'outward' zRot flips (right arm outward = negative).  Attack
+  right (-2.2, 0, -0.95) / left (-2.05, 0, 0.85): flung up and out above the head so the claws frame the face.
+  Scream (0.3, 0, +0.45 / -0.45) out to the sides.  Burn right (-1.45, 0, 0.35) / left (-1.3, 0, -0.4): raised
+  in front of the face.
 * right_forearm / left_forearm -- elbow: sleeve core, inner side plate, carries the bell panels and the hand.
-  Idle bob sin(t*0.06 + side)*0.05.  Attack -0.3 / -0.5, burn -0.9 (forearms fold across the face).
-* {side}_sleeve_front / _sleeve_back / _sleeve_outer -- the three flared cloth panels of the bell sleeve (rest
+  Idle bob sin(t*0.06 + side)*0.05.  Attack -0.75 / -0.9 (claws bent toward the victim).  Burn (-0.9, 0, 0.5) /
+  (-0.95, 0, -0.55): forearms fold inward so the palms cross over the face.  Reach right -0.15.
+* right_sleeve_front, right_sleeve_back, right_sleeve_outer, left_sleeve_front, left_sleeve_back,
+  left_sleeve_outer -- the three flared cloth panels of each bell sleeve (rest
   flare -24 / +22 / 24 deg outward), pitch black inside.  Pure secondary motion: lag the forearm ~6 ticks +
   flutter sin(t*0.2 + panel)*0.08; chase: back panel +0.35*s, front -0.1*s.  Attack: back panel +0.35 (blown
   open), front -0.2.
 * right_hand / left_hand -- long grey palm emerging from the black cuff.  Idle limp curl sin(t*0.04)*0.06.
   Attack +0.5 (wrists bend so the claws rake forward), scream -0.6 / -0.7, burn -0.3 / -0.4 (palms over the
   face), reach +0.3.
-* {side}_finger_1..4 (1 = outer, 4 = inner) -- knuckle + first phalanx, splayed on z.  Idle: ONE finger at a
+* right_finger_1..4 / left_finger_1..4 (1 = outer, 4 = inner) -- knuckle + first phalanx, splayed on z.  Idle: ONE finger at a
   time twitches (every 25-40 ticks, xRot +0.35 for 2 ticks, ease back: spider tapping).  Attack splay zRot
   +-0.3, scream +-0.4, reach +-0.35, burn +-0.1.
-* {side}_finger_1..4_tip -- joint knuckle + second phalanx + horn-tipped claw; follows its finger with a 3-tick
+* right_finger_1..4_tip / left_finger_1..4_tip -- joint knuckle + second phalanx + horn-tipped claw; follows its finger with a 3-tick
   lag.  Attack +0.5 (hook), scream -0.2, burn +0.8 (clench), reach +0.35.
 * right_thumb / left_thumb -- thumb with knuckle and claw, curled inward.  Attack opens zRot +-0.3, scream
   +-0.4, burn -+0.2.
@@ -949,5 +950,5 @@ idle = hover bob + breathing + robe ripple + veil sway + random head snaps + fin
 glide/chase = idle + lean + trailing cloth (back robe panels, scapular_back, veils, sleeve panels) * speed; blend
 toward POSE_REACH while the player is within 6 blocks.  attack = blend 4 ticks into POSE_ATTACK, hold 6,
 release over 10.  scream = POSE_SCREAM during the shriek.  burn = POSE_BURN while in light / holy water, with
-jitter on chest, hands, nails and cross.
+jitter on chest, hands and cross.
 """
