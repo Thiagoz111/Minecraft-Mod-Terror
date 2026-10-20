@@ -50,7 +50,7 @@ public final class Triggers {
 		return (r, p) -> r.event(name);
 	}
 
-	public static Trigger flag(String f) {
+	public static Trigger hasFlag(String f) {
 		return (r, p) -> r.has(f);
 	}
 

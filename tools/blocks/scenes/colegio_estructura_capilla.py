@@ -44,7 +44,7 @@ for x in range(W0 - 1, W1 + 2):
         if x in (0, 1) and y == 1:
             continue
         if x in (0, 1) and y in (4, 5):
-            gx = 0 if x == 1 else 1   # seen from the nave (looking -z) the left piece is at higher x
+            gx = 0 if x == 0 else 1   # seen from the nave (looking -z) the viewer's left is -x
             gy = 0 if y == 5 else 1
             B.append((x, y, -1, 'colegio_roseton_' + ['sup', 'inf'][gy] + '_' + ['izq', 'der'][gx], 'south'))
             continue

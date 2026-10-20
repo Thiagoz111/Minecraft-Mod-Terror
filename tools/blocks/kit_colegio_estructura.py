@@ -1619,11 +1619,11 @@ def p_patio_lajas(v):
 SILLAR = Ramp('#2f2c2a', '#433f3b', '#58534c', '#6d675e', '#827b70', '#968e82', '#a9a194', '#bab3a6', '#c9c3b7')
 CRIPTA = Ramp('#121412', '#1b1e1b', '#252924', '#30352e', '#3c4239', '#4a5045', '#595f52', '#6a6f60')
 MOSS = Ramp('#1c2414', '#283419', '#36451f', '#465827')
-LADRILLO_N = Ramp('#3b170f', '#561f14', '#712a18', '#8a361d', '#a04424', '#b1532d', '#bf6439', '#cb7849')
-CEMENTO = Ramp('#3a3936', '#4d4b47', '#605e59', '#74716b', '#88857e', '#9b9891')
+LADRILLO_N = Ramp('#2c140e', '#3f1b12', '#532317', '#662c1c', '#783622', '#88422a', '#975134', '#a3603f')
+CEMENTO = Ramp('#2f2e2b', '#3f3d39', '#504e49', '#625f59', '#74716a', '#86837b')
 
 
-def ashlar_layout(v, course=8, lengths=((16, 16), (12, 20), (20, 12), (16, 16)), offset=(0, 8, 4, 12)):
+def ashlar_layout(v, course=16, lengths=((20, 12), (32,), (12, 20), (32,)), offset=(0, 10, 4, 22)):
     lab = -np.ones((N, N), int)
     n = 0
     for r in range(N // course):
@@ -1643,7 +1643,7 @@ def p_sillar(v):
     """Chapel ashlar: dressed limestone blocks, fine joints, diagonal tooling marks, soot and damp variants."""
     cv = Cv()
     X, Y = cv.X, cv.Y
-    lab = ashlar_layout(v)
+    lab = ashlar_layout(v, lengths=((20, 12), (32,)) if v % 2 == 0 else ((12, 20), (32,)), offset=(0, 10) if v % 2 == 0 else (4, 22))
     rng = np.random.default_rng(3000 + v)
     tone = rng.choice([-1, 0, 0, 0, 1], lab.max() + 1)
     f = fbm(N, N, 3010 + v, cells=4, octaves=3)
@@ -1664,7 +1664,7 @@ def p_sillar(v):
         tide = dm & ~nb(dm, 1, 0)
         cv.tint('#d8d2c4', np.where(tide, 0.4, 0))
     if v == 3:   # one cracked block
-        pts = wander([(5, 9), (10, 12), (14, 15)], 3030, amp=1.2)
+        pts = wander([(5, 3), (10, 8), (12, 14)], 3030, amp=1.2)
         m = path_mask(pts) & (lab >= 0)
         cv.put(SILLAR, np.full((N, N), 1), m)
         cv.put(SILLAR, np.full((N, N), 7), nb(m, -1, 0) & ~m & (lab >= 0))
@@ -3295,11 +3295,11 @@ def nicho_parts(lines=None, open_=False, seed=0, broken=False):
         parts += [P((2.5, 2.0, 14), (13.5, 13.5, 16), dark, name='back'),
                   P((2.5, 2.0, 1.0), (13.5, 2.2, 14), dark, name='floor')]
         if lines:
-            parts.append(P((-8, -7.5, -0.6), (24, 0.2, 0), plaque_paint(lines, seed=seed), name='plaque'))
+            parts.append(P((-6, -7.5, -0.6), (22, 0.2, 0), plaque_paint(lines, seed=seed), name='plaque'))
     else:
         parts.append(P((2.5, 2.0, -0.2), (13.5, 13.5, 1.0), pp_plaster('cripta_piedra', 1), name='seal'))
         if lines:
-            parts.append(P((-8, 2.5, -0.9), (24, 13.0, -0.3), plaque_paint(lines, seed=seed, broken=broken), name='plaque'))
+            parts.append(P((-6, 2.0, -1.9), (22, 13.5, -1.2), plaque_paint(lines, seed=seed, broken=broken), name='plaque'))
     return parts
 
 
