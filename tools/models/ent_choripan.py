@@ -261,22 +261,26 @@ def sweater_mat(ctx):
                 return pick(SWEATER, 0.38 + face_light(ctx) * 0.9 + (0.05 if u % 2 else 0))   # purl gutter
             return pick(SWEATER, knit_v(ctx, u, across))
         return pick(SWEATER, knit_v(ctx, u, across))
-    # sides
+    # sides (u = 0 at the neck end on both sides): an Aran panel
+    #   [rib][cable A][purl][ white C on stockinette ][purl][cable B][rib]
     u = (ctx.w - 1 - ctx.i) if f == 'west' else ctx.i
     j = ctx.j
-    if u <= 1 or u >= ctx.w - 2:
-        return pick(SWEATER, rib_v(ctx, j) + roundness(ctx))
+    rnd = roundness(ctx)
+    if u <= 0 or u >= ctx.w - 1:
+        return pick(SWEATER, rib_v(ctx, j) + rnd)
     if t == 'shell_w':
-        # white intarsia C, centred on the barrel
+        if 1 <= u <= 4 or 12 <= u <= 15:
+            k = (u - 1) if u <= 4 else (3 - (u - 12))           # mirrored twist on the two cables
+            return pick(SWEATER, cable_v(ctx, j, k) + rnd)
+        if u in (5, 11):
+            return pick(SWEATER, 0.4 + face_light(ctx) * 0.9 + (0.06 if j % 2 else -0.02) + rnd)  # purl
         ci = ctx.i - (ctx.w - 5) // 2
         cj = j - 1
         if 0 <= cj < 6 and 0 <= ci < 5:
             ch = C_ART[cj][ci]
             if ch == 'W':
-                return pick(YARN, 0.62 + face_light(ctx) + (0.12 if (ci + cj) % 2 == 0 else 0))
-            if ch == 'w':
-                return YARN[1]
-    return pick(SWEATER, knit_v(ctx, u, j) + roundness(ctx))
+                return pick(YARN, 0.66 + face_light(ctx) + (0.1 if (ci + cj) % 2 == 0 else -0.04) + rnd * 0.5)
+    return pick(SWEATER, knit_v(ctx, u, j) + rnd)
 
 
 def cable_mat(ctx):
@@ -395,8 +399,8 @@ def nose_mat(ctx):
 def lips_mat(ctx):
     f = ctx.face
     if f == 'front':
-        rows = ["..K..", ".K.K."]
-        c = art(rows, {'K': COAT[1]}, ctx)
+        rows = ["..K..", ".k.k."]
+        c = art(rows, {'K': COAT[1], 'k': COAT[5]}, ctx)
         return c or pick(LIGHT, coat_v(ctx, 0.62))
     if f in ('west', 'east'):
         u = (ctx.w - 1 - ctx.i) if f == 'west' else ctx.i   # 0 = front
@@ -549,20 +553,24 @@ def tail_mat(ctx):
 DEFAULT_MAT = body_mat
 FOCUS = 'head'
 DZ = -2.0          # authoring z -> model z (recentres the long dog on the entity origin)
+HY = 1.0           # the whole head subtree sits this much lower than authored
+HEAD_BONES = {'head', 'lips', 'jaw', 'tongue', 'right_brow', 'left_brow', 'right_ear', 'left_ear'}
 
 
 def build():
     r = Rig()
 
     def box(bone, frm, size, mat=None, inflate=0.0, decals=None, name=None, side=''):
-        c = r.box(bone, (frm[0], frm[1], frm[2] + DZ), size, mat=mat, inflate=inflate, decals=decals)
+        dy = HY if bone in HEAD_BONES else 0.0
+        c = r.box(bone, (frm[0], frm[1] + dy, frm[2] + DZ), size, mat=mat, inflate=inflate, decals=decals)
         c.a0 = tuple(float(v) for v in frm)            # materials work in authoring coordinates
         c.name = name
         c.side = side
         return c
 
     def bone(name, pivot, parent=None, rot=(0, 0, 0), mat=None):
-        return r.bone(name, (pivot[0], pivot[1], pivot[2] + DZ), parent=parent, rot=rot, mat=mat)
+        dy = HY if name in HEAD_BONES else 0.0
+        return r.bone(name, (pivot[0], pivot[1] + dy, pivot[2] + DZ), parent=parent, rot=rot, mat=mat)
 
     # ---------------- body (root, pivot at the hips so sit / beg rotate around the rump)
     bone('body', (0, 16, 13), mat=body_mat)
@@ -615,7 +623,7 @@ def build():
     for sd, x0 in (('r', -6.5), ('l', 1.5)):
         box('head', (x0, 5, -16.3), (5, 6, 1), mat=eye_mat, name='eye', side=sd,
             decals={'eyes:front': at(EYE_GLOW)})
-    box('head', (-2.5, 11.5, -22.7), (5, 2, 0), mat=teeth_mat(["TgggT", "TtttT"]), name='teeth')
+    box('head', (-2.5, 11.5, -22.7), (5, 2, 0), mat=teeth_mat(["TgggT", "TtgtT"]), name='teeth')
     box('head', (-2, 11.7, -22.4), (4, 2, 6), mat=mouth_mat, name='mouth')
 
     bone('lips', (0, 11.5, -16), parent='head', mat=lips_mat)
@@ -623,7 +631,7 @@ def build():
 
     bone('jaw', (0, 13.5, -16), parent='head', mat=jaw_mat)
     box('jaw', (-2, 13.5, -22.4), (4, 2, 6), name='jaw')
-    box('jaw', (-2, 12.5, -22.1), (4, 1, 0), mat=teeth_mat(["TttT"]), name='teeth')
+    box('jaw', (-2, 12.5, -22.1), (4, 1, 0), mat=teeth_mat(["T..T"]), name='teeth')
     bone('tongue', (0, 13.5, -17), parent='jaw', mat=tongue_mat)
     box('tongue', (-1.5, 13.1, -22), (3, 1, 5), name='tongue')
 
@@ -648,25 +656,31 @@ def build():
 
 
 POSES = {
-    'sit': {'body': (-0.42, 0, 0, 0, 2.2, 0),
-            'right_front_leg': (0.42, 0, 0, 0, 1.2, 0), 'left_front_leg': (0.42, 0, 0, 0, 1.2, 0),
-            'right_back_leg': (-1.0, 0, 0, 0, 0, 0), 'left_back_leg': (-1.0, 0, 0, 0, 0, 0),
-            'neck': (0.25, 0, 0, 0, 0, 0), 'head': (0.15, 0, 0, 0, 0, 0),
-            'tail': (0.3, 0, 0, 0, 0, 0)},
-    'beg': {'body': (-1.15, 0, 0, 0, 3.0, 0),
-            'right_front_leg': (-0.4, 0, 0.15, 0, 0, 0), 'left_front_leg': (-0.4, 0, -0.15, 0, 0, 0),
-            'right_back_leg': (-0.4, 0, 0, 0, 0, 0), 'left_back_leg': (-0.4, 0, 0, 0, 0, 0),
-            'neck': (0.7, 0, 0, 0, 0, 0), 'head': (0.35, 0, 0, 0, 0, 0),
-            'right_ear': (0, 0, 0, 0, 0, 0), 'tongue': (0.4, 0, 0, 0, 0.8, -1.5),
-            'tail': (0.9, 0, 0, 0, 0, 0)},
-    'belly_up': {'body': (0, 0, math.pi, 0, 4.0, 0),
-                 'right_front_leg': (-0.6, 0, 0, 0, 0, 0), 'left_front_leg': (-0.6, 0, 0, 0, 0, 0),
-                 'right_back_leg': (0.5, 0, 0, 0, 0, 0), 'left_back_leg': (0.5, 0, 0, 0, 0, 0),
-                 'head': (0, 0, -0.6, 0, 0, 0), 'tongue': (0.5, 0, 0, 0, 0.8, -1.5)},
+    'sit': {'body': (-0.34, 0, 0, 0, 3.06, 0),
+            'right_front_leg': (0.34, 0, 0.04, 0, 2.2, 0), 'left_front_leg': (0.34, 0, -0.04, 0, 2.2, 0),
+            'right_back_leg': (-1.25, 0.25, 0, 0, 1.6, 0), 'left_back_leg': (-1.25, -0.25, 0, 0, 1.6, 0),
+            'neck': (0.16, 0, 0, 0, 0, 0), 'head': (0.08, 0, 0, 0, 0, 0),
+            'tail': (-0.95, 0.6, 0, 0, 0, 0), 'tail_tip': (-0.25, 0.35, 0, 0, 0, 0)},
+    'beg': {'body': (-1.2, 0, 0, 0, 2.25, 0),
+            'right_front_leg': (0.95, 0.1, 0.22, 0, -0.6, 0), 'left_front_leg': (0.95, -0.1, -0.22, 0, -0.6, 0),
+            'right_back_leg': (-0.1, 0.3, 0, 0, -0.9, 0), 'left_back_leg': (-0.1, -0.3, 0, 0, -0.9, 0),
+            'neck': (0.62, 0, 0, 0, 0, 0), 'head': (0.3, 0, 0, 0, 0, 0),
+            'right_ear': (0.2, 0, 0, 0, 0, 0), 'left_ear': (0.2, 0, 0, 0, 0, 0),
+            'right_brow': (0, 0, 0.15, 0, -0.3, 0), 'left_brow': (0, 0, -0.15, 0, -0.3, 0),
+            'jaw': (0.16, 0, 0, 0, 0, 0), 'tongue': (0.6, 0, 0, 0, 0.6, -1.7),
+            'tail': (1.45, 0.35, 0, 0, 0, 0), 'tail_tip': (-0.25, 0.3, 0, 0, 0, 0)},
+    'belly_up': {'body': (0, 0, math.pi, 0, 1.6, 0),
+                 'right_front_leg': (0.45, 0, -0.2, 0, 0, 0), 'left_front_leg': (0.6, 0, 0.3, 0, 0, 0),
+                 'right_back_leg': (-0.45, 0, -0.45, 0, 0, 0), 'left_back_leg': (-0.3, 0, 0.5, 0, 0, 0),
+                 'neck': (1.3, 0, 0, 0, 0, 0), 'head': (-0.7, 0, 0.3, 0, 0, 0),
+                 'right_ear': (0, 0, -1.8, 0, 0, 0), 'left_ear': (0, 0, 1.8, 0, 0, 0),
+                 'jaw': (0.12, 0, 0, 0, 0, 0), 'tongue': (-0.15, 0.85, 0, 1.2, 0.2, -1.0),
+                 'right_brow': (0, 0, 0.12, 0, -0.3, 0), 'left_brow': (0, 0, -0.12, 0, -0.3, 0),
+                 'tail': (-0.9, 0.5, 0, 0, 0, 0), 'tail_tip': (0, 0.4, 0, 0, 0, 0)},
     'tilt': {'head': (0, 0, 0.38, 0, 0, 0), 'left_ear': (0, 0, -0.9, 0, 0, 0),
              'left_brow': (0, 0, -0.3, 0, -0.4, 0), 'right_brow': (0, 0, 0.2, 0, 0, 0)},
     'growl': {'neck': (0.35, 0, 0, 0, 0.5, 0), 'head': (0.1, 0, 0, 0, 0, 0),
-              'lips': (-0.12, 0, 0, 0, -1.2, 0), 'jaw': (0.18, 0, 0, 0, 0, 0),
+              'lips': (-0.1, 0, 0, 0, -1.4, 0), 'jaw': (0.07, 0, 0, 0, 0, 0),
               'right_brow': (0, 0, -0.45, 0, 0.3, 0), 'left_brow': (0, 0, 0.45, 0, 0.3, 0),
               'right_ear': (0, -0.4, 0.3, 0, 0, 0), 'left_ear': (0, 0.4, -0.3, 0, 0, 0),
               'tail': (-0.6, 0, 0, 0, 0, 0), 'body': (0.06, 0, 0, 0, 0.6, 0)},

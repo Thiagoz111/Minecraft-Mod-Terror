@@ -352,20 +352,26 @@ def master(x, peak_db=-1.0, hp=30.0):
 _K = None
 
 
-def tts(text, voice='ef_dora', speed=0.9, lang='es'):
+def tts(text, voice='ef_dora', speed=0.9, lang='es', accent='rioplatense'):
     """Spanish speech as mono float32 @ 44.1 kHz. Voices: ef_dora (woman), em_alex (man), em_santa (deep man).
 
-    Cached on disk, so re-running generators is cheap."""
+    accent='rioplatense' (default): Latin-American phonemes (seseo, no Castilian 'th') plus Buenos Aires sheismo
+    (ll/y -> sh). accent=None uses espeak's plain 'es'. Cached on disk, so re-running generators is cheap."""
     global _K
     os.makedirs(TTS_CACHE, exist_ok=True)
-    key = hashlib.sha1(f'{voice}|{speed}|{lang}|{text}'.encode()).hexdigest()[:16]
+    key = hashlib.sha1(f'{voice}|{speed}|{lang}|{accent}|{text}'.encode()).hexdigest()[:16]
     path = os.path.join(TTS_CACHE, key + '.npy')
     if os.path.exists(path):
         return np.load(path)
     if _K is None:
         from kokoro_onnx import Kokoro
         _K = Kokoro('/tmp/tts/kokoro-v1.0.int8.onnx', '/tmp/tts/voices-v1.0.bin')
-    s, sr = _K.create(text, voice=voice, speed=speed, lang=lang)
+    if accent == 'rioplatense':
+        ph = _K.tokenizer.phonemize(text, 'es-419')
+        ph = ph.replace('ʝ', 'ʃ').replace('ʎ', 'ʃ')
+        s, sr = _K.create(ph, voice=voice, speed=speed, lang='es-419', is_phonemes=True)
+    else:
+        s, sr = _K.create(text, voice=voice, speed=speed, lang=lang)
     y = signal.resample_poly(np.asarray(s, np.float64), SR, sr).astype(np.float32)
     np.save(path, y)
     return y

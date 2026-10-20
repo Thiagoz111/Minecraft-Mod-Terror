@@ -45,15 +45,16 @@ def pal(*h):
 # ------------------------------------------------------------------ palettes (dark -> light, hue shifted)
 FUR = pal('#260b07', '#3f150b', '#5c2111', '#7a3a1c', '#8f4622', '#a6552a', '#c06a33', '#d88a4c', '#ecab6c')
 TAN = pal('#a8642e', '#c88446', '#dea263')
-SKIN = pal('#2c1d2a', '#4a3442', '#6c5260', '#8f737c', '#ad9096', '#c7aaab', '#dcc2bd', '#ecd9d0')
+SKIN = pal('#1e1219', '#36202b', '#52343f', '#704c55', '#8e666b', '#ab8282', '#c69e99', '#dcbcb2')
+HUMAN = pal('#2a1a1a', '#47302d', '#6a4a43', '#8d6a5e', '#ad8a7a', '#c8a796', '#dec1ae', '#eed8c6')
 VEIN = pal('#3a3463', '#544a86', '#6b4f7c')
 BONE = pal('#8c7f72', '#bdb1a2', '#e2d8c8', '#f6efe2')
 RAW = pal('#2e050b', '#561019', '#80202a', '#a8383e', '#c95a5a', '#e08a82')
 GUM = pal('#300510', '#5a0c1c', '#8a1628', '#b52a38', '#d4484e', '#e8706c')
 TEETH = pal('#5a5244', '#9a917c', '#d4ccb6', '#f2ecdc', '#fffdf4')
-TONGUE = pal('#030205', '#0a080e', '#141019', '#211b28', '#332b3d', '#4f4660', '#7a7090')
+TONGUE = pal('#030205', '#0c0910', '#18121d', '#261d2c', '#3a2e42', '#594a66', '#8a7a9c')
 THROAT = pal('#000000', '#0c0105', '#1e040a', '#3a0812', '#5c0f1b')
-NOSE = pal('#050406', '#0e0c12', '#1a1820', '#2c2a36', '#4e4c5e', '#9a98b0')
+NOSE = pal('#050406', '#121016', '#221f2a', '#38343f', '#625d70', '#b4b0c8')
 LIP = pal('#08060a', '#16121a', '#2a2228')
 MILK = pal('#5e6672', '#8a939c', '#b2bac0', '#cfd5d8', '#e4e8e8', '#f3f5f2', '#ffffff')
 PUPIL = hx('#ff1e12')
@@ -250,13 +251,15 @@ def skin_core(ctx, base=0.55, along_axis='z'):
         across = x + z
         along = y
     # stretch striations: thin darker lines running along the pull
-    if math.floor(across) % 3 == 0 and hash3(math.floor(across), math.floor(along / 4), 0, 3) > 0.35:
-        v -= 0.07
+    if math.floor(across) % 3 == 0 and hash3(math.floor(across), math.floor(along / 4), 0, 3) > 0.3:
+        v -= 0.12
+    elif math.floor(across) % 3 == 1 and hash3(math.floor(across), math.floor(along / 3), 1, 3) > 0.6:
+        v += 0.08
     # translucent: darker shapes under the skin (organs / rib shadows) on the flanks
     if f in ('west', 'east', 'bottom'):
         blob = hash3(math.floor(along / 3), math.floor(across / 3), cseed(ctx), 17)
-        if blob > 0.72:
-            v -= 0.1
+        if blob > 0.66:
+            v -= 0.16
     # wet sheen along the top
     if f == 'top' and abs(x) < 1.5:
         v += 0.12
@@ -281,8 +284,13 @@ def skin_mat(ctx):
         if f in ('front', 'west', 'east', 'back') and vein_hit(ctx, ly, ctx.i, cseed(ctx)):
             c = mix(c, VEIN[1], 0.55)
         return c
-    v = skin_core(ctx, 0.55)
+    v = skin_core(ctx, 0.5)
     c = pick(SKIN, v)
+    # irritated pink where the skin is pulled out of the fur
+    lx, ly, lz = local(ctx)
+    d = ctx.cube.size[2]
+    if f in ('west', 'east', 'top') and (lz < 4.5 or lz > d - 2.0):
+        c = mix(c, RAW[4], 0.22)
     if f in ('west', 'east', 'top'):
         across = y if f != 'top' else x
         if vein_hit(ctx, z, across - (ctx.cube.a0[1] + ctx.cube.size[1] / 2 if f != 'top' else 0), cseed(ctx)):
@@ -302,12 +310,12 @@ def rib_mat(ctx):
         return pick(SKIN, 0.25)                   # crease (mostly hidden inside the tube)
     if f == 'bottom':
         return pick(SKIN, 0.35)
-    v = 0.78 + face_light(ctx) * 0.8
+    v = 0.62 + face_light(ctx) * 0.8
     c = pick(SKIN, v)
-    if f == 'top' and abs(lx - w / 2) < w * 0.32:
-        c = mix(c, BONE[2], 0.55)                 # the bone shows through on the crest
-    if f in ('west', 'east') and ly < h * 0.45:
-        c = mix(c, BONE[1], 0.35)
+    if f == 'top' and abs(lx - w / 2) < w * 0.25:
+        c = mix(c, BONE[1], 0.35)                 # the bone shows through on the crest
+    if f in ('west', 'east') and ly < h * 0.35:
+        c = mix(c, BONE[1], 0.2)
     return c
 
 
@@ -332,7 +340,7 @@ def arm_mat(ctx):
     if edge(ctx) == 0 and not is_plane(ctx):
         v -= 0.05
     if t == 'elbow':
-        c = pick(SKIN, v + 0.1)
+        c = pick(HUMAN, v + 0.1)
         if f in ('top', 'front', 'west', 'east') and edge(ctx) > 0:
             c = mix(c, BONE[2], 0.4)                # the bone end straining the skin
         return c
@@ -342,7 +350,7 @@ def arm_mat(ctx):
             return pick(FUR, 0.45 + face_light(ctx) + hash3(ctx.i, ctx.j, 1, 2) * 0.15)
         return pick(RAW, 0.55 + hash3(ctx.i, ctx.j, 2, 3) * 0.2)
     if t in ('upper', 'fore'):
-        c = pick(SKIN, v)
+        c = pick(HUMAN, v)
         if f in ('front', 'west', 'east', 'back') and vein_hit(ctx, ly, lx + lz, cseed(ctx)):
             c = mix(c, VEIN[1], 0.5)
         if t == 'fore' and ly > h - 3:
@@ -352,22 +360,22 @@ def arm_mat(ctx):
         return c
     if t == 'palm':
         if f == 'bottom':
-            return mix(pick(SKIN, 0.3), DIRT, 0.5)
-        c = pick(SKIN, v)
+            return mix(pick(HUMAN, 0.3), DIRT, 0.5)
+        c = pick(HUMAN, v)
         if f == 'top' and ctx.j <= 1:
-            c = pick(SKIN, v - 0.12)                # knuckle row
+            c = pick(HUMAN, v - 0.12)                # knuckle row
         return c
     if t in ('finger', 'thumb'):
         if f == 'bottom':
-            return mix(pick(SKIN, 0.3), DIRT, 0.5)
+            return mix(pick(HUMAN, 0.3), DIRT, 0.5)
         tip = (lz < 1.0) if t == 'finger' else (getattr(ctx.cube, 'tipx', 0) * (lx - w / 2) > 0 and abs(lx - w / 2) > w / 2 - 1)
         if tip:
             return pick(NAIL, 0.55 + face_light(ctx)) if f == 'top' else NAIL[0]   # cracked nail, black dirt
-        c = pick(SKIN, v)
+        c = pick(HUMAN, v)
         if t == 'finger' and f == 'top' and int(lz) % 3 == 1:
-            c = pick(SKIN, v - 0.13)                # extra knuckle creases (one too many)
+            c = pick(HUMAN, v - 0.13)                # extra knuckle creases (one too many)
         return c
-    return pick(SKIN, v)
+    return pick(HUMAN, v)
 
 
 # ------------------------------------------------------------------ sweater (the Nona's red cable knit)
@@ -541,8 +549,20 @@ def eye_glow(side):
             if c == PUPIL:
                 pts.append((i, j, hx('#ff3a24')))
             else:
-                pts.append((i, j, (int(c[0] * 0.62), int(c[1] * 0.66), int(c[2] * 0.7), 255)))
+                pts.append((i, j, (int(c[0] * 0.9), int(c[1] * 0.94), int(c[2] * 0.96), 255)))
     return at(pts)
+
+
+HY, HZ = 2.0, -46.0          # authored head pivot (the neck joint under the back of the skull)
+EYE_X = (-8, 2)              # left edge of the right / left eye disc, head-relative
+EYE_Y = -12                  # top edge of the eye discs, head-relative
+
+
+def in_disc(i, j):
+    """Texel (i, j) inside the 6x6 eye disc (corners cut)."""
+    if not (0 <= i < 6 and 0 <= j < 6):
+        return False
+    return (i, j) not in ((0, 0), (5, 0), (0, 5), (5, 5))
 
 
 def skull_mat(ctx):
@@ -552,24 +572,24 @@ def skull_mat(ctx):
     x, y, z = A(ctx)
     lx, ly, lz = local(ctx)
     v = 0.56 + face_light(ctx) * 1.05
+    y -= HY
+    z -= HZ
     if t == 'skull':
         if f == 'front':
-            # eye footprints (x -7..-1 and 1..7, y -12..-6) + 1 texel ring = black lids
-            for ex0 in (-7, 1):
-                if ex0 - 1 <= x <= ex0 + 7 and -13 <= y <= -6:
-                    inner = ex0 <= x <= ex0 + 6 and -12 <= y
-                    corner = (x < ex0 or x > ex0 + 6) and (y < -12)
-                    if not corner:
-                        return LIP[0] if inner else LIP[1]
+            tx, ty = math.floor(x), math.floor(y)
+            # black lid ring hugging the round eye discs (4-neighbours of the disc), fur bridge between
+            for ex0 in EYE_X:
+                if in_disc(tx - ex0, ty - EYE_Y):
+                    return LIP[0]
+                if any(in_disc(tx + dx - ex0, ty + dy - EYE_Y) for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))):
+                    return LIP[1] if ty > EYE_Y + 3 else LIP[0]
             # tan puppy brows, raised at the inner ends (sad, cute)
-            if (x, y) and -14 <= y < -13 and (-5 <= x < -2 or 2 <= x < 5):
-                return TAN[1]
-            if -15 <= y < -14 and (-3 <= x < -2 or 2 <= x < 3):
-                return TAN[0]
-            v += 0.04 - abs(x) / 8 * 0.1
+            if ty == EYE_Y - 2 and (-6 <= tx <= -4 or 3 <= tx <= 5):
+                return TAN[1] if (tx in (-4, 3)) else TAN[0]
+            v += 0.04 - abs(x) / 9 * 0.1
             v += (hash3(math.floor(x / 2), math.floor(y / 2), 1, 61) - 0.5) * 0.12
             return pick(FUR, v)
-        if f == 'bottom' and abs(x) < 4 and z < -52:
+        if f == 'bottom' and abs(x) < 4 and z < -6:
             # palate: ridged flesh, seen when the jaws open
             return pick(GUM, 0.45 + (0.18 if int(z) % 2 == 0 else -0.05) - abs(x) * 0.04)
         if f == 'top':
@@ -587,7 +607,7 @@ def skull_mat(ctx):
         inner = (f == 'east' and x < 0) or (f == 'west' and x > 0)
         if inner:
             # cavity wall: red flesh with ridges, darker toward the throat
-            return pick(GUM, 0.55 - (z + 60) * 0.04 + (0.1 if int(y) % 2 == 0 else 0))
+            return pick(GUM, 0.55 - (z + 14) * 0.04 + (0.1 if int(y) % 2 == 0 else 0))
         if f == 'bottom':
             return pick(FUR, v - 0.05)
         if f == 'front':
@@ -687,17 +707,14 @@ def nose_mat(ctx):
     if f == seam_face:
         return pick(RAW, 0.45 + ctx.j * 0.1)
     if f == 'front':
-        nost = (ctx.i == (1 if sx < 0 else w - 2)) and ctx.j == 1
-        seam = (ctx.i == w - 1) if sx < 0 else (ctx.i == 0)
-        if nost:
-            return NOSE[0]
-        if seam:
-            return pick(RAW, 0.55)
-        if ctx.j == 0:
-            return NOSE[4] if ctx.i == (0 if sx < 0 else w - 1) else NOSE[3]
-        return NOSE[2] if ctx.j == 1 else NOSE[1]
+        rows = ["hHhr", "mOOr", "llOr"]
+        ch = rows[ctx.j][ctx.i if sx < 0 else w - 1 - ctx.i]
+        return {'h': NOSE[4], 'H': NOSE[5], 'm': NOSE[2], 'O': NOSE[0], 'l': NOSE[1], 'r': RAW[3]}[ch]
     if f == 'top':
-        return NOSE[5] if (ctx.i == 1 and ctx.j == 1) else NOSE[3]
+        seam = (ctx.i == w - 1) if sx < 0 else (ctx.i == 0)
+        if seam:
+            return RAW[3]
+        return NOSE[5] if (ctx.j == 1 and ctx.i == (1 if sx < 0 else w - 2)) else NOSE[3]
     if f == 'bottom':
         return NOSE[0]
     return NOSE[2]
@@ -762,9 +779,13 @@ def ear_mat(ctx):
     sx = c.sx
     tip = c.name == 'ear_tip'
     if tip:
-        # ragged end: per z column, the bottom few texels are gone
-        cut = h - (1 + hash3(math.floor(lz), 5, cseed(ctx), 3) * 3.2)
-        if ly > cut and f not in ('top',):
+        # rounded, slightly ragged lower end
+        dy = ly - (h - 4.5)
+        if dy > 0:
+            half = d / 2 * math.sqrt(max(0.0, 1 - (dy / 4.5) ** 2))
+            if abs(lz - d / 2) > half + 0.35 - hash3(math.floor(lz), 5, cseed(ctx), 3) * 0.6:
+                return None
+        if f == 'bottom':
             return None
     inner = (f == 'east' and sx < 0) or (f == 'west' and sx > 0)
     v = 0.5 + face_light(ctx) * 1.0
@@ -823,10 +844,97 @@ SEG_C = {'seg1': 4.0, **{s[0]: s[3] for s in SEGMENTS}}
 
 # human arm pairs: (index, parent segment, shoulder z, elbow (out, y, dz), wrist (out, dz), hand yaw)
 ARMS = [
-    (1, 'seg3', 3.0, (13.0, -14.0, -3.0), (22.0, -9.0), 30),
-    (2, 'seg5', 31.0, (14.0, -15.0, 0.0), (24.0, 1.0), 10),
-    (3, 'hips', 61.0, (13.0, -12.0, 3.0), (22.0, 9.0), -15),
+    (1, 'seg3', 3.0, (16.0, -9.0, -6.0), (20.0, -17.0), 35),
+    (2, 'seg5', 31.0, (17.0, -10.0, 2.0), (21.0, -4.0), 12),
+    (3, 'hips', 61.0, (16.0, -8.0, 8.0), (20.0, 14.0), -25),
 ]
+
+
+def arm_rig(idx, side, E=None, W=None, hand_world=None, seg_R=None, seg_T=None):
+    """Rest (or re-targeted) kinematics of one human arm.
+
+    Returns shoulder S, lengths L1/L2 (fixed by the rest pose) and MC Euler angles (degrees) of the
+    arm, forearm and hand bones.  For a pose pass world targets: elbow E, wrist W (the wrist lands on
+    the line from E toward W at the fixed forearm length), hand_world (3x3) and the parent segment's
+    world rotation/translation (seg_R, seg_T) if the segment itself moves in that pose."""
+    a = {k[0]: k for k in ARMS}[idx]
+    _, seg, zs, (eo, ey, edz), (wo, wdz), yaw = a
+    sx = -1 if side == 'right' else 1
+    c = SEG_C[seg]
+    S = np.array([5.0 * sx, c + 2.0, zs])
+    E0 = np.array([eo * sx, ey, zs + edz])
+    W0 = np.array([wo * sx, 22.0, zs + wdz])
+    L1 = int(round(np.linalg.norm(E0 - S)))
+    R1w = dir_rot(E0 - S)
+    L2 = int(round(np.linalg.norm(W0 - (S + R1w @ np.array([0, L1, 0])))))
+    Hw = R_deg(0, -yaw * sx, 0)
+    if E is not None:
+        segR = np.eye(3) if seg_R is None else seg_R
+        segT = np.zeros(3) if seg_T is None else np.asarray(seg_T, float)
+        Sw = segR @ S + segT                      # shoulder in the world for this pose
+        R1w = dir_rot(np.asarray(E, float) - Sw)
+        Ew = Sw + R1w @ np.array([0, L1, 0])
+        R2w = dir_rot(np.asarray(W, float) - Ew)
+        Hw = hand_world if hand_world is not None else Hw
+        R1 = segR.T @ R1w
+    else:
+        R1 = R1w
+        R2w = dir_rot(W0 - (S + R1w @ np.array([0, L1, 0])))
+        segR = np.eye(3)
+    R1world = segR @ R1
+    R2 = R1world.T @ R2w
+    Rh = R2w.T @ Hw
+    return {'S': S, 'L1': L1, 'L2': L2, 'a1': euler_zyx(R1), 'a2': euler_zyx(R2), 'ah': euler_zyx(Rh)}
+
+
+def _wrap(d):
+    d = math.radians(d)
+    while d > math.pi:
+        d -= 2 * math.pi
+    while d <= -math.pi:
+        d += 2 * math.pi
+    return d
+
+
+def arm_pose(idx, side, E, W, hand_world=None, seg_R=None, seg_T=None):
+    """Pose deltas (radians, added to rest) for the arm, forearm and hand bones of one arm."""
+    r0 = arm_rig(idx, side)
+    r1 = arm_rig(idx, side, E, W, hand_world, seg_R, seg_T)
+    out = {}
+    for key, bn in (('a1', f'arm_{idx}_{side}'), ('a2', f'forearm_{idx}_{side}'), ('ah', f'hand_{idx}_{side}')):
+        out[bn] = tuple(_wrap(r1[key][k] - r0[key][k]) for k in range(3)) + (0.0, 0.0, 0.0)
+    return out
+
+
+def arm_ik(idx, side, W, pole, hand_world=None, seg_R=None, seg_T=None):
+    """Two-bone IK: wrist on W (world), elbow bent toward `pole`; returns pose deltas."""
+    g = arm_rig(idx, side)
+    L1, L2 = g['L1'], g['L2']
+    segR = np.eye(3) if seg_R is None else seg_R
+    segT = np.zeros(3) if seg_T is None else np.asarray(seg_T, float)
+    S = segR @ g['S'] + segT
+    W = np.asarray(W, float)
+    d = W - S
+    n = float(np.linalg.norm(d))
+    n = max(abs(L1 - L2) + 0.5, min(L1 + L2 - 0.5, n))
+    u = d / np.linalg.norm(d)
+    a = (L1 * L1 - L2 * L2 + n * n) / (2 * n)
+    h = math.sqrt(max(0.0, L1 * L1 - a * a))
+    pv = np.asarray(pole, float)
+    pv = pv - u * float(pv @ u)
+    pv = pv / max(1e-6, float(np.linalg.norm(pv)))
+    E = S + u * a + pv * h
+    return arm_pose(idx, side, E, S + u * n, hand_world, seg_R, seg_T)
+
+
+def rad(*deg):
+    return tuple(math.radians(v) for v in deg)
+
+
+def P(rx=0.0, ry=0.0, rz=0.0, dx=0.0, dy=0.0, dz=0.0):
+    """Pose entry from degrees + texel offsets."""
+    return rad(rx, ry, rz) + (dx, dy, dz)
+
 
 
 def build():
@@ -861,28 +969,26 @@ def build():
         box(pb, (lx - 2, 22, -35), (4, 2, 1), name='toes')
 
     # ---------------- neck: stretched skin with trachea rings, the celeste collar and its brass tag
-    bone('neck', (0, 0, -36), parent='seg1', rot=(-25, 0, 0), mat=skin_mat)
-    box('neck', (-4.5, -5, -48), (9, 9, 15), name='tube')
+    bone('neck', (0, HY, -36), parent='seg1', rot=(-35, 0, 0), mat=skin_mat)
+    box('neck', (-4.5, HY - 5, -48), (9, 9, 15), name='tube')
     for k, z in enumerate((-41.0, -38.0)):
-        box('neck', (-5.5, -6, z), (11, 9, 1), mat=rib_mat, name='ring')
-    box('neck', (-5.5, -6, -45.5), (11, 11, 2), mat=collar_mat, name='collar')
-    box('neck', (-1, 5, -44.5), (2, 3, 0), mat=collar_mat, name='tag')
+        box('neck', (-5.5, HY - 6, z), (11, 9, 1), mat=rib_mat, name='ring')
+    box('neck', (-5.5, HY - 6, -45.5), (11, 11, 2), mat=collar_mat, name='collar')
+    box('neck', (-1, HY + 5, -44.5), (2, 3, 0), mat=collar_mat, name='tag')
 
     # ---------------- head (pivot at the neck joint, under the back of the skull)
-    HZ = -46.0
-
     def H(x, y, z):
-        return (x, y, HZ + z)
+        return (x, HY + y, HZ + z)
 
-    bone('head', (0, 0, HZ), parent='neck', rot=(25, 0, 0), mat=skull_mat)
-    box('head', H(-8, -14, -14), (16, 8, 14), name='skull')
-    box('head', H(-6, -15, -12), (12, 1, 10), name='dome')
-    box('head', H(-8, -6, -14), (4, 6, 14), name='side')
-    box('head', H(4, -6, -14), (4, 6, 14), name='side')
+    bone('head', (0, HY, HZ), parent='neck', rot=(35, 0, 0), mat=skull_mat)
+    box('head', H(-9, -14, -14), (18, 8, 14), name='skull')
+    box('head', H(-7, -15, -12), (14, 1, 10), name='dome')
+    box('head', H(-9, -6, -14), (5, 6, 14), name='side')
+    box('head', H(4, -6, -14), (5, 6, 14), name='side')
     box('head', H(-4, -6, -6), (8, 6, 6), mat=throat_mat, name='throat')
-    box('head', H(-7, -12, -15), (6, 6, 1), mat=eye_mat, name='eye', side='r',
+    box('head', H(EYE_X[0], EYE_Y, -15), (6, 6, 1), mat=eye_mat, name='eye', side='r',
         decals={'eyes:front': eye_glow('r')})
-    box('head', H(1, -12, -15), (6, 6, 1), mat=eye_mat, name='eye', side='l',
+    box('head', H(EYE_X[1], EYE_Y, -15), (6, 6, 1), mat=eye_mat, name='eye', side='l',
         decals={'eyes:front': eye_glow('l')})
 
     # the four muzzle flaps
@@ -891,8 +997,8 @@ def build():
         bone(ub, H(0.5 * sx, -1, -13), parent='head', rot=(-3, 3 * -sx, 0), mat=flap_mat)
         x0 = -5.5 if sx < 0 else 0.5
         box(ub, H(x0, -6, -27), (5, 5, 14), name='flap', upper=True, sx=sx)
-        nx0 = -3.5 if sx < 0 else 0.5
-        box(ub, H(nx0, -6, -29), (3, 3, 2), mat=nose_mat, name='nose', sx=sx)
+        nx0 = -4.5 if sx < 0 else 0.5
+        box(ub, H(nx0, -6.5, -29), (4, 3, 2), mat=nose_mat, name='nose', sx=sx)
         lipx = -5.2 if sx < 0 else 5.2
         box(ub, H(lipx, -1, -26), (0, 3, 12), mat=teeth_mat, name='teeth', down=True)
         box(ub, H(-1.8 if sx < 0 else 1.8, -1, -25), (0, 2, 11), mat=teeth_mat, name='teeth', down=True)
@@ -911,19 +1017,20 @@ def build():
 
     # black tongue lolling out of the front
     bone('tongue', H(0, -0.5, -8), parent='head', mat=tongue_mat)
-    box('tongue', H(-2, -1, -27), (4, 1, 19), name='tongue')
-    bone('tongue_tip', H(0, -0.5, -27), parent='tongue', rot=(62, 0, 0), mat=tongue_mat)
-    box('tongue_tip', H(-2, -1, -36), (4, 1, 9), name='tongue')
-    box('tongue_tip', H(-1, -1, -39), (2, 1, 3), name='tongue')
+    box('tongue', H(-2.5, -1, -28), (5, 1, 20), name='tongue')
+    bone('tongue_tip', H(0, -0.5, -28), parent='tongue', rot=(52, 6, 0), mat=tongue_mat)
+    box('tongue_tip', H(-2.5, -1, -37), (5, 1, 9), name='tongue')
+    box('tongue_tip', H(-1.5, -1, -40), (3, 1, 3), name='tongue')
 
-    # ears: limp and far too long, nearly touching the ground
+    # ears: limp and far too long, nearly touching the ground; turned a little toward the front
     for side, sx in (('right', -1), ('left', 1)):
         eb, tb = f'{side}_ear', f'{side}_ear_tip'
-        ex = 9.0 * sx
-        bone(eb, H(ex, -13, -5), parent='head', rot=(4, 0, -7 * sx), mat=ear_mat)
-        box(eb, H(ex - 1, -14, -9), (2, 19, 8), name='ear', sx=sx)
-        bone(tb, H(ex, 5, -5), parent=eb, rot=(-3, 0, 4 * sx), mat=ear_mat)
-        box(tb, H(ex - 1, 5, -8.5), (2, 20, 7), name='ear_tip', sx=sx)
+        ex = 10.0 * sx
+        bone(eb, H(ex, -11, -4), parent='head', rot=(8, -24 * sx, -10 * sx), mat=ear_mat)
+        box(eb, H(ex - 1, -12, -6), (2, 17, 5), name='ear', sx=sx)
+        box(eb, H(ex - 1, -1, -7.5), (2, 6, 7), name='ear', sx=sx)
+        bone(tb, H(ex, 5, -4), parent=eb, rot=(-7, 0, 6 * sx), mat=ear_mat)
+        box(tb, H(ex - 1, 5, -8), (2, 21, 8), name='ear_tip', sx=sx)
 
     # ---------------- body links seg2..seg6 + hips: stretched skin band (ribs) then a fur link
     for name, parent, pz, c, W, Hh, L, gap in SEGMENTS:
@@ -951,14 +1058,14 @@ def build():
     box('tail_tip', (-1, ch - 5, 74.5), (2, 2, 8), name='tail')
 
     # ---------------- sweater shreds hanging off the spine
-    shreds = [('shred_1', 'seg2', -11.0, 9, 6), ('shred_2', 'seg3', 3.0, 7, 11),
-              ('shred_3', 'seg4', 17.0, 12, 5), ('shred_4', 'seg5', 30.5, 5, 9)]
+    shreds = [('shred_1', 'seg2', -11.0, 12, 8), ('shred_2', 'seg3', 3.0, 9, 14),
+              ('shred_3', 'seg4', 17.0, 14, 7), ('shred_4', 'seg5', 30.5, 7, 12)]
     for name, parent, zc, lr, ll in shreds:
         c = SEG_C[parent]
         bone(name, (0, c - 6, zc), parent=parent, mat=shred_mat)
         box(name, (-6.3, c - 6.4, zc - 1.5), (12, 1, 3), name='band', inflate=0.15)
-        box(name, (-6.5, c - 5.6, zc - 1.5), (0, lr, 3), name='strip')
-        box(name, (6.5, c - 5.6, zc - 1.0), (0, ll, 2), name='strip')
+        box(name, (-6.5, c - 5.6, zc - 2.0), (0, lr, 4), name='strip')
+        box(name, (6.5, c - 5.6, zc - 1.5), (0, ll, 3), name='strip')
         box(name, (-6.6, c - 5.6 + lr - 1, zc + 0.5), (0, 5, 1), name='yarn')
 
     # ---------------- three pairs of human arms (spider elbows above the spine, flat palms, long fingers)
@@ -966,27 +1073,18 @@ def build():
         c = SEG_C[seg]
         for side, sx in (('right', -1), ('left', 1)):
             ab, fb, hb = f'arm_{idx}_{side}', f'forearm_{idx}_{side}', f'hand_{idx}_{side}'
-            S = np.array([5.0 * sx, c + 2.0, zs])
-            E = np.array([eo * sx, ey, zs + edz])
-            W = np.array([wo * sx, 22.0, zs + wdz])
-            d1 = E - S
-            L1 = int(round(np.linalg.norm(d1)))
-            R1 = dir_rot(d1)
-            d2 = W - (S + R1 @ np.array([0, L1, 0]))
-            L2 = int(round(np.linalg.norm(d2)))
-            R2w = dir_rot(d2)
-            R2 = R1.T @ R2w
-            Rh = R2w.T @ R_deg(0, -yaw * sx, 0)
-            a1 = euler_zyx(R1)
-            a2 = euler_zyx(R2)
-            ah = euler_zyx(Rh)
+            g = arm_rig(idx, side)
+            S, L1, L2 = g['S'], g['L1'], g['L2']
+            a1, a2, ah = g['a1'], g['a2'], g['ah']
             Sx, Sy, Sz = S
             bone(ab, (Sx, Sy, Sz), parent=seg, rot=a1, mat=arm_mat)
-            box(ab, (Sx - 2, Sy - 1.5, Sz - 2), (4, 3, 4), name='shoulder')
-            box(ab, (Sx - 1.5, Sy, Sz - 1.5), (3, L1, 3), name='upper')
+            box(ab, (Sx - 2.5, Sy - 1.5, Sz - 2.5), (5, 4, 5), name='shoulder')
+            box(ab, (Sx - 1.5, Sy, Sz - 1.5), (3, L1, 3), name='upper', inflate=0.3)
+            box(ab, (Sx - 2, Sy + 3, Sz - 2), (4, 6, 4), name='upper')
             bone(fb, (Sx, Sy + L1, Sz), parent=ab, rot=a2, mat=arm_mat)
             box(fb, (Sx - 2, Sy + L1 - 2, Sz - 2), (4, 4, 4), name='elbow')
-            box(fb, (Sx - 1, Sy + L1, Sz - 1), (2, L2, 2), name='fore', inflate=0.25)
+            box(fb, (Sx - 1, Sy + L1, Sz - 1), (2, L2, 2), name='fore', inflate=0.3)
+            box(fb, (Sx - 1.5, Sy + L1 + 2, Sz - 1.5), (3, 8, 3), name='fore')
             hy = Sy + L1 + L2
             bone(hb, (Sx, hy, Sz), parent=fb, rot=ah, mat=arm_mat)
             box(hb, (Sx - 3.5, hy, Sz - 5), (7, 2, 6), name='palm')
@@ -1001,6 +1099,100 @@ def build():
     return m
 
 
-POSES = {}
+# ------------------------------------------------------------------ poses
+def _merge(*ds):
+    out = {}
+    for d in ds:
+        out.update(d)
+    return out
+
+
+def _sit_up(A):
+    """seg1 (root) pitched up by A degrees around its back end so seg2.. stay planted (seg2 counter-rotates)."""
+    c1 = SEG_C['seg1']
+    v = np.array([0.0, SEGMENTS[0][3] - c1, SEGMENTS[0][2] + 36.0])     # seg2 pivot relative to seg1's
+    R = R_deg(-A, 0, 0)
+    off = v - R @ v
+    return {'seg1': P(-A, 0, 0, 0, off[1], off[2]), 'seg2': P(A)}
+
+
+def _praying_hands():
+    out = {}
+    for side, sx in (('right', -1), ('left', 1)):
+        Hw = np.array([[0, -sx, 0], [0, 0, 1], [-sx, 0, 0]], float)
+        out.update(arm_ik(1, side, (1.3 * sx, -13.0, -37.0), (sx * 1.0, -0.5, 0.6), Hw))
+    return out
+
+
+def _folded_arms(seg_dz):
+    """Arms folded back over the flanks like a resting spider (for the transformation)."""
+    out = {}
+    for idx, seg, *_ in ARMS:
+        T = np.array([0.0, 0.0, seg_dz[seg]])
+        for side, sx in (('right', -1), ('left', 1)):
+            S = arm_rig(idx, side)['S'] + T
+            W = S + np.array([sx * 6.0, -3.0, 18.0])
+            out.update(arm_ik(idx, side, W, (sx * 0.6, -1.0, -0.2), R_deg(0, 180, 0), seg_T=T))
+    return out
+
+
+def make_poses():
+    poses = {}
+    jaws70 = {'jaw_upper_right': P(-33, 24, 8), 'jaw_upper_left': P(-33, -24, -8),
+              'jaw_lower_right': P(37, 24, -6), 'jaw_lower_left': P(37, -24, 6)}
+    # lunge: neck thrown forward, jaws open 70 deg into a 4-petal maw, ears flung back, front legs reaching
+    poses['lunge'] = _merge(jaws70, {
+        'neck': P(27, 0, 0), 'head': P(-14, 0, 0, 0, 0, -3),
+        'tongue': P(-8, 0, 0), 'tongue_tip': P(-34, 0, 0),
+        'right_ear': P(48, 0, -12), 'left_ear': P(48, 0, 12), 'right_ear_tip': P(25), 'left_ear_tip': P(25),
+        'seg1': P(0, 0, 0, 0, 2.5, 0), 'seg2': P(-4), 'seg3': P(-3), 'seg4': P(4), 'seg5': P(3),
+        'front_right_leg': P(-48, 0, 0), 'front_left_leg': P(-40, 0, 0),
+        'front_right_paw': P(30), 'front_left_paw': P(25),
+        'tail': P(10, 26, 0), 'tail_tip': P(0, 20, 0),
+    }, arm_ik(1, 'right', (-17.0, 21.0, -26.0), (-1.0, -1.0, 0.0)),
+        arm_ik(1, 'left', (17.0, 21.0, -22.0), (1.0, -1.0, 0.0)))
+    # coil: every link yawed the same way (alternating strength) so the body curls ~1 turn around the
+    # victim on its left; the head turns in toward the centre, jaws half open
+    yaw = [('seg2', 52), ('seg3', 38), ('seg4', 52), ('seg5', 38), ('seg6', 52), ('hips', 40)]
+    coil = {n: P(-3 if k % 2 else 3, a, 0) for k, (n, a) in enumerate(yaw)}
+    coil.update({'seg1': P(0, 25, 0), 'neck': P(8, -38, 0), 'head': P(-6, -30, 10),
+                 'jaw_upper_right': P(-14, 10, 0), 'jaw_upper_left': P(-14, -10, 0),
+                 'jaw_lower_right': P(16, 10, 0), 'jaw_lower_left': P(16, -10, 0),
+                 'tail': P(0, 35, 0), 'tail_tip': P(0, 25, 0), 'tongue_tip': P(-15)})
+    poses['coil'] = coil
+    # vomit: neck arched up, snout to the sky, all four flaps peeled open, tongue out, legs braced
+    poses['vomit'] = _merge({
+        'jaw_upper_right': P(-30, 26, 10), 'jaw_upper_left': P(-30, -26, -10),
+        'jaw_lower_right': P(34, 26, -8), 'jaw_lower_left': P(34, -26, 8),
+        'neck': P(-24, 0, 0), 'head': P(-30, 0, 0), 'tongue': P(6), 'tongue_tip': P(20),
+        'right_ear': P(36, 0, -6), 'left_ear': P(36, 0, 6),
+        'seg1': P(0, 0, 0, 0, -1.5, 0), 'seg2': P(4), 'seg3': P(4), 'seg4': P(-3), 'seg5': P(-3),
+        'front_right_leg': P(-22, 0, 8), 'front_left_leg': P(-22, 0, -8),
+        'front_right_paw': P(18), 'front_left_paw': P(18), 'tail': P(-20, 0, 0)})
+    # beg: the funniest one.  The chest sits up straight on the planted body, the stubby front paws beg,
+    # the head does the dog tilt, the first pair of human hands are pressed together, the tail wags
+    beg = _sit_up(72)
+    beg.update({'neck': P(50, 0, 0), 'head': P(22, 8, 22), 'right_ear': P(0, 0, 10), 'left_ear': P(0, 0, 18),
+                'front_right_leg': P(48, 0, 6), 'front_left_leg': P(52, 0, -6),
+                'front_right_paw': P(62), 'front_left_paw': P(58),
+                'tail': P(-8, 34, 0), 'tail_tip': P(0, 22, 0), 'tongue_tip': P(6, -10, 0)})
+    beg.update(_praying_hands())
+    poses['beg'] = beg
+    # stretch: half length.  Every link slides 10.5 texels into the one in front (the skin bands and part
+    # of each fur link disappear), the neck telescopes in, the human arms fold over the back
+    dz = -10.5
+    st = {n: P(0, 0, 0, 0, 0, dz) for n, *_ in SEGMENTS}
+    st['head'] = P(0, 0, 0, 0, 0, 7.0)
+    acc, seg_dz = 0.0, {}
+    for n, *_ in SEGMENTS:
+        acc += dz
+        seg_dz[n] = acc
+    st.update(_folded_arms(seg_dz))
+    st.update({'right_ear': P(0, 0, -4), 'left_ear': P(0, 0, 4), 'tail': P(0, 20, 0)})
+    poses['stretch'] = st
+    return poses
+
+
+POSES = make_poses()
 
 ANIM_NOTES = """(written once the rig is final)"""

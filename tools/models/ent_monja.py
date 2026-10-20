@@ -193,9 +193,9 @@ def wool_mat(ctx):
             c = mix(c, DUST, 0.5)                           # stitched hem line
         if t in ('panel', 'slv_f', 'slv_b', 'slv_or', 'slv_ol'):
             s = vnoise(lx * 0.35, ly * 0.35, k, 21)
-            if ly > h * 0.55 and s > 0.66 and f != 'top':
-                c = pick(SCORCH, (s - 0.66) * 9)            # scorch blotches: holy fire has touched her
-                if s > 0.76 and hash3(ctx.i, ctx.j, k, 22) > 0.7:
+            if ly > h * 0.62 and s > 0.72 and f != 'top':
+                c = mix(c, SCORCH[1], 0.75)                 # scorch blotches: holy fire has touched her
+                if s > 0.8 and hash3(ctx.i, ctx.j, k, 22) > 0.8:
                     c = SCORCH[3]
         if t in ('panel', 'scap', 'slv_f') and f == 'front':
             if hash3(col, k, 0, 23) > 0.9:                  # candle-wax drips
@@ -238,8 +238,10 @@ def veil_mat(ctx):
         ang = math.atan2(ctx.z - 0.0, ctx.x)
         ph = (ang * 7 / math.pi + vnoise(ctx.x * 0.2, ctx.z * 0.2, 3, 5) * 0.8) % 1.0
         v += 0.1 if ph < 0.2 else (-0.12 if ph > 0.8 else 0.0)   # radial folds gathered at the crown
-    if edge(ctx) == 0 and f != 'top' and not is_plane(ctx):
+    if edge(ctx) == 0 and f != 'top' and not is_plane(ctx) and t != 'chamfer':
         v -= 0.07
+    if t == 'chamfer' and f == 'front':
+        v -= 0.12
     return pick(VEILC, v)
 
 
@@ -263,7 +265,9 @@ def linen_mat(ctx):
     if t == 'wimple' and f == 'front' and ctx.i % 3 == 1 and ctx.w > 2:
         v -= 0.05                                           # faint starched pleats
     if t == 'arch' and f == 'front' and ctx.j >= ctx.h - 1:
-        v = 0.3                                             # shadow line along the gothic arch opening
+        v = 0.04                                            # near-black shadow line along the oval opening
+    if f == 'front' and ((t == 'wim_r' and ctx.i == ctx.w - 1) or (t == 'wim_l' and ctx.i == 0)):
+        v = 0.04                                            # shadow line where the jaw meets the wimple
     if t == 'bib' and f == 'front':
         cx = abs(lx - w / 2)
         hw = w / 2 - max(0.0, ly - (h - 3.2)) ** 1.5 * 1.25
@@ -340,24 +344,28 @@ def jaw_mat(ctx):
 
 # teeth: 'T' needle, 't' rotten / back-row tooth, 'g' gum.  13 wide (x -6.5..6.5), corners hidden in the wimple
 UPPER_TEETH = [
-    "gTgTTgTgTTgTg",
-    ".T.TT.T.T..T.",
-    ".T..T...T..T.",
+    "TgTTgTTgTTgTT",
+    ".TTT.TT.TTT.T",
+    "..T..T...T.T.",
+    "..T......T...",
 ]
 UPPER_TEETH_2 = [
-    "..t..t.t..t..",
-    "..t....t..t..",
+    "....t..t.....",
+    "....t..t.....",
+    ".......t.....",
     ".............",
 ]
 LOWER_TEETH = [
-    ".T..T..T...T.",
-    ".TT.T.TT.T.T.",
-    "gTTgTgTTgTTTg",
+    "...T....T....",
+    "..TT..T.TT...",
+    ".TTT.TT.TTT..",
+    "TTgTTgTTgTTgT",
 ]
 LOWER_TEETH_2 = [
     ".............",
-    "...t.t...t...",
-    "...t.t...t...",
+    ".....t....t..",
+    ".....t.t..t..",
+    ".....t.t..t..",
 ]
 TEETH_ROWS = {'upper_teeth': UPPER_TEETH, 'upper_teeth_2': UPPER_TEETH_2,
               'lower_teeth': LOWER_TEETH, 'lower_teeth_2': LOWER_TEETH_2}
@@ -476,30 +484,30 @@ def string_mat(ctx):
 GX0, GY0 = -9.5, -60
 FACE = [
     # 0123456789012345678
-    "..q....q...q....q..",   # r0  y-60  coif band: barbed wire (barbs)
-    "iHiiHiiHiiHiiHiiHii",   # r1  y-59  twisted wire
-    ".Bq....q...q....qB.",   # r2  y-58  barbs + blood from the two temple nails
-    ".B.kkkkk464kkkkk.B.",   # r3  y-57  apex of the gothic arch
-    ".b.kkkk478B4kkkk.b.",   # r4
-    ".B.kkk5787b75kkk.d.",   # r5
-    ".B.k4v78c7b87v4k...",   # r6  forehead: frown crease, blood drip, black veins at the temples
-    ".bk3678875578763k..",   # r7  brow ridge (V frown, furrow at the centre)
-    ".Bk2356643466532k..",   # r8  brow underside
-    ".dk43qkKK5KKkq34k..",   # r9  sockets: right c4-8, 1-px bridge c9, left c10-14 (top inner corners deeper)
-    "..kvqKKKK7korKq5k..",   # r10
-    "..k5kKrok8qWyKkvk..",   # r11 right pupil low, left pupil high
-    "..k5kKyWq74kKKk5k..",   # r12
-    "..k63kKk4754kk36k..",   # r13 rounded socket bottoms
-    "..k67877n8n77876k..",   # r14 cheekbones lit, nasal slits c8 / c10 around a white bridge
-    "..kL6767n7n7676Lk..",   # r15 torn grin rising onto the cheekbones
-    "..kBL456n6n654LBk..",   # r16 creases under the cheekbones
+    "q.Q...Q..Q...Q..Q.q",   # r0  y-60  coif band: barbed wire wrapped round the head (barbs up)
+    "iHiIiHiIiHiIiHiIiHi",   # r1  y-59  twisted wire with steel glints
+    ".BQ.B.Q..Q.B.Q..QB.",   # r2  y-58  barbs down, blood where they bite
+    ".B.kk47B888774kk.B.",   # r3  y-57  forehead (oval top: chamfered corners)
+    ".b.k478b8878c74k.b.",   # r4        blood drip c7, crack c12 -> c10
+    ".B.4v78B788c77v4.d.",   # r5        black veins creeping in at the temples
+    ".B.v678d78c7876v...",   # r6
+    ".bk5678875788765k..",   # r7  brow ridge: V frown, furrow at the centre
+    ".Bk4356643466534k..",   # r8  brow underside
+    ".dk53qkKK6KKkq35k..",   # r9  sockets: right c4-8, 1-px bridge c9, left c10-14 (top inner corners deeper)
+    "..k6qKKKK7korKq6k..",   # r10
+    "..k6kKrok8qWyKk6k..",   # r11 right pupil low, left pupil high
+    "..k6kKyWq74kKKk6k..",   # r12
+    "..k73kKk4754kk37k..",   # r13 rounded socket bottoms
+    "..k67887n8n78876k..",   # r14 cheekbones lit; nasal slits c8 / c10 around a 1-px white bridge
+    "..k57777n7n77775k..",   # r15
+    "..kL44567676544Lk..",   # r16 crease under the cheekbones, grin corners curl up
     "..kLLLLLLLLLLLLLk..",   # r17 y-43  one continuous black upper lip
-    "...k...........k...",   # r18 y-42  teeth / gullet (own materials)
-    "...k...........k...",   # r19
-    "...k...........k...",   # r20
+    "...................",   # r18 y-42  teeth / gullet (own materials)
+    "...................",   # r19
+    "...................",   # r20
     "...LLLLLLLLLLLLL...",   # r21 y-39  lower lip (jaw)
-    "...k3v6778776v3k...",   # r22 jaw
-    "...k2V5667665V2k...",   # r23
+    "...44v6778776v44...",   # r22 jaw
+    "...3356677766533...",   # r23
     "......4566654......",   # r24 y-36  pointed chin
 ]
 assert all(len(r) == 19 for r in FACE), [len(r) for r in FACE]
@@ -512,7 +520,7 @@ FPAL = {
     'c': CRACK, 'v': VEIN, 'V': VEIN2,
     'L': LIP[0], 'l': LIP[2],
     'B': BLOOD[2], 'b': BLOOD[4], 'd': DRIED,
-    'i': IRON[1], 'H': RUSTC[4],
+    'i': IRON[1], 'I': IRON[2], 'H': IRON[5], 'Q': (20, 20, 26, 255),
 }
 GLOWPAL = {'e': (150, 30, 0, 255), 'r': EMBER[2], 'o': EMBER[3], 'y': EMBER[4], 'W': EMBER[5],
            'h': (70, 12, 0, 255)}
@@ -643,7 +651,7 @@ def build():
         box('chest', (-1, yy, 7.8), (2, 2, 2), mat=bone_mat, name='vertebra')
     box('chest', (-4, -31, -5.0), (8, 10, 1), name='scap')
     # guimpe: rounded off-white shoulder bib, blood-soaked lower edge
-    box('chest', (-9, -38, -5.6), (18, 7, 10), mat=linen_mat, name='bib')
+    box('chest', (-10, -38, -5.6), (20, 10, 10), mat=linen_mat, name='bib')
 
     # ---------------- inverted wooden cross on a chain, over the guimpe and scapular
     bone('cross', (0, -37, -5.8), parent='chest', rot=(-4, 0, 3), mat=wood_mat)
@@ -663,46 +671,41 @@ def build():
     fbox('head', (-6.5, -46, -8.75), (4, 3, 2), name='cheek')
     fbox('head', (2.5, -46, -8.75), (4, 3, 2), name='cheek')
     fbox('head', (-3.5, -45.75, -9.25), (7, 4, 4), name='muzzle')
-    box('head', (-6.5, -42, -8.5), (13, 3, 0), mat=teeth_mat, name='upper_teeth')
-    box('head', (-6.5, -42, -7.6), (13, 3, 0), mat=teeth_mat, name='upper_teeth_2')
+    box('head', (-6.5, -42, -8.5), (13, 4, 0), mat=teeth_mat, name='upper_teeth')
+    box('head', (-6.5, -42, -7.6), (13, 4, 0), mat=teeth_mat, name='upper_teeth_2')
     box('head', (-5.5, -41.75, -6.5), (11, 5, 7), mat=throat_mat, name='throat')
     # coif: band, wimple sides, lower wimple hiding the jaw corners, chin wrap
     fbox('head', (-9.5, -60, -9.5), (19, 3, 18), mat=linen_mat, name='band')
-    fbox('head', (-9.5, -57, -9.5), (3, 15, 6), mat=linen_mat, name='wimple')
-    fbox('head', (6.5, -57, -9.5), (3, 15, 6), mat=linen_mat, name='wimple')
-    fbox('head', (-9.5, -42, -9.5), (4, 6, 6), mat=linen_mat, name='wimple')
-    fbox('head', (5.5, -42, -9.5), (4, 6, 6), mat=linen_mat, name='wimple')
-    box('head', (-8.5, -36, -8.5), (3, 2, 5), mat=linen_mat, name='wimple')
-    box('head', (5.5, -36, -8.5), (3, 2, 5), mat=linen_mat, name='wimple')
-    box('head', (-5.5, -36, -7.5), (11, 4, 9), mat=linen_mat, name='gorget')
+    fbox('head', (-9.5, -57, -9.5), (3, 12, 6), mat=linen_mat, name='wimple')
+    fbox('head', (6.5, -57, -9.5), (3, 12, 6), mat=linen_mat, name='wimple')
+    box('head', (-5.5, -36, -7.5), (11, 5, 9), mat=linen_mat, name='gorget')
     # black hood: low crown, sides, back
-    box('head', (-8, -61.25, -10), (16, 2, 19), mat=veil_mat, name='hood')
-    box('head', (-11, -59, -9), (2, 21, 18), mat=veil_mat, name='hood')
-    box('head', (9, -59, -9), (2, 21, 18), mat=veil_mat, name='hood')
+    box('head', (-8, -61.25, -10), (16, 2, 11), mat=veil_mat, name='hood')
+    box('head', (-5, -62, -8.5), (10, 1, 8), mat=veil_mat, name='peak')
+    box('head', (-11, -59, -9), (3, 23, 18), mat=veil_mat, name='hood')
+    box('head', (8, -59, -9), (3, 23, 18), mat=veil_mat, name='hood')
     box('head', (-9.5, -60, 7.5), (19, 22, 2), mat=veil_mat, name='hood')
-    # gothic arch: two linen slabs meeting at the apex turn the opening into a pointed arch
     for side, sx in (('right', -1), ('left', 1)):
+        # inner chamfers: the coif opening becomes an oval instead of a rectangle
         ab = f'arch_{side}'
-        bone(ab, (0, -57, -9.25), parent='head', rot=(0, 0, 34 * sx), mat=linen_mat)
-        box(ab, (-8 if sx < 0 else 0, -61, -9.25), (8, 4, 2), name='arch')
+        bone(ab, (5 * sx, -55.5, -9.25), parent='head', rot=(0, 0, 45 * sx), mat=linen_mat)
+        box(ab, (5 * sx - 3, -58.5, -9.25), (6, 3, 2), name='arch')
+        # lower wimple: slabs converging under the chin hide the jaw corners and close the oval
+        wb = f'wimple_{side}'
+        bone(wb, (9.5 * sx, -46, -9.75), parent='head', rot=(0, 0, 13 * sx), mat=linen_mat)
+        box(wb, (9.5 * sx - (0 if sx < 0 else 3), -46, -9.75), (3, 14, 6), name='wim_' + side[0])
         # chamfered hood corners: the white coif and the black hood lose their square corners
         hb = f'hood_{side}'
-        bone(hb, (9.5 * sx, -59, 0), parent='head', rot=(0, 0, 45 * sx), mat=veil_mat)
-        box(hb, (9.5 * sx - 3, -60.5, -10.25), (6, 3, 20), name='chamfer')
-    bone('hood_peak', (0, -61.25, -0.5), parent='head', rot=(4, 0, -3), mat=veil_mat)
-    box('hood_peak', (-5, -62.25, -7), (10, 1, 14), name='peak')
-    # two short rusted nails driven in at the temples, at different angles
-    for side, nx, ny, rot in (('right', -8, -58.5, (-28, 18, 22)), ('left', 8, -59, (-20, -24, -30))):
-        nb = f'nail_{side}'
-        bone(nb, (nx, ny, -9.5), parent='head', rot=rot, mat=nail_mat)
-        box(nb, (nx - 0.5, ny - 0.5, -10.5), (1, 1, 1), mat=iron_mat)
-        box(nb, (nx - 1, ny - 1, -11.5), (2, 2, 1))
+        bone(hb, (8.5 * sx, -58.5, 0), parent='head', rot=(0, 0, 45 * sx), mat=veil_mat)
+        box(hb, (8.5 * sx - 2.5, -60.5, -10.25), (5, 4, 17), name='chamfer')
+    bone('hood_peak', (0, -61, 0.5), parent='head', rot=(-16, 0, -2), mat=veil_mat)
+    box('hood_peak', (-8, -61, -0.5), (16, 3, 11), name='peak')
 
     # ---------------- jaw: hinge in the wimple, drops onto a black gullet
     bone('jaw', (0, -40, -4), parent='head', rot=(5, 0, 0), mat=jaw_mat)
     fbox('jaw', (-6.5, -39, -9), (13, 3, 6), name='jaw')
-    box('jaw', (-6.5, -42, -8.7), (13, 3, 0), mat=teeth_mat, name='lower_teeth')
-    box('jaw', (-6.5, -42, -7.9), (13, 3, 0), mat=teeth_mat, name='lower_teeth_2')
+    box('jaw', (-6.5, -43, -8.7), (13, 4, 0), mat=teeth_mat, name='lower_teeth')
+    box('jaw', (-6.5, -43, -7.9), (13, 4, 0), mat=teeth_mat, name='lower_teeth_2')
     fbox('jaw', (-3.5, -36, -8.5), (7, 1, 4), name='chin')
 
     # ---------------- veil: upper drape behind the hood, long back veil, side drapes over the shoulders
@@ -764,7 +767,7 @@ def build():
         box(th, (tx - 0.5, hy + 1, az - 1.5), (1, 6, 1), inflate=0.3, name='phal')
         box(th, (tx - 0.5, hy + 6.8, az - 1.7), (1, 4, 1), mat=claw_mat, inflate=0.12)
 
-    m = Model('monja', 256, 176, r.roots)
+    m = Model('monja', 256, 192, r.roots)
     m.scale = 0.5
     return m
 
@@ -788,15 +791,15 @@ POSES = {
         'chest': (-0.1, 0, 0, 0, 0, 0),
         'neck': (-0.05, 0, 0, 0, 0, 0),
         'head': (-0.1, 0, 0.3, 0, 0, 0),
-        'jaw': (0.6, 0, 0, 0, 1.0, -0.5),
+        'jaw': (0.7, 0, 0, 0, 1.5, -0.5),
         'veil': (0.25, 0, 0, 0, 0, 0),
         'veil_lower': (0.2, 0, 0, 0, 0, 0),
         'veil_right': (0, 0, 0.25, 0, 0, 0),
         'veil_left': (0, 0, -0.25, 0, 0, 0),
-        'right_arm': (-2.6, 0, 0.6, 0, 0, 0),
-        'left_arm': (-2.4, 0, -0.7, 0, 0, 0),
-        'right_forearm': (-0.3, 0, 0, 0, 0, 0),
-        'left_forearm': (-0.5, 0, 0, 0, 0, 0),
+        'right_arm': (-2.2, 0, -0.95, 0, 0, 0),
+        'left_arm': (-2.05, 0, 0.85, 0, 0, 0),
+        'right_forearm': (-0.75, 0, 0, 0, 0, 0),
+        'left_forearm': (-0.9, 0, 0, 0, 0, 0),
         'right_sleeve_front': (-0.2, 0, 0, 0, 0, 0),
         'left_sleeve_front': (-0.2, 0, 0, 0, 0, 0),
         'right_sleeve_back': (0.35, 0, 0, 0, 0, 0),
@@ -832,10 +835,10 @@ POSES = {
         'veil': (-0.2, 0, 0, 0, 0, 0),
         'veil_right': (0, 0, -0.15, 0, 0, 0),
         'veil_left': (0, 0, 0.15, 0, 0, 0),
-        'right_arm': (-2.3, -0.3, -0.3, 0, 0, 0),
-        'left_arm': (-2.1, 0.3, 0.3, 0, 0, 0),
-        'right_forearm': (-0.9, 0, 0, 0, 0, 0),
-        'left_forearm': (-0.9, 0, 0, 0, 0, 0),
+        'right_arm': (-1.45, 0, 0.35, 0, 0, 0),
+        'left_arm': (-1.3, 0, -0.4, 0, 0, 0),
+        'right_forearm': (-0.9, 0, 0.5, 0, 0, 0),
+        'left_forearm': (-0.95, 0, -0.55, 0, 0, 0),
         'right_hand': (-0.3, 0, 0, 0, 0, 0),
         'left_hand': (-0.4, 0, 0, 0, 0, 0),
         **_hands(0.1, 0.8, -0.2),
