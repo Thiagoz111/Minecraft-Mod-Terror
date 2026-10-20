@@ -1,1 +1,1 @@
-net/minecraft/world/item/equipment/ArmorMaterials.java
+net/minecraft/client/renderer/entity/player/AvatarRenderer.java

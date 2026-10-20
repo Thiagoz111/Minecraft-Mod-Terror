@@ -1,3 +1,2 @@
-item/equipment/
-entity/Display
-client/renderer/entity/layers/.*(Equipment|Armor)
+client/renderer/entity/player/
+client/renderer/entity/(Avatar|Player)

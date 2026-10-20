@@ -2235,3 +2235,371 @@ F('atril_coro', 'Atril del coro', 'Choir lectern', atril_parts('vacio'))
 F('atril_coro_partitura', 'Atril del coro con partitura', 'Choir lectern with score', atril_parts('partitura'))
 F('atril_albornoz', 'Atril 8 "T. ALBORNOZ"', 'Choir lectern 8 "T. ALBORNOZ"', atril_parts('albornoz'))
 F('reclinatorio', 'Reclinatorio', 'Prie-dieu', reclinatorio_parts())
+
+
+# ============================================================================================ DORMITORY
+TICKING = pal('#1b2338', '#2a3550', '#a9ad9f', '#c9cbbd', '#dddccf')
+
+
+def ticking_tone(ctx):
+    """Old wool mattress cover: blue-grey stripes on off-white."""
+    P = tp(ctx)
+    u = P[0] if ctx.face in ('north', 'south', 'up', 'down') else P[2]
+    if ctx.face in ('north', 'south'):
+        u = P[0]
+    st = int(u) % 6
+    k = 1 if st == 0 else (2 if st == 3 else 3 + (hh(int(u), int(P[1])) > 0.7))
+    if ctx.face == 'up':
+        k = 3
+    return (TICKING, k)
+
+
+def sheet(seed=0, base=6, axis='i', folds=0.6, px=3.0, stains=0.25):
+    return fin(cloth(LINEN, base=base, seed=seed, fold_axis=axis, folds=folds, fold_px=px, stains=stains), ao=0.6, dust=0.5)
+
+
+def blanket_tone(seed=0):
+    """Grey institutional wool blanket with two navy stripes near the edge and a soft nap."""
+    def t(ctx):
+        P = tp(ctx)
+        z = P[2]
+        k = 4
+        if ctx.face != 'down':
+            if (int(P[0]) + int(P[1]) * 2 + int(z)) % 3 == 0:
+                k -= 1
+            if hh(int(P[0] / 2), int(z / 2), int(P[1] / 2), seed) < 0.12:
+                k += 1
+        c = T(BLANKET, k)
+        zz = (ctx.pos[2] + (16 if ctx.block.key.endswith('_pie') else 0)) * 2
+        if 50 <= zz % 64 <= 51 or 54 <= zz % 64 <= 55:
+            c = T(NAVY, 3 + (k > 4))
+        return c
+    return t
+
+
+def bed_frame(head=True, finial_y=None):
+    mP = fin(painted_iron(seed=301, chips=0.32), dust=0.5)
+    mPs = fin(painted_iron(seed=303, chips=0.25, base=6), dust=0.4)
+    mBr = fin(brass(seed=305, base=5, tarnish=0.5), dust=0.5)
+    P = []
+    zb = (0.4, 1.6) if head else (14.4, 15.6)
+    top = 22.0 if head else 15.0
+    for x0 in (0.6, 14.2):
+        P.append(box((x0, 0.8, zb[0]), (x0 + 1.2, top, zb[1]), mP))                          # posts
+        P.append(box((x0 - 0.15, top, zb[0] - 0.15), (x0 + 1.35, top + 0.5, zb[1] + 0.15), mBr))  # collar
+        P.append(box((x0 + 0.05, top + 0.5, zb[0] + 0.05), (x0 + 1.15, top + 1.6, zb[1] - 0.05), mBr))  # ball
+        P.append(box((x0 + 0.1, 0.0, zb[0] + 0.1), (x0 + 1.1, 0.8, zb[1] - 0.1), fin(flat(IRON, 2))))   # caster
+        P.append(box((x0 + 0.2, 6.0, 0.0 if not head else zb[1]), (x0 + 1.0, 7.2, 16.0 if head else zb[0]), mP))  # side rails
+    r1, r2 = (9.4, 10.4), ((top - 1.6), (top - 0.6))
+    P.append(box((1.8, r1[0], zb[0] + 0.3), (14.2, r1[1], zb[1] - 0.3), mP))
+    P.append(box((1.8, r2[0], zb[0] + 0.3), (14.2, r2[1], zb[1] - 0.3), mP))
+    n = 7
+    for k in range(n):
+        x = 2.6 + k * (10.8 / (n - 1))
+        P.append(box((x - 0.3, r1[1], zb[0] + 0.5), (x + 0.3, r2[0], zb[1] - 0.5), mPs))     # spindles
+    if head:
+        P.append(box((6.0, 17.2, zb[0] + 0.4), (10.0, 18.0, zb[1] - 0.4), mP))                 # decorative arch
+        P.append(box((5.4, 16.0, zb[0] + 0.4), (6.2, 18.0, zb[1] - 0.4), mP))
+        P.append(box((9.8, 16.0, zb[0] + 0.4), (10.6, 18.0, zb[1] - 0.4), mP))
+    return P
+
+
+def bed_parts(piece, state):
+    """piece: 'cabecera' (headboard at the front/z=0) | 'pie'. state: 'hecha' | 'bulto' | 'deshecha'."""
+    head = piece == 'cabecera'
+    P = bed_frame(head)
+    mT = fin(ticking_tone, ao=0.8, dust=0)
+    z0, z1 = (1.6, 16.0) if head else (0.0, 14.4)
+    P.append(box((1.6, 7.2, z0), (14.4, 9.4, z1), mT))                                          # mattress
+    sh = sheet(seed=311 if head else 312)
+    shv = sheet(seed=313 if head else 314, axis='i', folds=0.9, px=2.0)
+    mBl = fin(blanket_tone(315), ao=0.7, dust=0.6)
+    if state == 'hecha':
+        P.append(box((1.4, 9.4, z0), (14.6, 9.7, z1), sh))                                      # bottom sheet
+        if head:
+            P.append(box((2.6, 9.7, 2.2), (13.4, 11.8, 6.4), sheet(seed=316, base=7, folds=0.4, px=4.0)))  # pillow
+            P.append(box((1.2, 9.7, 7.0), (14.8, 10.3, 16.0), mBl))                             # blanket
+            P.append(box((1.2, 10.3, 7.0), (14.8, 10.6, 9.2), sheet(seed=317, base=7)))           # sheet turned down
+            P.append(box((1.0, 5.6, 7.0), (1.2, 10.6, 16.0), mBl, faces=('west', 'east', 'down', 'north')))
+            P.append(box((14.8, 5.6, 7.0), (15.0, 10.6, 16.0), mBl, faces=('west', 'east', 'down', 'north')))
+        else:
+            P.append(box((1.2, 9.7, 0.0), (14.8, 10.3, 14.6), mBl))
+            P.append(box((1.0, 5.6, 0.0), (1.2, 10.3, 14.6), mBl, faces=('west', 'east', 'down')))
+            P.append(box((14.8, 5.6, 0.0), (15.0, 10.3, 14.6), mBl, faces=('west', 'east', 'down')))
+    elif state == 'bulto':
+        P.append(box((1.4, 9.4, z0), (14.6, 9.7, z1), sh))
+        if head:
+            P.append(box((2.6, 9.7, 2.2), (13.4, 11.4, 6.4), sheet(seed=316, base=7, folds=0.4, px=4.0)))
+            P += [box((5.4, 11.2, 2.6), (10.6, 14.2, 6.8), shv),                                  # the covered head
+                  box((5.9, 14.2, 3.2), (10.1, 14.7, 6.2), shv),
+                  box((2.8, 9.7, 6.2), (13.2, 12.8, 16.0), shv),                                   # shoulders / back
+                  box((3.4, 12.8, 7.0), (12.6, 13.6, 16.0), shv),
+                  box((1.0, 6.2, 5.8), (1.4, 12.4, 16.0), shv, faces=('west', 'east', 'down')),    # sheet hanging
+                  box((14.6, 6.2, 5.8), (15.0, 12.4, 16.0), shv, faces=('west', 'east', 'down'))]
+        else:
+            P += [box((3.2, 9.7, 0.0), (12.8, 12.6, 5.6), shv),                                   # hips
+                  box((3.8, 9.7, 5.6), (12.2, 11.6, 11.4), shv),                                  # legs
+                  box((4.4, 11.6, 6.0), (7.8, 12.2, 11.0), shv), box((8.2, 11.6, 6.0), (11.6, 12.2, 11.0), shv),
+                  box((4.6, 9.7, 11.4), (7.4, 12.8, 12.8), shv), box((8.6, 9.7, 11.4), (11.4, 12.8, 12.8), shv),   # feet up
+                  box((1.2, 9.7, 12.8), (14.8, 11.2, 14.6), mBl),                                  # blanket folded at the foot
+                  box((1.0, 6.2, 0.0), (1.4, 11.8, 12.8), shv, faces=('west', 'east', 'down')),
+                  box((14.6, 6.2, 0.0), (15.0, 11.8, 12.8), shv, faces=('west', 'east', 'down'))]
+    else:  # deshecha: sheet rumpled, blanket dragged to the floor
+        P.append(box((1.4, 9.4, z0), (14.6, 9.7, z1), sh))
+        if head:
+            P.append(box((3.0, 9.7, 2.4), (12.0, 11.4, 6.6), sheet(seed=318, base=7, folds=0.5), rot=('y', 22.5, (7.5, 9.7, 4.5))))
+            P.append(box((2.0, 9.7, 9.0), (10.0, 11.0, 15.0), shv))                               # rumpled sheet
+            P.append(box((4.0, 11.0, 10.0), (8.0, 11.6, 13.0), shv))
+        else:
+            P.append(box((1.2, 9.7, 0.0), (9.0, 10.4, 8.0), mBl))
+            P.append(box((14.8, 0.0, 0.0), (15.4, 10.4, 12.0), mBl, faces=('west', 'east', 'north', 'south')))   # hanging
+            P.append(box((15.2, 0.0, 0.0), (19.0, 0.6, 12.0), mBl))                                # pooled on the floor
+            mSh = fin(painted(BAKE, base=3, seed=319, wear=0.5))
+            P += [box((4.0, 0.0, 15.2), (5.6, 1.4, 18.8), mSh), box((6.2, 0.0, 15.0), (7.8, 1.4, 18.6), mSh),   # guillerminas
+                  box((4.0, 1.0, 15.6), (5.6, 1.2, 16.0), mSh), box((6.2, 1.0, 15.4), (7.8, 1.2, 15.8), mSh)]
+    return P
+
+
+def baul_parts():
+    """Pupil's trunk at the foot of the bed: planked pine body, iron bands and corners, brass lock, leather handles."""
+    mW = fin(panels(wood(PINO, seed=321, base=3, axis=0, boards=(1, 5)), rects=((2, 2, -2, -2),), faces=('north', 'south'),
+                    groove=False, bevel=0))
+    mL = fin(wood(PINO, seed=323, base=3, axis=0, boards=(2, 6)))
+    mI = fin(iron(seed=325, rust=0.45))
+    mLe = fin(painted(LEATHER_B, base=3, seed=327, wear=0.4))
+    P = [
+        box((1.2, 0.8, 3.6), (14.8, 7.2, 12.4), mW),                 # body
+        box((1.0, 7.2, 3.4), (15.0, 9.0, 12.6), mL),                 # lid
+        box((1.4, 9.0, 4.2), (14.6, 9.6, 11.8), mL),                 # lid dome
+        box((1.0, 0.0, 3.4), (2.6, 0.8, 5.0), mI), box((13.4, 0.0, 3.4), (15.0, 0.8, 5.0), mI),   # feet
+        box((1.0, 0.0, 11.0), (2.6, 0.8, 12.6), mI), box((13.4, 0.0, 11.0), (15.0, 0.8, 12.6), mI),
+        box((6.9, 4.4, 3.2), (9.1, 7.6, 3.6), M_BRASS),              # lock plate
+        box((7.8, 5.2, 3.1), (8.2, 6.0, 3.2), fin(flat(IRON, 0), ao=0)),
+        box((-0.2, 4.8, 6.6), (1.2, 5.6, 9.4), mLe), box((14.8, 4.8, 6.6), (16.2, 5.6, 9.4), mLe),   # handles
+    ]
+    for x in (3.4, 12.0):  # iron bands wrapping body and lid
+        P.append(box((x, 0.8, 3.4), (x + 0.6, 7.2, 3.6), mI))
+        P.append(box((x, 0.8, 12.4), (x + 0.6, 7.2, 12.6), mI))
+        P.append(box((x, 7.2, 3.2), (x + 0.6, 9.0, 3.4), mI))
+        P.append(box((x, 9.0, 4.0), (x + 0.6, 9.8, 12.0), mI))
+    for (x, z) in ((1.0, 3.4), (14.4, 3.4), (1.0, 12.0), (14.4, 12.0)):   # corner brackets
+        P.append(box((x, 6.0, z), (x + 0.6, 9.2, z + 0.6), mI))
+    return P
+
+
+def mesita_parts(bell=False):
+    mW = fin(outline(wood(PINO, seed=331, base=4, worn_pal=RAW, wear=0.5)))
+    mF = fin(panels(wood(PINO, seed=333, base=4, axis=1), rects=((2, 2, -2, -2),), faces=('north',)))
+    mD = fin(panels(wood(PINO, seed=334, base=4, axis=0), rects=((1, 1, -1, -1),), faces=('north',), bevel=0))
+    P = []
+    for (x, z) in ((3.0, 3.0), (11.8, 3.0), (3.0, 11.8), (11.8, 11.8)):
+        P.append(box((x, 0.0, z), (x + 1.2, 3.0, z + 1.2), mW))
+        P.append(box((x + 0.2, 1.2, z + 0.2), (x + 1.0, 1.8, z + 1.0), mW))
+    P += [
+        box((3.0, 3.0, 3.0), (13.0, 11.0, 13.0), mF),                # carcass (door on the front)
+        box((3.4, 8.4, 2.6), (12.6, 10.6, 3.0), mD),                 # drawer
+        box((7.4, 9.2, 2.2), (8.6, 9.8, 2.6), M_BRASS),
+        box((10.6, 5.2, 2.6), (11.2, 6.4, 3.0), M_BRASS),            # door knob
+        box((2.6, 11.0, 2.6), (13.4, 12.0, 13.4), fin(wood(PINO, seed=335, base=4, boards=(2, 10)))),
+    ]
+    if bell:
+        mB = fin(brass(seed=337, base=4), dust=0.4)
+        mH = fin(painted(BAKE, base=4, seed=338, wear=0.4))
+        P += [
+            box((8.2, 12.0, 7.4), (11.8, 12.5, 11.0), mB),            # bell rim
+            box((8.6, 12.5, 7.8), (11.4, 13.8, 10.6), mB),
+            box((9.1, 13.8, 8.3), (10.9, 14.4, 10.1), mB),
+            box((9.6, 14.4, 8.8), (10.4, 16.6, 9.6), mH),             # wooden handle
+            box((9.4, 16.6, 8.6), (10.6, 17.4, 9.8), mH),
+        ]
+        P += [box((3.8, 12.0, 4.0), (7.0, 12.4, 7.2), fin(flat(ENAMEL, 5)))]     # saucer
+        P += candle(5.4, 5.6, 12.4, 14.6, r=0.6, lit=False, seed=339)
+        # a rosary coiled on the top
+        mR = fin(flat(BAKE, 4), ao=0, dust=0.2)
+        for k in range(9):
+            a = k / 9 * 6.28
+            P.append(box((4.6 + math.cos(a) * 1.6, 12.0, 9.6 + math.sin(a) * 1.4), (5.1 + math.cos(a) * 1.6, 12.4, 10.1 + math.sin(a) * 1.4), mR))
+        P.append(box((6.2, 12.0, 11.0), (6.6, 12.3, 12.6), fin(flat(NICKEL, 5), ao=0)))
+    return P
+
+
+def curtain_tone(ctx):
+    """White cotton curtain: translucent-ish with deep vertical folds, dirty hem, a few holes."""
+    i, j, w, h = ctx.i, ctx.j, ctx.w, ctx.h
+    P = tp(ctx)
+    u = P[0] + 0.5
+    v = math.sin(u / 2.4 * 2.1 + 0.6 * math.sin(u / 7.0))
+    k = 6 + (1 if v > 0.5 else (-1 if v < -0.4 else 0)) - (1 if v < -0.85 else 0)
+    c = T(LINEN, k)
+    if j > h - 6:
+        c = mix(c, hx('#7a6c58'), 0.12 * (j - (h - 6)))
+    if hh(i // 2, j // 3, 9) < 0.006:
+        return None
+    n = vn(P[0] / 6.0, P[1] / 6.0, 0.4, 341)
+    if n > 0.74:
+        c = mix(c, hx('#a8946a'), 0.25)
+    return (c[0], c[1], c[2], 224)
+
+
+def cortina_parts():
+    mR = fin(iron(seed=343, rust=0.3), dust=0.5)
+    P = [box((0.0, 1.0, 7.7), (16.0, 30.0, 8.3), curtain_tone, faces=('north', 'south', 'down')),
+         box((-0.2, 30.6, 7.6), (16.2, 31.2, 8.4), mR)]
+    for x in (1.0, 5.0, 9.0, 13.0):
+        P.append(box((x, 29.6, 7.5), (x + 1.2, 31.6, 8.5), mR, faces=('north', 'south', 'west', 'east')))
+    return P
+
+
+def rush_tone(ctx):
+    """Esterilla (woven rush seat): diagonal over-under weave converging to the centre."""
+    if ctx.face != 'up':
+        return (RUSH, 3)
+    i, j, w, h = ctx.i, ctx.j, ctx.w, ctx.h
+    x, y = i - w / 2 + 0.5, j - h / 2 + 0.5
+    quad = abs(x) > abs(y)
+    a = (int(abs(y) if quad else abs(x)) + (i + j)) % 4
+    k = 4 + (1 if a < 2 else -1)
+    if abs(abs(x) - abs(y)) < 0.8:
+        k = 2
+    if ctx.edge() == 0:
+        k = 3
+    return (RUSH, k)
+
+
+def silla_monja_parts(raise_=0.0):
+    """The celadora's chair: tall spindle back with a cut cross, rush seat, turned legs (sitter looks north)."""
+    mW = fin(outline(wood(NOGAL, seed=351, base=4, worn_pal=RAW, wear=0.5)))
+    mT = fin(wood(NOGAL, seed=353, base=5))
+    P = []
+    for (x, z, top) in ((2.6, 2.6, 7.6), (12.2, 2.6, 7.6), (2.6, 12.2, 27.0), (12.2, 12.2, 27.0)):
+        P.append(box((x, 0.0, z), (x + 1.2, top, z + 1.2), mW))
+        for y in (2.0, 5.0):
+            P.append(box((x - 0.2, y, z - 0.2), (x + 1.4, y + 0.8, z + 1.4), mT))     # turned rings
+        if top > 20:
+            P.append(box((x - 0.1, top, z - 0.1), (x + 1.3, top + 1.2, z + 1.3), mT))  # finial
+    P += [
+        box((3.8, 2.8, 3.0), (12.2, 3.4, 3.8), mW), box((3.8, 2.8, 12.4), (12.2, 3.4, 13.2), mW),   # stretchers
+        box((3.0, 3.4, 3.8), (3.6, 4.0, 12.2), mW), box((12.4, 3.4, 3.8), (13.0, 4.0, 12.2), mW),
+        box((2.4, 7.0, 2.4), (13.6, 7.6, 13.6), mW),                 # seat frame
+        box((3.0, 7.6, 3.0), (13.0, 8.2, 13.0), fin(rush_tone, ao=0.8, dust=0.7)),   # rush seat
+        box((3.8, 12.0, 12.4), (12.2, 13.0, 13.2), mW),              # back rails
+        box((3.8, 22.2, 12.2), (12.2, 25.4, 13.4), fin(panels(wood(NOGAL, seed=355, base=4, axis=0), rects=((1, 1, -1, -1),),
+            faces=('north', 'south'), bevel=0, carve=lambda c, di, dj, w, h: -4 if (abs(di - w / 2 + 0.5) < 1 and 1 <= dj <= h - 2)
+            or (dj == 2 and abs(di - w / 2 + 0.5) < 3) else 0))),   # crest rail with a cut cross
+    ]
+    for x in (5.4, 7.6, 9.8):
+        P.append(box((x, 13.0, 12.5), (x + 0.8, 22.2, 13.1), mW))   # spindles
+    if raise_:
+        shift(P, dy=raise_)
+    return P
+
+
+def mirror_tone(cracked=False, seed=0):
+    """Old mirror: dark cool reflection, diagonal sheen streaks, black silvering loss at the edges."""
+    def t(ctx):
+        i, j, w, h = ctx.i, ctx.j, ctx.w, ctx.h
+        if ctx.face not in ('north',):
+            return (NICKEL, 3)
+        u = (i + j * 0.6)
+        k = 3 + (1 if j < h * 0.4 else 0)
+        if 6 < (u % 23) < 9:
+            k += 2
+        elif 9 <= (u % 23) < 10:
+            k += 1
+        e = min(i, j, w - 1 - i, h - 1 - j)
+        n = vn(i / 3.0, j / 3.0, seed * 0.1, seed + 361)
+        if e < 3 and n > 0.45 + e * 0.12:
+            return (MIRROR, 0 if hh(i, j) < 0.6 else 1)            # desilvering
+        if hh(i // 2, j // 2, seed) < 0.015:
+            return (MIRROR, 1)
+        c = T(MIRROR, k)
+        if cracked:
+            cx, cy = w * 0.55, h * 0.42
+            dx, dy = i + 0.5 - cx, j + 0.5 - cy
+            a = math.atan2(dy, dx)
+            r = math.hypot(dx, dy)
+            spokes = (a / (2 * math.pi) * 9 + 0.5) % 1.0
+            wob = vn(r / 3.0, a * 2, 0.0, seed + 5) * 0.12
+            if r < 1.5 or (abs(spokes - 0.5 + wob) < 0.06 and r < max(w, h) * 0.8) or (abs(r - 4.5) < 0.5 and spokes < 0.7) \
+                    or (abs(r - 9) < 0.5 and 0.2 < spokes < 0.6):
+                return T(MIRROR, 9) if hh(i, j, 3) < 0.5 else T(MIRROR, 0)
+        return c
+    return t
+
+
+def ropero_parts(half):
+    """Wardrobe 2 blocks tall (inf/sup): two doors (left with a mirror), drawer below, cornice. Front faces north."""
+    yo = 0 if half == 'inf' else 16
+    off = (0, yo, 0)
+    wd = lambda sd, **kw: wood(NOGAL, seed=371 + sd, off=off, worn_pal=RAW, **kw)
+    mC = fin(panels(wd(0, base=3, axis=1), wd(1, base=4, axis=1), rects=((3, 3, -3, -3),), faces=('west', 'east')))
+    mW = fin(wd(2, base=4))
+
+    def door_tone(mirror):
+        inner = wd(3 if mirror else 4, base=4, axis=1)
+        fr = wd(5, base=4, axis=1)
+
+        def t(ctx):
+            if ctx.face != 'north':
+                return fr(ctx)
+            Y = int((ctx.pos[1] + yo - 5.6) * 2)       # door-local row from the bottom (door y 5.6 .. 30.4 overall)
+            Hd = int((30.4 - 5.6) * 2)
+            j = Hd - 1 - Y
+            i, w = ctx.i, ctx.w
+            # upper panel (mirror or wood) rows 3..28, lower panel rows 32..Hd-4
+            for (a, b) in ((3, 29), (32, Hd - 3)):
+                if 2 <= i < w - 2 and a <= j < b:
+                    di, dj, ei, ej = i - 2, j - a, w - 3 - i, b - 1 - j
+                    m = min(di, dj, ei, ej)
+                    if m == 0:
+                        return (NOGAL, 1)
+                    if mirror and a == 3:
+                        return None   # the mirror plate is a separate part
+                    pl, k = inner(ctx)
+                    if m == 1:
+                        k += 1 if (dj == m or di == m) else -1
+                    return (pl, k)
+            return fr(ctx)
+        return t
+    P = []
+    if half == 'inf':
+        P += [
+            box((0.6, 0.0, 2.2), (2.2, 2.0, 3.8), mW), box((13.8, 0.0, 2.2), (15.4, 2.0, 3.8), mW),   # bun feet
+            box((0.6, 0.0, 13.0), (2.2, 2.0, 14.6), mW), box((13.8, 0.0, 13.0), (15.4, 2.0, 14.6), mW),
+            box((0.4, 2.0, 2.0), (15.6, 3.0, 15.0), mW),                                          # plinth
+            box((0.8, 3.0, 2.6), (15.2, 16.0, 14.8), mC),                                         # carcass
+            box((1.2, 3.2, 2.2), (14.8, 5.4, 2.6), fin(panels(wd(6, base=4, axis=0), rects=((1, 1, -1, -1),), faces=('north',), bevel=0))),   # drawer
+            box((4.4, 4.0, 1.8), (5.6, 4.6, 2.2), M_BRASS), box((10.4, 4.0, 1.8), (11.6, 4.6, 2.2), M_BRASS),
+        ]
+    else:
+        P += [
+            box((0.8, 0.0, 2.6), (15.2, 14.4, 14.8), mC),
+            box((0.2, 14.4, 1.8), (15.8, 15.2, 15.2), mW),                                       # cornice
+            box((-0.2, 15.2, 1.2), (16.2, 16.0, 15.4), fin(wd(7, base=5, axis=0))),
+        ]
+    y0, y1 = (5.6, 16.0) if half == 'inf' else (0.0, 14.4)
+    P.append(box((1.2, y0, 2.2), (8.0, y1, 2.6), fin(door_tone(True))))
+    P.append(box((8.0, y0, 2.2), (14.8, y1, 2.6), fin(door_tone(False))))
+    if half == 'inf':
+        P.append(box((7.2, 11.0, 1.8), (7.7, 12.6, 2.2), M_BRASS))      # door handles + keyhole
+        P.append(box((8.3, 11.0, 1.8), (8.8, 12.6, 2.2), M_BRASS))
+        P.append(box((8.4, 10.0, 2.15), (8.7, 10.6, 2.2), fin(flat(IRON, 0), ao=0)))
+        P.append(box((2.2, 7.6, 2.4), (7.0, 16.0, 2.4), fin(mirror_tone(seed=1), ao=0, dust=0), faces=('north',)))
+    else:
+        P.append(box((2.2, 0.0, 2.4), (7.0, 13.0, 2.4), fin(mirror_tone(seed=2), ao=0, dust=0), faces=('north',)))
+    return P
+
+
+# ============================================================================================ register: dormitory
+for _st, _es, _en in (('', 'Cama de hierro', 'Iron bed'), ('_bulto', 'Cama con bulto bajo la sábana', 'Iron bed with a shape under the sheet'),
+                      ('_deshecha', 'Cama de hierro deshecha', 'Unmade iron bed')):
+    _state = {'': 'hecha', '_bulto': 'bulto', '_deshecha': 'deshecha'}[_st]
+    F(f'cama{_st}_cabecera', f'{_es} (cabecera)', f'{_en} (head)', bed_parts('cabecera', _state), sound='metal')
+    F(f'cama{_st}_pie', f'{_es} (pie)', f'{_en} (foot)', bed_parts('pie', _state), sound='metal')
+F('baul', 'Baúl', 'Wooden trunk', baul_parts())
+F('mesita_luz', 'Mesita de luz', 'Nightstand', mesita_parts())
+F('mesita_luz_campanita', 'Mesita de luz con campanita', 'Nightstand with hand bell', mesita_parts(True))
+F('cortina_blanca', 'Cortina blanca', 'White curtain', cortina_parts(), render='translucent', collision='none', sound='cloth')
+F('silla_monja', 'Silla de la celadora', "Nun's chair", silla_monja_parts())
+F('ropero_abajo', 'Ropero con espejo (abajo)', 'Wardrobe with mirror (bottom)', ropero_parts('inf'))
+F('ropero_arriba', 'Ropero con espejo (arriba)', 'Wardrobe with mirror (top)', ropero_parts('sup'), env=())

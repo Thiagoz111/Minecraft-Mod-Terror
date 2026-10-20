@@ -1,9 +1,5 @@
-net.minecraft.world.item.equipment.ArmorMaterial
-net.minecraft.world.item.equipment.ArmorType
-net.minecraft.world.item.equipment.EquipmentAssets
-net.minecraft.world.item.equipment.Equippable|builder|static
-net.minecraft.world.item.Item$Properties|Armor|equippable|component
-net.minecraft.world.entity.Display#p|set[A-Z]|DATA_|static
-net.minecraft.world.entity.Display$ItemDisplay#p|set|DATA_
-net.minecraft.world.entity.Display$BlockDisplay#p|set|DATA_
-net.minecraft.world.entity.Display$TextDisplay#p|set|DATA_
+net.minecraft.client.renderer.entity.player.AvatarRenderer#p|Hand|Arm|render
+net.minecraft.client.renderer.entity.player.PlayerRenderer#p|Hand|Arm|render
+net.minecraft.client.renderer.ItemInHandRenderer#p|Arm|Hand
+net.minecraft.client.renderer.entity.layers.EquipmentLayerRenderer#p|render|Layer
+net.minecraft.client.renderer.entity.layers.HumanoidArmorLayer#p|render|Model|setPart
