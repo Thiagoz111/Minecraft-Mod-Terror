@@ -17,7 +17,7 @@ public final class Steps {
 	private Steps() {
 	}
 
-	public static Step wait(int ticks) {
+	public static Step delay(int ticks) {
 		return e -> e.t >= ticks;
 	}
 

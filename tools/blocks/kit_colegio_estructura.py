@@ -1650,7 +1650,7 @@ def p_sillar(v):
     idx = 5 + tone[np.maximum(lab, 0)] + posterize(f, [(0.72, 1), (0.28, -1)])
     # tooling: faint diagonal chisel strokes, different direction per block
     dirn = rng.choice([1, -1], lab.max() + 1)
-    tool = (((X + Y * dirn[np.maximum(lab, 0)]) % 4) == 0) & (fbm(N, N, 3015 + v, cells=8, octaves=1) > 0.45)
+    tool = (((X + Y * dirn[np.maximum(lab, 0)]) % 5) == 0) & (fbm(N, N, 3015 + v, cells=8, octaves=2) > 0.66)
     idx = np.where(tool & (lab >= 0), idx - 1, idx)
     idx = bevel(idx, lab, hi=1, lo=-1)
     cv.put(SILLAR, idx)
@@ -1659,10 +1659,10 @@ def p_sillar(v):
         sm = (Y > 10) & (fbm(N, N, 3020, cells=4, octaves=3) * (Y / 32.0) > 0.38)
         cv.tint('#1d1915', np.where(sm, 0.35, 0))
     if v == 2:   # damp: darker lower blocks with salt tide
-        dm = (Y > 18 + 3 * np.sin(X / 5.0))
-        cv.mul(np.where(dm, 0.84, 1.0))
+        dm = (Y > 18 + 2 * np.sin(X / 5.0 * math.pi / 3.2) + (fbm(N, N, 3021, cells=4, octaves=2) - 0.5) * 4)
+        cv.mul(np.where(dm, 0.86, 1.0))
         tide = dm & ~nb(dm, 1, 0)
-        cv.put(SILLAR, np.full((N, N), 8), tide)
+        cv.tint('#d8d2c4', np.where(tide, 0.4, 0))
     if v == 3:   # one cracked block
         pts = wander([(5, 9), (10, 12), (14, 15)], 3030, amp=1.2)
         m = path_mask(pts) & (lab >= 0)
@@ -1673,36 +1673,30 @@ def p_sillar(v):
 
 @painter('sillar_tallado')
 def p_sillar_tallado(v):
-    """Carved band: a blind gothic lancet with a trefoil head and a quatrefoil above, cut in the stone."""
+    """Carved band: a blind gothic arcade of two pointed lancets with an oculus between their heads."""
     cv = Cv()
     X, Y = cv.X, cv.Y
     f = fbm(N, N, 3100, cells=4, octaves=3)
     idx = np.full((N, N), 5) + posterize(f, [(0.72, 1), (0.28, -1)])
-    # recess = lancet (pointed arch) from x 7..24, y 9..30 + quatrefoil centred (16, 5)
-    cx = 15.5
-    w = 8.5
-    rec = (np.abs(X - cx) <= w) & (Y >= 15) & (Y <= 29)
-    # pointed head: two arcs of radius 2w centred on the opposite springers
-    ys = 15.0
-    left = ((X - (cx + w)) ** 2 + (Y - ys) ** 2 <= (2 * w) ** 2) & (X <= cx)
-    right = ((X - (cx - w)) ** 2 + (Y - ys) ** 2 <= (2 * w) ** 2) & (X > cx)
-    rec |= (left | right) & (Y < ys) & (Y >= 2) & (np.abs(X - cx) <= w)
-    # inner trefoil cusps (stone left uncarved)
-    cusp = ((X - cx) ** 2 + (Y - 13) ** 2 <= 4) & False
-    # quatrefoil above the arch? keep it inside: small quatrefoil in the head
-    q = np.zeros((N, N), bool)
-    for (dx, dy) in ((0, -2.2), (0, 2.2), (-2.2, 0), (2.2, 0)):
-        q |= (X - cx - dx) ** 2 + (Y - 9 - dy) ** 2 <= 3.2
-    rec &= ~q | ((X - cx) ** 2 + (Y - 9) ** 2 > 30)
-    head_stone = ((X - cx) ** 2 + (Y - 9) ** 2 <= 30) & ~q & (Y < ys)
-    rec &= ~head_stone
-    rec |= q & (Y < ys)
+    rec = np.zeros((N, N), bool)
+    spring, hw = 13.0, 4.5
+    for cx in (8.0, 24.0):
+        body = (np.abs(X + 0.5 - cx) <= hw) & (Y >= spring) & (Y <= 27)
+        h = spring - (Y + 0.5)
+        half = np.sqrt(np.clip((2 * hw) ** 2 - h ** 2, 0, None)) - hw
+        head = (Y < spring) & (np.abs(X + 0.5 - cx) <= half)
+        rec |= body | head
+    ring = np.abs(np.sqrt((X + 0.5 - 16) ** 2 + (Y + 0.5 - 6.5) ** 2) - 2.6) < 0.9
+    rec |= ring
+    rec |= ((X + 0.5 - 16) ** 2 + (Y + 0.5 - 6.5) ** 2 < 0.8)
     r = rim(rec, wrap=False)
     idx = np.where(rec, 3, idx)
     idx = np.where(r['in_top'] | r['in_left'], 1, idx)
     idx = np.where(r['in_bot'] | r['in_right'], 5, idx)
     idx = np.where(r['out_above'] | r['out_left'], idx + 1, idx)
-    # base course joint lines
+    idx = np.where(r['out_below'] | r['out_right'], idx - 1, idx)
+    # sill moulding under the arcade, joints top and bottom
+    idx = np.where(Y == 28, 7, np.where(Y == 29, 5, np.where(Y == 30, 2, idx)))
     idx = np.where((Y == 0) | (Y == 31), 2, idx)
     cv.put(SILLAR, idx)
     if v == 1:
@@ -1748,8 +1742,12 @@ def p_piso_capilla(v):
     cv.put(SILLAR, idx)
     cv.put(GROUT, np.full((N, N), 2), lab < 0)
     if v == 2:   # wax drips from candles
-        for (x, y) in poisson(3340, 4, 6, keep=lambda x, y: lab[int(y), int(x)] >= 0):
-            cv.put(Ramp('#c9bf9c', '#ddd3b0', '#ece4c6'), np.full((N, N), 1) + ((X == x) & (Y == y)), (np.abs(X - x) + np.abs(Y - y) <= 1))
+        WAX = Ramp('#b9af8e', '#cfc5a2', '#e2d9b8')
+        for k, (x, y) in enumerate(poisson(3340, 3, 8, keep=lambda x, y: lab[int(y), int(x)] >= 0)):
+            drop = blob(N, N, x, y, 1.6 + (k % 2), 1.2, 3341 + k, rough=0.3)
+            cv.put(WAX, np.full((N, N), 1), drop)
+            cv.put(WAX, np.full((N, N), 2), drop & ~nb(drop, 1, 0, False))
+            cv.put(SILLAR, np.full((N, N), 3), nb(drop, 1, 0, False) & ~drop)
     return cv.out()
 
 
@@ -1825,9 +1823,10 @@ def p_cripta_piedra(v):
         sb = (lab >= 0) & (fbm(N, N, 3520, cells=4, octaves=3) > 0.66)
         cv.tint('#9a9a8a', np.where(sb, 0.3, 0))
     if v == 2:  # water seeping: dark wet streak with a glossy edge
-        wet = (np.abs(X - 12 - 2 * np.sin(Y / 6.0)) < 2.5)
-        cv.mul(np.where(wet, 0.7, 1.0))
-        cv.tint('#7d8a80', np.where(wet & (np.abs(X - 12 - 2 * np.sin(Y / 6.0)) < 0.6), 0.35, 0))
+        wx = 12 + 2 * np.sin(Y / 6.0) + (fbm(N, N, 3530, cells=2, octaves=2) - 0.5) * 4
+        wet = np.abs(X - wx) < 2.5 + Y / 16.0
+        cv.mul(np.where(wet, 0.72, 1.0))
+        cv.tint('#7d8a80', np.where(wet & (np.abs(X - wx) < 0.5) & (Y % 3 != 0), 0.3, 0))
     return cv.out()
 
 
@@ -1840,7 +1839,9 @@ def p_cripta_piso(v):
     if v == 2:
         pud = blob(N, N, 16, 18, 9, 6, 3610, rough=0.3) & (lab >= 0)
         cv.mul(np.where(pud, 0.6, 1.0))
-        cv.tint('#6f7a78', np.where(pud & ((X + Y) % 7 == 0), 0.45, 0))
+        pr = rim(pud, wrap=False)
+        cv.tint('#7f8a88', np.where(pr['in_top'], 0.4, 0))
+        cv.tint('#6f7a78', np.where(pud & (np.abs(X - 13 - (Y - 15) * 0.5) < 0.6), 0.35, 0))
     return cv.out()
 
 

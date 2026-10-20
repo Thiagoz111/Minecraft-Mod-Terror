@@ -85,6 +85,17 @@ def match_env(y, ref, win=0.02, lo=0.05, hi=8.0):
     return (y[:n] * g).astype(np.float32)
 
 
+def add(*parts):
+    """Sum signals of different lengths (zero-padded to the longest)."""
+    n = max(len(p) for p in parts)
+    return sum(fit(p, n) for p in parts).astype(np.float32)
+
+
+def send(x, wet_sig, level):
+    """Add an effect return at `level` relative to x's peak."""
+    return add(x, level * wet_sig * np.max(np.abs(x)) / (np.max(np.abs(wet_sig)) + 1e-9))
+
+
 def shelf_hi(x, f, gain_db):
     """High shelf as low-pass/high-pass split (phase-coherent enough for voice)."""
     hp = dsp.highpass(x, f, 2)
@@ -669,7 +680,7 @@ def vox_madre(text, fx, seed, tw):
         y = y + 0.18 * dsp.highpass(whisper(y, seed + 7), 1500, 2)
         z = space(y, 0.25, 0.08, 4500, 0.0, [(2.1, 0.3), (3.7, 0.2)], 0.3, 150, seed)
         tail = dsp.lowpass(space(y, 2.6, 1.0, 1800, 0.06, (), 0, 300, seed + 4, dry=0.0), 1800, 2)
-        return z + 0.07 * fit(tail, len(z)) * np.max(np.abs(z)) / (np.max(np.abs(tail)) + 1e-9) * 3, dry
+        return send(z, tail, 0.2), dry
     return classroom(y, seed), dry
 
 
@@ -764,8 +775,7 @@ def vox_cura(text, fx, seed, tw):
     z = dsp.peak(z, 1900, -2.5, 2.0)
     z = dsp.lowpass(z, 5600, 2)
     beyond = space(z, 3.0, 1.0, 2600, 0.04, (), 0, 220, seed + 5, dry=0.0)
-    out = z + 0.05 * beyond * np.max(np.abs(z)) / (np.max(np.abs(beyond)) + 1e-9) * 3
-    return out, dry
+    return send(z, beyond, 0.15), dry
 
 
 def girl(text, seed, speed=0.9, semis=4.0, formant=2.0, wob=28, wh=0.25, curve=None):
@@ -896,7 +906,7 @@ def vox_operadora(text, fx, seed, tw):
     z = phone_line(z, seed, 0.004)
     if fx == 'head':
         tail = space(z, 1.2, 1.0, 3000, 0.02, (), 0, 300, seed + 2, dry=0.0)
-        z = fit(z, len(tail)) + 0.1 * tail * np.max(np.abs(z)) / (np.max(np.abs(tail)) + 1e-9) * 3
+        z = send(z, tail, 0.3)
     return z, np.concatenate([np.zeros(n_of(0.08), np.float32), dry])
 
 
@@ -960,6 +970,19 @@ def stoi(clean, proc):
     return float(np.mean(ds))
 
 
+def align(ref, y, max_lag=0.6):
+    """Delay (samples) of ref inside y, from the cross-correlation of their loudness envelopes."""
+    h = 110
+    a = rms_env(ref, 0.01)[::h]
+    b = rms_env(y, 0.01)[::h]
+    a = a - a.mean()
+    b = b - b.mean()
+    c = signal.correlate(b, a, 'full')
+    lags = np.arange(-len(a) + 1, len(b))
+    ok = (lags >= 0) & (lags <= int(max_lag * SR / h))
+    return int(lags[ok][np.argmax(c[ok])] * h) if ok.any() else 0
+
+
 def finish(y, voice):
     """Trim dead air (keeping the reverb tail), fade the tail, master to -1 dBFS."""
     y = np.asarray(y, np.float32)
@@ -1008,13 +1031,11 @@ def build(only=None):
         dsp.save_ogg(x, rel)
         st = dsp.analyse(x)
         ticks[lid] = int(math.ceil(len(x) / SR * 20))
-        # intelligibility proxy: processed vs the dry character voice, aligned at the start
-        r = dsp.trim(ref, -54, 0.0) if voice != 'clara84' else ref
-        a = max(0, int(np.argmax(np.abs(y) > np.max(np.abs(y)) * 10 ** (-54 / 20))) - n_of(0.005))
-        si = stoi(np.pad(ref, (0, max(0, len(y) - len(ref)))), np.asarray(y)) if len(ref) else float('nan')
+        # intelligibility proxy: final file vs the dry character voice (before room / line / tape)
+        lag = align(ref, x)
+        si = stoi(np.pad(ref, (lag, max(0, len(x) - len(ref) - lag))), x)
         dsp.spectrogram_png(x, os.path.join(REVIEW_DIR, lid.replace('.', '_') + '.png'))
         print(f'{lid:30s} {voice:9s} ticks={ticks[lid]:4d} stoi={si:.2f} {st}  ({time.time() - t0:.1f}s)', flush=True)
-        del r, a
     want = [k for k, d in LINES.items() if d.get('voice')]
     ticks = {k: ticks[k] for k in want if k in ticks}
     os.makedirs(os.path.dirname(LINES_JSON), exist_ok=True)

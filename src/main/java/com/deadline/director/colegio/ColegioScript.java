@@ -77,23 +77,23 @@ public class ColegioScript extends CaseScript {
 				shake(0.5F, 30),
 				run(e -> dust(e.run, "hall_centro")),
 				sound(ModSounds.COLEGIO_POLVO, "hall_centro", 1.0F),
-				wait(70),
+				delay(70),
 				chapter(2));
 	}
 
 	// ================================================================== 2. study: roll call, blackboard, lesson
 	private void study(Script s) {
-		List<Step> lista = new ArrayList<>(List.of(complete("aula"), wait(30), say("colegio.madre.lista", "aula_frente"), wait(12)));
+		List<Step> lista = new ArrayList<>(List.of(complete("aula"), delay(30), say("colegio.madre.lista", "aula_frente"), delay(12)));
 		for (int i = 0; i < SURNAMES.length; i++) {
 			lista.add(say("colegio.madre." + SURNAMES[i], "aula_frente"));
-			lista.add(wait(8 + i % 3 * 4));
+			lista.add(delay(8 + i % 3 * 4));
 			lista.add(say("colegio.alumna.presente", GIRL_SPOTS[i % GIRL_SPOTS.length]));
 		}
 		lista.addAll(List.of(
 				say("colegio.madre.albornoz", "aula_frente"),
-				wait(50),
+				delay(50),
 				say("colegio.madre.ausente", "aula_frente"),
-				wait(20),
+				delay(20),
 				say("colegio.madre.usted", "aula_frente"),
 				// answer with your voice (Simple Voice Chat) within 4 s, or be marked absent
 				run(e -> e.run.counters.remove("voice_seen")),
@@ -117,7 +117,7 @@ public class ColegioScript extends CaseScript {
 				Props.chalkWrite("pizarron", e -> "NO MIRES ATRÁS"),
 				// wait until they look away from the board (nothing there)...
 				waitUntil(e -> e.target() != null && !e.run.looking(e.target(), e.run.at("aula_pizarron"), 50, 20)),
-				wait(10),
+				delay(10),
 				// ...and back: now it says TE DIJE, and she is standing at the back, behind them, in the dark
 				waitUntil(e -> e.target() != null && e.run.looking(e.target(), e.run.at("aula_pizarron"), 30, 20), 20 * 30),
 				run(e -> {
@@ -129,16 +129,16 @@ public class ColegioScript extends CaseScript {
 					}
 				}),
 				sound(ModSounds.MONJA_REGLA_TAP, "aula_fondo", 1.2F),
-				wait(30),
+				delay(30),
 				// burn her with the flashlight (or she sinks by herself after a while)
 				waitUntil(e -> e.target() != null && Props.beamOn(e.target(), e.run.actor(NUN)), 20 * 25),
 				run(e -> {
 					Props.action(e.run, NUN, MonjaEntity.ACT_BURN);
 					e.run.sound(ModSounds.MONJA_HISS, e.run.at("aula_fondo"), 1.8F, 1.0F);
 				}),
-				wait(16),
+				delay(16),
 				run(e -> Props.burnAway(e.run, NUN)),
-				wait(20),
+				delay(20),
 				run(e -> {
 					ServerPlayer p = e.target();
 					if (p != null) {
@@ -147,7 +147,7 @@ public class ColegioScript extends CaseScript {
 					e.run.sound(ModSounds.PUPITRES_GIRAN, e.run.at("aula_centro"), 2.0F, 1.0F);
 				}),
 				shake(0.4F, 20),
-				wait(30),
+				delay(30),
 				Props.chalkWrite("pizarron", e -> (e.target() != null ? e.target().getName().getString().toUpperCase() : "ALUMNO") + " PASÁ AL FRENTE"),
 				flag("pizarron_done"));
 
@@ -170,7 +170,7 @@ public class ColegioScript extends CaseScript {
 						}
 					}
 				}),
-				wait(50),
+				delay(50),
 				run(e -> Props.write(e.run, "pizarron", Props.chalk("¿QUIÉN CASTIGA?\nA) LA MADRE   B) SOR MARÍA\nC) DIOS   D) TU VIEJA"), 1.2F)),
 				say("colegio.madre.pregunta2", "aula_frente"),
 				answer(),
@@ -185,12 +185,12 @@ public class ColegioScript extends CaseScript {
 						e.run.say("colegio.alumna.risitas", e.run.at("aula_centro"));
 					}
 				}),
-				wait(40),
+				delay(40),
 				Props.chalkWrite("pizarron", e -> "ELLA"),
 				door("aula", false, true),
 				shake(0.6F, 20),
 				complete("frente"),
-				wait(40),
+				delay(40),
 				door("aula", true, false),
 				chapter(3));
 	}
@@ -268,12 +268,12 @@ public class ColegioScript extends CaseScript {
 						Fx.redFlash(p, 0.5F);
 					}
 				}),
-				wait(14),
+				delay(14),
 				run(e -> {
 					hatch(e.run, false);
 					e.run.despawn(NUN);
 				}),
-				wait(30),
+				delay(30),
 				// she blows the candles out one by one
 				loop(e -> {
 					List<?> g = e.run.def.group("refectorio_velas");
@@ -299,7 +299,7 @@ public class ColegioScript extends CaseScript {
 
 		s.beat("pasillo").chapter(3).requires("llave").when(enter("pasillo_pb")).then(
 				sound(ModSounds.MONJA_REGLA_TAP, "pasillo_fondo", 1.6F),
-				wait(10),
+				delay(10),
 				// the lamps burst from the far end towards you
 				loop(e -> {
 					List<?> g = e.run.def.group("pasillo_pb");
@@ -323,12 +323,12 @@ public class ColegioScript extends CaseScript {
 		s.beat("cena_fin").chapter(3).requires("pasillo_done").when(enter("hall")).then(chapter(4));
 	}
 
-	/** Opens/closes the service hatch trapdoor between the dining hall and the kitchen. */
+	/** Opens/closes the service hatch between the dining hall and the kitchen (a trapdoor: OPEN = vertical = shut). */
 	static void hatch(Run r, boolean open) {
 		net.minecraft.core.BlockPos pos = r.block("ventanilla");
 		var st = r.level.getBlockState(pos);
 		if (st.hasProperty(net.minecraft.world.level.block.state.properties.BlockStateProperties.OPEN)) {
-			r.setBlock(pos, st.setValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.OPEN, open));
+			r.setBlock(pos, st.setValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.OPEN, !open));
 			r.sound(ModSounds.DOOR_SLAM, Vec3.atCenterOf(pos), 1.2F, 1.4F);
 		}
 	}
@@ -337,7 +337,7 @@ public class ColegioScript extends CaseScript {
 	private void office(Script s) {
 		s.beat("megafonia").chapter(4).when(chapterTime(30)).then(
 				sound(ModSounds.COLEGIO_PA_CHIME, "megafono", 2.0F),
-				wait(30),
+				delay(30),
 				say("colegio.madre.megafonia", "megafono"));
 
 		s.beat("mate").chapter(4).when(event("use:direccion_mate")).repeat(40).then(
@@ -355,7 +355,7 @@ public class ColegioScript extends CaseScript {
 		s.beat("legajo").chapter(4).when(event("use:direccion_legajo")).then(
 				complete("direccion"),
 				bigText("deadline.text.colegio.legajo", 140),
-				wait(90),
+				delay(90),
 				// the bakelite phone rings until it is answered
 				loop(e -> {
 					if (e.t % 50 == 0) {
@@ -364,10 +364,10 @@ public class ColegioScript extends CaseScript {
 					return e.run.event("use:direccion_telefono") || e.t > 20 * 30;
 				}),
 				sound(ModSounds.TELEFONO_LINEA, null, 1.0F),
-				wait(30),
+				delay(30),
 				// TODO(voice): your own "presente" from the roll call, then reversed (Simple Voice Chat capture)
 				say("colegio.clara.1984", null),
-				wait(15),
+				delay(15),
 				say("colegio.clara.ya_sabe", null),
 				run(e -> {
 					ServerPlayer p = e.target();
@@ -376,7 +376,7 @@ public class ColegioScript extends CaseScript {
 					}
 				}),
 				sound(ModSounds.SILLA_GIRA, "direccion_silla", 1.4F),
-				wait(40),
+				delay(40),
 				chapter(5));
 	}
 
@@ -387,7 +387,7 @@ public class ColegioScript extends CaseScript {
 				// he listens for 4-8 s of your voice (6 s without a microphone)
 				waitUntil(e -> e.run.count("voice_ticks") >= 80 || e.t >= 120),
 				run(e -> e.run.say("colegio.cura.r" + (1 + e.run.level.random.nextInt(4)), e.run.at("confesionario"))),
-				wait(70),
+				delay(70),
 				say("colegio.cura.corre", "confesionario"),
 				sound(ModSounds.CONFESIONARIO_REJILLA, "confesionario", 1.2F),
 				run(e -> {
@@ -399,7 +399,7 @@ public class ColegioScript extends CaseScript {
 						Fx.redFlash(p, 0.7F);
 					}
 				}),
-				wait(26),
+				delay(26),
 				despawn(NUN),
 				complete("confesar"),
 				flag("confesado"));
@@ -422,18 +422,18 @@ public class ColegioScript extends CaseScript {
 					Props.place(e.run, NUN, "coro_monja", true);
 					Props.action(e.run, NUN, MonjaEntity.ACT_IDLE);
 				}),
-				wait(40),
+				delay(40),
 				lights("capilla_lampara", false),
-				wait(6),
+				delay(6),
 				lights("capilla_lampara", true),
-				wait(4),
+				delay(4),
 				lights("capilla_lampara", false),
 				despawn(NUN),
-				wait(10),
+				delay(10),
 				lights("capilla_lampara", true),
 				say("colegio.paloma.toma", "coro_alto"),
 				complete("coro"),
-				wait(40),
+				delay(40),
 				chapter(6));
 	}
 
