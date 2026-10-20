@@ -1,1 +1,3 @@
-/Screenshot$|/RenderTarget$|BlockRenderLayerMap|/ChunkSectionLayer$|/QuickPlay$|/IntegratedServer$
+item/equipment/
+entity/Display
+client/renderer/entity/layers/.*(Equipment|Armor)

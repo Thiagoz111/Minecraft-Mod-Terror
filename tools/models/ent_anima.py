@@ -26,7 +26,7 @@ from rig import Rig
 from paint import hx, mix
 
 RIG = None   # set by build(); materials need absolute pivots
-DY = 2.0     # design frame -> model frame vertical offset (materials work in design coordinates)
+DY = 3.5     # design frame -> model frame vertical offset (materials work in design coordinates)
 DZ = -5.0    # design frame -> model frame depth offset (centres the torso on the entity origin)
 
 # ------------------------------------------------------------------ palettes (hand-picked, hue shifted)
@@ -814,12 +814,12 @@ def eyes_soul(img, u0, v0, w, h):
 # ------------------------------------------------------------------ build
 # hair chains: root (x, y, z), segments [(length, back deg, out deg, width)], sibling lock (dx, dz, dlen, w)
 HAIR_CHAINS = [
-    ((-6.2, -30.5, -3.0), [(6, 6, 28, 4), (6, 26, 22, 3), (8, 40, 14, 2)], (-1.0, 1.6, 1, 2)),   # right temple
+    ((-6.2, -30.5, -3.0), [(6, 8, 30, 4), (5, 30, 24, 3), (8, 40, 14, 2)], (-1.0, 1.6, 1, 2)),   # right temple
     ((6.2, -30.0, -2.5), [(6, 10, 32, 4), (6, 22, 20, 3), (8, 44, 12, 2)], (1.0, 1.6, -1, 2)),   # left temple
     ((-3.0, -34.0, -1.0), [(5, 36, 10, 3), (6, 38, 10, 2), (8, 36, 6, 2)], (-1.2, 1.8, 1, 2)),   # right crown
     ((2.6, -34.2, 0.0), [(5, 40, 8, 3), (6, 34, 14, 2), (8, 40, 8, 2)], (1.2, 1.8, 1, 2)),       # left crown
     ((0.0, -33.5, 2.5), [(5, 52, -4, 3), (7, 30, 8, 2), (9, 26, -8, 2)], (1.4, 1.6, -1, 2)),     # back centre
-    ((4.2, -33.0, -4.4), [(4, -26, 16, 3), (5, -122, 6, 2), (8, -26, -4, 2)], (-1.0, 0.8, -1, 1)),  # falls forward
+    ((4.6, -33.0, -4.4), [(4, -26, 34, 3), (5, -122, 8, 2), (8, -26, -6, 2)], (-1.0, 0.8, -1, 1)),  # falls forward
 ]
 
 

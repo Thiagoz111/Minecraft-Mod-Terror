@@ -169,9 +169,14 @@ def body_mat(ctx):
         c = coat(ctx, 0.62, False)
         return mix(c, pick(LIGHT, coat_v(ctx, 0.6)), clamp(1.15 - cx * 1.1 + (y - 14) * 0.08))
     if f == 'back':
-        c = coat(ctx, 0.56, False)
+        v = coat_v(ctx, 0.58) - abs(x) * 0.025 + (0.04 if y < 14 else 0)
         if abs(x) < 1.6 and y < 13.5:
-            c = pick(COAT, coat_v(ctx, 0.45))          # tail root shadow
+            v -= 0.14                                   # tail root shadow / end of the dorsal stripe
+        if abs(x) < 0.6 and y > 16.5:
+            v -= 0.12                                   # crease between the haunches
+        c = pick(COAT, v)
+        if y > 17.5 and abs(x) > 0.6:
+            c = mix(c, pick(LIGHT, v), 0.35)           # paler fur under the tail
         return c
     return coat(ctx, 0.6, light_below=(17.5, 20.5))
 
@@ -339,6 +344,11 @@ def skull_mat(ctx):
     if f == 'bottom':
         return pick(LIGHT, coat_v(ctx, 0.55))
     if f in ('west', 'east'):
+        if 5 <= y < 11 and z < -14:
+            # the eye wraps round the corner of the skull so the profile still has an eye
+            if z < -15:
+                return EYE_SIDE[int(y - 5)]
+            return pick(COAT, 0.36 if 5.5 < y < 10.5 else 0.44)
         c = coat(ctx, 0.6, False)
         if z < -12 and y > 10:
             c = mix(c, pick(LIGHT, coat_v(ctx, 0.6)), clamp((y - 10) / 2))
@@ -471,6 +481,7 @@ def eye_mat(ctx):
     return pick(COAT, 0.4 + face_light(ctx))            # lids blend into the face
 
 
+EYE_SIDE = [EYE[0], WHITE, EYE[0], EYE[1], EYE[3], EYE[5]]
 EYE_GLOW = [(i, j, WHITE if ch == 'W' else GLINT2) for j, row in enumerate(EYE_ART) for i, ch in enumerate(row)
             if ch in 'Ww']
 
@@ -615,7 +626,8 @@ def build():
 
     # ---------------- head
     bone('head', (0, 11, -8.5), parent='neck', mat=skull_mat)
-    box('head', (-6, 4, -16), (12, 9, 9), name='skull')
+    box('head', (-6, 4, -16), (12, 9, 9), name='skull',
+        decals={'eyes:west': at([(8, 2, WHITE)]), 'eyes:east': at([(0, 2, WHITE)])})
     box('head', (-5, 3, -15), (10, 1, 7), mat=dome_mat, name='dome')
     box('head', (-6.5, 9, -15.2), (13, 3, 7), mat=cheek_mat, name='cheek')
     box('head', (-2.5, 9.5, -23), (5, 2, 7), mat=muzzle_mat, name='muzzle')

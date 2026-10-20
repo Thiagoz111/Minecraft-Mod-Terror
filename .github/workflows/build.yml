@@ -19,6 +19,10 @@ jobs:
           chmod +x ./gradlew
           set -o pipefail
           ./gradlew build --console=plain 2>&1 | tee build.log
+      - name: api probe
+        if: always()
+        continue-on-error: true
+        run: bash tools/ci/probe.sh
       - name: server smoke test
         run: |
           mkdir -p run-smoke && echo "eula=true" > run-smoke/eula.txt
