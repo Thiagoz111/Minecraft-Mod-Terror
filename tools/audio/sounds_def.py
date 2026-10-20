@@ -65,7 +65,59 @@ SOUNDS = {
     'anchor.purify': (1, 'Ancla purificada', 'Anchor purified', False),
     'anchor.pulse': (1, 'Pulso maligno', 'Evil pulse', False),
     'case.solved': (1, 'Caso resuelto', 'Case solved', False),
+    # ---- case 1: Colegio Santa Ines (SFX; spoken lines are 'line.*', see tools/audio/lines.py)
+    'colegio.timbre': (1, 'Suena el timbre', 'School bell rings', False),
+    'colegio.campana': (1, 'Campanada', 'Bell tolls', False),
+    'colegio.campana_triple': (1, 'Tres campanadas', 'Three bell tolls', False),
+    'colegio.pa_chime': (1, 'Megafonía', 'PA chime', False),
+    'colegio.viento': (2, 'Viento en los postigos', 'Wind on the shutters', False),
+    'colegio.polvo': (1, 'Cae polvo', 'Dust falls', False),
+    'door.slam': (2, 'Portazo', 'Door slams', False),
+    'tiza.escribe': (3, 'La tiza escribe sola', 'Chalk writes by itself', False),
+    'tiza.rompe': (1, 'La tiza se quiebra', 'Chalk snaps', False),
+    'pupitres.giran': (1, 'Las sillas se arrastran', 'Chairs drag', False),
+    'farol.revienta': (3, 'Revienta un farol', 'A lamp bursts', False),
+    'luces.fuera': (1, 'Se cortan las luces', 'The lights go out', False),
+    'silla.arrastra': (2, 'Una silla se arrastra', 'A chair drags', False),
+    'silla.gira': (1, 'Una silla gira', 'A chair turns', False),
+    'telefono_baquelita.ring': (1, 'Suena un teléfono viejo', 'Old phone rings', False),
+    'telefono.linea': (1, 'Estática en la línea', 'Static on the line', False),
+    'mate.sorbo': (1, 'Sorbo de mate', 'Mate sip', False),
+    'confesionario.rejilla': (1, 'La rejilla se abre', 'The grille slides', False),
+    'espejo.raja': (1, 'El espejo se raja', 'The mirror cracks', False),
+    'muro.cae': (1, 'Se derrumba un muro', 'A wall collapses', False),
+    'tumba.tapa': (1, 'Piedra sobre piedra', 'Stone grinds', False),
+    'regla.rompe': (1, 'La regla se parte', 'The ruler snaps', False),
+    'ui.amonestacion': (1, 'Amonestación', 'Reprimand', False),
+    'madre.pluma': (1, 'Una pluma escribe', 'A quill scratches', False),
+    'dormitorio.respira': (2, 'Respiraciones bajo las sábanas', 'Breathing under the sheets', False),
+    'alumna.pasos': (2, 'Pasos de nenas', 'Little footsteps', False),
+    'monja.campanita': (1, 'Tilín, tilín', 'A little bell', False),
+    'monja.regla_tap': (1, 'Tac... tac...', 'Tap... tap...', False),
+    'monja.reglazo': (1, 'Reglazo', 'Ruler strike', False),
+    'monja.shh': (1, 'Shhh', 'Shhh', False),
+    'monja.burn': (1, 'La monja se quema', 'The nun burns', False),
+    'monja.soplido': (1, 'Sopla una vela', 'A candle is blown out', False),
+    'monja.ceiling': (1, 'Algo se arrastra por el techo', 'Something crawls on the ceiling', False),
+    'monja.mojada': (1, 'Quejido indignado', 'Indignant groan', False),
+    'coro.ave_reves': (1, 'Un coro canta al revés', 'A choir sings backwards', True),
+    'coro.ave_derecho_1': (1, 'El coro canta', 'The choir sings', True),
+    'coro.ave_derecho_2': (1, 'El coro canta', 'The choir sings', True),
+    'coro.ave_derecho_3': (1, 'El coro canta', 'The choir sings', True),
+    'coro.acorde_final': (1, 'Acorde luminoso', 'Bright chord', False),
 }
+
+
+try:
+    from lines import LINES as _LINES
+except ImportError:  # imported from another directory
+    import importlib.util as _u, os as _os
+    _spec = _u.spec_from_file_location('lines', _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), 'lines.py'))
+    _m = _u.module_from_spec(_spec)
+    _spec.loader.exec_module(_m)
+    _LINES = _m.LINES
+# every voiced line is its own event 'line.<id>' (file sounds/line/<id with dots -> slashes>.ogg); subtitle = the line
+LINE_EVENTS = {'line.' + k: v for k, v in _LINES.items() if v.get('voice')}
 
 
 def java_name(s):

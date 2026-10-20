@@ -38,10 +38,11 @@ from paint import hx, mix, pixelart
 
 # ------------------------------------------------------------------ translucency
 A_HABIT = 210
-A_LINEN = 226
-A_SKIN = 228
+A_LINEN = 234
+A_SKIN = 238
 A_BOOK = 230
 A_METAL = 222
+A_VEIL = 246
 
 
 def A(c, a):
@@ -55,7 +56,7 @@ LINEN = [hx(c) for c in ('#1b2230', '#2f3849', '#475265', '#636f82', '#818ea0', 
                          '#d4dce5', '#e7ecf1', '#f5f7f9')]
 SKIN = [hx(c) for c in ('#191a19', '#272926', '#383a35', '#4c4c43', '#636050', '#7c7762', '#969077',
                         '#afa98c', '#c6c0a2', '#d9d4b8')]
-BROW = [hx('#2f3133'), hx('#55575a'), hx('#83847f'), hx('#aeada3')]
+BROW = [hx('#1d1e21'), hx('#3a3c40'), hx('#66686a'), hx('#97968e')]
 CREASE = hx('#24231f')
 CREASE_D = hx('#141412')
 LIPL = hx('#20171a')
@@ -147,14 +148,15 @@ def pleat(u, seed, period=5.0):
 # ------------------------------------------------------------------ cloth
 HIDDEN = {
     # tag -> faces never seen (cut out so nothing ghosts through the translucency)
-    'skirt': ('top', 'bottom'), 'hem': ('top',), 'chest': ('top', 'bottom'), 'sleeve_up': ('bottom',),
-    'sleeve_lo': ('top', 'bottom'), 'veil_back': ('front',), 'crown': (), 'scap': ('back',),
-    'veil_side': (), 'belt': ('top', 'bottom'),
+    'core': ('top', 'bottom'), 'chest': ('top', 'bottom', 'front'), 'sleeve_up': ('top',),
+    'sleeve_lo': ('top', 'bottom'), 'veil_back': ('front', 'top'), 'scap': ('back', 'top'),
+    'panel': ('top',), 'veil_side': ('top',), 'cape': (),
 }
+VEILS = ('crown', 'roof', 'veil_side', 'veil_back')
 
 
 def habit_mat(ctx):
-    """Starched black wool: crisp organ pleats, square lit shoulder edges, seams, stitched hem, chalk dust."""
+    """Starched black wool: crisp organ pleats, lit square edges, seams, stitched hems, chalk dust at the floor."""
     t = tag(ctx)
     f = ctx.face
     if f in HIDDEN.get(t, ()):
@@ -162,55 +164,83 @@ def habit_mat(ctx):
     lx, ly, lz = local(ctx)
     w, h, d = ctx.cube.size
     k = cseed(ctx)
+    a = A_VEIL if t in VEILS else A_HABIT
+    side = f in ('front', 'back', 'west', 'east')
     v = 0.42 + face_light(ctx) * 1.15
-    if f in ('front', 'back', 'west', 'east'):
-        if t in ('skirt', 'hem'):
-            v += pleat(around(ctx), k % 7, 5.0)
-            v += 0.06 - (ctx.y + 8) / 32 * 0.1           # a touch lighter at the waist, darker to the floor
-        elif t in ('chest',):
-            v += pleat(around(ctx), k % 5, 6.0) * 0.6
-        elif t in ('veil_back', 'veil_side'):
-            v += pleat(around(ctx) + vnoise(ly * 0.08, k, 0, 3) * 2.0, k % 9, 6.0) * 0.8
-        elif t == 'scap':
-            v += 0.03
-            if f == 'front' and ctx.i in (0, ctx.w - 1):
-                v += 0.12                                   # turned edges of the scapular
-        elif t in ('sleeve_up', 'sleeve_lo', 'cuff'):
-            v += pleat(around(ctx), k % 4, 7.0) * 0.5
-            if t == 'sleeve_up' and ly > h - 3:
-                v -= 0.05                                   # elbow creases
-                if (ctx.i + int(ly)) % 4 == 0:
-                    v -= 0.08
-    if t == 'crown':
+    if t == 'core':
+        return A(pick(HABIT, 0.12), a)
+    if t == 'panel':
+        if f == 'bottom':
+            return A(pick(HABIT, 0.1), a)
+        if side:
+            big = max(ctx.w, ctx.h) > 4
+            if big:
+                v += pleat(around(ctx), k % 7, 5.0)
+                v += 0.05 - ly / h * 0.12                   # a touch lighter at the waist, darker to the floor
+                if f == 'back' and ctx.w > 4 and ctx.cube.size[2] == 1:
+                    v -= 0.04
+    elif t == 'scap':
+        v += 0.04
+        if f == 'front' and ctx.i in (0, ctx.w - 1):
+            v += 0.12                                       # turned edges of the scapular
+    elif t == 'chest' and side:
+        v += pleat(around(ctx), k % 5, 6.0) * 0.6
+    elif t == 'cape':
+        if f == 'top':
+            v += 0.02
+            if ctx.i in (0, ctx.w - 1) or ctx.j in (0, ctx.h - 1):
+                v += 0.12                                   # the square shoulder line catches the light
+        elif side:
+            v += pleat(around(ctx), k % 3, 8.0) * 0.45
+            u = around(ctx)
+            # round the four bottom corners of the capelet
+            wrap = 2 * (w + d)
+            cu = min(u % wrap - c for c in (0, w, w + d, 2 * w + d) if u % wrap - c >= 0)
+            cu = min(cu, min(abs(u % wrap - c) for c in (0, w, w + d, 2 * w + d, wrap)))
+            if ly > h - 2.5 + max(0.0, 2.2 - cu) * 0.0 and cu < 1.2 and ly > h - 1.5:
+                return None
+            if h - ly < 1.0:
+                v += 0.1                                    # rolled edge
+            elif 1.5 < h - ly < 2.5 and ctx.i % 2 == 0:
+                v += 0.08                                   # stitched hem line
+        elif f == 'bottom':
+            v -= 0.1
+    elif t in ('veil_back', 'veil_side') and side:
+        v += pleat(around(ctx) + vnoise(ly * 0.08, k, 0, 3) * 2.0, k % 9, 6.0) * 0.8
+        if t == 'veil_back' and h - ly < 1.0:
+            v += 0.08
+    elif t in ('sleeve_up', 'sleeve_lo', 'cuff') and side:
+        v += pleat(around(ctx), k % 4, 7.0) * 0.5
+        if t == 'sleeve_up' and ly > h - 3:
+            v -= 0.05                                       # elbow creases
+            if (ctx.i + int(ly)) % 4 == 0:
+                v -= 0.08
+    if t in ('crown', 'roof'):
         if f == 'top':
             v -= 0.02
             if ctx.j in (0, ctx.h - 1) or ctx.i in (0, ctx.w - 1):
                 v += 0.12                                   # starched edge catches the light
-        if f == 'front':
-            v += 0.08 if ctx.j == ctx.h - 1 else 0.0        # the brim edge over the white band
-    if t in ('sleeve_up',) and f == 'top':
-        v += 0.05
-        if ctx.i in (0, ctx.w - 1) or ctx.j in (0, ctx.h - 1):
-            v += 0.1                                        # square shoulder edge
+        elif t == 'crown' and f == 'front' and ctx.j == ctx.h - 1:
+            v += 0.1                                        # the brim edge over the white band
+        elif t == 'crown' and f == 'bottom':
+            v -= 0.12
     if t == 'cuff' and f == 'bottom':
         return A(HABIT[0], 255)                             # pitch black inside of the bell sleeve
-    if edge(ctx) == 0 and f not in ('top', 'bottom'):
+    if edge(ctx) == 0 and side and min(ctx.w, ctx.h) > 2:
         v -= 0.06
     c = pick(HABIT, v)
-    a = A_HABIT
-    if t in ('skirt', 'hem') and f == 'front' and ctx.i % 11 == 3 and ctx.j % 3 != 2 and t == 'skirt':
-        c = mix(c, HABIT[0], 0.6)                           # seam
-    if t == 'hem' and f != 'bottom':
+    if t == 'panel' and side and ctx.w > 4:
         dist = h - ly
         if dist < 1.0:
-            c = mix(c, DUST, 0.45)                          # chalk dust of the corridors on the hem edge
-        elif 2.0 <= dist < 3.0 and ctx.i % 2 == 0:
-            c = mix(c, DUST, 0.35)                          # stitched hem line
-        if dist < 2.0:
-            a = A_HABIT - 30 + int(dist * 15)
-    if t == 'hem' and f == 'bottom':
-        return A(HABIT[0], 200)
-    if t == 'cuff' and f in ('front', 'back', 'west', 'east') and h - ly < 1.0:
+            c = mix(c, DUST, 0.42)                          # chalk dust of the corridors on the hem edge
+            a = a - 40
+        elif dist < 2.0:
+            a = a - 20
+        elif 2.5 <= dist < 3.5 and ctx.i % 2 == 0:
+            c = mix(c, DUST, 0.3)                           # stitched hem line
+        if f == 'front' and ctx.cube.size[2] == 1 and ctx.i % 9 == 4 and ctx.j % 3 != 2 and dist > 4:
+            c = mix(c, HABIT[0], 0.55)                      # seams
+    if t == 'cuff' and side and h - ly < 1.0:
         c = mix(c, HABIT[6], 0.5)                           # rolled edge of the bell
     return A(c, a)
 
@@ -226,63 +256,90 @@ def belt_mat(ctx):
     return A(pick(BELT, v), A_HABIT + 10)
 
 
+def bib_shape(lx, ly, w, h):
+    """Half width of the bib at depth ly: straight sides, generously rounded bottom corners."""
+    return w / 2 - max(0.0, ly - (h - 3.5)) ** 1.7 * 1.0
+
+
 def linen_mat(ctx):
-    """Starched white linen: cold blue-grey shadows, ironed tucks, crisp shadow lines where it folds under."""
+    """Starched white linen: cold blue-grey shadows, ironed tucks, gathers at the neck, crisp shadow lines."""
     t = tag(ctx)
     f = ctx.face
     lx, ly, lz = local(ctx)
     w, h, d = ctx.cube.size
+    side = f in ('front', 'back', 'west', 'east')
     if t == 'bib' and f in ('back', 'bottom', 'west', 'east'):
         return None
-    if t == 'coif_side' and f in ('top', 'bottom'):
+    if t in ('coif_side', 'chinwrap') and f in ('top', 'bottom'):
         return None
-    v = 0.78 + face_light(ctx) * 0.9
+    v = 0.74 + face_light(ctx) * 0.9
     if f in ('west', 'east'):
-        v -= 0.14
+        v -= 0.12
     elif f == 'back':
         v -= 0.28
-    if t == 'band' and f == 'front':
-        v += [0.06, -0.02, 0.04, -0.06, 0.02, -0.04][ctx.j % 6]   # ironed tucks across the forehead band
-        if ctx.j == ctx.h - 1:
-            v -= 0.18                                       # it rolls under onto the forehead
-    if t == 'coif_side' and f == 'front':
-        if (ctx.i == ctx.w - 1 and ctx.x < 0) or (ctx.i == 0 and ctx.x > 0):
-            v -= 0.34                                       # shadow line along the face opening
-        elif (ctx.i == 0 and ctx.x < 0) or (ctx.i == ctx.w - 1 and ctx.x > 0):
-            v -= 0.12
-        v -= ly / h * 0.08
-    if t == 'chinwrap':
+    if t == 'band':
         if f == 'front':
-            v += [0.03, -0.05][ctx.j % 2] - 0.04
+            v += (0.06, -0.02, 0.03, -0.07)[ctx.j % 4]       # ironed tucks across the forehead
+            if ctx.j == ctx.h - 1:
+                v -= 0.22                                   # rolls under onto the forehead
+            v -= (abs(lx - w / 2) / (w / 2)) ** 2 * 0.12    # curves round the skull
+        elif f == 'top':
+            v -= 0.08
+    elif t == 'coif_side':
+        if f == 'front':
+            inner = (ctx.i == ctx.w - 1) if ctx.x < 0 else (ctx.i == 0)
+            outer = (ctx.i == 0) if ctx.x < 0 else (ctx.i == ctx.w - 1)
+            v += -0.38 if inner else (-0.1 if outer else 0.06)
+            v -= ly / h * 0.12
+        elif side:
+            v -= lz / max(1, d) * 0.22                      # seen in profile in front of the black veil
+            if ctx.j % 5 == 2:
+                v -= 0.05
+    elif t == 'chinwrap':
+        if f == 'front':
+            v += (0.02, -0.07)[ctx.j % 2] - 0.06            # gathered under the chin
             if ctx.j == 0:
-                v -= 0.3                                    # deep shadow under the chin
-            cx = abs(lx - w / 2) / (w / 2)
-            v -= cx * 0.12
-    if t == 'bib':
+                v -= 0.3
+            v -= (abs(lx - w / 2) / (w / 2)) ** 2 * 0.15
+    elif t == 'bib':
+        cx = abs(lx - w / 2)
         if f == 'front':
-            cx = abs(lx - w / 2)
-            hw = w / 2 - max(0.0, ly - (h - 3.0)) ** 1.6 * 1.1
+            hw = bib_shape(lx, ly, w, h)
             if cx > hw:
                 return None                                 # rounded bottom corners
-            if ly < 2:
-                v -= 0.2 - ly * 0.07                        # shadow of the chin wrap
+            if ly < 4.0:
+                g = (1 - ly / 4.0)
+                v += (0.05 if int(lx) % 2 == 0 else -0.08) * g   # gathers falling from the neck
+                if ly < 1.0:
+                    v -= 0.18                               # shadow of the chin wrap
+            fold = h * 0.58
+            if fold - 1.0 < ly < fold:
+                v += 0.07                                   # starched bend over the chest: lit lip ...
+            elif fold <= ly < fold + 1.0:
+                v -= 0.07                                   # ... and its soft shadow
+            if cx < 0.6 and ly > 4:
+                v -= 0.05                                   # pressed centre crease
+            v -= (cx / (w / 2)) ** 2 * 0.14                 # the sides turn away
+            v -= ly / h * 0.06
             if cx > hw - 1.0:
-                v -= 0.1                                    # the edge turns away
-            if abs(lx - w / 2) < 0.6 and ly > 3:
-                v -= 0.06                                   # pressed centre crease
-            v -= ly / h * 0.08
-        if f == 'top':
-            v -= 0.05
-    if t == 'undercuff':
-        v -= 0.05
+                v -= 0.12                                   # turned edge
+        elif f == 'top':
+            v -= 0.06
+            if int(lx) % 2 == 1:
+                v -= 0.05
+    elif t == 'undercuff':
         if f == 'bottom':
             return A(pick(LINEN, 0.2), A_LINEN)
+        if side and ctx.j == ctx.h - 1:
+            v -= 0.12
     c = pick(LINEN, v)
     if t == 'bib' and f == 'front':
         cx = abs(lx - w / 2)
-        hw = w / 2 - max(0.0, ly - (h - 3.0)) ** 1.6 * 1.1
-        if hw - 2.0 < cx < hw - 1.0 and ctx.j % 2 == 0 and ly > 1:
-            c = mix(c, LINEN[4], 0.6)                       # hand-stitched border
+        hw = bib_shape(lx, ly, w, h)
+        if (hw - 2.0 < cx < hw - 1.0 and ly > 1.5) or (h - 2.0 < ly < h - 1.0 and cx < hw - 1.5):
+            c = mix(c, LINEN[3], 0.45)                      # stitched hem a texel inside the edge
+    if t == 'coif_side' and f == 'front' and ctx.j % 6 == 3 and 0 < ctx.i < ctx.w - 1:
+        c = mix(c, LINEN[5], 0.3)                           # pins holding the starched plate
     return A(c, A_LINEN)
 
 
@@ -364,30 +421,34 @@ def hand_mat(ctx):
 
 
 # ------------------------------------------------------------------ the face mask
-# 17 columns (x -8.5..8.5, col c <-> x = c - 8), 14 rows (row r <-> y = -42.5 + r, y -43..-29).
-GX0, GY0 = -8.5, -43
+# 15 columns (x -7.5..7.5, col c <-> x = c - 7), 17 rows (row r <-> y = -43.5 + r, y -44..-27).
+# Skull rows r0..r12, jaw rows r13..r16.  Lenses (own plane) cover r4..r10.
+GX0, GY0 = -7.5, -44
 FACE = [
-    # 01234567890123456
-    "34556676k6766554 3".replace(' ', ''),   # r0  y-43 forehead under the band, two frown lines
-    "3hBBBb67k76bBBBh3",   # r1  y-42 heavy brows, outer ends high
-    "23344BBBkBBB44332",   # r2  y-41 inner ends pressed down onto the frames (the V)
-    "32222223632222223",   # r3  y-40 lens tops (hidden behind the opaque lenses)
-    "F222222373222222F",   # r4  y-39 temple arms of the glasses + nose bridge
-    "42222225852222224",   # r5  y-38 nose (own cube, cols 7..9)
-    "w222222585222222w",   # r6  y-37 crow's feet
-    "42222225852222224",   # r7
-    "34222225952222243",   # r8  y-35 nose tip
-    "355433k474k334553",   # r9  y-34 nose wings, folds start, eye bags under the frames
-    "3564k8ll4llk84653",   # r10 y-33 cheeks lit above the folds; thin upper lip
-    "3467kLLLLLLLk7643",   # r11 y-32 the pressed lip line (jaw top row)
-    "346kL5mmmmm5Lk643",   # r12 y-31 corners turned down, marionette lines
-    "2345k6788876k5432",   # r13 y-30 hard chin
+    # 012345678901234
+    "456778888877654",   # r0  y-44 forehead, lit under the band
+    "567788w8w887765",   # r1  y-43 the two frown lines
+    "bbh677w8w776hbb",   # r2  y-42 grey brows: outer tips high at the temples
+    "3hhhhhB6Bhhhhh3",   # r3  y-41 brow bars sloping down to the nose, lit glabella between them
+    "22333BB7BB33322",   # r4  y-40 inner brow heads pressing down between the frames: the V
+    "222222785222222",   # r5  y-39 long sharp nose (own cube, cols 6..8)
+    "222222785222222",   # r6
+    "222222785222222",   # r7
+    "222222785222222",   # r8
+    "322222785222223",   # r9
+    "453333795333354",   # r10 y-34 nose tip
+    "467643464346764",   # r11 y-33 cheekbones lit, eye bags, nose wings, folds start
+    "356736656637653",   # r12 y-32 folds cut down past the bloodless upper lip
+    "34636KKKKK63643",   # r13 y-31 ONE pressed line (jaw top row)
+    "3453k67776k3543",   # r14 y-30 corners hooked down, lower lip catches the light
+    "234354454453432",   # r15 y-29 under-lip shadow, marionette lines
+    "234567888765432",   # r16 y-28 hard chin
 ]
-assert all(len(r) == 17 for r in FACE), [len(r) for r in FACE]
+assert all(len(r) == 15 for r in FACE), [len(r) for r in FACE]
 
 FPAL = {str(i): A(SKIN[i], A_SKIN) for i in range(10)}
 FPAL.update({
-    'k': A(CREASE, A_SKIN), 'K': A(CREASE_D, A_SKIN), 'w': A(SKIN[3], A_SKIN),
+    'k': A(CREASE, A_SKIN), 'K': A(CREASE_D, A_SKIN), 'w': A(SKIN[4], A_SKIN),
     'B': A(BROW[1], A_SKIN), 'b': A(BROW[3], A_SKIN), 'h': A(BROW[2], A_SKIN),
     'L': A(LIPL, A_SKIN), 'l': A(LIP[0], A_SKIN), 'm': A(LIP[1], A_SKIN),
     'F': A(FRAME, 255),
@@ -410,19 +471,21 @@ def face_decals(x0, y0, w, h):
     return {'front': pixelart(_slice(FACE, x0, y0, w, h), FPAL, anchor='topleft')}
 
 
-# glasses: two 7x7 round wire rims + keyhole bridge, 15 x 7 (x -7.5..7.5, y -40..-33)
+# glasses: two 7x7 round wire rims + bridge, 15 x 7 (x -7.5..7.5, y -40..-33).  The brow's shadow lies across the
+# top of each opaque lens ('d'), so the glowing part ('W') is a slanted, angry half-moon.
 GLASSES = [
     "..fff.....fff..",
-    ".fGWWFFFFFGWWF.",
-    "fGWWWWF.fGWWWWF",
-    "FWWWWVF.FWWWWVF",
-    "FWWWVVF.FWWWVVF",
-    ".FVVVF...FVVVF.",
+    ".fdddFFFFFdddf.",
+    "fGWdddF.FdddWGf",
+    "FWWWWdF.FdWWWWF",
+    "FWWWWWF.FWWWWWF",
+    ".FWWVF...FVWWF.",
     "..FFF.....FFF..",
 ]
 assert all(len(r) == 15 for r in GLASSES)
-GPAL = {'F': FRAME, 'f': FRAME_HI, 'W': LENS, 'V': LENS_RIM, 'G': LENS_GLINT}
-GLOWPAL = {'W': (236, 246, 255, 255), 'V': (170, 205, 235, 255), 'G': (255, 255, 255, 255)}
+LENS_SHADE = (104, 117, 138, 255)
+GPAL = {'F': FRAME, 'f': FRAME_HI, 'W': LENS, 'V': LENS_RIM, 'G': LENS_GLINT, 'd': LENS_SHADE}
+GLOWPAL = {'W': (236, 246, 255, 255), 'V': (176, 210, 238, 255), 'G': (255, 255, 255, 255)}
 
 
 def glasses_mat(ctx):
@@ -430,59 +493,77 @@ def glasses_mat(ctx):
 
 
 # ------------------------------------------------------------------ props
+STAMP = [            # blind-stamped cross of the Hermanas de la Vigilia on the back board
+    ".x.",
+    "xxx",
+    ".x.",
+    ".x.",
+]
+
+
 def leather_mat(ctx):
-    """Oxblood ledger leather: tooled double rule, brass corner plates, gilt title plate, banded spine."""
+    """Oxblood ledger leather: brass corner plates, blind-tooled frame, gilt title plate, banded spine, wear."""
     t = tag(ctx)
     f = ctx.face
     lx, ly, lz = local(ctx)
     w, h, d = ctx.cube.size
-    v = 0.5 + face_light(ctx) * 0.9
-    v += (vnoise(lx * 0.6, lz * 0.6, ly * 0.6 + cseed(ctx), 5) - 0.5) * 0.12
+    grain = (hash3(int(lx * 1.0), int(lz * 1.0), int(ly) + cseed(ctx), 5) - 0.5) * 0.07 + \
+        (vnoise(lx * 0.35, lz * 0.35, cseed(ctx), 6) - 0.5) * 0.12
+    v = 0.48 + face_light(ctx) * 0.8 + grain
     if t == 'cover' and f == 'bottom':
-        # outer covers seen from the front: two boards either side of the spine (x 8..11)
         sp0, sp1 = w / 2 - 1.5, w / 2 + 1.5
-        if sp0 <= lx < sp1:
-            v = 0.3 + (0.18 if int(lz) % 4 == 1 else 0.0)  # raised bands on the spine
+        if sp0 <= lx < sp1:                                 # spine strip between the boards
+            band = int(lz) % 4 == 1
+            v = 0.26 + (0.2 if band else 0.0) + grain * 0.5
             c = pick(OX, v)
-            if int(lz) % 4 == 1 and int(lx) == int(w / 2):
-                c = BRASS[5]                                # gilt lines on the bands
+            if band and int(lx) == int(w / 2):
+                c = BRASS[5]                                # gilt line on each raised band
             return A(c, A_BOOK)
-        bx = lx if lx < sp0 else lx - sp1                   # board-local coords
-        bw = sp0
-        ex = min(bx, bw - bx)
+        front = lx >= sp1
+        bx = lx - sp1 if front else lx                      # board-local x (0 at the left edge of the board)
+        bw = w - sp1 if front else sp0
+        out_x = (bw - bx) if front else bx                  # distance from the board's OUTER edge
+        in_x = bx if front else (bw - bx)                   # distance from the spine
         ez = min(lz, d - lz)
-        outer = (lx < sp0 and bx < 3.0) or (lx >= sp1 and bw - bx < 3.0)
-        if ez < 3.0 and outer and (ex if not outer else min(ex, 3.0)) + ez < 4.2 and \
-                ((lx < sp0 and bx < 3) or (lx >= sp1 and bw - bx < 3)):
-            cv = 0.55 + (0.3 if (ex + ez) < 1.8 else 0.0) - (0.25 if (ex + ez) > 3.3 else 0.0)
-            return A(pick(BRASS, cv + face_light(ctx) * 0.3), A_BOOK)   # brass corner plate
-        if ex < 0.9 or ez < 0.9:
-            v -= 0.12                                       # board edge
-        if abs(ex - 2.0) < 0.5 or abs(ez - 2.0) < 0.5:
-            if ex > 1.5 and ez > 1.5:
-                v -= 0.2                                    # blind-tooled frame
-        if 2.6 < ex < 3.4 and ez > 2.5 or 2.6 < ez < 3.4 and ex > 2.5:
-            v += 0.12                                       # highlight under the rule
-        if lx >= sp1:
-            cx, cz = bx - bw / 2, lz - d * 0.38
-            if abs(cx) < 2.5 and abs(cz) < 1.5:
-                if abs(cx) > 1.6 or abs(cz) > 0.6:
-                    return A(BRASS[5] if cz < 0 else BRASS[3], A_BOOK)  # gilt title plate rim
-                return A(OX[1], A_BOOK)
-        c = pick(OX, v)
-        if hash3(int(lx * 3), int(lz * 3), 7, 9) > 0.93:
-            c = mix(c, OX[7], 0.4)                          # scuffs
-        return A(c, A_BOOK)
+        # brass corner plates on the two outer corners of each board
+        if out_x + ez < 3.2:
+            k = out_x + ez
+            cv = 0.75 if k < 1.0 else (0.9 if k > 2.2 else 0.55)
+            if f == 'bottom' and abs(out_x - 0.8) < 0.5 and abs(ez - 0.8) < 0.5:
+                cv = 0.95                                   # rivet
+            return A(pick(BRASS, cv), A_BOOK)
+        ex = min(out_x, in_x)
+        if ex < 1.0 or ez < 1.0:
+            v -= 0.14                                       # board edge
+            if hash3(int(lx), int(lz), 3, 7) > 0.72:
+                v += 0.24                                   # rubbed, lighter wear on the edges
+        elif ex < 2.0 or ez < 2.0:
+            v += 0.05                                       # the board rounds over: light catch
+        v += (lz / d - 0.5) * -0.08                          # the far edge tilts into the light
+        if front:
+            cx, cz = bx - bw / 2, lz - 4.5
+            if abs(cx) < 2.6 and abs(cz) < 1.6:
+                if abs(cx) > 1.7 or abs(cz) > 0.7:
+                    return A(BRASS[6] if cz < 0 or cx < 0 else BRASS[3], A_BOOK)   # gilt title plate
+                return A(OX[0] if int(lx) % 2 else BRASS[2], A_BOOK)             # 'ACTAS' in the plate
+            if abs(cx) < 2.6 and abs(lz - 7.5) < 0.5:
+                return A(BRASS[4], A_BOOK)                  # gilt rule under the plate
+        else:
+            sx, sz = int(bx - bw / 2 + 1.5), int(lz - d / 2 + 2)
+            if 0 <= sz < len(STAMP) and 0 <= sx < 3 and STAMP[sz][sx] == 'x':
+                v -= 0.16                                   # blind-stamped cross
+        return A(pick(OX, v), A_BOOK)
     if t == 'spine':
-        v = 0.38 + face_light(ctx) * 0.8
-        if f in ('bottom', 'west', 'east') and int(lz) % 4 == 1:
-            v += 0.2
+        v = 0.32 + face_light(ctx) * 0.8 + grain * 0.5
+        band = int(lz) % 4 == 1
+        if f in ('bottom', 'west', 'east') and band:
+            v += 0.22
         c = pick(OX, v)
-        if f == 'bottom' and int(lz) % 4 == 1 and ctx.i in (1, 2):
-            c = BRASS[4]
+        if f == 'bottom' and band and ctx.i in (1, 2):
+            c = BRASS[5]
         return A(c, A_BOOK)
-    if edge(ctx) == 0:
-        v -= 0.08
+    if f in ('west', 'east', 'front', 'back'):
+        v += 0.08                                           # board edges catch light
     return A(pick(OX, v), A_BOOK)
 
 
@@ -720,85 +801,93 @@ def build():
 
     # ---------------- body: root on the floor -- the rigid column tilts from the hem like a statue
     B.bone('body', (0, 24, 0), mat=habit_mat)
-    box('body', (-12, 18, -8), (24, 6, 16), name='hem')
-    box('body', (-11, -8, -7), (22, 26, 14), name='skirt')
-    box('body', (-6, -6, -8.2), (12, 24, 1), name='scap')                       # scapular over the skirt
-    box('body', (-6, -6, 7.2), (12, 24, 1), name='scap')
+    box('body', (-10.5, -8, -6.5), (21, 32, 13), name='core')
     box('body', (-11.5, -9.5, -7.5), (23, 3, 15), mat=belt_mat, name='belt')
-    # ring of keys at the left hip (plane facing +X)
-    box('body', (11.7, -8, -4), (0, 12, 6), mat=keys_mat, name='keys',
+    box('body', (12.2, -8, -4), (0, 12, 6), mat=keys_mat, name='keys',
         decals={'east': pixelart(KEYS, KPAL, anchor='topleft'), 'west': pixelart(KEYS, KPAL, anchor='topleft', flip=True)})
+    # skirt: four stiff panels flaring a hair towards the floor (A-line column, hem ON the floor)
+    B.bone('skirt_front', (0, -8, -6.5), parent='body', rot=(-2.5, 0, 0), mat=habit_mat)
+    box('skirt_front', (-11.5, -8, -7), (23, 32, 1), name='panel')
+    box('skirt_front', (-6, -6, -8), (12, 29, 1), name='scap')
+    B.bone('skirt_back', (0, -8, 6.5), parent='body', rot=(3, 0, 0), mat=habit_mat)
+    box('skirt_back', (-11.5, -8, 6), (23, 32, 1), name='panel')
+    for side, sx in (('right', -1), ('left', 1)):
+        sb = f'skirt_{side}'
+        B.bone(sb, (10.5 * sx, -8, 0), parent='body', rot=(0, 0, -2.5 * sx), mat=habit_mat)
+        box(sb, (10.5 * sx - (1 if sx < 0 else 0), -8, -7.5), (1, 32, 15), name='panel')
 
     # rosary: pewter beads from the belt to the knee, silver crucifix
-    B.bone('rosary', (-7.5, -7, -8.6), parent='body', rot=(-4, 0, 2), mat=bead_mat)
-    box('rosary', (-8.5, -7, -9.6), (2, 12, 2), name='beads')
-    box('rosary', (-8.5, 5, -9.1), (2, 2, 1), mat=silver_mat, name='medal')
-    box('rosary', (-8.5, 7, -9.1), (2, 7, 1), mat=silver_mat, name='crux')
-    box('rosary', (-10.5, 8.5, -9.1), (6, 2, 1), mat=silver_mat, name='crux')
+    B.bone('rosary', (-7.5, -7, -9.5), parent='body', rot=(-3, 0, 2), mat=bead_mat)
+    box('rosary', (-8.5, -7, -10.5), (2, 12, 2), name='beads')
+    box('rosary', (-8.5, 5, -10), (2, 2, 1), mat=silver_mat, name='medal')
+    box('rosary', (-8.5, 7, -10), (2, 7, 1), mat=silver_mat, name='crux')
+    box('rosary', (-10.5, 8.5, -10), (6, 2, 1), mat=silver_mat, name='crux')
 
-    # ---------------- chest: square block, big white bib, black pectoral cross
+    # ---------------- chest: square block under a rigid capelet, big white bib, black pectoral cross
     B.bone('chest', (0, -8, 0), parent='body', mat=habit_mat)
-    box('chest', (-9, -27, -6), (18, 19, 12), name='chest')
-    box('chest', (-6, -14, -6.6), (12, 6, 1), name='scap')
-    box('chest', (-8.5, -27.5, -7), (17, 14, 12), mat=linen_mat, name='bib')
-    box('chest', (-1, -23, -7.8), (2, 7, 1), mat=ebony_mat, name='cross')
-    box('chest', (-2.5, -21.5, -7.9), (5, 2, 1), mat=ebony_mat, name='cross')
+    box('chest', (-9, -26, -6), (18, 18, 12), name='chest')
+    box('chest', (-16.5, -26.5, -7.5), (33, 8, 15), name='cape')
+    box('chest', (-9.5, -27, -8.5), (19, 16, 12), mat=linen_mat, name='bib')
+    box('chest', (-1, -22, -9.3), (2, 8, 1), mat=ebony_mat, name='cross')
+    box('chest', (-2.5, -20, -9.4), (5, 2, 1), mat=ebony_mat, name='cross')
 
-    # back veil: long starched black panel from the crown to the waist
-    B.bone('veil', (0, -47, 8), parent='chest', mat=habit_mat)
-    box('veil', (-12, -47, 7), (24, 41, 2), name='veil_back')
+    # back veil: long starched black panel from the crown down to the waist
+    B.bone('veil', (0, -47, 9.5), parent='chest', rot=(3, 0, 0), mat=habit_mat)
+    box('veil', (-12.5, -47, 9), (25, 42, 2), name='veil_back')
 
-    # ---------------- head: veil crown -50, coif band, face window x -8.5..8.5 / y -43..-29
-    B.bone('head', (0, -29, 0), parent='chest', mat=skin_mat)
-    fbox('head', (-8.5, -46, -6), (17, 14, 12), name='skull')
-    fbox('head', (-1.5, -38, -8), (3, 5, 2), name='nose')
+    # ---------------- head: roof -50, crown -49..-46, band, face window x -7.5..7.5 / y -44..-27
+    B.bone('head', (0, -27, 0), parent='chest', mat=skin_mat)
+    fbox('head', (-7.5, -47, -6), (15, 16, 12), name='skull')
+    fbox('head', (-1.5, -39, -8), (3, 7, 2), name='nose')
     fbox('head', (-7.5, -42, -7), (15, 2, 1), name='brow')
-    box('head', (-10.5, -48, -7), (21, 5, 14), mat=linen_mat, name='band')
-    box('head', (-11.5, -46, -7), (3, 19, 13), mat=linen_mat, name='coif_side')
-    box('head', (8.5, -46, -7), (3, 19, 13), mat=linen_mat, name='coif_side')
-    box('head', (-9.5, -29, -7), (19, 4, 12), mat=linen_mat, name='chinwrap')
-    box('head', (-12.5, -50, -8), (25, 3, 18), mat=habit_mat, name='crown')
+    box('head', (-10.5, -48, -7), (21, 4, 14), mat=linen_mat, name='band')
+    box('head', (-10.5, -46, -7), (3, 21, 13), mat=linen_mat, name='coif_side')
+    box('head', (7.5, -46, -7), (3, 21, 13), mat=linen_mat, name='coif_side')
+    box('head', (-8.5, -27, -7), (17, 5, 12), mat=linen_mat, name='chinwrap')
+    box('head', (-13.5, -49, -8.5), (27, 3, 19), mat=habit_mat, name='crown')
+    box('head', (-12.5, -50, -7.5), (25, 1, 17), mat=habit_mat, name='roof')
 
-    B.bone('glasses', (0, -39, -8.25), parent='head', mat=glasses_mat)
+    B.bone('glasses', (0, -38, -8.25), parent='head', mat=glasses_mat)
     box('glasses', (-7.5, -40, -8.25), (15, 7, 0), name='glasses',
         decals={'front': pixelart(GLASSES, GPAL, anchor='topleft'),
                 'eyes:front': pixelart(GLASSES, GLOWPAL, anchor='topleft')})
 
-    B.bone('jaw', (0, -32, 2), parent='head', mat=skin_mat)
-    fbox('jaw', (-8.5, -32, -6), (17, 3, 10), name='jaw')
+    B.bone('jaw', (0, -31, 2), parent='head', mat=skin_mat)
+    fbox('jaw', (-7.5, -31, -6), (15, 4, 9), name='jaw')
+    fbox('jaw', (-3.5, -29, -6.75), (7, 2, 1), name='chin')
 
     for side, sx in (('right', -1), ('left', 1)):
         vb = f'veil_{side}'
-        B.bone(vb, (12.5 * sx, -48, 0), parent='head', rot=(0, 0, 4 * sx), mat=habit_mat)
-        box(vb, (11.5 * sx - (2 if sx < 0 else 0), -48, -7.5), (2, 24, 16), name='veil_side')
+        B.bone(vb, (10.5 * sx, -48, 2), parent='head', rot=(0, 0, -6 * sx), mat=habit_mat)
+        box(vb, (10.5 * sx - (3 if sx < 0 else 0), -48, -5.5), (3, 26, 16), name='veil_side')
 
-    # ---------------- arms (authored hanging, bent by the bone rotations)
+    # ---------------- arms (authored hanging, bent by the bone rotations); upper arms come out under the cape
     for side, sx in (('right', -1), ('left', 1)):
         arm, fa, hand = f'{side}_arm', f'{side}_forearm', f'{side}_hand'
         ax = 12.5 * sx
-        B.bone(arm, (ax, -25, 0), parent='chest', rot=(-8 if sx < 0 else -4, 0, 3 * sx), mat=habit_mat)
-        box(arm, (ax - 3.5, -27, -4), (7, 15, 8), name='sleeve_up')
-        frot = (-52, -14, 0) if sx < 0 else (-72, 30, 0)
-        B.bone(fa, (ax, -13, 0), parent=arm, rot=frot, mat=habit_mat)
-        box(fa, (ax - 3, -14, -3.5), (6, 9, 7), name='sleeve_lo')
-        box(fa, (ax - 4, -7, -5), (8, 7, 10), name='cuff')
-        box(fa, (ax - 2.5, -0.5, -2.5), (5, 2, 5), mat=linen_mat, name='undercuff')
-        B.bone(hand, (ax, 1, 0), parent=fa, rot=(0, 0, 0), mat=hand_mat)
+        B.bone(arm, (ax, -24, 0), parent='chest', rot=(-6 if sx < 0 else -3, 0, 2 * sx), mat=habit_mat)
+        box(arm, (ax - 3.5, -25, -4), (7, 14, 8), name='sleeve_up')
+        frot = (-55, -15, 0) if sx < 0 else (-74, 30, 0)
+        B.bone(fa, (ax, -12, 0), parent=arm, rot=frot, mat=habit_mat)
+        box(fa, (ax - 3, -13, -3.5), (6, 8, 7), name='sleeve_lo')
+        box(fa, (ax - 4, -6, -5), (8, 7, 10), name='cuff')
+        box(fa, (ax - 2.5, 0.5, -2.5), (5, 2, 5), mat=linen_mat, name='undercuff')
+        B.bone(hand, (ax, 2, 0), parent=fa, rot=(0, 0, 0), mat=hand_mat)
         if sx < 0:
-            box(hand, (ax - 2, 1, -2), (4, 5, 4), name='fist')
-            box(hand, (ax + 1.2, 1.5, -2.6), (1, 3, 1), inflate=0.3, name='thumb')
-            B.bone('right_index', (ax + 1, 5.5, -1.6), parent=hand, rot=(8, 0, 0), mat=hand_mat)
-            box('right_index', (ax + 0.5, 5.5, -2.1), (1, 4, 1), inflate=0.28, name='finger')
-            B.bone('pen', (ax + 0.2, 4, -2.6), parent=hand, rot=(-14, 0, -6), mat=pen_mat)
-            box('pen', (ax - 0.3, -3, -3.1), (1, 9, 1), inflate=0.28, name='barrel')
-            box('pen', (ax - 0.3, 6, -3.1), (1, 1, 1), inflate=0.2, name='section')
-            box('pen', (ax - 0.3, 7, -3.1), (1, 2, 1), inflate=0.08, name='nib')
+            box(hand, (ax - 2, 2, -2), (4, 5, 4), name='fist')
+            box(hand, (ax + 1.2, 2.5, -2.6), (1, 3, 1), inflate=0.3, name='thumb')
+            B.bone('right_index', (ax + 1, 6.5, -1.6), parent=hand, rot=(8, 0, 0), mat=hand_mat)
+            box('right_index', (ax + 0.5, 6.5, -2.1), (1, 4, 1), inflate=0.28, name='finger')
+            B.bone('pen', (ax + 0.2, 5, -2.6), parent=hand, rot=(-14, 0, -6), mat=pen_mat)
+            box('pen', (ax - 0.3, -2, -3.1), (1, 9, 1), inflate=0.28, name='barrel')
+            box('pen', (ax - 0.3, 7, -3.1), (1, 1, 1), inflate=0.2, name='section')
+            box('pen', (ax - 0.3, 8, -3.1), (1, 2, 1), inflate=0.08, name='nib')
         else:
-            box(hand, (ax - 2, 1, -1.5), (4, 5, 3), name='palm')
-            box(hand, (ax - 2.3, 1.5, -2.6), (1, 3, 1), inflate=0.3, name='thumb')
+            box(hand, (ax - 2, 2, -1.5), (4, 5, 3), name='palm')
+            box(hand, (ax - 2.3, 2.5, -2.6), (1, 3, 1), inflate=0.3, name='thumb')
 
     # ---------------- ledger on the left forearm, tilted towards her
-    B.bone('book', (3.5, -7.5, -13.5), parent='left_forearm', world=True, wrot=(-50, -8, 0), mat=leather_mat)
+    B.bone('book', (3.5, -5.5, -14), parent='left_forearm', world=True, wrot=(-50, -8, 0), mat=leather_mat)
     lbox('book', (-9.5, 0, -7.5), (19, 1, 15), name='cover')
     lbox('book', (-2, 1, -7.5), (4, 1, 15), name='spine')
     lbox('book', (-9, -2, -7), (8, 2, 14), mat=page_mat, name='pages_r')

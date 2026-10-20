@@ -375,5 +375,495 @@
   "sounds": [
    "deadline:case/solved"
   ]
+ },
+ "colegio.timbre": {
+  "subtitle": "subtitles.deadline.colegio.timbre",
+  "sounds": [
+   "deadline:colegio/timbre"
+  ]
+ },
+ "colegio.campana": {
+  "subtitle": "subtitles.deadline.colegio.campana",
+  "sounds": [
+   "deadline:colegio/campana"
+  ]
+ },
+ "colegio.campana_triple": {
+  "subtitle": "subtitles.deadline.colegio.campana_triple",
+  "sounds": [
+   "deadline:colegio/campana_triple"
+  ]
+ },
+ "colegio.pa_chime": {
+  "subtitle": "subtitles.deadline.colegio.pa_chime",
+  "sounds": [
+   "deadline:colegio/pa_chime"
+  ]
+ },
+ "colegio.viento": {
+  "subtitle": "subtitles.deadline.colegio.viento",
+  "sounds": [
+   "deadline:colegio/viento_1",
+   "deadline:colegio/viento_2"
+  ]
+ },
+ "colegio.polvo": {
+  "subtitle": "subtitles.deadline.colegio.polvo",
+  "sounds": [
+   "deadline:colegio/polvo"
+  ]
+ },
+ "door.slam": {
+  "subtitle": "subtitles.deadline.door.slam",
+  "sounds": [
+   "deadline:door/slam_1",
+   "deadline:door/slam_2"
+  ]
+ },
+ "tiza.escribe": {
+  "subtitle": "subtitles.deadline.tiza.escribe",
+  "sounds": [
+   "deadline:tiza/escribe_1",
+   "deadline:tiza/escribe_2",
+   "deadline:tiza/escribe_3"
+  ]
+ },
+ "tiza.rompe": {
+  "subtitle": "subtitles.deadline.tiza.rompe",
+  "sounds": [
+   "deadline:tiza/rompe"
+  ]
+ },
+ "pupitres.giran": {
+  "subtitle": "subtitles.deadline.pupitres.giran",
+  "sounds": [
+   "deadline:pupitres/giran"
+  ]
+ },
+ "farol.revienta": {
+  "subtitle": "subtitles.deadline.farol.revienta",
+  "sounds": [
+   "deadline:farol/revienta_1",
+   "deadline:farol/revienta_2",
+   "deadline:farol/revienta_3"
+  ]
+ },
+ "luces.fuera": {
+  "subtitle": "subtitles.deadline.luces.fuera",
+  "sounds": [
+   "deadline:luces/fuera"
+  ]
+ },
+ "silla.arrastra": {
+  "subtitle": "subtitles.deadline.silla.arrastra",
+  "sounds": [
+   "deadline:silla/arrastra_1",
+   "deadline:silla/arrastra_2"
+  ]
+ },
+ "silla.gira": {
+  "subtitle": "subtitles.deadline.silla.gira",
+  "sounds": [
+   "deadline:silla/gira"
+  ]
+ },
+ "telefono_baquelita.ring": {
+  "subtitle": "subtitles.deadline.telefono_baquelita.ring",
+  "sounds": [
+   "deadline:telefono_baquelita/ring"
+  ]
+ },
+ "telefono.linea": {
+  "subtitle": "subtitles.deadline.telefono.linea",
+  "sounds": [
+   "deadline:telefono/linea"
+  ]
+ },
+ "mate.sorbo": {
+  "subtitle": "subtitles.deadline.mate.sorbo",
+  "sounds": [
+   "deadline:mate/sorbo"
+  ]
+ },
+ "confesionario.rejilla": {
+  "subtitle": "subtitles.deadline.confesionario.rejilla",
+  "sounds": [
+   "deadline:confesionario/rejilla"
+  ]
+ },
+ "espejo.raja": {
+  "subtitle": "subtitles.deadline.espejo.raja",
+  "sounds": [
+   "deadline:espejo/raja"
+  ]
+ },
+ "muro.cae": {
+  "subtitle": "subtitles.deadline.muro.cae",
+  "sounds": [
+   "deadline:muro/cae"
+  ]
+ },
+ "tumba.tapa": {
+  "subtitle": "subtitles.deadline.tumba.tapa",
+  "sounds": [
+   "deadline:tumba/tapa"
+  ]
+ },
+ "regla.rompe": {
+  "subtitle": "subtitles.deadline.regla.rompe",
+  "sounds": [
+   "deadline:regla/rompe"
+  ]
+ },
+ "ui.amonestacion": {
+  "subtitle": "subtitles.deadline.ui.amonestacion",
+  "sounds": [
+   "deadline:ui/amonestacion"
+  ]
+ },
+ "madre.pluma": {
+  "subtitle": "subtitles.deadline.madre.pluma",
+  "sounds": [
+   "deadline:madre/pluma"
+  ]
+ },
+ "dormitorio.respira": {
+  "subtitle": "subtitles.deadline.dormitorio.respira",
+  "sounds": [
+   "deadline:dormitorio/respira_1",
+   "deadline:dormitorio/respira_2"
+  ]
+ },
+ "alumna.pasos": {
+  "subtitle": "subtitles.deadline.alumna.pasos",
+  "sounds": [
+   "deadline:alumna/pasos_1",
+   "deadline:alumna/pasos_2"
+  ]
+ },
+ "monja.campanita": {
+  "subtitle": "subtitles.deadline.monja.campanita",
+  "sounds": [
+   "deadline:monja/campanita"
+  ]
+ },
+ "monja.regla_tap": {
+  "subtitle": "subtitles.deadline.monja.regla_tap",
+  "sounds": [
+   "deadline:monja/regla_tap"
+  ]
+ },
+ "monja.reglazo": {
+  "subtitle": "subtitles.deadline.monja.reglazo",
+  "sounds": [
+   "deadline:monja/reglazo"
+  ]
+ },
+ "monja.shh": {
+  "subtitle": "subtitles.deadline.monja.shh",
+  "sounds": [
+   "deadline:monja/shh"
+  ]
+ },
+ "monja.burn": {
+  "subtitle": "subtitles.deadline.monja.burn",
+  "sounds": [
+   "deadline:monja/burn"
+  ]
+ },
+ "monja.soplido": {
+  "subtitle": "subtitles.deadline.monja.soplido",
+  "sounds": [
+   "deadline:monja/soplido"
+  ]
+ },
+ "monja.ceiling": {
+  "subtitle": "subtitles.deadline.monja.ceiling",
+  "sounds": [
+   "deadline:monja/ceiling"
+  ]
+ },
+ "monja.mojada": {
+  "subtitle": "subtitles.deadline.monja.mojada",
+  "sounds": [
+   "deadline:monja/mojada"
+  ]
+ },
+ "coro.ave_reves": {
+  "subtitle": "subtitles.deadline.coro.ave_reves",
+  "sounds": [
+   {
+    "name": "deadline:coro/ave_reves",
+    "stream": true
+   }
+  ]
+ },
+ "coro.ave_derecho_1": {
+  "subtitle": "subtitles.deadline.coro.ave_derecho_1",
+  "sounds": [
+   {
+    "name": "deadline:coro/ave_derecho_1",
+    "stream": true
+   }
+  ]
+ },
+ "coro.ave_derecho_2": {
+  "subtitle": "subtitles.deadline.coro.ave_derecho_2",
+  "sounds": [
+   {
+    "name": "deadline:coro/ave_derecho_2",
+    "stream": true
+   }
+  ]
+ },
+ "coro.ave_derecho_3": {
+  "subtitle": "subtitles.deadline.coro.ave_derecho_3",
+  "sounds": [
+   {
+    "name": "deadline:coro/ave_derecho_3",
+    "stream": true
+   }
+  ]
+ },
+ "coro.acorde_final": {
+  "subtitle": "subtitles.deadline.coro.acorde_final",
+  "sounds": [
+   "deadline:coro/acorde_final"
+  ]
+ },
+ "line.colegio.clara.llamada": {
+  "sounds": [
+   "deadline:line/colegio/clara/llamada"
+  ]
+ },
+ "line.operadora.aviso": {
+  "sounds": [
+   "deadline:line/operadora/aviso"
+  ]
+ },
+ "line.operadora.muerte": {
+  "sounds": [
+   "deadline:line/operadora/muerte"
+  ]
+ },
+ "line.colegio.madre.lista": {
+  "sounds": [
+   "deadline:line/colegio/madre/lista"
+  ]
+ },
+ "line.colegio.madre.ferreyra": {
+  "sounds": [
+   "deadline:line/colegio/madre/ferreyra"
+  ]
+ },
+ "line.colegio.madre.quiroga": {
+  "sounds": [
+   "deadline:line/colegio/madre/quiroga"
+  ]
+ },
+ "line.colegio.madre.bazan": {
+  "sounds": [
+   "deadline:line/colegio/madre/bazan"
+  ]
+ },
+ "line.colegio.madre.luna": {
+  "sounds": [
+   "deadline:line/colegio/madre/luna"
+  ]
+ },
+ "line.colegio.madre.sosa": {
+  "sounds": [
+   "deadline:line/colegio/madre/sosa"
+  ]
+ },
+ "line.colegio.madre.heredia": {
+  "sounds": [
+   "deadline:line/colegio/madre/heredia"
+  ]
+ },
+ "line.colegio.madre.moyano": {
+  "sounds": [
+   "deadline:line/colegio/madre/moyano"
+  ]
+ },
+ "line.colegio.madre.albornoz": {
+  "sounds": [
+   "deadline:line/colegio/madre/albornoz"
+  ]
+ },
+ "line.colegio.madre.ausente": {
+  "sounds": [
+   "deadline:line/colegio/madre/ausente"
+  ]
+ },
+ "line.colegio.madre.usted": {
+  "sounds": [
+   "deadline:line/colegio/madre/usted"
+  ]
+ },
+ "line.colegio.alumna.presente": {
+  "sounds": [
+   "deadline:line/colegio/alumna/presente"
+  ]
+ },
+ "line.colegio.madre.pregunta1": {
+  "sounds": [
+   "deadline:line/colegio/madre/pregunta1"
+  ]
+ },
+ "line.colegio.madre.conta_bien": {
+  "sounds": [
+   "deadline:line/colegio/madre/conta_bien"
+  ]
+ },
+ "line.colegio.madre.correcto": {
+  "sounds": [
+   "deadline:line/colegio/madre/correcto"
+  ]
+ },
+ "line.colegio.madre.pregunta2": {
+  "sounds": [
+   "deadline:line/colegio/madre/pregunta2"
+  ]
+ },
+ "line.colegio.madre.como_dijo": {
+  "sounds": [
+   "deadline:line/colegio/madre/como_dijo"
+  ]
+ },
+ "line.colegio.alumna.risitas": {
+  "sounds": [
+   "deadline:line/colegio/alumna/risitas"
+  ]
+ },
+ "line.colegio.monja.no_se_corre": {
+  "sounds": [
+   "deadline:line/colegio/monja/no_se_corre"
+  ]
+ },
+ "line.colegio.madre.megafonia": {
+  "sounds": [
+   "deadline:line/colegio/madre/megafonia"
+  ]
+ },
+ "line.colegio.clara.1984": {
+  "sounds": [
+   "deadline:line/colegio/clara/1984"
+  ]
+ },
+ "line.colegio.clara.ya_sabe": {
+  "sounds": [
+   "deadline:line/colegio/clara/ya_sabe"
+  ]
+ },
+ "line.colegio.cura.ave": {
+  "sounds": [
+   "deadline:line/colegio/cura/ave"
+  ]
+ },
+ "line.colegio.cura.r1": {
+  "sounds": [
+   "deadline:line/colegio/cura/r1"
+  ]
+ },
+ "line.colegio.cura.r2": {
+  "sounds": [
+   "deadline:line/colegio/cura/r2"
+  ]
+ },
+ "line.colegio.cura.r3": {
+  "sounds": [
+   "deadline:line/colegio/cura/r3"
+  ]
+ },
+ "line.colegio.cura.r4": {
+  "sounds": [
+   "deadline:line/colegio/cura/r4"
+  ]
+ },
+ "line.colegio.cura.corre": {
+  "sounds": [
+   "deadline:line/colegio/cura/corre"
+  ]
+ },
+ "line.colegio.paloma.toma": {
+  "sounds": [
+   "deadline:line/colegio/paloma/toma"
+  ]
+ },
+ "line.colegio.clara.dormitorio": {
+  "sounds": [
+   "deadline:line/colegio/clara/dormitorio"
+  ]
+ },
+ "line.colegio.alumna.shh": {
+  "sounds": [
+   "deadline:line/colegio/alumna/shh"
+  ]
+ },
+ "line.colegio.alumna.shh_viene": {
+  "sounds": [
+   "deadline:line/colegio/alumna/shh_viene"
+  ]
+ },
+ "line.colegio.paloma.perdon": {
+  "sounds": [
+   "deadline:line/colegio/paloma/perdon"
+  ]
+ },
+ "line.colegio.madre.pensa": {
+  "sounds": [
+   "deadline:line/colegio/madre/pensa"
+  ]
+ },
+ "line.colegio.paloma.chiste1": {
+  "sounds": [
+   "deadline:line/colegio/paloma/chiste1"
+  ]
+ },
+ "line.colegio.paloma.chiste2": {
+  "sounds": [
+   "deadline:line/colegio/paloma/chiste2"
+  ]
+ },
+ "line.colegio.alumnas.corre": {
+  "sounds": [
+   "deadline:line/colegio/alumnas/corre"
+  ]
+ },
+ "line.colegio.clara.falta_voz": {
+  "sounds": [
+   "deadline:line/colegio/clara/falta_voz"
+  ]
+ },
+ "line.colegio.monja.quien_hablo": {
+  "sounds": [
+   "deadline:line/colegio/monja/quien_hablo"
+  ]
+ },
+ "line.colegio.monja.a_la_pared": {
+  "sounds": [
+   "deadline:line/colegio/monja/a_la_pared"
+  ]
+ },
+ "line.colegio.monja.castigo": {
+  "sounds": [
+   "deadline:line/colegio/monja/castigo"
+  ]
+ },
+ "line.colegio.clara.gracias": {
+  "sounds": [
+   "deadline:line/colegio/clara/gracias"
+  ]
+ },
+ "line.colegio.madre.aja": {
+  "sounds": [
+   "deadline:line/colegio/madre/aja"
+  ]
+ },
+ "line.colegio.alumnas.shhh": {
+  "sounds": [
+   "deadline:line/colegio/alumnas/shhh"
+  ]
  }
 }

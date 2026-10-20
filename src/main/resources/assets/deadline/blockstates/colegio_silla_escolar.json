@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "deadline:block/colegio_silla_escolar"
+  },
+  "facing=east": {
+   "model": "deadline:block/colegio_silla_escolar",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "deadline:block/colegio_silla_escolar",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "deadline:block/colegio_silla_escolar",
+   "y": 270
+  }
+ }
+}

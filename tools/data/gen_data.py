@@ -11,6 +11,7 @@ sys.path.insert(0, HERE)
 sys.path.insert(0, os.path.join(HERE, '..', 'audio'))
 from lang import ITEMS, ENTITIES, BLOCKS, CASES, BESTIARY, SPIRIT_BOX, MISC, WEAKNESS
 from sounds_def import SOUNDS
+from lines import LINES, TEXTS, SPEAKERS
 
 ROOT = os.path.abspath(os.path.join(HERE, '..', '..'))
 RES = os.path.join(ROOT, 'src/main/resources')
@@ -247,6 +248,12 @@ def lang():
     for name, (_, sub_es, sub_en, _) in SOUNDS.items():
         es[f'subtitles.{NS}.{name}'] = sub_es
         en[f'subtitles.{NS}.{name}'] = sub_en
+    for k, v in LINES.items():
+        es[f'{NS}.line.{k}'], en[f'{NS}.line.{k}'] = v['es'], v['en']
+    for k, (e, n) in TEXTS.items():
+        es[f'{NS}.text.{k}'], en[f'{NS}.text.{k}'] = e, n
+    for k, (e, n) in SPEAKERS.items():
+        es[f'{NS}.speaker.{k}'], en[f'{NS}.speaker.{k}'] = e, n
     extra = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'blocks', 'out', 'lang_blocks.json')
     if os.path.exists(extra):
         for k, (e_es, e_en) in json.load(open(extra)).items():

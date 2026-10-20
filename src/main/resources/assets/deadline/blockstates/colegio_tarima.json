@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "deadline:block/colegio_tarima"
+  },
+  "facing=east": {
+   "model": "deadline:block/colegio_tarima",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "deadline:block/colegio_tarima",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "deadline:block/colegio_tarima",
+   "y": 270
+  }
+ }
+}

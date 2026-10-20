@@ -1,23 +1,25 @@
 """Ánima -- the lost soul (DEAD LINE).
 
 Authored at 2x texel density (model.scale = 0.5) in absolute rig coordinates: +Y down, ground y = 24,
-faces -Z, right_* on -X.  A ghost: it floats a couple of texels above the ground, 1.9 blocks including the tail.
+faces -Z, right_* on -X.  A ghost: it floats ~1 texel above the ground, 1.9 blocks including the hair and tail.
 Design coordinates are shifted into model space by (0, DY, DZ) so the torso sits on the entity origin.
 
 Silhouette: a coffin-shaped, back-swept skull (narrow crown, wide brow and cheekbones, sunken temples,
-occipital dome sweeping up and back) on a short vertebral neck.  The jaw is stretched DOWN into a long black
-scream (a real 3-deep gullet behind it, faint cyan glow at the back of the throat) framed by bright strands of
-torn cheek skin with dark outlines, so the face cuts cleanly against the chest.  Two hollow sockets (brows tilted
-up at the inner corners, a thin dark nasal bridge) with burning pinpoint pupils.  Hair: six 3-segment chains,
-two locks each, that rise first and then curl back like smoke under water; one lock falls forward over the left
-brow.  Rib cage split open at the front (dark hollow, the soul-light glowing between the left ribs) pushed
-back behind the jaw.  Over-long arms, narrow claw hands with four 1-texel jointed fingers, knuckle knobs and
-black claws.  No legs: tapering shroud ribbons and a four-segment S-curved tail that frays into ribbons.
+occipital dome sweeping up and back) on a short vertebral neck.  The jaw hangs DOWN into a long black scream:
+a real 3-deep gullet (dim cyan glow at the back of the throat) framed by bright cheek strands and 2-wide rami
+with dark outline columns, so the screaming face cuts cleanly against the chest.  Two hollow sockets (the left
+one bigger and drooping, brows tilted up at the inner corners, thin dark nasal bridge) with burning 2x2 pupils.
+Hair: six 3-segment chains carrying 17 locks that rise first and curl back like smoke under water, a ragged
+mane veil behind the skull, one lock falling forward over the left brow.  The rib cage is split open at the
+front and pushed back (dark hollow, soul-light between the left ribs).  Over-long arms with flared elbows,
+narrow claw hands: four 1-texel jointed fingers with gaps, knuckle knobs, varied curls, black claws.  No legs:
+tapering shroud ribbons and a four-segment tail that sweeps out in a sideways S and frays into ribbons.
 
-Colour: luminous teal-white core (face, jaw, cheek strands brightest at alpha 205-210), cyan toward every
-silhouette edge, ribs/clavicles two steps darker and more cyan (alpha 150-175), deeper cyan toward the
-extremities, darker cyan inside the eyes and the mouth.  Translucent + emissive (entityTranslucentEmissive):
-alpha 110..210.  Faces that are never meant to be seen return None (cut out) so nothing ghosts in game.
+Colour: luminous teal-white core (face, jaw, strands brightest, alpha 205-210), cyan toward every silhouette
+edge, ribs/clavicles two steps darker and more cyan (alpha 150-175), arms x-rayed (bone denser than flesh),
+deeper cyan toward the claws, darker cyan inside the eyes and mouth.  Translucent + emissive
+(entityTranslucentEmissive), alpha 110..210.  Faces never meant to be seen return None (cut out) and no two
+painted faces are coplanar back-to-back, so nothing ghosts or shimmers in the no-depth-write translucent pass.
 """
 import math
 
@@ -27,7 +29,7 @@ from paint import hx, mix
 
 RIG = None   # set by build(); materials need absolute pivots
 DY = 3.5     # design frame -> model frame vertical offset (materials work in design coordinates)
-DZ = -5.0    # design frame -> model frame depth offset (centres the torso on the entity origin)
+DZ = -4.0    # design frame -> model frame depth offset (centres the torso on the entity origin)
 
 # ------------------------------------------------------------------ palettes (hand-picked, hue shifted)
 # one luminous ramp: blue-black teal -> saturated cyan mids -> mint/teal-white core
@@ -183,6 +185,8 @@ def skull_mat(ctx):
         return None                             # under the upper vault
     if t == 'rim' and f in ('top', 'bottom'):
         return None
+    if t == 'bridge' and f == 'top':
+        return None                             # under the vault
     if f == 'front':
         if (cx, cy) in CRACK and t in ('forehead', 'crown', 'vault', 'vault_hi', 'cheekbone'):
             return A(VOID[2], 210)
@@ -404,6 +408,8 @@ def jaw_mat(ctx):
     if t in ('ramus', 'corner'):
         inner = (f == 'east' and x < 0) or (f == 'west' and x > 0)
         if inner:
+            if t == 'ramus':
+                return None                     # flush against the gullet walls (no coplanar shimmer)
             return A(pick(VOID, 0.5 + ly / h * 0.4), 210)    # wet dark inside of the cheek
         outer = (f == 'west' and x < 0) or (f == 'east' and x > 0)
         if f == 'front':
@@ -523,6 +529,8 @@ def backplate_mat(ctx):
     """Front: the dark hollow of the open chest lit by the soul.  Back: skin drawn over spine and ribs."""
     f = ctx.face
     x, y, z = apos(ctx)
+    if (f == 'bottom' and ctx.cube.size[0] == 14 and abs(x) < 5) or (f == 'top' and ctx.cube.size[0] == 10):
+        return None                             # the two plates meet here
     if f == 'front':
         dd = math.sqrt((x - 5.5) ** 2 + ((y + 8) * 0.8) ** 2) / 7.0
         return A(pick(VOID, 0.92 - dd * 0.8), 188)
@@ -895,7 +903,7 @@ def build():
     B('body', (-3, -3, 2.5), (6, 5, 4), 'waist')
     B('body', (-12.5, -19.5, 2.5), (3, 3, 4), 'shoulder')
     B('body', (9.5, -19.5, 2.5), (3, 3, 4), 'shoulder')
-    B('body', (-9, -18, 7.1), (18, 2, 2), 'yoke')            # behind the backplate top, out of the maw
+    B('body', (-9, -18.2, 7.2), (18, 2, 2), 'yoke')            # behind the backplate top, out of the maw
     B('body', (-10.5, -18.2, 1), (6, 1, 2), 'clav')            # clavicles end at the shoulders
     B('body', (4.5, -18.2, 1), (6, 1, 2), 'clav')
     for y in (-17, -14, -11, -8, -5, -2):
@@ -909,17 +917,17 @@ def build():
     for k, w in enumerate((4, 5, 6, 5, 4)):
         y = -15.5 + 3.1 * k
         B('ribs_right', (-5 - w, y, 0), (w, 2, 2), 'ribf')
-        B('ribs_right', (-5 - w, y, 2), (2, 2, 6), 'ribs')
+        B('ribs_right', (-4.9 - w, y + 0.05, 2), (2, 2, 6), 'ribs')
         B('ribs_left', (5, y, 0), (w, 2, 2), 'ribf')
-        B('ribs_left', (3 + w, y, 2), (2, 2, 6), 'ribs')
+        B('ribs_left', (2.9 + w, y + 0.05, 2), (2, 2, 6), 'ribs')
 
     # ---------------- neck: visible vertebrae between the skull base and the shoulders
     bone('neck', (0, -17, 5), parent='body', rot=(-10, 0, 0))
     B('neck', (-1.5, -25, 1), (3, 2, 3), 'vert')
     B('neck', (-1.5, -22.5, 2), (3, 2, 3), 'vert')
     B('neck', (-1.5, -20, 3), (3, 2, 3), 'vert')
-    B('neck', (-2.5, -24, 1.5), (1, 7, 1), 'tendon')
-    B('neck', (1.5, -24, 1.5), (1, 7, 1), 'tendon')
+    B('neck', (-2.6, -24, 1.5), (1, 7, 1), 'tendon')
+    B('neck', (1.6, -24, 1.5), (1, 7, 1), 'tendon')
 
     # ---------------- head: coffin skull, recessed face frame (two hollow sockets 4.5 x 6.5, 2-4 deep)
     bone('head', (0, -25, 2), parent='neck', rot=(-6, 0, 5))
@@ -934,7 +942,7 @@ def build():
     B('head', (-0.5, -26, -6.5), (1, 5, 2), 'bridge', decals=dict(wall))
     B('head', (-4, -17.5, -7.5), (8, 2, 3), 'maxilla')
     B('head', (-3, -17, -4.4), (6, 9, 3), 'throat')     # the upper gullet: 3 deep (the jaw's gullet does the rest)
-    for tx, ty, th in ((-3, -15.5, 2), (-1.8, -15.5, 4), (-0.5, -15.5, 1), (1.2, -15.5, 3), (2.2, -15.5, 1)):
+    for tx, ty, th in ((-2.9, -15.5, 2), (-1.8, -15.5, 4), (-0.5, -15.5, 1), (0.9, -15.5, 3), (2.1, -15.5, 1)):
         B('head', (tx, ty, -7), (1, th, 1), 'tooth')
 
     # brow halves: inner corners raised (anguish), they overhang the sockets
@@ -959,12 +967,12 @@ def build():
 
     # ---------------- jaw: long, hanging open; 2-wide rami with dark outer outlines; a real 3-deep gullet
     bone('jaw', (0, -17, -4.5), parent='head')
-    B('jaw', (-5, -16, -7.5), (2, 12, 3), 'ramus')
-    B('jaw', (3, -16, -7.5), (2, 12, 3), 'ramus')
+    B('jaw', (-5, -16, -7.4), (2, 12, 3), 'ramus')
+    B('jaw', (3, -16, -7.4), (2, 12, 3), 'ramus')
     B('jaw', (-2, -4, -8.5), (4, 3, 4), 'chin')
     B('jaw', (-1, -1, -8), (2, 2, 3), 'chinpt')
-    B('jaw', (-4, -6, -7.5), (2, 3, 3), 'corner')   # the mouth narrows to a point at the bottom
-    B('jaw', (2, -6, -7.5), (2, 3, 3), 'corner')
+    B('jaw', (-4.1, -6, -7.6), (2, 3, 3), 'corner')   # the mouth narrows to a point at the bottom
+    B('jaw', (2.1, -6, -7.6), (2, 3, 3), 'corner')
     B('jaw', (-3, -16, -5.4), (6, 14, 3), 'throat', decals={'eyes:front': eyes_throat})
     for tx, th in ((-1.8, 5), (-0.6, 2), (1.0, 4)):
         B('jaw', (tx, -4 - th, -7.6), (1, th, 1), 'tooth')
@@ -1071,8 +1079,8 @@ POSES = {
         'brow_left': (0, 0, 0.1, 0, -0.5, 0),
         'right_arm': (0.1, 0.2, 0.95, 0, 0, 0),
         'left_arm': (0.0, -0.2, -0.95, 0, 0, 0),
-        'right_forearm': (0.3, 0, 0.45, 0, 0, 0),
-        'left_forearm': (0.3, 0, -0.45, 0, 0, 0),
+        'right_forearm': (1.0, 0.4, 0.4, 0, 0, 0),
+        'left_forearm': (1.2, 0.4, -0.4, 0, 0, 0),
         'right_hand': (-0.7, 0, 0.3, 0, 0, 0),
         'left_hand': (-0.7, 0, -0.3, 0, 0, 0),
         'right_finger_1': (-0.3, 0, -0.25, 0, 0, 0), 'right_finger_4': (-0.4, 0, 0.3, 0, 0, 0),
@@ -1174,5 +1182,62 @@ POSES = {
 }
 
 ANIM_NOTES = """
-TODO
+Anima -- translucent screaming lost soul.  render_type entityTranslucentEmissive (base texture alpha 110-210:
+face / jaw / cheek strands 205-210, ribs and clavicles 150-175, arms 150-200 (bone denser than flesh), tail
+140-186, hair tips fading to 110).  Faces that are never meant to be seen are cut out (alpha 0) so nothing
+ghosts through when the translucent pass draws without depth writes.  Emissive layer 'eyes': 2x2 burning pupils
+with a dim halo deep in the sockets (left one a texel lower), a faint dark-cyan ring on the socket walls, a dim
+cyan glow at the back of the gullet, soul-light leaking through the forehead crack, and the soul between the
+left ribs.  No legs: it never walks -- drive everything from ageInTicks, not walkAnimationPos.  POSES are
+offsets ADDED to the rest pose (radians / texels); blend in over ~4-6 ticks and out over ~8.
+Rest pose: floats with the tail tip ~1 texel above the ground, elbows flared out, forearms reaching forward,
+wrists drooping, every finger curled by a different amount (a grasping claw), jaw hanging open.
+
+BONES
+- body (root, pivot at the waist): idle bob +-1.5 texels (sin(age*0.08)) and a slow lean of +-0.05 rad; leans
+  into the drift direction while moving (xRot up to +0.15).  Carries the open-fronted chest (backplate = dark
+  hollow), the soul light, waist, shoulder knobs, clavicles, yoke, spine and shoulder blades.
+- ribs_right / ribs_left: the two halves of the split-open rib cage.  Breathing flex zRot +-0.04 rad
+  (mirrored) on a 60-tick cycle, 20 ticks while chasing; flare out to +-0.1 in 'scream'.
+- neck: vertebrae + tendons.  Takes 40% of the look pitch/yaw (HauntModel does this when 'neck' exists);
+  small 0.03 rad wobble out of phase with body.
+- head: look-at target (yaw clamp +-0.6, pitch +-0.4) plus a random twitch every 40-120 ticks (snap +-0.15
+  rad roll for 2 ticks, ease back).  Thrown back in 'scream', rolled in 'moan', wrenched aside in 'revealed'.
+  Also the FOCUS / jumpscare portrait bone: its own cubes are the skull + upper gullet only.
+- brow_right / brow_left: anguish -- inner corners lift further (zRot -/+0.1, dy -0.5) whenever the jaw opens
+  past half; tiny tremble at rest.
+- skull_back: occipital dome, rigid with the head (separate only for its back-swept rotation).
+- cheek_right / cheek_left: cheekbones + stretched cheek skin (the bright outlined strands framing the maw).
+  Splay outward (zRot +/-0.1..0.12, dy +1) as the jaw drops, 2 ticks behind the jaw.
+- jaw: rami, chin, lower teeth and the 3-deep black gullet (glowing at the back).  ALWAYS ajar at rest.
+  Idle sag 0..+1 dy.  dy +3 'moan', +6.5 'scream', +7.5 'attack' (the jumpscare portrait uses the attack jaw),
+  each with a small negative xRot so the chin stays in front of the chest.  1-tick 0.5-texel shiver at peak.
+- hair: whole-mass drift, xRot -0.1..-0.2 (lifts) in scream / attack.
+- hair_1..hair_6 (root segment), hair_N_mid, hair_N_tip: six 3-segment chains, two or three locks each, that
+  rise first and curl back (1 = right temple, 2 = left temple, 3/4 = crown, 5 = back mane veil, 6 = the lock
+  that falls forward over the left brow).  Under-water drift: ripple("hair_", ...) or per chain xRot/zRot
+  sines, amplitude 0.08 root / 0.14 mid / 0.22 tip, each chain phase-offset by N*0.9 rad and every segment
+  lagging its parent by ~0.6 rad.  hair_6 sways less (0.5x) so it keeps hanging over the brow.
+- right_arm / left_arm (shoulder): idle sway +-0.08 rad out of phase L/R; blend toward 'reach' while chasing.
+- right_forearm / left_forearm (elbow): follow the arm with 0.1 rad lag.
+- right_hand / left_hand (wrist; palm, knuckle line and the static thumb + claw): slow claw droop; flick up
+  (-0.3 .. -0.75) in attack / reach / scream.
+- right_finger_1..4 / left_finger_1..4 (proximal, with the knuckle knob) and _tip (distal + black claw):
+  medial -> lateral.  Claw curl: proximal xRot +0.1..+0.4, tip +0.2..+0.6 on grab; splay (zRot fan, see 'reach'
+  / 'scream') when reaching; random single-finger twitches at rest (one finger, 3-5 ticks, 0.2 rad).
+- shroud_front (four tapering ribbons continuing the body's taper), shroud_back, shroud_right, shroud_left:
+  flutter -- xRot (front/back) and zRot (sides) sines 0.1-0.15 rad, own phases; trail opposite to the movement.
+- tail1..tail4: sideways S that frays into ribbons.  Sinuous wave zRot = A*sin(age*0.12 - k*0.7), xRot =
+  0.5*A*sin(age*0.09 - k*0.6) with A = 0.06, 0.1, 0.16, 0.24 for k = 1..4; streams back (+xRot) with speed.
+
+POSES
+- 'drift': default idle float -- arms trail low and back, head hung, hair rising, tail streaming.
+- 'reach': chase / the clip money shot -- both claws straight at the camera, fingers splayed, jaw half open.
+- 'attack': lunge -- body pitches in (dz -3, dy -3 so the tail stays above the ground), jaw wider than the
+  scream, both claws raised beside the face and curling.
+- 'scream': signature shriek (scream sound, and before vanishing) -- jaw dislocated to the chest, head thrown
+  back, arms flung wide with the elbows bent up, wrists bent back, every finger splayed, cheeks torn wider.
+- 'revealed': reveal() (camera flash / UV light, becomeWeakened) -- recoils: arms flung up, head wrenched aside,
+  tail whipped into an S.  Hold while isRevealed() and the reveal timer is high, then ease back to 'drift'.
+- 'moan': with the ANIMA_MOAN sound -- jaw half open, head rolled to one side, brows lifted.
 """

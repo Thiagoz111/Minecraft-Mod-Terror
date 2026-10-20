@@ -266,12 +266,13 @@ CAL_DIRTY = Ramp('#3a332f', '#544a42', '#706355', '#8b7c6a', '#a2927c', '#b4a58e
 CAL_STAIN = Ramp('#3b2a1c', '#563c25', '#70502f', '#87653c', '#9b7a4d', '#ad8e60', '#bca075', '#c8b089', '#d3be9b')
 CREAM = Ramp('#463d33', '#625646', '#81735c', '#9e8f73', '#b4a586', '#c4b595', '#d1c3a3', '#dccfb1', '#e6dbc0')
 RENDER = Ramp('#3a3633', '#4e4945', '#635c55', '#776f66', '#8a8177', '#9c9387', '#ada497', '#bbb2a5')  # grey lime render
-OCHRE = Ramp('#5a4224', '#74562f', '#8e6b3c', '#a6804b', '#b9925a', '#c8a36b', '#d4b47f')  # older paint layer
+OCHRE = Ramp('#6b5a40', '#877351', '#a08b65', '#b49f78', '#c4b089', '#d1bf99', '#dccba7')  # older faded paint layer
 OLDGREEN = Ramp('#2f3a30', '#3f4d3f', '#51624f', '#647662', '#788a74', '#8c9d86')
 BRICK = Ramp('#3a1a14', '#53251b', '#6b3122', '#813d2a', '#964a32', '#a8583c', '#b86849', '#c67a5a', '#d18d6e')
+BRICK_OLD = Ramp('#33201a', '#4a2c22', '#5f392b', '#734536', '#855241', '#965f4c', '#a56e5a', '#b27e6a', '#bd8f7c')
 MORTAR = Ramp('#4a443e', '#625b53', '#7a7268', '#91897d', '#a59d91', '#b6aea2', '#c4bdb1')
 ADOBE = Ramp('#3b2a20', '#4f382a', '#644735', '#795742', '#8c6750', '#9d775e', '#ad876d', '#bb977d')
-STRAW = Ramp('#6b5a33', '#8a7642', '#a69157', '#bfa96c')
+STRAW = Ramp('#6e5c3e', '#8a7550', '#a08a62', '#b39d74')
 WOOD_D = Ramp('#120b08', '#1d120c', '#2a1a11', '#372216', '#452b1b', '#543522', '#64402a', '#764e34', '#8a5f40')
 FLOOR = Ramp('#21140c', '#311e12', '#432918', '#55341e', '#674026', '#784c2e', '#895937', '#9a6842', '#ac7a51')
 FLOOR_W = Ramp('#2c2219', '#3f3124', '#53422f', '#66533c', '#78644a', '#897459', '#998468', '#a99478')  # worn, unvarnished
@@ -564,10 +565,10 @@ def lime_idx(v, base=6, seed=0, rough=1.0, big=1):
     idx = posterize(n, [(0.80, big), (0.14, -big)], base)
     # mid-scale mottling (3-6 px organic clusters), one step only
     m2 = cblend(fbm(N, N, 7003 + seed, cells=4, octaves=3), fbm(N, N, 7300 + seed + 37 * v, cells=4, octaves=3))
-    idx += np.where((m2 > 0.80) & (idx <= base), 1, 0) - np.where((m2 < 0.16) & (idx >= base), 1, 0)
+    idx += np.where((m2 > 0.84) & (idx <= base), 1, 0) - np.where((m2 < 0.12) & (idx >= base), 1, 0)
     if rough:
-        idx = relief(idx, 7400 + seed, 7500 + seed + 37 * v, count=int(30 * rough), mind=4.2, body=-1, light=1)
-        pits = poisson(7600 + seed + 37 * v, int(6 * rough), 7, keep=lambda x, y: border_dist(N, N)[int(y), int(x)] >= 3)
+        idx = relief(idx, 7400 + seed, 7500 + seed + 37 * v, count=int(18 * rough), mind=5.5, body=-1, light=1)
+        pits = poisson(7600 + seed + 37 * v, int(5 * rough), 8, keep=lambda x, y: border_dist(N, N)[int(y), int(x)] >= 3)
         for (x, y) in pits:
             idx[y, x] -= 2
             idx[(y + 1) % N, x] += 1
@@ -594,23 +595,28 @@ def brick_layout(course=8, mortar=2, lengths=(15, 17), offset=8, seed=1, w=N, h=
 
 
 def paint_bricks(cv, mask=None, seed=3, ramp=BRICK, mramp=MORTAR, base=4, course=8, mortar=2, lengths=(15, 17),
-                 offset=8, soot=0.0):
+                 offset=8):
     lab, mor = brick_layout(course, mortar, lengths, offset, seed)
     rng = np.random.default_rng(seed)
-    tone = rng.integers(-1, 2, lab.max() + 1)
-    tone[rng.random(lab.max() + 1) < 0.15] -= 1
+    nbk = lab.max() + 1
+    tone = rng.choice([-2, -1, -1, 0, 0, 0, 1, 1], nbk)
     idx = np.where(lab >= 0, base + tone[np.maximum(lab, 0)], 0)
-    n = fbm(N, N, seed + 50, cells=4, octaves=2, ax=1.6)
-    idx += posterize(n, [(0.62, 1), (0.38, -1)])
+    n = fbm(N, N, seed + 50, cells=4, octaves=3, ax=1.6)
+    idx += posterize(n, [(0.66, 1), (0.34, -1)])
     idx = bevel(idx, lab, hi=1, lo=-1)
-    # pitted faces: a few dark specks per brick
-    sp = fbm(N, N, seed + 77, cells=16, octaves=1)
-    idx -= ((sp > 0.86) & (lab >= 0)).astype(int)
+    # pitted, sandy faces: small dark specks with a light grain above
+    sp = poisson(seed + 77, 22, 3.2)
+    for (x, y) in sp:
+        if lab[y, x] >= 0 and lab[(y + 1) % N, x] == lab[y, x]:
+            idx[y, x] -= 1
+            idx[(y + 1) % N, x] -= 1 if (x + y) % 3 == 0 else 0
+    # chipped arrises on some bricks (corner bites showing the mortar colour)
     m = np.ones((N, N), bool) if mask is None else mask
     cv.put(ramp, idx, m & (lab >= 0))
     # mortar: recessed (darker right under each brick), crumbly
-    midx = np.full((N, N), 3) + posterize(fbm(N, N, seed + 9, cells=8, octaves=2), [(0.6, 1), (0.35, -1)])
+    midx = np.full((N, N), 3) + posterize(fbm(N, N, seed + 9, cells=8, octaves=2), [(0.62, 1), (0.34, -1)])
     midx -= (nb(lab, 1, 0) >= 0).astype(int)  # shadow under the brick above
+    midx += ((nb(lab, -1, 0) >= 0) & (nb(lab, 1, 0) < 0)).astype(int)  # lit ledge on top of the brick below
     cv.put(mramp, midx, m & mor)
     return lab
 
@@ -636,35 +642,52 @@ def p_revoque(v):
     return cv.out()
 
 
-def peel(cv, idx, holes, deep, seed, ring=OCHRE, base_ramp=CAL):
-    """Peeling: whitewash gone inside `holes`, an older paint ring at its rim, grey render, bricks in `deep`."""
+def flake(cx, cy, rx, ry, seed, jag=0.45):
+    """Jagged flake outline: an ellipse displaced by coarse + fine noise."""
+    Y, X = np.mgrid[0:N, 0:N]
+    d = np.sqrt(((X + 0.5 - cx) / rx) ** 2 + ((Y + 0.5 - cy) / ry) ** 2)
+    n1 = fbm(N, N, seed, cells=3, octaves=2)
+    n2 = fbm(N, N, seed + 1, cells=8, octaves=2)
+    m = d + (n1 - 0.5) * 0.8 + (n2 - 0.5) * jag * 2 < 1
+    # clean single-pixel spurs
+    cnt = sum(nb(m, dy, dx, False).astype(int) for dy, dx in ((1, 0), (-1, 0), (0, 1), (0, -1)))
+    return (m & (cnt >= 2)) | (~m & (cnt >= 4))
+
+
+def peel(cv, idx, holes, deep, seed, ring=OCHRE, base_ramp=CAL, islands=True):
+    """Peeling: whitewash gone inside `holes`; patches of an older paint layer at parts of the rim; grey render
+    with its own relief; bricks (recessed, shadowed) inside `deep`."""
     H = holes
-    deep = deep & erode(H, 1, False)
-    # older paint layer: an irregular 1-2 px band just inside the hole edge
-    ringm = H & ~erode(H, 1, False)
-    ringm |= H & ~erode(H, 2, False) & (fbm(N, N, seed + 5, cells=8, octaves=1) > 0.55)
-    ringm &= ~deep
+    deep = deep & erode(H, 2, False)
+    if islands:   # a few whitewash flakes still clinging inside the hole
+        isl = (fbm(N, N, seed + 21, cells=8, octaves=1) > 0.80) & erode(H, 2, False) & ~dilate(deep, 1, False)
+        H = H & ~isl
     r = rim(H, wrap=False)
-    # whitewash lip: lit cut edge under the hole, crisp dark outline over it
-    idx = idx + np.where(r['out_below'], 2, 0) - np.where(r['out_above'] | r['out_left'], 1, 0)
+    ringm = (H & ~erode(H, 1, False)) & (fbm(N, N, seed + 5, cells=4, octaves=2) > 0.48)
+    ringm |= nb(ringm, 0, 1, False) & H & (fbm(N, N, seed + 6, cells=8, octaves=1) > 0.6)
+    ringm &= ~deep
+    # whitewash: lit lip of the paint thickness under the hole, crisp dark edge over it
+    idx = idx + np.where(r['out_below'], 2, 0) + np.where(r['out_right'], 1, 0)
+    idx = idx - np.where(r['out_above'] | r['out_left'], 1, 0)
     cv.put(base_ramp, idx, ~H)
-    # render
-    ridx = np.full((N, N), 4) + posterize(fbm(N, N, seed + 11, cells=4, octaves=3), [(0.62, 1), (0.40, -1)])
-    ridx -= np.where(r['in_top'], 2, 0) + np.where(nb(r['in_top'], 1, 0, False) & H, 1, 0)
-    ridx -= np.where(r['in_left'], 1, 0)
+    # grey render with relief
+    ridx = np.full((N, N), 4) + posterize(fbm(N, N, seed + 11, cells=4, octaves=3), [(0.66, 1), (0.36, -1)])
+    ridx = relief(ridx, seed + 12, seed + 13, count=30, mind=3.5, body=-1, light=1)
+    ridx -= np.where(r['in_top'], 2, 0) + np.where(r['in_left'], 1, 0)
     cv.put(RENDER, ridx, H & ~ringm & ~deep)
-    oidx = np.full((N, N), 4) - np.where(r['in_top'], 2, 0) - np.where(r['in_left'], 1, 0)
+    oidx = np.full((N, N), 4) - np.where(r['in_top'], 2, 0) - np.where(r['in_left'], 1, 0) + np.where(r['in_bot'], 1, 0)
     cv.put(ring, oidx, ringm)
     if deep.any():
         sub = Cv()
-        paint_bricks(sub, seed=seed + 3)
+        paint_bricks(sub, seed=seed + 3, ramp=BRICK_OLD)
         rd = rim(deep, wrap=False)
-        dark = np.where(rd['in_top'], 0.62, 1.0) * np.where(rd['in_left'], 0.8, 1.0)
-        dark *= np.where(nb(rd['in_top'], 1, 0, False) & deep, 0.82, 1.0)
+        dark = np.where(rd['in_top'], 0.55, 1.0) * np.where(rd['in_left'], 0.78, 1.0)
+        dark *= np.where(nb(rd['in_top'], 1, 0, False) & deep, 0.8, 1.0)
         cv.rgb[deep] = (sub.rgb * dark[..., None])[deep]
         cv.a[deep] = 255
-        # render edge around the bricks is lit where it faces up
-        cv.put(RENDER, np.full((N, N), 6), rd['out_below'] & H & ~ringm)
+        cv.put(RENDER, np.full((N, N), 7), rd['out_below'] & H)   # broken render edge lit from above
+        cv.put(RENDER, np.full((N, N), 6), rd['out_right'] & H & ~rd['out_below'])
+    return H
 
 
 @painter('revoque_descascarado')
@@ -672,117 +695,108 @@ def p_revoque_desc(v):
     cv = Cv()
     idx = lime_idx(v + 10)
     specs = [
-        # (holes [(cx, cy, rx, ry)], deep [(cx, cy, rx, ry)])
-        ([(20, 10, 8.5, 6.5), (9, 23, 3.5, 2.5)], [(21, 11, 5.5, 3.6)]),
-        ([(12, 19, 9, 8)], [(11, 21, 6.5, 5.0)]),
-        ([(8, 9, 5, 4), (22, 22, 6.5, 5), (25, 8, 2.5, 2)], [(22, 23, 3.8, 2.6)]),
-        ([(16, 15, 6, 11)], [(16, 17, 3.2, 7)]),
+        # flakes [(cx, cy, rx, ry)], deep [(cx, cy, rx, ry)]
+        ([(19, 12, 10.5, 8.5), (6, 26, 3, 2), (28, 25, 2, 1.6)], [(19, 13, 6.5, 4.6)]),
+        ([(12, 19, 10, 9.5), (25, 6, 2.6, 2)], [(11, 21, 7.5, 6.2)]),
+        ([(8, 9, 5.5, 4.5), (22, 21, 7, 5.5), (26, 7, 3, 2.2), (6, 24, 2.2, 1.6)], []),
+        ([(16, 15, 6.5, 13)], [(16, 17, 3.6, 8.5)]),
     ][v % 4]
     H = np.zeros((N, N), bool)
     D = np.zeros((N, N), bool)
     for k, (cx, cy, rx, ry) in enumerate(specs[0]):
-        H |= blob(N, N, cx, cy, rx, ry, 400 + 13 * v + k, rough=0.42, cells=4)
+        H |= flake(cx, cy, rx, ry, 400 + 13 * v + k)
     for k, (cx, cy, rx, ry) in enumerate(specs[1]):
-        D |= blob(N, N, cx, cy, rx, ry, 500 + 13 * v + k, rough=0.35, cells=4)
+        D |= flake(cx, cy, rx, ry, 500 + 13 * v + k, jag=0.3)
     H &= border_dist(N, N) >= 2
     D &= H
-    # hairline cracks radiating from the hole
+    # hairline cracks running away from the damage
     ys, xs = np.nonzero(H)
+    rng = np.random.default_rng(600 + v)
     if len(xs):
         cx, cy = xs.mean(), ys.mean()
-        rng = np.random.default_rng(600 + v)
         for a in rng.uniform(0, 2 * math.pi, 2):
-            x1 = cx + math.cos(a) * 13
-            y1 = cy + math.sin(a) * 13
+            x1 = cx + math.cos(a) * 14
+            y1 = cy + math.sin(a) * 14
             pts = [(x, y) for x, y in wander([(cx, cy), (x1, y1)], 610 + v, amp=2.5) if 2 <= x < 30 and 2 <= y < 30]
             m = path_mask(pts) & ~dilate(H, 1, False)
-            idx = idx - np.where(m, 2, 0)
+            idx = idx - np.where(m, 2, 0) + np.where(nb(m, -1, 0) & ~m, 1, 0)
     peel(cv, idx, H, D, 700 + v)
     return cv.out()
 
 
 @painter('revoque_humedad')
 def p_revoque_humedad(v):
-    """Water stain coming from the ceiling: tide-marked lobes and drip streaks, stained mould at the top."""
+    """Water stain coming from the ceiling: an irregular tan stain hanging from the top edge with several darker
+    tide lines, darker drip runs and a few black mould specks."""
     cv = Cv()
     idx = lime_idx(v + 20)
     cv.put(CAL, idx)
+    X, Y = cv.X, cv.Y
+    depth = [(14, 9, 22), (20, 12, 10), (9, 24, 15)][v % 3]
+    # depth profile along x (how far the stain reaches down at each column)
+    prof = vnoise(N, 1, 4, 1, 840 + v)[0] * depth[1] + depth[0] * 0.6
+    prof += np.exp(-((np.arange(N) - depth[2]) / 6.0) ** 2) * 8
+    f = 1 - (Y + 0.5) / prof[X] + (fbm(N, N, 810 + v, cells=4, octaves=3) - 0.5) * 0.5
     rng = np.random.default_rng(800 + v)
-    # stain field: lobes hanging from the top edge
-    Y, X = cv.Y, cv.X
-    lobes = [(8, 12, 9), (21, 18, 8), (28, 8, 5)] if v == 0 else [(14, 20, 11), (27, 10, 5)] if v == 1 else [(5, 9, 6), (17, 14, 7), (25, 24, 6)]
-    f = np.zeros((N, N))
-    for (cx, depth, rx) in lobes:
-        d = ((X + 0.5 - cx) / rx) ** 2 + ((Y + 0.5) / depth) ** 2
-        f = np.maximum(f, 1 - d)
-    f += (fbm(N, N, 810 + v, cells=4, octaves=3) - 0.5) * 0.5
-    # drip streaks (2 px wide, long)
-    for (cx, depth, rx) in lobes:
-        for dx in (-int(rx * 0.5), int(rx * 0.3)):
-            x = int(cx + dx + rng.integers(-1, 2))
-            ln = int(depth + rng.integers(4, 12))
-            for y in range(0, min(N - 1, ln)):
-                if 0 <= x < N:
-                    f[y, x] = max(f[y, x], 0.35 * (1 - y / ln) + 0.15)
-    inner = f > 0.32
-    stain = f > 0.0
-    sidx = 5 - (f > 0.25).astype(int) - (f > 0.55).astype(int) + posterize(fbm(N, N, 820 + v, cells=8, octaves=1), [(0.65, 1)])
-    # tide line: darker rim at the edge of each band
-    tide = stain & ~erode(stain, 1, False)
-    tide2 = inner & ~erode(inner, 1, False)
-    sidx -= np.where(tide | tide2, 2, 0)
-    cv.put(CAL_STAIN, sidx + idx - 6, stain)
-    # pale bloom just outside the tide (salt) and grey-green mould specks in the wettest part
-    out = dilate(stain, 1, False) & ~stain
-    cv.put(CAL, idx + 1, out & (Y > 1))
-    mould = (f > 0.6) & (fbm(N, N, 830 + v, cells=16, octaves=1) > 0.62)
-    cv.col('#4a4f3c', mould)
-    cv.col('#3a3d30', mould & (fbm(N, N, 831 + v, cells=16, octaves=1) > 0.7))
+    runs = np.zeros((N, N), bool)
+    for x in rng.choice(np.arange(3, 29), 3, replace=False):
+        ln = int(prof[x] + rng.integers(3, 9))
+        runs |= (X == x) & (Y < min(N - 2, ln))
+        runs |= (X == x + 1) & (Y < min(N - 2, ln - 3))
+    stain = (f > 0.0) | runs
+    st = np.full((N, N), 7) - (f > 0.3).astype(int) - (f > 0.6).astype(int)
+    st = np.where(runs & (f <= 0.0), 5, st)
+    for th in (0.0, 0.3, 0.6):
+        band = f > th
+        st = np.where(band & ~erode(band, 1, False) & (Y > 0), 4, st)
+    st += idx - 6
+    cv.put(CAL_STAIN, st, stain)
+    for (x, y) in poisson(830 + v, 7, 2.5, keep=lambda x, y: f[int(y), int(x)] > 0.45):
+        cv.col('#3e3a2c', (X == x) & (Y == y))
     return cv.out()
 
 
 @painter('revoque_salitre')
 def p_revoque_salitre(v):
-    """Base course of a wall: rising damp with a wavy tide line, salt bloom, flaking paint and kick grime."""
+    """Base course of a wall: rising damp, wavy tide line with a salt fringe, small flakes and kick grime."""
     cv = Cv()
     idx = lime_idx(v + 30)
     X, Y = cv.X, cv.Y
-    wave = 15 + 2.5 * np.sin((X + v * 7) / 32 * 2 * math.pi) + 1.5 * np.sin((X * 3 + v * 11) / 32 * 2 * math.pi)
-    wave = wave + (vnoise(N, 1, 8, 1, 900 + v)[0] - 0.5) * 3  # same along the column
+    wave = 13 + 2.0 * np.sin((X + v * 7) / 32 * 2 * math.pi) + 1.2 * np.sin((X * 2 + v * 11) / 32 * 2 * math.pi)
+    wave = wave + np.round((vnoise(N, 1, 8, 1, 900 + v)[0] - 0.5) * 3)
+    wave = np.round(wave).astype(int)
     damp = Y >= wave
     cv.put(CAL, idx)
-    didx = idx - 2 + (Y > wave + 6).astype(int) * -1
-    didx += posterize(fbm(N, N, 910 + v, cells=4, octaves=3), [(0.62, 1), (0.38, -1)])
-    cv.put(CAL_DIRTY, didx, damp)
+    didx = idx - 1 - ((Y > wave + 7) & (fbm(N, N, 905 + v, cells=4, octaves=2) > 0.4)).astype(int)
+    cv.put(CAL_DIRTY, didx + 1, damp)
     tide = damp & ~nb(damp, 1, 0, True)
-    cv.put(CAL_STAIN, np.full((N, N), 3), tide)
-    cv.put(CAL_STAIN, np.full((N, N), 5), nb(tide, 1, 0, True))
-    # salt efflorescence: white crusty clusters hugging the tide line
-    salt = (Y >= wave - 2) & (Y <= wave + 3) & (fbm(N, N, 920 + v, cells=8, octaves=2) > 0.6) & ~tide
+    cv.put(CAL_STAIN, np.full((N, N), 4), tide)
+    cv.put(CAL_STAIN, np.full((N, N), 6), nb(tide, 1, 0, True) & ~tide)
+    # salt efflorescence: crusty white clusters hugging the tide line
+    salt = (Y >= wave - 3) & (Y <= wave - 1) & (fbm(N, N, 920 + v, cells=8, octaves=2) > 0.58)
     cv.put(CAL, np.full((N, N), 8), salt)
-    cv.put(CAL, np.full((N, N), 5), nb(salt, -1, 0) & ~salt & damp)
-    # flakes of paint gone in the damp band
+    cv.put(CAL, np.full((N, N), 5), nb(salt, 1, 0) & ~salt & ~damp)
+    # flakes of paint gone in the damp band (small, a few)
     H = np.zeros((N, N), bool)
     rng = np.random.default_rng(930 + v)
     for k in range(3):
-        cx, cy = rng.integers(4, 28), rng.integers(int(wave.mean()) + 3, 27)
-        H |= blob(N, N, cx, cy, rng.uniform(2, 4.5), rng.uniform(1.5, 2.8), 940 + v * 5 + k, rough=0.4)
+        cx, cy = int(rng.integers(4, 28)), int(rng.integers(int(wave.mean()) + 4, 26))
+        H |= flake(cx, cy, rng.uniform(2, 4), rng.uniform(1.4, 2.4), 940 + v * 5 + k, jag=0.3)
     H &= border_dist(N, N) >= 2
     if H.any():
         r = rim(H, wrap=False)
         ridx = np.full((N, N), 3) + posterize(fbm(N, N, 950 + v, cells=8, octaves=2), [(0.6, 1)])
         ridx -= np.where(r['in_top'], 2, 0)
         cv.put(RENDER, ridx, H)
-        cv.put(CAL_DIRTY, np.full((N, N), 7), r['out_below'])
-    # kick grime and splash band near the floor
-    g = (Y >= 28) | ((Y >= 25) & (fbm(N, N, 960 + v, cells=8, octaves=2) > 0.55))
-    cv.put(DUST, np.full((N, N), 1) + (Y < 30), g)
-    cv.put(DUST, np.full((N, N), 0), Y == 31)
-    # scuffs: short dark horizontal strokes from shoes
+        cv.put(CAL_DIRTY, np.full((N, N), 8), r['out_below'])
+    # kick grime near the floor: broken band, scuffs
+    g = (Y >= 29) | ((Y >= 26) & (fbm(N, N, 960 + v, cells=8, octaves=2) > 0.6))
+    cv.put(DUST, np.full((N, N), 2) + (Y < 29), g)
+    cv.put(DUST, np.full((N, N), 1), Y == 31)
     for k in range(3):
-        x, y = rng.integers(2, 26), rng.integers(23, 28)
-        ln = rng.integers(3, 6)
-        cv.put(CAL_DIRTY, np.full((N, N), 2), (Y == y) & (X >= x) & (X < x + ln))
+        x, y = int(rng.integers(2, 26)), int(rng.integers(21, 27))
+        ln = int(rng.integers(3, 6))
+        cv.put(CAL_DIRTY, np.full((N, N), 3), (Y == y) & (X >= x) & (X < x + ln))
     return cv.out()
 
 
@@ -830,24 +844,24 @@ def p_revoque_marcas(v):
         idx[6, 16] -= 3
         cv.put(CAL, idx)
         cv.tint('#6b3d22', 0.3, (X == 15) & (Y > 6) & (Y < 12))
-    elif v == 2:  # torn poster with glue and tape remains
+    elif v == 2:  # torn school poster: red header band, small print, tape and glue remains
         cv.put(CAL, idx)
-        m = paper_scrap(cv, 5, 4, 19, 17, 1020, 'bottom')
-        # printed remains: two lines of red title and grey body text
-        title = text_mask('KERM', spacing=1)
+        m = paper_scrap(cv, 4, 3, 26, 22, 1020, 'bottom')
+        hdr = (Y >= 4) & (Y <= 12) & (X >= 6) & (X <= 23) & m
+        cv.put(Ramp('#5e1e1a', '#7a2a22', '#93392c'), np.full((N, N), 1) + (Y == 4), hdr)
         tm = np.zeros((N, N), bool)
-        stamp(tm, title, 6, 3)
-        cv.col('#7e2b22', tm & m)
-        for y in (13, 15):
-            cv.col('#6b604d', (Y == y) & (X >= 7) & (X < 17) & m & (X % 4 != 0))
-        paper_scrap(cv, 22, 20, 28, 25, 1021, 'right')
-        tape = (X >= 22) & (X <= 27) & (Y >= 6) & (Y <= 7)
-        cv.put(Ramp('#8a7a52', '#a8955f', '#bfac74'), np.full((N, N), 1) + (Y == 6), tape)
-        glue = (X >= 9) & (X <= 15) & (Y >= 24) & (Y <= 26) & (fbm(N, N, 1022, cells=8, octaves=1) > 0.4)
+        stamp(tm, text_mask('KERM'), 7, 3)
+        cv.put(Ramp('#d8c9a6', '#e6d8b6'), np.full((N, N), 1), tm & hdr)
+        for y in (14, 16, 18):
+            cv.col('#6b604d', (Y == y) & (X >= 7) & (X < 22 - (y == 18) * 6) & m & ((X * 7 + y) % 5 != 0))
+        paper_scrap(cv, 21, 24, 28, 29, 1021, 'right')
+        tape = (X >= 20) & (X <= 26) & (Y >= 1) & (Y <= 2)
+        cv.put(Ramp('#8a7a52', '#a8955f', '#bfac74'), np.full((N, N), 1) + (Y == 1), tape)
+        glue = (X >= 8) & (X <= 14) & (Y >= 25) & (Y <= 27) & (fbm(N, N, 1022, cells=8, octaves=1) > 0.4)
         cv.put(CAL_STAIN, np.full((N, N), 6), glue)
     else:         # pencil scribbles and tally marks (days counted)
         cv.put(CAL, idx)
-        PEN = Ramp('#4a4a52', '#5f5f68', '#77777f')
+        PEN = Ramp('#6c6c74', '#7f7f88', '#93939b')
         rng = np.random.default_rng(1030)
         x = 4
         for g in range(4):
@@ -883,31 +897,43 @@ def p_revoque_grafiti(v):
 
     m = np.zeros((N, N), bool)
     RED = Ramp('#6e1f1c', '#8f2a24', '#a8382c')
-    if v == 0:    # stick-figure nun with X eyes
-        pts = []
-        pts += line_px(10, 9, 22, 9) + line_px(10, 9, 8, 26) + line_px(22, 9, 24, 26) + line_px(8, 26, 24, 26)
-        pts += line_px(13, 6, 19, 6) + line_px(13, 6, 12, 10) + line_px(19, 6, 20, 10)
-        for (cx, cy) in ((14, 13), (18, 13)):
-            pts += line_px(cx - 1, cy - 1, cx + 1, cy + 1) + line_px(cx - 1, cy + 1, cx + 1, cy - 1)
-        pts += line_px(14, 18, 18, 18)
-        m = path_mask(pts, wrap=False)
-        chalk(m, seed=1)
+    if v == 0:    # child's charcoal drawing of the nun: hatched habit, round face, X eyes
+        CHAR = Ramp('#3a3a40', '#55555c', '#6e6e75')
+        hab = np.zeros((N, N), bool)
+        for y in range(9, 29):
+            half = 3 + (y - 9) * 0.45
+            hab |= (Y == y) & (np.abs(X + 0.5 - 16) <= half)
+        face = (X - 15.5) ** 2 + (Y - 9.5) ** 2 <= 9.5
+        veil = (Y >= 3) & (Y <= 9) & (np.abs(X + 0.5 - 16) <= 5 + (Y - 3) * 0.3)
+        veil = (veil | hab) & ~face
+        hatch = veil & ((X + Y) % 3 == 0)
+        out = veil & ~erode(veil, 1, False)
+        cv.put(CHAR, np.full((N, N), 1), hatch | out)
+        fr = face & ~erode(face, 1, False)
+        cv.put(CHAR, np.full((N, N), 0), fr)
+        for (cx, cy) in ((14, 9), (17, 9)):
+            cv.put(CHAR, np.full((N, N), 0), ((X == cx) | (X == cx + 1)) & ((Y == cy) | (Y == cy + 1)) & ((X - cx) == (Y - cy)))
+            cv.put(CHAR, np.full((N, N), 0), (X == cx + 1) & (Y == cy) | (X == cx) & (Y == cy + 1))
+        cv.put(CHAR, np.full((N, N), 1), (Y >= 15) & (Y <= 19) & (X == 16) | (Y == 16) & (X >= 14) & (X <= 18))
     elif v == 1:  # SHHH
         stamp(m, text_mask('SHHH'), 4, 10)
         chalk(m, seed=2)
         um = np.zeros((N, N), bool)
         stamp(um, text_mask('!'), 27, 10)
         chalk(um, seed=3)
-    elif v == 2:  # heart with initials P y M (Paloma & Mecha)
+    elif v == 2:  # red crayon heart with initials P y M (Paloma & Mecha)
+        pts = []
+        for t in np.linspace(0, 2 * math.pi, 90):
+            hx_ = 16 * math.sin(t) ** 3
+            hy_ = 13 * math.cos(t) - 5 * math.cos(2 * t) - 2 * math.cos(3 * t) - math.cos(4 * t)
+            pts.append((int(round(16 + hx_ * 0.72)), int(round(14 - hy_ * 0.72))))
         hm = np.zeros((N, N), bool)
-        heart = np.array([[c == '#' for c in row] for row in FONT['♥']], bool)
-        heart = np.repeat(np.repeat(heart, 3, 0), 4, 1)
-        stamp(hm, heart, 6, 6)
-        hr = rim(hm, wrap=False)
-        chalk(hr['in_top'] | hr['in_bot'] | hr['in_left'] | hr['in_right'], RED, seed=4)
+        for a_, b_ in zip(pts, pts[1:]):
+            hm |= path_mask(line_px(*a_, *b_), wrap=False)
+        chalk(hm, RED, density=0.9, seed=4)
         tm = np.zeros((N, N), bool)
-        stamp(tm, text_mask('P+M'), 10, 9)
-        chalk(tm, RED, seed=5)
+        stamp(tm, text_mask('P+M'), 10, 8)
+        chalk(tm, RED, density=0.9, seed=5)
     else:         # the hopscotch code, scratched small: 2 1 6 8 4
         stamp(m, text_mask('21684', spacing=1), 2, 12)
         chalk(m, seed=6)
@@ -970,99 +996,135 @@ def p_crema_marcas(v):
         cv.put(CREAM, idx)
     else:         # chalk-dust handprints (small, a child's) and a water stain corner
         cv.put(CREAM, idx)
-        HAND = ['..#.#..', '.##.##.', '.#####.', '.######', '######.', '.#####.', '..####.', '..###..']
+        HAND = ['..#.#....', '..#.#.#..', '#.#.#.#..', '#.#.#.#..', '#######..', '#######.#', '.######.#',
+                '.#######.', '..#####..', '..####...', '..####...']
         hm = np.zeros((N, N), bool)
         hand = np.array([[c == '#' for c in row] for row in HAND], bool)
-        stamp(hm, hand, 6, 14)
-        stamp(hm, hand[:, ::-1], 15, 18)
+        stamp(hm, hand, 5, 9)
+        stamp(hm, hand[:, ::-1], 17, 15)
         n = fbm(N, N, 1300 + v, cells=16, octaves=1)
         cv.put(Ramp('#cfd0cd', '#e2e2dc', '#eeeee8'), np.where(n > 0.5, 1, 0), hm & (n > 0.25))
-        f = fbm(N, N, 1310, cells=4, octaves=2)
-        st = ((X - 32) ** 2 + (Y + 2) ** 2 < 80 + f * 60)
-        cv.put(CAL_STAIN, idx - 1, st)
-        tide = st & ~erode(st, 1, False)
-        cv.put(CAL_STAIN, np.full((N, N), 3), tide)
+
     return cv.out()
 
 
 # --- dark wood wainscoting (friso)
-def grain(w, h, seed, along='y', cells=2):
-    if along == 'y':
-        return fbm(w, h, seed, cells=cells, octaves=3, ax=3.0, ay=0.25)
-    return fbm(w, h, seed, cells=cells, octaves=3, ax=0.25, ay=3.0)
+def grain_profile(n, seed, tones=(-1, 0, 0, 0, 1), runs=(1, 4)):
+    """1-D tone profile across the grain: runs of 1-4 px, never two equal tones in a row."""
+    rng = np.random.default_rng(seed)
+    out = np.zeros(n, int)
+    i, last = 0, None
+    while i < n:
+        t = tones[rng.integers(0, len(tones))]
+        if t == last:
+            continue
+        L = int(rng.integers(runs[0], runs[1] + 1))
+        out[i:i + L] = t
+        i += L
+        last = t
+    return out
+
+
+def wood_grain(w, h, seed, along='y', warp=1.6, pores=0.04, tones=(-1, 0, 0, 0, 1), period=True):
+    """Long wavy streaks (tone offsets) + short dark pores. along='y': grain runs vertically."""
+    if along == 'x':
+        return wood_grain(h, w, seed, 'y', warp, pores, tones, period).T
+    prof = grain_profile(w * 2, seed, tones)
+    if period:
+        prof = prof[:w]
+    wv = vnoise(1, h, 1, max(1, h // 10), seed + 1)[:, 0] - 0.5
+    wv2 = vnoise(1, h, 1, max(1, h // 4), seed + 2)[:, 0] - 0.5
+    Y, X = np.mgrid[0:h, 0:w]
+    sway = vnoise(w, 1, max(1, w // 8), 1, seed + 3)[0]  # different columns sway differently
+    u = X + np.round((wv[Y] * 2 * warp + wv2[Y] * 0.8) * (0.5 + sway[X])).astype(int)
+    g = prof[u % len(prof)]
+    rng = np.random.default_rng(seed + 4)
+    pm = np.zeros((h, w), bool)
+    for _ in range(int(w * h * pores / 3)):
+        x, y = int(rng.integers(0, w)), int(rng.integers(0, h))
+        for k in range(int(rng.integers(2, 4))):
+            pm[(y + k) % h, x] = True
+    return g - pm.astype(int)
+
+
+def raised_panel(idx, x0, y0, x1, y1, bev, field_idx, hi=(2, 1), lo=(-2, -1)):
+    """Raised panel inside the opening [x0..x1]x[y0..y1]: mitred bevels of width bev (top, left lit; bottom,
+    right shaded), the flat field painted with field_idx."""
+    h, w = idx.shape
+    Y, X = np.mgrid[0:h, 0:w]
+    inside = (X >= x0) & (X <= x1) & (Y >= y0) & (Y <= y1)
+    dt, db, dl, dr = Y - y0, y1 - Y, X - x0, x1 - X
+    field = inside & (dt >= bev) & (db >= bev) & (dl >= bev) & (dr >= bev)
+    m = np.minimum(np.minimum(dt, db), np.minimum(dl, dr))
+    top = inside & ~field & (dt == m)
+    bot = inside & ~field & (db == m) & ~top
+    left = inside & ~field & (dl == m) & ~top & ~bot
+    right = inside & ~field & ~top & ~bot & ~left
+    out = np.where(field, field_idx, idx)
+    out = np.where(top, field_idx + hi[0], out)
+    out = np.where(left, field_idx + hi[1], out)
+    out = np.where(bot, field_idx + lo[0], out)
+    out = np.where(right, field_idx + lo[1], out)
+    # crisp field edge (arris) catches the light at the top, sinks at the bottom
+    fr = rim(field, wrap=False)
+    out = np.where(fr['in_top'], out + 1, out)
+    out = np.where(fr['in_bot'], out - 1, out)
+    return out, field, inside
+
+
+def frame_opening(idx, x0, y0, x1, y1):
+    """Sticking moulding round a frame opening: the frame casts a shadow on top/left, lit lip bottom/right."""
+    h, w = idx.shape
+    Y, X = np.mgrid[0:h, 0:w]
+    out = idx.copy()
+    out = np.where((Y == y0) & (X >= x0) & (X <= x1), 1, out)
+    out = np.where((X == x0) & (Y >= y0) & (Y <= y1), np.minimum(out, 2), out)
+    out = np.where((Y == y1) & (X >= x0) & (X <= x1), out + 1, out)
+    out = np.where((X == x1) & (Y > y0) & (Y <= y1), out + 1, out)
+    return out
 
 
 @painter('friso')
 def p_friso(v):
     cv = Cv()
     X, Y = cv.X, cv.Y
-    idx = np.full((N, N), 4)
-    gv = grain(N, N, 1400 + v, 'y')
-    gh = grain(N, N, 1450 + v, 'x')
-    lab = -np.ones((N, N), int)
-    # regions: 0 rail cap, 1 top rail, 2 stile L, 3 stile R, 4 panel, 5 bottom rail, 6 baseboard
-    rail = Y <= 4
+    gv = wood_grain(N, N, 1400 + v, 'y')
+    gh = wood_grain(N, N, 1450 + v, 'x')
     stile = ((X <= 2) | (X >= 29)) & (Y >= 5) & (Y <= 26)
-    trail = (Y >= 5) & (Y <= 7) & ~stile
-    brail = (Y >= 24) & (Y <= 26) & ~stile
-    panel = (X >= 3) & (X <= 28) & (Y >= 8) & (Y <= 23)
-    base = Y >= 27
-    g_h = posterize(gh, [(0.62, 1), (0.40, -1)])
-    g_v = posterize(gv, [(0.62, 1), (0.40, -1)])
-    idx = np.where(stile | panel, 4 + g_v, 4 + g_h)
-    # chair rail molding: rounded nose
-    idx = np.where(Y == 0, 7, idx)
-    idx = np.where(Y == 1, 6 + (g_h > 0), idx)
-    idx = np.where(Y == 2, 5 + g_h, idx)
-    idx = np.where(Y == 3, 3 + g_h, idx)
-    idx = np.where(Y == 4, 1, idx)  # shadow under the rail
-    # frame: inner edges around the panel opening (frame casts shadow on the panel top/left)
-    op = panel
-    r = rim(op, wrap=False)
-    # raised panel field with 2 px bevels
-    field = (X >= 6) & (X <= 25) & (Y >= 11) & (Y <= 20)
-    bev = op & ~field
-    bt = bev & ((Y - 8) <= (X - 3)) & ((Y - 8) <= (28 - X)) & (Y <= 15)
-    bl = bev & ((X - 3) < (Y - 8)) & ((X - 3) < (23 - Y)) & (X <= 15)
-    bb = bev & ((23 - Y) <= (X - 3)) & ((23 - Y) <= (28 - X)) & (Y > 15)
-    br = bev & ~bt & ~bl & ~bb
-    idx = np.where(bt, 6, idx)
-    idx = np.where(bl, 5, idx)
-    idx = np.where(bb, 2, idx)
-    idx = np.where(br, 3, idx)
-    idx = np.where(field, 4 + g_v + (fbm(N, N, 1460 + v, cells=2, octaves=2) > 0.6), idx)
-    fr = rim(field, wrap=False)
-    idx += np.where(fr['in_top'] | fr['in_left'], 1, 0)
-    idx -= np.where(r['in_top'] | r['in_left'], 3, 0)
-    idx += np.where(r['out_below'] & ~base, 1, 0)
-    # stile joints with the neighbouring block: 1 px dark seam at x=0 (V-groove)
-    idx = np.where((X == 0) & (Y >= 5) & (Y <= 26), 2, idx)
-    idx = np.where((X == 31) & (Y >= 5) & (Y <= 26), 5, idx)
-    # rail-to-stile joints
-    idx = np.where(((Y == 7) | (Y == 24)) & ~stile & ((X == 3) | (X == 28)), idx - 1, idx)
-    # baseboard: top bead, flat, floor shadow
-    idx = np.where(Y == 27, 2, idx)
-    idx = np.where(Y == 28, 6, idx)
-    idx = np.where((Y >= 29) & (Y <= 30), 4 + g_h, idx)
+    idx = np.where(stile, 4 + gv, 4 + gh)
+    # chair rail: lit top, rounded nose, dark underside
+    for y, t in ((0, 7), (1, 6), (2, 5), (3, 4), (4, 2)):
+        idx = np.where(Y == y, t + (gh if y in (2, 3) else 0) * (y != 4), idx)
+    idx = np.where(Y == 5, 2, idx)                       # shadow under the rail on the frame
+    # panel
+    idx = frame_opening(idx, 3, 9, 28, 22)
+    idx, field, inside = raised_panel(idx, 4, 10, 27, 21, 3, 4 + gv, hi=(2, 1), lo=(-1, -1))
+    # stile/rail joints (1 px seams where the rails butt into the stiles)
+    idx = np.where(((X == 3) | (X == 28)) & ((Y >= 6) & (Y <= 8) | (Y >= 23) & (Y <= 26)), idx - 1, idx)
+    # baseboard: bead + face + floor shadow
+    idx = np.where(Y == 26, 2, idx)
+    idx = np.where(Y == 27, 6, idx)
+    idx = np.where(Y == 28, 5 + (gh > 0), idx)
+    idx = np.where((Y >= 29) & (Y <= 30), 4 + gh, idx)
     idx = np.where(Y == 31, 2, idx)
-    if v >= 1:   # wear: varnish rubbed on the rail nose, scuffs and kicks on the baseboard & bottom rail
+    if v in (1, 3):   # wear: varnish rubbed on the rail nose, scuffs and kicks on the baseboard & bottom rail
         rng = np.random.default_rng(1470 + v)
-        for k in range(5 if v == 1 else 3):
-            x, y = int(rng.integers(1, 26)), int(rng.integers(25, 31))
+        for k in range(6 if v == 1 else 3):
+            x, y = int(rng.integers(1, 26)), int(rng.integers(23, 31))
             ln = int(rng.integers(2, 6))
-            idx = np.where((Y == y) & (X >= x) & (X < x + ln), idx + 2, idx)
-        idx = np.where((Y == 1) & (fbm(N, N, 1480 + v, cells=8, octaves=1) > 0.6), 8, idx)
+            idx = np.where((Y == y) & (X >= x) & (X < x + ln) & (Y != 26), idx + 2, idx)
+        idx = np.where((Y == 1) & (vnoise(N, N, 8, 1, 1480 + v) > 0.6), 8, idx)
     cv.put(WOOD_D, idx)
-    if v == 2:   # dried split in the panel field
-        pts = wander([(17, 11), (16, 16), (18, 20)], 1490, amp=1.2)
-        m = path_mask(pts, wrap=False)
+    if v == 2:   # dried split along the grain of the panel field
+        pts = wander([(17, 13), (16, 16), (17, 19)], 1490, amp=0.8)
+        m = path_mask(pts, wrap=False) & field
         cv.put(WOOD_D, np.full((N, N), 0), m)
-        cv.put(WOOD_D, np.full((N, N), 6), nb(m, 0, 1, False) & ~m & field)
-    if v == 3:   # bleached by water near the floor
-        wet = (Y >= 20) & (fbm(N, N, 1495, cells=4, octaves=3) > 0.45)
-        cv.tint('#8a7a66', 0.28, wet)
+        cv.put(WOOD_D, np.full((N, N), 7), nb(m, 0, 1, False) & ~m & field)
+    if v == 3:   # bleached by water near the floor, tide line
+        wet = (Y >= 19 + (vnoise(N, 1, 6, 1, 1495)[0][X] * 4).astype(int))
+        cv.tint('#857360', 0.30, wet)
         tide = wet & ~nb(wet, 1, 0, False)
-        cv.tint('#2a1a10', 0.4, tide)
+        cv.tint('#1a100a', 0.45, tide)
     return cv.out()
 
 
@@ -1070,7 +1132,7 @@ def p_friso(v):
 def p_friso_top(v):
     """Top/bottom face of the wainscot cube: end grain of the dark wood (only visible at cut edges)."""
     cv = Cv()
-    idx = np.full((N, N), 3) + posterize(grain(N, N, 1500, 'x'), [(0.6, 1), (0.4, -1)])
+    idx = np.full((N, N), 3) + wood_grain(N, N, 1500, 'x')
     cv.put(WOOD_D, idx)
     return cv.out()
 
@@ -1078,54 +1140,66 @@ def p_friso_top(v):
 # --- exposed old brick and adobe (where the plaster is gone entirely)
 @painter('ladrillo_viejo')
 def p_ladrillo_viejo(v):
+    """Handmade colonial brick with wide lime joints; lime render still stuck in places."""
     cv = Cv()
-    paint_bricks(cv, seed=1600 + v * 7)
-    # remains of lime render stuck in the joints and on a brick or two
-    rest = fbm(N, N, 1610 + v, cells=4, octaves=3) > (0.62 if v else 0.58)
-    cv.put(RENDER, np.full((N, N), 5) + (fbm(N, N, 1611 + v, cells=8, octaves=1) > 0.5), rest)
-    r = rim(rest, wrap=True)
-    cv.put(RENDER, np.full((N, N), 2), r['out_below'])
-    cv.put(RENDER, np.full((N, N), 7), r['in_top'])
+    lab = paint_bricks(cv, seed=1600 + v * 7)
+    rest = np.zeros((N, N), bool)
+    for k, (cx, cy, rx, ry) in enumerate([(7, 5, 4, 2.5), (24, 21, 5, 3)] if v == 0 else [(14, 13, 3.5, 2.2), (28, 29, 3, 2)]):
+        rest |= flake(cx, cy, rx, ry, 1610 + v * 5 + k, jag=0.5)
+    rest |= (lab < 0) & (fbm(N, N, 1615 + v, cells=8, octaves=1) > 0.72)
+    rest &= border_dist(N, N) >= 1
+    ridx = np.full((N, N), 5) + posterize(fbm(N, N, 1611 + v, cells=8, octaves=1), [(0.6, 1)])
+    r = rim(rest, wrap=False)
+    ridx += np.where(r['in_top'], 1, 0) - np.where(r['in_bot'], 1, 0)
+    cv.put(RENDER, ridx, rest)
+    cv.put(BRICK, np.full((N, N), 1), r['out_below'] & (lab >= 0))
     return cv.out()
 
 
 @painter('adobe')
 def p_adobe(v):
+    """Sun-dried mud bricks (2 courses), mud joints of the same earth, eroded corners, straw fibres, pebbles."""
     cv = Cv()
     X, Y = cv.X, cv.Y
-    # big sun-dried blocks: 2 courses per block, 3 px mud joints
     lab = -np.ones((N, N), int)
     n = 0
     for r in range(2):
         y0 = r * 16
         off = 0 if r == 0 else 16
         for k in range(2):
-            x0 = off + k * 16
-            for yy in range(y0, y0 + 13):
-                for xx in range(x0, x0 + 13):
-                    lab[yy % N, xx % N] = n
+            x0 = off + k * 16 + 1
+            blk = np.zeros((N, N), bool)
+            yy, xx = np.mgrid[0:13, 0:14]
+            corner = ((yy < 2) & (xx < 2 - yy)) | ((yy < 2) & (xx > 11 + yy)) | ((yy > 10) & (xx < yy - 10)) | ((yy > 10) & (xx > 23 - yy))
+            for j in range(13):
+                for i in range(14):
+                    if not corner[j, i]:
+                        lab[(y0 + 1 + j) % N, (x0 + i) % N] = n
             n += 1
     rng = np.random.default_rng(1700 + v)
-    tone = rng.integers(-1, 2, n)
-    idx = np.where(lab >= 0, 4 + tone[np.maximum(lab, 0)], 2)
+    tone = rng.choice([-1, 0, 0, 1], n)
     f = fbm(N, N, 1710 + v, cells=4, octaves=3)
-    idx += posterize(f, [(0.64, 1), (0.40, -1), (0.28, -1)])
-    idx = bevel(idx, lab, hi=1, lo=-2)
-    # eroded rounded corners of each block
+    idx = np.where(lab >= 0, 4 + tone[np.maximum(lab, 0)], 3) + posterize(f, [(0.68, 1), (0.32, -1)])
+    idx = bevel(idx, lab, hi=0, lo=-1)
+    idx = relief(idx, 1720, 1721 + v, count=30, mind=3.6, body=-1, light=1)
+    # mud joint: same earth, rougher, a shadow line under each block
+    joint = lab < 0
+    idx = np.where(joint & (nb(lab, 1, 0) >= 0), 2, idx)
     cv.put(ADOBE, idx)
-    # straw fibres: short bright strokes in random directions inside the blocks
-    for k in range(14):
-        x, y = rng.integers(0, N, 2)
-        dx, dy = [(1, 0), (1, 1), (1, -1), (2, 1)][rng.integers(0, 4)]
-        L = rng.integers(2, 4)
-        pts = [((x + dx * t) % N, (y + dy * t // max(1, abs(dx))) % N) for t in range(L)]
+    # straw fibres: short pale strokes lying in many directions
+    dirs = [(1, 0), (1, 0), (2, 1), (1, 1), (2, -1), (0, 1)]
+    for k, (x, y) in enumerate(poisson(1730 + v, 13, 5.0)):
+        dx, dy = dirs[int(rng.integers(0, len(dirs)))]
+        L = int(rng.integers(2, 4))
+        pts = line_px(x, y, x + dx * L // max(1, abs(dx) if dx else 1), y + dy * (L // 2 if dx else L))
         for (px, py) in pts:
-            if lab[py, px] >= 0:
-                cv.put(STRAW, np.full((N, N), 2 + (k % 2)), (X == px) & (Y == py))
-    # pebbles in the mud joints
-    mud = lab < 0
-    pb = mud & (fbm(N, N, 1720 + v, cells=16, octaves=1) > 0.7)
-    cv.put(MORTAR, np.full((N, N), 4), pb)
+            px, py = px % N, py % N
+            cv.put(STRAW, np.full((N, N), 1 + (k % 3)), (X == px) & (Y == py) & (lab >= 0))
+    # pebbles in the joints
+    for (x, y) in poisson(1740 + v, 8, 6):
+        if joint[y, x]:
+            cv.put(MORTAR, np.full((N, N), 4), (X == x) & (Y == y))
+            cv.put(MORTAR, np.full((N, N), 2), (X == x) & (Y == (y + 1) % N))
     return cv.out()
 
 
@@ -1243,11 +1317,15 @@ def damero_tile(cv, x0, y0, black, seed, wear=0, chip_corners=(), crack=None):
         cv.put(CEMENT, np.full((N, N), 3), ch)
         cv.put(CEMENT, np.full((N, N), 1), ch & ((np.abs(lx - cx) + np.abs(ly - cy)) == 2))
     if crack is not None:
-        pts = wander(crack, seed + 11, amp=2.2)
+        pts = wander(crack, seed + 11, amp=0.7, depth=3)
         cm = path_mask(pts, wrap=False) & m
+        # a short branch off the middle
+        mid = pts[len(pts) // 2]
+        br = wander([mid, (mid[0] + rng.integers(-4, 5), mid[1] + rng.choice([-5, 5]))], seed + 12, amp=1.0)
+        cm |= path_mask(br, wrap=False) & m
         cv.put(GROUT, np.full((N, N), 0), cm)
-        lip = nb(cm, 1, 0, False) & m & ~cm
-        cv.put(ramp, np.where(lip, base + 2, 0), lip)
+        lip = nb(cm, -1, 0, False) & m & ~cm
+        cv.put(ramp, np.full((N, N), base + 1), lip)
     return m
 
 
@@ -1266,31 +1344,32 @@ def p_damero(v, kind='clean'):
             crack = None
             if kind == 'cracked':
                 if (tx, ty) == ((v + 1) % 2, v % 2) or v == 2:
-                    a = (rng.integers(0, 4), rng.integers(0, 15))
-                    crack = [(tx * 16 + 1 + a[0], ty * 16 + 1 + a[1]), (tx * 16 + 8, ty * 16 + 7 + rng.integers(-3, 4)),
-                             (tx * 16 + 15, ty * 16 + 1 + rng.integers(0, 15))]
+                    y0 = int(rng.integers(2, 13))
+                    crack = [(tx * 16 + 1, ty * 16 + 1 + y0), (tx * 16 + 5, ty * 16 + 1 + y0 + rng.integers(-2, 3)),
+                             (tx * 16 + 10, ty * 16 + 1 + int(rng.integers(3, 12))), (tx * 16 + 15, ty * 16 + 1 + int(rng.integers(2, 13)))]
                 if rng.random() < 0.6:
                     chips.append([(0, 0), (14, 0), (0, 14), (14, 14)][rng.integers(0, 4)])
             damero_tile(cv, tx * 16 + 1, ty * 16 + 1, black, 1920 + v * 4 + ty * 2 + tx + (50 if kind != 'clean' else 0),
                         wear=1 if kind != 'clean' else (v % 2), chip_corners=chips, crack=crack)
     if kind == 'missing':
-        # one tile gone: rough cement bed with trowel grooves, debris and a dark recess
+        # one tile gone: recessed cement bed (shadowed rim), trowel ridges, grit and two broken shards
         tx, ty = [(0, 0), (1, 1), (1, 0)][v % 3]
-        hole = (X >= tx * 16) & (X <= tx * 16 + 15) & (Y >= ty * 16) & (Y <= ty * 16 + 15)
-        hole &= blob(N, N, tx * 16 + 8, ty * 16 + 8, 9.5, 9.5, 1990 + v, rough=0.25) | (
-            (X > tx * 16) & (X < tx * 16 + 15) & (Y > ty * 16) & (Y < ty * 16 + 15))
-        cidx = np.full((N, N), 3) + posterize(fbm(N, N, 1991 + v, cells=8, octaves=2), [(0.6, 1), (0.38, -1)])
-        cidx -= ((X + 2 * Y) % 5 == 0).astype(int)
+        hole = (X >= tx * 16 + 1) & (X <= tx * 16 + 15) & (Y >= ty * 16 + 1) & (Y <= ty * 16 + 15)
+        cidx = np.full((N, N), 1) + posterize(fbm(N, N, 1991 + v, cells=8, octaves=2), [(0.66, 1), (0.30, -1)])
+        cidx += (((X - Y) % 4) == 0).astype(int)                 # trowel combing ridges
         r = rim(hole, wrap=False)
-        cidx -= np.where(r['in_top'] | r['in_left'], 2, 0)
+        cidx = np.where(r['in_top'], 0, cidx)
+        cidx = np.where(r['in_left'] & ~r['in_top'], 1, cidx)
+        cidx = np.where(nb(r['in_top'], 1, 0, False) & hole, cidx - 1, cidx)
         cv.put(CEMENT, cidx, hole)
-        cv.put(TILE_W, np.full((N, N), 8), r['out_below'] | r['out_right'])
-        # broken shards
-        for k in range(3):
-            sx, sy = tx * 16 + rng.integers(3, 12), ty * 16 + rng.integers(3, 12)
-            sh = (np.abs(X - sx) + np.abs(Y - sy) <= 1) & hole
-            cv.put(TILE_K if (k % 2) else TILE_W, np.full((N, N), 4), sh)
-            cv.put(TILE_K if (k % 2) else TILE_W, np.full((N, N), 2), sh & (Y == sy + 1))
+        cv.put(GROUT, np.full((N, N), 1), r['out_below'] | r['out_right'] | r['out_above'] | r['out_left'])
+        for k, (sx, sy) in enumerate(poisson(1995 + v, 3, 4, keep=lambda x, y: hole[int(y), int(x)] and not r['in_top'][int(y), int(x)])):
+            shard = (X >= sx) & (X <= sx + 2) & (Y == sy) | (X >= sx) & (X <= sx + 1) & (Y == sy + 1)
+            shard &= hole
+            rr, b0 = (TILE_K, 4) if k % 2 else (TILE_W, 3)
+            cv.put(rr, np.full((N, N), b0), shard)
+            cv.put(rr, np.full((N, N), b0 + 2), shard & (Y == sy))
+            cv.put(CEMENT, np.full((N, N), 0), nb(shard, 1, 0, False) & hole & ~shard)
     return cv.out()
 
 
@@ -1306,18 +1385,21 @@ def p_damero_huellas(v):
     cv.rgb = base[..., :3].astype(float)
     cv.a[:] = 255
     X, Y = cv.X, cv.Y
-    SHOE = ['.###.', '#####', '#####', '#####', '.###.', '.....', '.###.', '.###.', '..#..']
+    SHOE = ['.###.', '#####', '#####', '#####', '#####', '.###.', '.....', '.###.', '.###.']
     sm = np.array([[c == '#' for c in row] for row in SHOE], bool)
     m = np.zeros((N, N), bool)
-    if v == 0:
-        stamp(m, sm, 6, 3)
-        stamp(m, sm, 14, 18)
-    else:
-        stamp(m, sm[::-1], 18, 4)
-        stamp(m, sm[::-1], 9, 19)
+    if v == 0:   # walking north (up the texture)
+        stamp(m, sm, 7, 4)
+        stamp(m, sm, 13, 19)
+    else:        # walking east
+        sm = sm.T[:, ::-1]
+        stamp(m, sm, 4, 7)
+        stamp(m, sm, 19, 13)
     n = fbm(N, N, 2000 + v, cells=16, octaves=1)
-    MUD = Ramp('#2b2016', '#3d2e20', '#4f3d2b')
-    cv.put(MUD, np.where(n > 0.5, 1, 0) + (n > 0.7), m & (n > 0.2))
+    m &= n > 0.18
+    cv.tint('#5b4936', np.where(m, 0.62 + 0.2 * (n > 0.6), 0))
+    # tread: lighter dried crumbs inside the print
+    cv.tint('#7a6a54', np.where(m & ((X + 2 * Y) % 5 == 0), 0.6, 0))
     return cv.out()
 
 
@@ -1334,12 +1416,13 @@ def boards(v, worn=False, seed=0, joints=None):
     for r, js in enumerate(joints):
         for jx in js:
             lab = np.where((row == r) & (X >= jx), lab + 1, lab)
-    tone = rng.integers(-1, 2, 20)
-    g = fbm(N, N, 2110 + v + seed, cells=2, octaves=3, ax=0.25, ay=6)
-    g2 = fbm(N, N, 2120 + v + seed, cells=2, octaves=2, ax=0.5, ay=8)
-    ramp = FLOOR_W if worn else FLOOR
-    idx = 4 + tone[lab % 20] + posterize(g, [(0.63, 1), (0.40, -1), (0.30, -1)])
-    idx += ((g2 > 0.7) & (g > 0.45)).astype(int)
+    tone = rng.choice([-1, 0, 0, 1], 20)
+    g = np.zeros((N, N), int)
+    for r in range(4):
+        gr = wood_grain(N, N, 2110 + v * 7 + seed + r * 13, 'x', warp=1.2, pores=0.02, tones=(-1, 0, 0, 0, 0, 1))
+        g = np.where(row == r, gr, g)
+    big = fbm(N, N, 2120 + v + seed, cells=2, octaves=2, ax=0.5, ay=4)
+    idx = 4 + tone[lab % 20] + g + np.where(big > 0.75, 1, 0) - np.where(big < 0.22, 1, 0)
     # board edges: gap at top row, bevel below, darker bottom row
     idx = np.where(jy == 0, 0, idx)
     idx = np.where(jy == 1, idx + 1, idx)
@@ -1351,17 +1434,18 @@ def boards(v, worn=False, seed=0, joints=None):
             idx = np.where(jm, 1, idx)
             idx = np.where((row == r) & (X == (jx + 1) % 32) & (jy > 0), idx + 1, idx)
             for ny in (2, 5):
-                for nx in ((jx - 2) % 32, (jx + 2) % 32):
-                    idx[r * 8 + ny, nx] = 1
-                    idx[r * 8 + ny - 1, nx] = min(idx[r * 8 + ny - 1, nx] + 1, 8)
+                nx = (jx + 2) % 32
+                idx[r * 8 + ny, nx] = 1
     # knots on some boards
-    for k in range(1 if v % 2 else 2):
+    for k in range(1 if v == 1 else 0):
         r = rng.integers(0, 4)
         kx = rng.integers(3, 29)
         ky = r * 8 + 4
-        d = ((X - kx) / 2.2) ** 2 + ((Y - ky) / 1.2) ** 2
+        d = ((X - kx) / 1.6) ** 2 + ((Y - ky) / 1.0) ** 2
+        ring = (d >= 1) & (d < 3.2) & (row == r) & (jy > 1) & (jy < 7)
+        idx = np.where(ring & (Y < ky), idx + 1, idx)
+        idx = np.where(ring & (Y >= ky), idx - 1, idx)
         idx = np.where((d < 1) & (row == r), 1, idx)
-        idx = np.where((d >= 1) & (d < 2.6) & (row == r), idx - 1, idx)
     return cv, idx, lab
 
 
@@ -1377,10 +1461,10 @@ def p_tablas_gastadas(v):
     """Worn path + arcs of scratches left by the desks dragged across the floor."""
     cv, idx, lab = boards(v, seed=40)
     X, Y = cv.X, cv.Y
-    wear = fbm(N, N, 2200 + v, cells=2, octaves=3) > 0.48
+    wear = rank(fbm(N, N, 2200 + v, cells=2, octaves=3)) > 0.62
     wear &= (Y % 8 != 0)
-    cv.put(FLOOR, idx)
-    cv.put(FLOOR_W, idx - 1, wear)
+    cv.put(FLOOR, idx + wear.astype(int))
+    cv.tint('#8a7a66', np.where(wear, 0.18, 0))
     rng = np.random.default_rng(2210 + v)
     for k in range(3):
         cx, cy, R = rng.uniform(-10, 40), rng.uniform(40, 60), rng.uniform(26, 40)
@@ -1392,8 +1476,8 @@ def p_tablas_gastadas(v):
         for a, b in zip(pts, pts[1:]):
             m |= path_mask(line_px(*a, *b), wrap=False)
         m &= (Y % 8 != 0)
-        cv.put(FLOOR_W, np.full((N, N), 6 + (k % 2)), m)
-        cv.put(FLOOR, np.full((N, N), 1), nb(m, -1, 0, False) & ~m & (Y % 8 != 0))
+        cv.put(FLOOR, np.full((N, N), 7 - (k % 2)), m)
+        cv.put(FLOOR, np.full((N, N), 2), nb(m, -1, 0, False) & ~m & (Y % 8 != 0))
     return cv.out()
 
 

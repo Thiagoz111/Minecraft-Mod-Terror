@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "deadline:block/colegio_mapa_argentina"
+  },
+  "facing=east": {
+   "model": "deadline:block/colegio_mapa_argentina",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "deadline:block/colegio_mapa_argentina",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "deadline:block/colegio_mapa_argentina",
+   "y": 270
+  }
+ }
+}

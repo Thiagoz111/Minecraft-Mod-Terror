@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "deadline:block/colegio_crucifijo_chico"
+  },
+  "facing=east": {
+   "model": "deadline:block/colegio_crucifijo_chico",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "deadline:block/colegio_crucifijo_chico",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "deadline:block/colegio_crucifijo_chico",
+   "y": 270
+  }
+ }
+}
