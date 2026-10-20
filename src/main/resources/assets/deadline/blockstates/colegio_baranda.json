@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "deadline:block/colegio_baranda"
+  },
+  "facing=east": {
+   "model": "deadline:block/colegio_baranda",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "deadline:block/colegio_baranda",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "deadline:block/colegio_baranda",
+   "y": 270
+  }
+ }
+}

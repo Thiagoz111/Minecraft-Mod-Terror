@@ -1,0 +1,7 @@
+{
+ "parent": "minecraft:block/door_bottom_left_open",
+ "textures": {
+  "bottom": "deadline:block/colegio_puerta_direccion_bottom",
+  "top": "deadline:block/colegio_puerta_direccion_top"
+ }
+}

@@ -1,0 +1,77 @@
+{
+ "parent": "minecraft:block/block",
+ "textures": {
+  "t": "deadline:block/colegio_viga",
+  "particle": "deadline:block/colegio_viga"
+ },
+ "elements": [
+  {
+   "from": [
+    5.0,
+    9.0,
+    0.0
+   ],
+   "to": [
+    11.0,
+    16.0,
+    16.0
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      0.0,
+      0.0,
+      3.0,
+      3.5
+     ],
+     "texture": "#t"
+    },
+    "south": {
+     "uv": [
+      3.0,
+      0.0,
+      6.0,
+      3.5
+     ],
+     "texture": "#t"
+    },
+    "west": {
+     "uv": [
+      6.0,
+      0.0,
+      14.0,
+      3.5
+     ],
+     "texture": "#t"
+    },
+    "east": {
+     "uv": [
+      0.0,
+      3.5,
+      8.0,
+      7.0
+     ],
+     "texture": "#t"
+    },
+    "up": {
+     "uv": [
+      8.0,
+      3.5,
+      11.0,
+      11.5
+     ],
+     "texture": "#t"
+    },
+    "down": {
+     "uv": [
+      11.0,
+      3.5,
+      14.0,
+      11.5
+     ],
+     "texture": "#t"
+    }
+   }
+  }
+ ]
+}

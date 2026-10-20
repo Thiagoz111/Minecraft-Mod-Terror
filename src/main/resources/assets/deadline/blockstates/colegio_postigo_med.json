@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "deadline:block/colegio_postigo_med"
+  },
+  "facing=east": {
+   "model": "deadline:block/colegio_postigo_med",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "deadline:block/colegio_postigo_med",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "deadline:block/colegio_postigo_med",
+   "y": 270
+  }
+ }
+}

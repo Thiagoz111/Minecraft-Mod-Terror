@@ -1,0 +1,12 @@
+{
+ "variants": {
+  "": [
+   {
+    "model": "deadline:block/colegio_madera_oscura_0"
+   },
+   {
+    "model": "deadline:block/colegio_madera_oscura_1"
+   }
+  ]
+ }
+}

@@ -69,7 +69,36 @@ public final class ClientFx {
 				ClientState.objStage = p.b();
 				ClientState.objFlash = 50;
 			}
+			case FxPayload.CHECKLIST -> com.deadline.client.hud.StoryHud.onChecklist(p.s(), p.b());
+			case FxPayload.SUBTITLE -> {
+				String[] sp = p.s().split("\n", 2);
+				com.deadline.client.hud.StoryHud.speakerKey = sp[0];
+				com.deadline.client.hud.StoryHud.lineKey = sp.length > 1 ? sp[1] : "";
+				com.deadline.client.hud.StoryHud.subTicks = com.deadline.client.hud.StoryHud.subTotal = Math.max(1, p.b());
+			}
+			case FxPayload.STAMP -> {
+				com.deadline.client.hud.StoryHud.stampKey = p.s();
+				com.deadline.client.hud.StoryHud.stampTotal = p.b();
+				com.deadline.client.hud.StoryHud.stampTicks = com.deadline.client.hud.StoryHud.STAMP_LEN;
+			}
+			case FxPayload.NOISE -> {
+				com.deadline.client.hud.StoryHud.noise = p.a();
+				com.deadline.client.hud.StoryHud.noiseFlags = p.b();
+				com.deadline.client.hud.StoryHud.noiseTicks = 40;
+			}
+			case FxPayload.BIG_TEXT -> {
+				com.deadline.client.hud.StoryHud.bigKey = p.s();
+				com.deadline.client.hud.StoryHud.bigTicks = com.deadline.client.hud.StoryHud.bigTotal = Math.max(0, p.b());
+				com.deadline.client.hud.StoryHud.bigProgress = p.a();
+			}
+			case FxPayload.CHAPTER -> {
+				String[] sp = p.s().split("\n", 2);
+				com.deadline.client.hud.StoryHud.cardTitle = sp[0];
+				com.deadline.client.hud.StoryHud.cardSub = sp.length > 1 ? sp[1] : "";
+				com.deadline.client.hud.StoryHud.cardTicks = com.deadline.client.hud.StoryHud.cardTotal = Math.max(1, p.b());
+			}
 			case FxPayload.CASE_END -> {
+				com.deadline.client.hud.StoryHud.reset();
 				ClientState.endSolved = p.a() > 0.5F;
 				ClientState.endReward = p.b();
 				ClientState.endTicks = 120;
@@ -155,6 +184,7 @@ public final class ClientFx {
 		if (ClientState.figureTicks > 0) {
 			ClientState.figureTicks--;
 		}
+		com.deadline.client.hud.StoryHud.tick();
 		if (ClientState.objFlash > 0) {
 			ClientState.objFlash--;
 		}

@@ -41,11 +41,19 @@ public class DeadLine implements ModInitializer {
 
 		CommandRegistrationCallback.EVENT.register(DeadLineCommands::register);
 		SmokeTest.register();
+		com.deadline.director.Director.register();
+		net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
+			com.deadline.director.Director.clear();
+			com.deadline.site.SiteDef.clearCache();
+			com.deadline.director.LineBook.clear();
+		});
 
 		ServerTickEvents.END_SERVER_TICK.register(server -> {
 			CaseManager.tick(server);
 			SanityManager.tick(server);
 			FlashlightLights.tick(server);
+			com.deadline.site.SitePlacer.tick(server);
+			com.deadline.director.Director.tick(server);
 		});
 		ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> CaseManager.onJoin(handler.getPlayer()));
 		ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> FlashlightLights.clear(handler.getPlayer()));

@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "deadline:block/colegio_atril_coro_partitura"
+  },
+  "facing=east": {
+   "model": "deadline:block/colegio_atril_coro_partitura",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "deadline:block/colegio_atril_coro_partitura",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "deadline:block/colegio_atril_coro_partitura",
+   "y": 270
+  }
+ }
+}

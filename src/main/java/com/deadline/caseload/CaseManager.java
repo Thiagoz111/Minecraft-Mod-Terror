@@ -133,6 +133,18 @@ public final class CaseManager {
 		HunterData d = ModAttachments.get(p);
 		d.sanity = Math.max(d.sanity, 60.0F);
 		Fx.sanity(p, d.sanity);
+		if (!alive && d.active != null && d.active.type.scripted()) {
+			// death never fails a scripted case: back to the chapter checkpoint (fail forward)
+			ActiveCase ac = d.active;
+			ServerLevel level = p.level().getServer().getLevel(ac.type.levelKey());
+			com.deadline.director.Run run = com.deadline.director.Director.get(ac.type, ac.site);
+			if (level != null && run != null) {
+				p.teleport(new TeleportTransition(level, run.at("spawn"), Vec3.ZERO, run.yaw("spawn"), 0.0F, TeleportTransition.DO_NOTHING));
+				run.checkpoint(p);
+				run.say("operadora.muerte", null);
+				return;
+			}
+		}
 		if (!alive && d.active != null) {
 			ActiveCase ac = d.active;
 			cleanupSite(p.level().getServer(), ac);
@@ -267,6 +279,9 @@ public final class CaseManager {
 		}
 		HunterData d = ModAttachments.get(p);
 		CaseSites sites = CaseSites.get(server);
+		if (type.scripted()) {
+			return startScripted(p, req, level, sites);
+		}
 		int site = sites.allocate(type);
 		BlockPos origin = CaseSites.origin(site);
 		SiteBuilder builder = type.newBuilder();
@@ -309,6 +324,36 @@ public final class CaseManager {
 		return true;
 	}
 
+	/** Scripted cases: place the Python-authored site in batches during the fade, then start chapter 1. */
+	private static boolean startScripted(ServerPlayer p, CaseRequest req, ServerLevel level, CaseSites sites) {
+		CaseType type = req.type();
+		com.deadline.site.SiteDef def = com.deadline.site.SiteDef.get(level.getServer(), type.script().siteKey());
+		if (def == null) {
+			p.sendSystemMessage(Component.translatable("deadline.msg.no_dimension"));
+			return false;
+		}
+		HunterData d = ModAttachments.get(p);
+		int site = sites.allocate(type);
+		BlockPos origin = CaseSites.origin(site);
+		d.active = new ActiveCase(type, site, req.caller(), 1, 0, p.level().dimension().identifier(), p.blockPosition(), level.getGameTime(), 0);
+		d.bestiary |= 1 << type.ordinal();
+		p.level().playSound(null, p.getX(), p.getY(), p.getZ(), ModSounds.PHONE_ACCEPT, SoundSource.PLAYERS, 0.8F, 1.0F);
+		Fx.fade(p, 90);
+		com.deadline.director.Run run = com.deadline.director.Director.create(type, site, level, origin, def);
+		com.deadline.site.SitePlacer.place(level, origin, def, () -> {
+			if (p.isRemoved() || ModAttachments.get(p).active == null) {
+				return;
+			}
+			p.teleport(new TeleportTransition(level, run.at("spawn"), Vec3.ZERO, run.yaw("spawn"), 0.0F, TeleportTransition.DO_NOTHING));
+			level.playSound(null, p.getX(), p.getY(), p.getZ(), ModSounds.TELEPORT_WHOOSH, SoundSource.PLAYERS, 1.0F, 1.0F);
+			Fx.title(p, type.langKey("place"), 100);
+			run.startChapter(1, false);
+			syncPhone(p, false);
+		});
+		syncPhone(p, false);
+		return true;
+	}
+
 	public static void returnHome(ServerPlayer p, boolean solved) {
 		HunterData d = ModAttachments.get(p);
 		ActiveCase ac = d.active;
@@ -324,6 +369,12 @@ public final class CaseManager {
 			cleanupSite(server, ac);
 		}
 		d.active = null;
+		if (ac.type.scripted()) {
+			com.deadline.director.Run run = com.deadline.director.Director.get(ac.type, ac.site);
+			if (run != null && run.hunters().isEmpty()) {
+				com.deadline.director.Director.end(ac.type, ac.site);
+			}
+		}
 		if (solved) {
 			int reward = ac.type.reward() + ac.evidence * 50;
 			d.money += reward;

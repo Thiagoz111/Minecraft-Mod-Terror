@@ -67,7 +67,7 @@ NAIL = hx('#9aa6bd')
 # hair ramps
 BROWN = pal('#0b0605', '#140c08', '#1e120c', '#2a1911', '#372116', '#462a1c', '#573524', '#6a422d', '#80533a')
 BROWN_L = pal('#120a06', '#1d110a', '#2b190f', '#3a2215', '#4a2c1b', '#5c3822', '#70462a', '#875636', '#a06a45')
-CHESTNUT = pal('#130806', '#200d08', '#30140c', '#421c10', '#562615', '#6b311b', '#813e22', '#99502d', '#b4663b')
+CHESTNUT = pal('#100806', '#1b0e09', '#29150d', '#381d12', '#482618', '#59301e', '#6c3c25', '#814b2f', '#985d3c')
 BLACK = pal('#030305', '#07070b', '#0c0c12', '#13131b', '#1b1b26', '#252533', '#313145', '#42425c', '#5a5c7a')
 BLUEBLACK = pal('#020307', '#05070e', '#090c17', '#0f1322', '#161b30', '#1f263f', '#2a3352', '#3a4569', '#525f88')
 SCALP = hx('#9c8a8a')
@@ -89,7 +89,6 @@ RING_L = hx('#241c27')
 VOID = hx('#030204')
 GLINT = hx('#b9d3da')
 GLOW_GLINT = (196, 246, 255, 255)
-GLOW_DIM = (40, 92, 104, 255)
 LIPS = pal('#4a2a33', '#6e3c47', '#8c525b', '#a86d73', '#c48b8e')
 MOUTH = pal('#020102', '#0a0407', '#170a10', '#2a1219')
 FADE = hx('#a3b6cf')
@@ -365,7 +364,8 @@ def smock_mat(ctx):
             if f == 'front' and ctx.j in (3, 4) and abs(x) < 5.5 - (ctx.j - 3) * 2:
                 v -= 0.1                                # shadow under the collar flaps
             if ctx.j > 4:
-                v += pleat(lx + 1, 4) * 0.8
+                col = ctx.i + 1 if f == 'front' else ctx.w - ctx.i
+                v += {'W': 0.08, 'w': 0.0, 'g': -0.06, 'c': -0.2, 'P': 0.06, 'p': -0.1}.get(PANEL_FRONT[0][col], 0)
         else:
             if abs(z) < 1.6 and y < 7:
                 v -= 0.12                               # armpit under the sleeve
@@ -380,58 +380,24 @@ def smock_mat(ctx):
         out = {'front': 'front', 'back': 'back', 'right': 'west', 'left': 'east'}[which]
         if f != out:
             v -= 0.32 if f not in ('top', 'bottom') else 0.2
-            if f == 'bottom':
-                grime = 0.6
             c = pick(SMOCK, v)
-            return mix(c, GRIME[1], grime) if grime else c
-        u = ctx.i
-        j = ctx.j
-        if which == 'front':
-            if u in (6, 7):
-                v += 0.03 if u == 6 else -0.08          # button placket
-                if u == 6 and j in (1, 4, 7):
-                    return pick(SMOCK, 1.0)             # white buttons
-                if u == 6 and j in (2, 5, 8):
-                    v -= 0.12
-            elif (1 <= u <= 4 or 9 <= u <= 12) and 3 <= j <= 6:
-                # patch pockets: folded top edge, stitched sides
-                v += 0.03
-                if j == 3:
-                    v += 0.04
-                if j == 4 and u not in (1, 4, 9, 12):
-                    v -= 0.06
-                if u in (1, 9) or u in (4, 12):
-                    v -= 0.08 if u in (4, 12) else -0.02
-                if j == 6:
-                    v -= 0.05
-            else:
-                v += pleat(u, 4, 1)
-        elif which == 'back':
-            if u in (6, 7):
-                v -= 0.16                               # inverted box pleat
-            elif u in (5, 8):
-                v += 0.06
-            else:
-                v += pleat(u, 4, 2)
-        else:
-            v += pleat(u, 3, 1 if which == 'left' else 0)
-            if u == 0 or u == w - 1:
-                v -= 0.05
-        v -= clamp((j - 2) / 8.0) * 0.08
-        if j == h - 2:
-            v -= 0.06 if u % 2 == 0 else 0.0           # hem stitching
-        if j == h - 1:
-            v -= 0.08                                   # hem fold
-        noise = hash3(u + cseed(ctx), j, 3, 7)
-        grime = clamp((j - (h - 3.4) + noise * 1.3) / 2.6) * 0.7
-        if hash3(u * 3 + cseed(ctx), j * 5, 1, 11) > 0.93 and j > 4:
-            grime = max(grime, 0.45)                    # dried splash flecks
+            return mix(c, GRIME[1], 0.55) if f == 'bottom' else c
+        u, j = ctx.i, ctx.j
+        rows = PANEL_FRONT if which == 'front' else PANEL_BACK if which == 'back' else PANEL_SIDE
+        ch = rows[j][u if which != 'left' else ctx.w - 1 - u]
+        v = PANEL_V[ch] + face_light(ctx) * 0.8
         c = pick(SMOCK, v)
-        if which == 'front' and f == 'front':
+        if which == 'front':
             ink = INK_BLOT.get((u, j))
             if ink is not None:
-                c = mix(c, INK[ink], 0.85)
-        return mix(c, GRIME[2], grime) if grime else c
+                c = mix(c, INK[ink[0]], ink[1])
+        # grime soaked up from the floor: ragged top edge, darker streaks rising from the hem
+        noise = hash3(u + cseed(ctx), 0, 3, 7)
+        rise = 2.2 + noise * 1.6 + (1.2 if hash3(u, cseed(ctx), 5, 13) > 0.8 else 0.0)
+        g = clamp((j - (h - rise)) / rise + 0.35)
+        if g > 0.35:
+            c = mix(c, GRIME[3] if j < h - 1 else GRIME[1], 0.25 + g * 0.45)
+        return c
     elif t == 'sleeve':
         if ly < 1.0 and f != 'top':
             v -= 0.04
@@ -467,22 +433,62 @@ def smock_mat(ctx):
         ch = COLLAR[ctx.j][ctx.i if ctx.cube.side == 'r' else ctx.w - 1 - ctx.i]
         if ch == '.':
             return None
-        v = {'H': 1.0, 'h': 0.93, 's': 0.74, 'e': 0.6}[ch]
+        v = {'H': 1.0, 'h': 0.93, 's': 0.74, 'e': 0.52}[ch]
     c = pick(SMOCK, v)
     if grime:
         c = mix(c, GRIME[2], grime)
     return c
 
 
-# ink blot on her right pocket (front panel texels u, j) -> INK index
-INK_BLOT = {(10, 5): 2, (11, 5): 1, (10, 6): 0, (11, 6): 0, (12, 6): 2, (11, 7): 1, (11, 8): 2}
+# Front skirt panel 14 x 9 (x -7..7).  W lit pleat face  w cloth  g edge turning away  c pleat crease
+#  P placket edge  p placket overlap shadow  B button  b button shadow  K pocket fold  k pocket seam
+#  q inside the pocket  H hem fold
+PANEL_FRONT = [
+    "gWwcWwPpWwcWwg",
+    "gWwcWwBpWwcWwg",
+    "gWwcWwbpWwcWwg",
+    "gKKKKwPpwKKKKg",
+    "gkqqkwBpwkqqkg",
+    "gkqqkwbpwkqqkg",
+    "gkkkkwPpwkkkkg",
+    "gWwcWwBpWwcWwg",
+    "HHHHHHbHHHHHHH",
+]
+# Back panel: two pleats each side of an inverted box pleat (dark V) under the half-belt
+PANEL_BACK = [
+    "gWwcWwkkWwcWwg",
+    "gWwcWwkkWwcWwg",
+    "gWwcWWkkWwcWwg",
+    "gWwcWWkkWwcWwg",
+    "gWwcWWkkWwcWwg",
+    "gWwcWwkkwWcWwg",
+    "gWwcWwkkwWcWwg",
+    "gWwcWwkkwWcWwg",
+    "HHHHHHHHHHHHHH",
+]
+PANEL_SIDE = [
+    "gWwcWwcWg",
+    "gWwcWwcWg",
+    "gWwcWwcWg",
+    "gWwcWwcWg",
+    "gWwcWwcWg",
+    "gWwcWwcWg",
+    "gWwcWwcWg",
+    "gWwcWwcWg",
+    "HHHHHHHHH",
+]
+PANEL_V = {'W': 0.93, 'w': 0.81, 'g': 0.64, 'c': 0.47, 'P': 0.93, 'p': 0.6, 'B': 1.0, 'b': 0.5, 'K': 0.99,
+           'k': 0.45, 'q': 0.76, 'H': 0.5}
+# ink blot on her left pocket + a drip (front panel texels u, j) -> INK index
+INK_BLOT = {(10, 4): (2, 0.35), (11, 4): (1, 0.6), (10, 5): (1, 0.75), (11, 5): (0, 0.9), (12, 5): (2, 0.4),
+            (11, 6): (1, 0.55), (11, 7): (2, 0.35), (9, 5): (3, 0.25)}
 
 # Peter Pan collar flap, 6 x 4 (index 0 = outer shoulder end, 5 = centre front)
 COLLAR = [
-    "eHHHHH",
-    "ehhhhh",
-    ".ehhhe",
-    "..eee.",
+    "eHHHHHH",
+    "ehhhhhh",
+    "eehhhhe",
+    ".eeeee.",
 ]
 
 
@@ -662,15 +668,19 @@ def skull_mat(ctx):
             return pick(SKIN, 0.48 - (z + 6) * 0.0)
         return pick(SKIN, 0.36)
     if f in ('west', 'east'):
-        if z < -2.2 and y > -15.5 or (z < 1.5 and y > -8):
+        if z < -2.2 and y > -15.5 or y > -8:
             v = skin_v(ctx, 0.74)
             if -9 <= y <= -7 and z < -4:
                 return mix(pick(SKIN, v), BLUSH, 0.35)
+            if z > 0 and y > -8:
+                v -= 0.1 + clamp((-6.0 - y) / 2.0) * 0.1   # nape in the shadow of the hair
             return pick(SKIN, v - (0.06 if y > -6 else 0.0))
-    return pick(BROWN, 0.28 + face_light(ctx) * 0.5)
+    if f == 'back' and y > -7.5:
+        return pick(SKIN, 0.56 - clamp((-5.5 - y) / 2.0) * 0.12)   # nape (shows under short hair)
+    return pick(BROWN, 0.12 + face_light(ctx) * 0.3)
 
 
-EYE_GLOW = [(3, 7, GLOW_GLINT), (9, 7, GLOW_GLINT), (4, 8, GLOW_DIM), (10, 8, GLOW_DIM)]
+EYE_GLOW = [(3, 7, GLOW_GLINT), (9, 7, GLOW_GLINT)]
 
 
 # ------------------------------------------------------------------ the O mouth (jaw, freed only)
@@ -720,16 +730,16 @@ def clump_of(ui, seed):
     return k, ui - starts[k], widths[k]
 
 
-def strands(u, along, ctx, seed, clump=2.5, sheen=None, light=0.9):
+def strands(u, along, ctx, seed, clump=2.5, sheen=None, light=0.9, soft=1.0):
     """Painted hair: clumps of 2-4 texels (lit edge, dark 1-px gap), one broken sheen band."""
     ui = int(math.floor(u * 2.5 / clump))
     k, pos, w = clump_of(ui, seed)
     r = hash3(k, seed, 0, 71)
-    v = 0.47 + (r - 0.5) * 0.12 + face_light(ctx) * light
+    v = 0.47 + (r - 0.5) * 0.12 * soft + face_light(ctx) * light
     if pos == 0:
-        v -= 0.13 if w > 2 else 0.08
+        v -= (0.13 if w > 2 else 0.08) * soft
     elif pos == w - 1:
-        v += 0.05
+        v += 0.05 * soft
     if sheen is not None:
         b = math.floor(sheen + (r - 0.5) * 2.2)
         a = math.floor(along)
@@ -741,23 +751,21 @@ def strands(u, along, ctx, seed, clump=2.5, sheen=None, light=0.9):
 
 
 def curls(ctx, a, b, seed):
-    """Tight corkscrew curls: 3-texel coils, each a stack of diagonal crests (alternating twist), dark grooves."""
+    """Tight ringlets: 3-texel columns, each a stack of round turns (lit crest, mid, dark groove) whose phase is
+    offset per column, with a dark gap between columns; reads as springy curls, not as a knit."""
     col = math.floor(a / 3.0)
     la = a - col * 3.0
     hc = hash3(col, seed, 0, 17)
-    twist = 1.0 if hc > 0.5 else -1.0
-    phase = (b + la * 0.8 * twist + hc * 3.0) % 3.0
-    v = 0.5 + face_light(ctx) * 0.8 + (hc - 0.5) * 0.12
+    phase = (b + hc * 3.0 + (la - 1.0) * 0.35) % 3.0
+    v = 0.5 + face_light(ctx) * 0.8 + (hc - 0.5) * 0.1
     if phase < 1.0:
-        v += 0.14                                       # coil crest
-        if la < 1.0:
-            v += 0.08                                   # lit side of the crest
+        v += 0.15 if 0.6 < la < 2.2 else 0.06           # round crest of the turn
     elif phase < 2.0:
-        v -= 0.02
+        v += 0.0
     else:
-        v -= 0.16                                       # groove between turns
-    if la < 0.5:
-        v -= 0.05
+        v -= 0.15                                       # groove under the turn
+    if la < 0.6:
+        v -= 0.12                                       # gap between ringlets
     return v
 
 
@@ -821,7 +829,11 @@ def shell_mat(ctx):
             v = curls(ctx, z, y, seed)
         else:
             v = curls(ctx, x, y, seed)
-        v -= clamp((y + 6) / 4.0) * 0.12
+        v -= clamp((y + 8.0) / 6.0) * 0.16
+        if f != 'top' and y < -19.0:
+            v += 0.05
+        if edge(ctx) == 0:
+            v -= 0.08
         return pick(P, v)
     if f == 'top':
         part = st in ('paloma', 'ofelia', 'anasofia')
@@ -830,15 +842,15 @@ def shell_mat(ctx):
         if st == 'lola' and abs(x - 3.5) < 0.5 and z < 0.5:
             return mix(pick(P, 0.6), SCALP, 0.45)       # side parting
         if part:
-            v = strands(z, abs(x), ctx, seed, sheen=4.5)
-        elif st in ('rocio',):
-            v = strands(x, z, ctx, seed, sheen=-1.0)
-        elif st == 'anasofia':
-            v = strands(z, abs(x), ctx, seed, sheen=4.5)
+            v = strands(z, abs(x), ctx, seed, sheen=5.5, light=0.5, soft=0.55)
+        elif st == 'rocio':
+            v = strands(x, z, ctx, seed, sheen=-1.0, light=0.5, soft=0.6)
         else:
             ang = math.atan2(x, z - 2.0) * 6.0
-            v = strands(ang, math.hypot(x, z - 2.0), ctx, seed, sheen=5.0)
-        return pick(P, v + 0.04)
+            v = strands(ang, math.hypot(x, z - 2.0), ctx, seed, sheen=5.0, light=0.5, soft=0.6)
+        rr = max(abs(x) / 8.0, abs(z + 0.5) / 7.5)
+        v -= clamp((rr - 0.75) / 0.25) * 0.08            # the crown rounds off toward the edges
+        return pick(P, v + 0.06)
     if f in ('west', 'east'):
         if st in ('rocio', 'anasofia'):
             u = z + (y + 16.0) * 0.9                    # combed up and back
@@ -853,14 +865,18 @@ def shell_mat(ctx):
             v += 0.08                                   # lit hairline edge
         return pick(P, v)
     # back
+    if st in ('paloma', 'anasofia') and abs(x) < 0.5:
+        return mix(pick(P, 0.42), SCALP, 0.25)          # parting runs down to the nape
     if st == 'rocio':
-        u = x * (1.0 + (y + 15.0) * 0.06)
+        u = x * (1.0 + clamp((y + 15.0) / 8.0) * 0.5)    # gathered up into the ponytail
     elif st == 'paloma':
-        u = abs(x) - (y + 12.0) * 0.4
+        u = x + (math.copysign(1.0, x) * clamp((y + 12.0) / 6.0) * 2.0)   # pulled out to the braids
     else:
         u = x
-    v = strands(u, y, ctx, seed, sheen=-16.0)
-    v -= clamp((y + 10.0) / 8.0) * 0.12
+    v = strands(u, y, ctx, seed, sheen=-16.0, soft=0.85)
+    v -= clamp((y + 10.0) / 8.0) * 0.14
+    if st in ('paloma', 'anasofia') and abs(x) < 1.5:
+        v -= 0.06
     return pick(P, v)
 
 
@@ -1168,9 +1184,9 @@ def build(show=None):
     box('skirt_left', (6.2, 5.5, -4.5), (1, 9, 9), name='panel', which='left')
 
     # ---------------- collar (two planes) + navy bow
-    bone('collar', (0, 0.0, -3.5), parent='body', mat=smock_mat)
-    box('collar', (-6, -0.2, -3.62), (6, 4, 0), name='collar', side='r')
-    box('collar', (0, -0.2, -3.62), (6, 4, 0), name='collar', side='l')
+    bone('collar', (0, -0.2, -3.6), parent='body', rot=(-12, 0, 0), mat=smock_mat)
+    box('collar', (-7, -0.2, -3.7), (7, 4, 0), name='collar', side='r')
+    box('collar', (0, -0.2, -3.75), (7, 4, 0), name='collar', side='l')
     bone('bow', (0, 1.4, -4.0), parent='collar', mat=bow_mat)
     box('bow', (-1, 0.4, -4.4), (2, 2, 1), name='knot')
     box('bow', (-4, -0.6, -4.15), (3, 4, 1), name='loop', side='r')
@@ -1210,7 +1226,7 @@ def build(show=None):
     # ---------------- neck + head: skin plate with real socket holes over the skull, ears
     bone('neck', (0, 0.0, 0), parent='body', mat=skin_mat)
     box('neck', (-2, -4.5, -2), (4, 5, 4), name='neck')
-    bone('head', (0, -4.0, 0), parent='neck', rot=(3, 0, -4), mat=skull_mat)
+    bone('head', (0, -4.0, 0), parent='neck', rot=(4, 0, -6), mat=skull_mat)
     box('head', (-7, -19, -7), (14, 15, 1), mat=plate_mat, name='plate')
     box('head', (-7, -19, -6), (14, 15, 12), mat=skull_mat, name='skull', decals={'eyes:front': at(EYE_GLOW)})
     box('head', (-8, -11, -1), (1, 3, 2), mat=skin_mat, name='ear')
@@ -1281,7 +1297,7 @@ def build(show=None):
     bone('hair_ofelia', HC, parent='head', mat=shell_mat)
     shell('ofelia', P, (-8.5, -20, -8), (17, 17, 15))
     front('ofelia', P, (-8.5, -20, -8.05), (17, 17, 0))
-    box('hair_ofelia', (-9, -21, -6.0), (18, 12, 2), mat=ribbon_mat, name='band', style='ofelia', pal=SATIN)
+    box('hair_ofelia', (-9, -21, -6.0), (18, 7, 2), mat=ribbon_mat, name='band', style='ofelia', pal=SATIN)
     box('hair_ofelia', (-8.5, -6, -6.5), (3, 13, 2), mat=hairbit_mat, name='lock', style='ofelia', pal=P)
     box('hair_ofelia', (5.5, -6, -6.5), (3, 13, 2), mat=hairbit_mat, name='lock', style='ofelia', pal=P)
     bone('ofelia_curtain', (0, -6.0, 6.0), parent='hair_ofelia', rot=(8, 0, 0), mat=hairbit_mat)
@@ -1307,12 +1323,12 @@ def build(show=None):
     bone('hair_lola', HC, parent='head', mat=shell_mat)
     shell('lola', P, (-8, -20, -8), (16, 12, 15))
     front('lola', P, (-8, -20, -8.05), (16, 9, 0))
-    bone('lola_bow', (4.5, -20.0, -3.0), parent='hair_lola', rot=(0, 0, -16), mat=ribbon_mat)
-    box('lola_bow', (3.0, -21.5, -4.5), (3, 3, 3), name='big_knot', style='lola', pal=SATIN)
-    box('lola_bow', (-3.0, -23.0, -4.0), (6, 6, 2), name='big_loop', side='r', style='lola', pal=SATIN)
-    box('lola_bow', (6.0, -23.0, -4.0), (6, 6, 2), name='big_loop', side='l', style='lola', pal=SATIN)
-    box('lola_bow', (2.6, -18.8, -4.6), (2, 6, 0), name='big_tail', side='r', style='lola', pal=SATIN)
-    box('lola_bow', (4.4, -18.8, -4.7), (2, 6, 0), name='big_tail', side='l', style='lola', pal=SATIN)
+    bone('lola_bow', (4.5, -20.5, -8.0), parent='hair_lola', rot=(-6, 0, -14), mat=ribbon_mat)
+    box('lola_bow', (3.0, -22.0, -9.6), (3, 3, 3), name='big_knot', style='lola', pal=SATIN)
+    box('lola_bow', (-3.0, -23.5, -9.0), (6, 6, 2), name='big_loop', side='r', style='lola', pal=SATIN)
+    box('lola_bow', (6.0, -23.5, -9.0), (6, 6, 2), name='big_loop', side='l', style='lola', pal=SATIN)
+    box('lola_bow', (2.4, -19.4, -9.3), (2, 4, 0), name='big_tail', side='r', style='lola', pal=SATIN)
+    box('lola_bow', (4.6, -19.4, -9.4), (2, 5, 0), name='big_tail', side='l', style='lola', pal=SATIN)
 
     m = AlumnaModel('alumna', 256, 128, r.roots)
     m.scale = 0.5
@@ -1323,7 +1339,154 @@ def build(show=None):
 
 
 POSES = {
-    'stand': {},
+    # hands joined in front of the skirt, head lowered a little: the obedient pupil
+    'stand': {'head': (0.12, 0, 0.04, 0, 0, 0),
+              'right_arm': (-0.52, -0.27, -0.25, 0, 0, 0), 'right_forearm': (-0.25, 0, -0.3, 0, 0, 0),
+              'right_hand': (0.35, 0.5, 0.17, 0, 0, 0),
+              'left_arm': (-0.52, 0.27, 0.25, 0, 0, 0), 'left_forearm': (-0.25, 0, 0.3, 0, 0, 0),
+              'left_hand': (0.35, -0.5, -0.17, 0, 0, 0)},
+    # choir: chin up, prayer hands at the chest
+    'sing': {'neck': (-0.08, 0, 0, 0, 0, 0), 'head': (-0.28, 0, 0.06, 0, 0, 0),
+             'right_arm': (-0.6, -0.05, -0.69, 0, 0, 0), 'right_forearm': (-0.62, 0, -0.66, 0, 0, 0),
+             'right_hand': (-0.21, 0.98, -1.13, 0, 0, 0),
+             'left_arm': (-0.6, 0.05, 0.69, 0, 0, 0), 'left_forearm': (-0.62, 0, 0.66, 0, 0, 0),
+             'left_hand': (-0.21, -0.98, 1.13, 0, 0, 0)},
+    # at the desk: knees at 90 degrees, hands folded on the desk top, head tilted, staring
+    'sit_desk': {'body': (0, 0, 0, 0, 6.0, 0),
+                 'right_leg': (-1.57, 0.08, 0, 0, 0, 0), 'right_shin': (1.57, 0, 0, 0, 0, 0),
+                 'left_leg': (-1.57, -0.08, 0, 0, 0, 0), 'left_shin': (1.57, 0, 0, 0, 0, 0),
+                 'skirt_front': (-1.4, 0, 0, 0, 0.3, 2.6), 'skirt_back': (0.3, 0, 0, 0, 0, 0),
+                 'skirt_right': (0, 0, 0.25, 0, 0, 0), 'skirt_left': (0, 0, -0.25, 0, 0, 0),
+                 'right_arm': (-0.59, 0.15, -0.38, 0, 0, 0), 'right_forearm': (-0.52, 0, -0.76, 0, 0, 0),
+                 'right_hand': (0.45, 0.06, -0.34, 0, 0, 0),
+                 'left_arm': (-0.59, -0.15, 0.38, 0, 0, 0), 'left_forearm': (-0.52, 0, 0.76, 0, 0, 0),
+                 'left_hand': (0.45, -0.06, 0.34, 0, 0, 0),
+                 'head': (0.05, 0, 0.18, 0, 0, 0)},
+    # punished: forehead against the wall, shoulders dropped, arms hanging dead
+    'face_wall': {'body': (0.1, 0, 0, 0, 0, -0.5), 'neck': (0.2, 0, 0, 0, 0, 0), 'head': (0.42, 0, 0.08, 0, 0, 0),
+                  'right_leg': (-0.1, 0, 0, 0, 0, 0), 'left_leg': (-0.1, 0, 0, 0, 0, 0),
+                  'right_arm': (-0.1, 0, -0.16, 0, 1.0, 0), 'left_arm': (-0.1, 0, 0.16, 0, 1.0, 0),
+                  'right_forearm': (-0.05, 0, 0, 0, 0, 0), 'left_forearm': (-0.05, 0, 0, 0, 0, 0),
+                  'right_hand': (0.1, 0, 0.1, 0, 0, 0), 'left_hand': (0.1, 0, -0.1, 0, 0, 0)},
+    'point': {'head': (0.05, 0, 0.3, 0, 0, 0),
+              'right_arm': (-1.6, 0, -0.2, 0, 0, 0), 'right_forearm': (0.05, 0, 0, 0, 0, 0),
+              'right_fingers': (0, 0, -1.4, 0, 0, 0)},
+    'cover_ears': {'body': (0.25, 0, 0, 0, 2.5, 0), 'right_leg': (-0.7, 0, 0, 0, 0, 0), 'left_leg': (-0.7, 0, 0, 0, 0, 0),
+                   'right_shin': (1.2, 0, 0, 0, 0, 0), 'left_shin': (1.2, 0, 0, 0, 0, 0),
+                   'right_shoe': (-0.25, 0, 0, 0, 0, 0), 'left_shoe': (-0.25, 0, 0, 0, 0, 0),
+                   'neck': (0.1, 0, 0, 0, 0, 0), 'head': (0.2, 0, 0, 0, 0, 0),
+                   'right_arm': (-0.38, -0.23, 2.58, 0, 0, 0), 'right_forearm': (0.71, 0, 0.61, 0, 0, 0),
+                   'right_hand': (0.18, -0.39, -0.35, 0, 0, 0),
+                   'left_arm': (-0.38, 0.23, -2.58, 0, 0, 0), 'left_forearm': (0.71, 0, -0.61, 0, 0, 0),
+                   'left_hand': (0.18, 0.39, 0.35, 0, 0, 0)},
+    'head_180': {'neck': (0, 0.5, 0, 0, 0, 0), 'head': (0, 2.64, 0.12, 0, 0, 0)},
+    'run': {'body': (0.2, 0, 0, 0, -0.5, 0), 'head': (-0.15, 0, 0, 0, 0, 0),
+            'right_leg': (-0.9, 0, 0, 0, 0, 0), 'right_shin': (0.9, 0, 0, 0, 0, 0),
+            'left_leg': (0.6, 0, 0, 0, 0, 0), 'left_shin': (1.2, 0, 0, 0, 0, 0),
+            'right_arm': (0.8, 0, 0, 0, 0, 0), 'right_forearm': (-0.6, 0, 0, 0, 0, 0),
+            'left_arm': (-0.9, 0, 0, 0, 0, 0), 'left_forearm': (-0.8, 0, 0, 0, 0, 0),
+            'skirt_back': (0.25, 0, 0, 0, 0, 0), 'skirt_front': (-0.1, 0, 0, 0, 0, 0),
+            'paloma_braid_right': (0.5, 0, 0, 0, 0, 0), 'paloma_braid_left': (0.6, 0, 0, 0, 0, 0),
+            'rocio_tail': (0.4, 0, 0, 0, 0, 0), 'ofelia_curtain': (0.35, 0, 0, 0, 0, 0)},
+    # leaning out sideways from behind a doorframe (frame edge on her left, in front of her chest)
+    'peek': {'body': (0, 0, 0.38, 0, 0, 0), 'right_leg': (0, 0, -0.38, 0, 0, 0), 'left_leg': (0, 0, -0.38, 0, 0, 0),
+             'head': (0.05, 0, 0.32, 0, 0, 0),
+             'left_arm': (-1.15, 0.4, 0.82, 0, 0, 0), 'left_forearm': (-0.56, 0, 1.14, 0, 0, 0),
+             'left_hand': (0.29, 0, -0.43, 0, 0, 0), 'left_fingers': (0, 0, 0.9, 0, 0, 0),
+             'left_index': (0, 0, 0.7, 0, 0, 0),
+             'right_arm': (0.05, 0, -0.2, 0, 0, 0)},
+    'ronda': {'right_arm': (-0.2, 0, 0.9, 0, 0, 0), 'left_arm': (-0.2, 0, -0.9, 0, 0, 0)},
+    'hop': {'body': (0, 0, 0, 0, -1.5, 0), 'left_leg': (-0.5, 0, 0, 0, 0, 0), 'left_shin': (1.6, 0, 0, 0, 0, 0),
+            'right_arm': (0, 0, 0.6, 0, 0, 0), 'left_arm': (0, 0, -0.6, 0, 0, 0)},
+    'wave': {'right_arm': (-0.76, 1.28, 1.69, 0, 0, 0), 'right_forearm': (-0.02, 0, 0.11, 0, 0, 0),
+             'right_hand': (0.05, -0.44, 0.15, 0, 0, 0), 'head': (0, 0, -0.15, 0, 0, 0)},
+    'freed': {'head': (-0.1, 0, 0, 0, 0, 0), 'jaw': (0, 0, 0, 0, 0, -2.0)},
 }
 
-ANIM_NOTES = """TODO"""
+ANIM_NOTES = """Las Alumnas del Coro -- animation notes.  Units: radians, offsets in model texels (2x density inside
+scale_root: 2 texels = 1 vanilla pixel).  t = ageInTicks, s = walk speed 0..1.  Every POSES entry is ADDED to the rest
+pose; blend between poses over 4-6 ticks unless a note says SNAP (1-2 ticks).
+
+Variants and toggles (synced data: variant 0..6, freed, pose)
+* Exactly one hair group is visible: variant 0 hair_paloma, 1 hair_mecha, 2 hair_rocio, 3 hair_chela, 4 hair_ofelia,
+  5 hair_anasofia, 6 hair_lola.  Every frame: for each part in group("hair_") set visible = (name == HAIRS[variant])
+  (hiding a group hides its child bones too).  The order is the same as the HAIRS list in ent_alumna.py.
+* jaw.visible = freed.  When freed, also apply POSE 'freed' (it pushes the "O" mouth 2 texels forward out of the
+  skull).  Never show the jaw before Laudes; the mouthless face IS the character.
+* Render type entityTranslucent (texture alpha 180-232).  Camera flash: render with alpha forced to 255 for the flash
+  frames (they look solid) and set freed = true for that frame only (in the photo they have mouths).
+* Emissive layer 'eyes': only the two 1-px socket glints (pale cyan).  Flicker their alpha 0.6-1.0 while a girl is
+  singing backwards; switch them off for 3 ticks right before a head_180 snap.
+
+Movement style: they are dead children, not zombies.  Idle is perfectly still except breathing-free, tiny "settle"
+twitches; anything uncanny happens in SNAPS (1-2 ticks) while the player is not looking, then freezes.  Walking is a
+light, too-even glide: the legs walk but the body has no bob at all (dy = 0), the arms do not swing.
+
+Bones
+* body (root, pivot at the waist): whole girl.  Idle: still; every 6-10 s a single 0.03 zRot settle.  Walk: no bob, no
+  sway (that evenness is the creepy part).  Run: pose 'run' with a 0.08 xRot bounce on each footfall.
+* skirt_front, skirt_back, skirt_right, skirt_left: the four box-pleated panels of the guardapolvo, hinged at the waist.
+  Idle: ripple("skirt_", t, 0.05, 1.4, 0.015, 0.01, 0).  Walk/run: the panel on the side of the forward leg opens
+  -0.12 * s, skirt_back flares +0.25 in 'run'.  skirt_back carries the buttoned half-belt.
+* collar: the two Peter Pan collar planes (static, rest xRot -12 deg so they stand off the chest).  No animation.
+* bow: the navy school bow at the throat (child of collar).  Secondary: zRot spring-lagged from body/head motion
+  (+-0.08), xRot -0.15 in 'run'.
+* right_leg / left_leg: thighs (hip joint).  Walk: xRot = +-sin(walk) * 0.5 * s.  Sit/crouch/hop: pose values.
+* right_shin / left_shin: knee joint (pale knee band + navy knee sock + cuff).  Walk: xRot = max(0, sin(walk + 1.2))
+  * 0.6 * s (bend on the back-swing only).  sit_desk +1.57.
+* right_shoe / left_shoe: ankle (black patent Mary-Janes).  Keep the sole flat: xRot = -(leg + shin) * 0.4 while
+  walking; cover_ears -0.25.
+* right_arm / left_arm: shoulders (thin white sleeves, rest angled 14 deg out over the skirt).  Idle: hanging dead
+  still; no swing when walking.  Run: +-0.8 counter to the legs.
+* right_forearm / left_forearm: elbows (sleeve + cuff).  Follow pose values only.
+* right_hand / left_hand: wrists (long pale palm + thumb).  Idle: a 0.04 zRot tremor on one hand every few seconds.
+* right_fingers / left_fingers: the three grouped long fingers.  zRot curls them into the palm (right -1.4, left
+  +1.4): fist for 'point', grip on the frame for 'peek'.  Idle: slow 0.1 curl/uncurl, never both hands together.
+* right_index / left_index: the index finger, separate so 'point' can keep it straight while the others curl.
+  In 'point' add a slow beckoning curl xRot 0..-0.5 on the right index after the pose has held 2 s.
+* neck: takes 30% of the head look (yaw/pitch) and 0.5 of the yaw in 'head_180'.
+* head: 70% of the head look; rest pose already tilted 6 deg toward her right shoulder and nodded 4 deg.
+  Idle: hold, then every 5-12 s SNAP a +-0.25 zRot tilt in 2 ticks and hold it.  When the player comes within 3 blocks:
+  SNAP 'head_180' (neck + head yaw = pi in 2 ticks, overshoot 0.1 and settle), giggle, then dissolve.
+* jaw: the round singing "O" (lips ring + black mouth).  Hidden (visible = false) unless freed; pose 'freed' pushes it
+  out with dz -2.  While freed and singing: dy oscillation 0..0.4 on the beat, never open wider.
+* hair_paloma: centre-parted brown hair + braids.  paloma_braid_right / paloma_braid_left: the upper plaits (hinged
+  behind the ears, swung forward over the shoulders); paloma_braid_right_tip / paloma_braid_left_tip: lower plaits
+  with the sky-blue ribbon bows and brush ends.  Pendulums: xRot/zRot spring-lag the head and body by 3-4 ticks
+  (amplitude 0.1 idle, 0.5 back in 'run'); the tips lag the uppers by 2 more ticks.
+* hair_mecha: black bob with bangs (shell + bangs plane).  Rigid; no bones to animate.
+* hair_rocio: combed-back hair + scrunchie.  rocio_tail (upper ponytail, sticks out behind) and rocio_tail_tip
+  (hanging end): pendulum chain, +0.4 xRot in 'run', bounce 0.15 on each footfall, side swing zRot +-0.2 when the
+  head snaps.
+* hair_chela: the curly cloud (shell, fringe, ringlet clumps).  Rigid; on footfalls a 0.3 texel dy squash is enough.
+* hair_ofelia: long straight blue-black hair, white headband and the two locks over the shoulders (rigid with the
+  head).  ofelia_curtain: the waist-long back curtain; lags the head (xRot spring) and lifts +0.35 in 'run'.  In
+  'face_wall' it hangs (counter-rotate -0.3 so it falls vertical instead of following the bowed head).
+* hair_anasofia: centre parting + red elastics.  anasofia_tail_right / anasofia_tail_left: the high pigtails (stick
+  out sideways); anasofia_tail_right_tip / anasofia_tail_left_tip: drooping ends.  Bounce zRot +-0.25 on every hop
+  in 'hop' and on footfalls, opposite phase left/right.
+* hair_lola: black pixie cut with a side-swept fringe.  lola_bow: the huge white satin bow; small spring wobble
+  (zRot +-0.06) after head snaps.
+
+Poses
+* stand: hands joined in front of the skirt, head a little down.  Default pose in classrooms, refectory, locutorio.
+* sing: chin up, prayer hands at the chest.  Choir (Completas, Maitines).  Combine with 'freed' at Laudes.
+* sit_desk: knees at 90 deg, hands folded on the desk, head tilted.  body dy +6 puts the soles on the floor of the
+  same block (stool height ~0.3 blocks); raise the entity 0.2 blocks for the classroom benches.  The front skirt
+  panel is laid over the thighs.
+* face_wall: punished pupil: forehead on the wall, neck and head bowed, shoulders dropped 1 texel, arms hanging
+  dead.  Place her 0.25 blocks from the wall.  Cripta at the Hora Muerta (before the 180 + "CORRE").
+* point: the right arm straight at the player, index out, other fingers curled, head tilted.  Ronda beat ("...con
+  esta SI") - all girls SNAP into it on the same tick.
+* cover_ears: crouched, both hands flat over the ears, head down.  Warning when Sor Agonia hunts within 16 blocks
+  ("shh, viene"), then dissolve.
+* head_180: the thumbnail shot.  neck + head yaw sum to pi; SNAP all girls on the same tick when the flashlight hits
+  the choir loft.  Works from any base pose (stand, sing, face_wall); body stays still.
+* run: Hora Muerta, running ahead lighting candles; braids/ponytail/curtain fly back.
+* peek: leaning sideways (body zRot +0.38, legs counter-rotated so the feet stay planted) from behind a doorframe on
+  her left, left hand gripping the frame at chest height, head tilted further.  Corridors.
+* ronda: arms out to the sides to hold hands in the ring (claustro).  Rotate the ring, not the girls.
+* hop: rayuela hop (Paloma): one leg up behind, arms out for balance, body dy -1.5 at the top of the hop.
+* wave: the right arm raised beside the head (Laudes goodbye); drive right_forearm zRot +-0.35 at 0.25 rad/tick.
+* freed: the "O" mouth pushed out of the skull + chin up.  Only after the final chorus.
+"""

@@ -1,0 +1,13 @@
+{
+ "variants": {
+  "type=bottom": {
+   "model": "deadline:block/colegio_losa_piedra"
+  },
+  "type=top": {
+   "model": "deadline:block/colegio_losa_piedra_top"
+  },
+  "type=double": {
+   "model": "deadline:block/colegio_piedra_escalon_0"
+  }
+ }
+}

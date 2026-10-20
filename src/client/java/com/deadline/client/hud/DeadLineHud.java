@@ -98,11 +98,14 @@ public final class DeadLineHud {
 
 		if (!mc.options.hideGui) {
 			renderSanity(g, font, h, pt);
-			renderObjective(g, font, w);
+			if (!StoryHud.active()) {
+				renderObjective(g, font, w);
+			}
 			renderItemInfo(g, font, pl, w, h);
 			renderCall(g, font, w, pt);
 			renderTitle(g, font, w, h, pt);
 			renderCaseEnd(g, font, w, h);
+			StoryHud.render(g, font, w, h, pt);
 		}
 
 		// full-screen flashes

@@ -1,0 +1,13 @@
+{
+ "variants": {
+  "type=bottom": {
+   "model": "deadline:block/colegio_losa_madera"
+  },
+  "type=top": {
+   "model": "deadline:block/colegio_losa_madera_top"
+  },
+  "type=double": {
+   "model": "deadline:block/colegio_madera_oscura_0"
+  }
+ }
+}

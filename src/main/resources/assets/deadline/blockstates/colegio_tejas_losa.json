@@ -1,0 +1,13 @@
+{
+ "variants": {
+  "type=bottom": {
+   "model": "deadline:block/colegio_tejas_losa"
+  },
+  "type=top": {
+   "model": "deadline:block/colegio_tejas_losa_top"
+  },
+  "type=double": {
+   "model": "deadline:block/colegio_tejas_0"
+  }
+ }
+}

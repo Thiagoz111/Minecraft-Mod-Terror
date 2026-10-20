@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "deadline:block/colegio_banderola"
+  },
+  "facing=east": {
+   "model": "deadline:block/colegio_banderola",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "deadline:block/colegio_banderola",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "deadline:block/colegio_banderola",
+   "y": 270
+  }
+ }
+}

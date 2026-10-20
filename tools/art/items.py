@@ -738,6 +738,32 @@ def candle_item():
     return with_glow(img, (255, 150, 40), radius=1.3, strength=0.4)
 
 
-ALL.update({'flashlight_uv': flashlight_uv, 'ritual_candle': candle_item})
+def llave_capilla():
+    """Old wrought-iron chapel key: a cross-shaped bow, long shank, toothed bit, a brass tag on a string."""
+    s = Sprite(S, seed=91)
+    iron = STEEL
+    # cross-shaped bow
+    s.rect(6, 4, 9, 15, iron, bevel=1.2)
+    s.rect(2, 8, 13, 11, iron, bevel=1.2)
+    s.ellipse(7.5, 9.5, 2.0, 2.0, Material(['#050608', '#0c0e12', '#15181e']), dome=False, outline=False)
+    # shank and bit
+    s.rect(9, 8, 27, 11, iron, bevel=1.0)
+    s.rect(22, 11, 24, 17, iron, bevel=0.8)
+    s.rect(25, 11, 27, 15, iron, bevel=0.8)
+    s.rect(20, 11, 21, 14, iron, bevel=0.6)
+    # brass tag on a string
+    s.poly([(10, 19), (17, 19), (18, 25), (11, 26)], GOLD)
+    img = s.render()
+    px = img.load()
+    for p in ((9, 12), (9, 13), (10, 14), (10, 15), (10, 16), (11, 17), (11, 18)):
+        px[p] = (120, 96, 60, 255)  # string
+    for p in ((12, 21), (13, 21), (14, 21), (15, 22), (13, 23), (14, 23)):
+        px[p] = (90, 54, 14, 255)  # engraved 'C'
+    for p in ((3, 8), (6, 4), (10, 8), (22, 8)):
+        px[p] = (230, 236, 244, 255)
+    return img
+
+
+ALL.update({'flashlight_uv': flashlight_uv, 'ritual_candle': candle_item, 'llave_capilla': llave_capilla})
 for _k in EGG_COLORS:
     ALL[f'{_k}_spawn_egg'] = (lambda k=_k: spawn_egg(k))

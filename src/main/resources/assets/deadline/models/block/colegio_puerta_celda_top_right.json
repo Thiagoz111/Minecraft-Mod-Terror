@@ -1,0 +1,7 @@
+{
+ "parent": "minecraft:block/door_top_right",
+ "textures": {
+  "bottom": "deadline:block/colegio_puerta_celda_bottom",
+  "top": "deadline:block/colegio_puerta_celda_top"
+ }
+}

@@ -38,6 +38,8 @@ import net.minecraft.world.phys.Vec3;
 public abstract class HauntEntity extends Monster {
 	/** Dev/screenshot mode: freezes special behaviours so creatures can be photographed. Never set in normal play. */
 	public static boolean SHOWCASE = false;
+	/** Driven by a director beat: no AI of its own (the script moves it and sets its pose). */
+	public boolean scripted;
 
 	private static final EntityDataAccessor<Boolean> WEAKENED = SynchedEntityData.defineId(HauntEntity.class, EntityDataSerializers.BOOLEAN);
 	private static final EntityDataAccessor<Boolean> ANCHORED = SynchedEntityData.defineId(HauntEntity.class, EntityDataSerializers.BOOLEAN);

@@ -381,24 +381,24 @@ def painted_iron(paint=WPAINT, base=6, seed=0, chips=0.3, off=(0, 0, 0)):
     return t
 
 
-def brass(p=BRASS, base=5, seed=0, tarnish=0.35, sheen=True, off=(0, 0, 0)):
+def brass(p=BRASS, base=4, seed=0, tarnish=0.35, sheen=True, off=(0, 0, 0)):
+    """Old brass / gilt: dark body, narrow polished highlight, tarnished patches, darker rims."""
     def t(ctx):
         P = tp(ctx, off)
         k = base
         if sheen:
-            if ctx.face in ('up', 'down'):
+            u = ctx.s if (ctx.face in ('up', 'down') or ctx.w >= ctx.h) else ctx.t
+            if ctx.face in ('north', 'south', 'west', 'east') and ctx.h > ctx.w:
                 u = ctx.s
-            else:
-                u = ctx.s if ctx.w >= ctx.h else ctx.t
             c = abs(u * 2 - 1)
-            k += 1 if c < 0.3 else (0 if c < 0.75 else -1)
-        n = vn(P[0] / 3.0, P[1] / 3.0, P[2] / 3.0, seed + 80)
-        if n > 1 - tarnish * 0.6:
-            if n > 1 - tarnish * 0.3:
-                return (VERDI, 1 + (hh(*P) > 0.5))
-            k -= 2
-        if ctx.edge() == 0 and ctx.face != 'down':
-            k += 1
+            k += 2 if c < 0.16 else (1 if c < 0.42 else (-1 if c > 0.86 else 0))
+        n = vn(P[0] / 3.5, P[1] / 3.5, P[2] / 3.5, seed + 80)
+        if n > 1 - tarnish * 0.55:
+            k -= 1
+            if n > 1 - tarnish * 0.2 and ctx.face != 'up':
+                return (VERDI, 1)
+        if ctx.edge() == 0 and ctx.w > 2 and ctx.h > 2:
+            k -= 1
         return (p, k)
     return t
 
@@ -461,21 +461,23 @@ def cloth(p=LINEN, base=6, seed=0, fold_axis='i', folds=0.6, fold_px=5.0, weave=
     return t
 
 
-def marble(p=MARBLE, base=6, seed=0, off=(0, 0, 0)):
+def marble(p=MARBLE, base=6, seed=0, off=(0, 0, 0), veins=1.0, period=13.0):
+    """Polished marble: soft clouds + thin meandering veins (domain-warped), no speckle."""
     def t(ctx):
         P = tp(ctx, off)
-        w = vn(P[0] / 6.0, P[1] / 6.0, P[2] / 6.0, seed) * 6.0
-        v = abs(math.sin((P[0] * 0.35 + P[1] * 0.55 + P[2] * 0.25 + w) * 0.9))
+        w1 = vn(P[0] / 10.0, P[1] / 10.0, P[2] / 10.0, seed) * 9.0 + vn(P[0] / 4.0, P[1] / 4.0, P[2] / 4.0, seed + 1) * 2.0
+        u = (P[0] * 0.45 + P[1] * 0.72 + P[2] * 0.36 + w1) / period
+        d = abs(u - round(u)) * period
         k = base
-        if v < 0.08:
-            k -= 3
-        elif v < 0.22:
+        if d < 0.55 * veins:
+            k -= 2
+        elif d < 1.3 * veins:
             k -= 1
-        n = vn(P[0] / 3.0, P[1] / 3.0, P[2] / 3.0, seed + 5)
-        if n > 0.7:
+        c = vn(P[0] / 7.0, P[1] / 7.0, P[2] / 7.0, seed + 3)
+        if c > 0.68:
             k += 1
-        if ctx.edge() == 0 and ctx.face != 'down':
-            k += 1
+        elif c < 0.24:
+            k -= 1
         return (p, k)
     return t
 
@@ -494,6 +496,59 @@ def glow(p, base=5, seed=0):
 def img_tone(get):
     """Tone from a precomputed per-(part,face) RGBA function get(ctx) -> rgba or (pal,k)."""
     return get
+
+
+def panels(inner, frame=None, rects=((3, 3, -3, -3),), faces=('north',), bevel=1, groove=True, carve=None):
+    """Frame-and-panel painting. rects: (i0, j0, i1, j1) face-pixel boxes (negative = from the far edge).
+    The panel gets a dark groove, a 1px bevel (lighter top/left, darker bottom/right) and may hold a carved motif:
+    carve(ctx, di, dj, w, h) -> step delta or 0 (di/dj relative to the panel)."""
+    frame = frame or inner
+
+    def t(ctx):
+        if ctx.face in faces:
+            for (a, b, c, d) in rects:
+                i0 = a if a >= 0 else ctx.w + a
+                j0 = b if b >= 0 else ctx.h + b
+                i1 = c if c > 0 else ctx.w + c
+                j1 = d if d > 0 else ctx.h + d
+                if i0 <= ctx.i < i1 and j0 <= ctx.j < j1:
+                    di, dj = ctx.i - i0, ctx.j - j0
+                    ei, ej = i1 - 1 - ctx.i, j1 - 1 - ctx.j
+                    m = min(di, dj, ei, ej)
+                    pl, k = inner(ctx)
+                    if groove and m == 0:
+                        return (pl, k - 2)
+                    if m <= bevel:
+                        k += 1 if (dj == m or di == m) else -1
+                    elif carve:
+                        k += carve(ctx, di, dj, i1 - i0, j1 - j0)
+                    return (pl, k)
+        return frame(ctx)
+    return t
+
+
+def outline(tone, amount=1, faces=None):
+    """Darken the border texels of every face (crisp 1px definition for small parts)."""
+    def t(ctx):
+        r = tone(ctx)
+        if r is None or type(r[0]) is not list:
+            return r
+        if ctx.edge() == 0 and (faces is None or ctx.face in faces):
+            return (r[0], r[1] - amount)
+        return r
+    return t
+
+
+def cross_carve(ctx, di, dj, w, h):
+    """A Latin cross gouged into the centre of a panel."""
+    cx = w // 2
+    top = h // 5
+    bar = top + (h - 2 * top) // 3
+    if (abs(di - cx + 0.5) < 1 and top <= dj < h - top) or (abs(dj - bar) < 1 and abs(di - cx + 0.5) < w * 0.28):
+        return -2
+    if (abs(di - cx + 0.5) < 2 and top - 1 <= dj < h - top + 1) or (abs(dj - bar) < 2 and abs(di - cx + 0.5) < w * 0.28 + 1):
+        return 1
+    return 0
 
 
 # ============================================================================================ fonts
@@ -648,7 +703,7 @@ def shift(parts, dx=0, dy=0, dz=0):
 M_ROBLE_TOP = None  # built per piece (carvings)
 M_IRON = fin(iron(seed=3))
 M_IRON2 = fin(iron(seed=17, rust=0.38))
-M_BRASS = fin(brass(seed=5), dust=0.6)
+M_BRASS = fin(brass(seed=5, base=4), dust=0.6)
 M_ROBLE = fin(wood(ROBLE, seed=21, worn_pal=RAW))
 M_NOGAL = fin(wood(NOGAL, seed=31, worn_pal=RAW, wear=0.35))
 M_PINO = fin(wood(PINO, seed=41, base=4, wear=0.5))
@@ -687,11 +742,9 @@ def desk_top_tone(seed, off, side):
             return (ROBLE, 1)
         if Z == 8:
             return (ROBLE, 3)
-        # inkwell hole: x 7..9, z 1.5..3.5 units (texels 14..17, 3..6)
-        if 14 <= X <= 17 and 3 <= Z <= 6:
-            if (X, Z) == (15, 4):
-                return (NAVY, 4)
-            return (IRON, 0 if 15 <= X <= 16 and 4 <= Z <= 5 else 1)
+        # inkwell hole: x 7.5..8.5, z 2..3 units (texels 15..16, 4..5)
+        if 15 <= X <= 16 and 4 <= Z <= 5:
+            return (NAVY, 4) if (X, Z) == (15, 4) else (IRON, 0)
         if (X, Z) in carve:
             return (RAW, 1 if (X + Z) % 3 else 2)
         if (X, Z - 1) in carve:
@@ -743,10 +796,11 @@ def pupitre_parts(side, bench=True):
     P.append(box((0.5, 11.0, 0.5), (16, 12.0, 8.5), mTop))           # desk top
     P.append(box((0.6, 8.4, 0.6), (16, 11.0, 1.4), mW))              # front apron
     P.append(box((1.9, 8.4, 1.4), (16, 8.9, 7.2), mW))               # book shelf
-    P.append(box((6.6, 12.0, 1.1), (9.4, 12.3, 1.5), M_BRASS))      # inkwell brass ring
-    P.append(box((6.6, 12.0, 3.5), (9.4, 12.3, 3.9), M_BRASS))
-    P.append(box((6.6, 12.0, 1.5), (7.0, 12.3, 3.5), M_BRASS))
-    P.append(box((9.0, 12.0, 1.5), (9.4, 12.3, 3.5), M_BRASS))
+    mInk = fin(brass(seed=7, base=3, sheen=False, tarnish=0.6), dust=0.5)
+    P.append(box((7.0, 12.0, 1.5), (9.0, 12.2, 2.0), mInk))         # inkwell pewter/brass ring
+    P.append(box((7.0, 12.0, 3.0), (9.0, 12.2, 3.5), mInk))
+    P.append(box((7.0, 12.0, 2.0), (7.5, 12.2, 3.0), mInk))
+    P.append(box((8.5, 12.0, 2.0), (9.0, 12.2, 3.0), mInk))
     if bench:
         mS = fin(wood(ROBLE, seed=27, off=off, worn_pal=RAW, wear=0.6))
         P.append(box((0.5, 6.5, 9.6), (16, 7.4, 11.2), mS))          # seat slats
@@ -797,10 +851,6 @@ def tarima_tone(seed=51):
                 return (ROBLE, 1)
             if (X == (j0 + 2) % 32 or X == (j0 - 3) % 32) and Z % 7 in (2, 5):
                 return (IRON, 3)
-            # scuffed path where teachers walked
-            n = vn(X / 7.0, Z / 7.0, 0.3, 9)
-            if n > 0.7 and hh(X, Z) < 0.4:
-                return (RAW, 2)
             return r
         return plank(ctx)
     return t
@@ -825,40 +875,45 @@ def tarima_parts(edges=()):
 
 
 # ------------------------------------------------------------------------------------------------ teacher desk
-def teacher_desk_parts(side, base_y=4.0, with_tarima=True):
-    """Teacher's desk (2 blocks): user (the teacher) sits on the SOUTH side looking north. izq = drawers pedestal."""
+def teacher_desk_parts(side, base_y=4.0, with_tarima=True, pal_=ROBLE, seed=61):
+    """Teacher's desk (2 blocks): the teacher sits on the SOUTH side looking north. izq = drawer pedestal."""
     off = (0, 0, 0) if side == 'izq' else (16, 0, 0)
-    mW = fin(wood(ROBLE, seed=61, off=off, worn_pal=RAW, base=4))
-    mP = fin(wood(ROBLE, seed=63, off=off, base=3, wear=0.25))
-    mTop = fin(wood(ROBLE, seed=65, off=off, boards=(2, 9), base=4, worn_pal=RAW, wear=0.5))
+    wd = lambda sd, **kw: wood(pal_, seed=seed + sd, off=off, worn_pal=RAW, **kw)
+    mP = fin(panels(wd(2, base=3, axis=1), wd(3, base=4), rects=((3, 3, -3, -3),), faces=('north', 'south', 'west', 'east')))
+    mDr = fin(panels(wd(4, base=4, axis=0), rects=((1, 1, -1, -1),), faces=('south',), bevel=0))
+    mDoor = fin(panels(wd(5, base=4, axis=1), wd(6, base=4, axis=1), rects=((3, 3, -3, -3),), faces=('south',)))
+    mMod = fin(panels(wd(7, base=4, axis=1), wd(8, base=3, axis=0), rects=((3, 3, 13, -3), (16, 3, -3, -3)), faces=('north',)))
+    mW = fin(wd(9, base=4))
+    mTop = fin(wd(10, boards=(2, 9), base=4, wear=0.5))
+    mLeg = fin(outline(wd(11, base=3, axis=1)))
     P = []
     if with_tarima:
         P += tarima_parts()
     y0 = base_y
     yt = y0 + 11.0  # underside of the top
-    # top with an overhang + moulded edge
     P.append(box((0.4, yt, 0.6), (16, yt + 1.0, 15.0), mTop))
-    P.append(box((0.8, yt - 0.6, 1.0), (16, yt, 14.6), mP))           # top frame (apron) under the top
+    P.append(box((0.4, yt - 0.35, 0.3), (16, yt + 0.35, 0.6), mW))       # moulded front edge
+    P.append(box((0.8, yt - 1.2, 1.0), (16, yt, 14.6), mW))              # apron under the top
     if side == 'izq':
-        # pedestal with 3 drawers, opening to the south (teacher side)
-        P.append(box((1.0, y0, 1.6), (8.0, yt - 0.6, 14.4), mP))
-        P.append(box((0.8, y0, 1.4), (8.2, y0 + 0.8, 14.6), mW))        # plinth
-        for n, (a, b) in enumerate(((y0 + 0.9, y0 + 4.3), (y0 + 4.5, y0 + 7.4), (y0 + 7.6, yt - 0.8))):
-            P.append(box((1.5, a, 14.4), (7.5, b, 14.9), mW))          # drawer fronts
-            P.append(box((3.6, (a + b) / 2 - 0.35, 14.9), (5.4, (a + b) / 2 + 0.35, 15.4), M_BRASS))  # pulls
-        # modesty panel toward the pupils (north) with a raised field
-        P.append(box((8.0, y0 + 2.0, 1.6), (16, yt - 0.6, 2.2), mP))
-        P.append(box((9.0, y0 + 3.0, 1.2), (16, yt - 1.6, 1.6), mW))
+        P.append(box((1.0, y0 + 0.8, 1.6), (8.0, yt - 1.2, 14.4), mP))   # pedestal carcass (panelled sides)
+        P.append(box((0.7, y0, 1.3), (8.3, y0 + 0.8, 14.7), mW))         # plinth
+        for n, (a, b) in enumerate(((y0 + 1.0, y0 + 4.2), (y0 + 4.4, y0 + 7.0), (y0 + 7.2, yt - 1.4))):
+            P.append(box((1.5, a, 14.4), (7.5, b, 14.9), mDr))           # drawer fronts
+            P.append(box((3.7, (a + b) / 2 - 0.3, 14.9), (5.3, (a + b) / 2 + 0.3, 15.3), M_BRASS))   # bail pulls
+            P.append(box((4.2, (a + b) / 2 + 0.3, 14.9), (4.8, (a + b) / 2 + 0.9, 15.0), M_BRASS))
+        P.append(box((8.0, y0 + 1.6, 1.6), (16, yt - 1.2, 2.2), mMod))      # modesty panel toward the pupils
+        P.append(box((8.0, y0 + 1.0, 1.4), (16, y0 + 1.6, 2.4), mW))
     else:
-        P.append(box((8.0, y0, 1.6), (15.0, yt - 0.6, 14.4), mP))       # right pedestal (cupboard)
-        P.append(box((7.8, y0, 1.4), (15.2, y0 + 0.8, 14.6), mW))
-        P.append(box((8.6, y0 + 1.0, 14.4), (14.4, yt - 0.8, 14.9), mW))  # cupboard door
-        P.append(box((9.2, y0 + 6.0, 14.9), (9.8, y0 + 7.4, 15.3), M_BRASS))  # knob
-        P.append(box((0.0, yt - 2.6, 14.0), (7.8, yt - 0.6, 14.6), mW))  # centre drawer (attendance book)
-        P.append(box((3.0, yt - 1.95, 14.6), (4.8, yt - 1.25, 15.1), M_BRASS))
-        P.append(box((0.0, y0 + 2.0, 1.6), (8.0, yt - 0.6, 2.2), mP))   # modesty panel
-        P.append(box((0.0, y0 + 3.0, 1.2), (7.0, yt - 1.6, 1.6), mW))
-        # a few exercise books and the wooden ruler on top
+        P.append(box((8.0, y0 + 0.8, 1.6), (15.0, yt - 1.2, 14.4), mP))   # right pedestal (cupboard)
+        P.append(box((7.7, y0, 1.3), (15.3, y0 + 0.8, 14.7), mW))
+        P.append(box((8.5, y0 + 1.0, 14.4), (14.5, yt - 1.6, 14.9), mDoor))   # cupboard door
+        P.append(box((9.1, y0 + 5.6, 14.9), (9.7, y0 + 6.8, 15.3), M_BRASS))   # knob
+        P.append(box((9.15, y0 + 4.6, 14.9), (9.65, y0 + 5.2, 14.95), fin(flat(IRON, 0))))  # keyhole
+        P.append(box((0.0, yt - 3.0, 14.0), (7.7, yt - 1.2, 14.6), mDr))    # centre drawer (attendance book)
+        P.append(box((3.0, yt - 2.4, 14.6), (4.8, yt - 1.8, 15.0), M_BRASS))
+        P.append(box((0.0, y0 + 1.6, 1.6), (8.0, yt - 1.2, 2.2), mMod))
+        P.append(box((0.0, y0 + 1.0, 1.4), (8.0, y0 + 1.6, 2.4), mW))
+        # exercise books and a ruler on top
         mB1 = fin(painted(NAVY, base=3, seed=67, wear=0.3))
         mB2 = fin(painted(REDP, base=3, seed=68, wear=0.3))
         mPg = fin(flat(PAPER, 6))
@@ -1061,37 +1116,6 @@ def chalkboard_parts(variant, col, row, cols=5):
     return P
 
 
-# ------------------------------------------------------------------------------------------------ crucifix (small)
-def crucifix_small_parts():
-    mW = fin(wood(NOGAL, seed=81, base=4, wear=0.3), dust=0.4)
-    mC = fin(painted(SKIN_C, base=5, seed=82, wear=0.0, grime=0), dust=0.3)
-    mL = fin(painted(LINEN, base=6, seed=83, wear=0.0, grime=0), dust=0.2)
-    mB = fin(brass(seed=84, sheen=False))
-    P = [
-        box((7.0, 2.0, 15.0), (9.0, 15.0, 16), mW),                  # upright
-        box((3.6, 10.2, 15.1), (7.0, 12.0, 16), mW),                 # arms (split: no coplanar overlap)
-        box((9.0, 10.2, 15.1), (12.4, 12.0, 16), mW),
-        box((7.3, 13.4, 14.7), (8.7, 14.4, 15.0), mB),               # INRI plaque
-        box((7.45, 11.2, 14.3), (8.55, 12.4, 15.0), mC),             # head
-        box((7.35, 7.9, 14.4), (8.65, 11.2, 15.0), mC),              # torso
-        box((4.2, 10.7, 14.6), (7.4, 11.4, 15.0), mC),               # arms
-        box((8.6, 10.7, 14.6), (11.8, 11.4, 15.0), mC),
-        box((7.25, 7.2, 14.3), (8.75, 8.3, 15.0), mL),               # loincloth
-        box((7.55, 3.6, 14.5), (8.45, 7.2, 15.0), mC),               # legs
-    ]
-    # dried olive sprig tucked behind the cross (Domingo de Ramos)
-    leaf = {'#': hx('#5b5a33'), '+': hx('#7a7444'), '=': hx('#3c3a22')}
-
-    def sprig(ctx):
-        rows = ['......+#.', '....+##=.', '...#+#=..', '.+##=#...', '#+=.#=...', '.=.#=....', '..#=.....', '.#=......', '#=.......']
-        j = ctx.j * 9 // ctx.h
-        i = ctx.i * 9 // ctx.w
-        ch = rows[j][i]
-        return leaf.get(ch)
-    P.append(plane((8.6, 11.5, 15.6), (13.0, 16.0, 15.6), sprig))
-    return P
-
-
 # ------------------------------------------------------------------------------------------------ map of Argentina
 ARG = [(-66.2, -21.8), (-64.3, -22.4), (-62.6, -22.3), (-61.0, -23.7), (-58.6, -25.2), (-57.6, -25.3), (-55.9, -27.3), (-54.6, -25.6),
        (-53.6, -26.2), (-53.9, -27.1), (-55.6, -28.0), (-57.6, -30.2), (-58.2, -32.4), (-58.4, -33.9), (-57.2, -35.2),
@@ -1125,8 +1149,11 @@ def _pip(x, y, poly):
 
 def map_image(W=30, H=52):
     """Pixel map of Argentina (with Malvinas) on aged paper: ocean, Andes, pampas, Patagonia, rivers."""
+    sy = (H - 2) / 34.8
+    sx = sy * 0.83
+
     def proj(lon, lat):
-        return ((lon + 74.5) / 21.5 * W, (-21.0 - lat) / 34.8 * (H - 2) + 1)
+        return ((lon + 76.2) * sx, (-21.0 - lat) * sy + 1)
     poly = [proj(*p) for p in ARG]
     tdf = [proj(*p) for p in TDF]
     mal = [proj(*p) for p in MALV]
@@ -1136,10 +1163,10 @@ def map_image(W=30, H=52):
             px, py = x + 0.5, y + 0.5
             land = _pip(px, py, poly) or _pip(px, py, tdf)
             if land:
-                lon = px / W * 21.5 - 74.5
-                lat = -21.0 - (py - 1) / (H - 2) * 34.8
+                lon = px / sx - 76.2
+                lat = -21.0 - (py - 1) / sy
                 # crude relief: Andes west, Patagonian plateau south, pampa/chaco green
-                west = lon < -68.8 + (0.0 if lat > -38 else 1.2) and lat > -50
+                west = lon < (-68.6 if lat > -33 else (-69.6 if lat > -40 else -71.0))
                 if west:
                     c = hx('#9a6b43') if hh(x, y) < 0.7 else hx('#7d5534')
                 elif lat < -39.5:
@@ -1184,8 +1211,10 @@ def map_tone():
             c = mix(m[(x, y)], base, 0.18)
         else:
             c = sea
-            if (x + y) % 7 == 0 and hh(x, y) < 0.3:
-                c = mix(sea, hx('#6f98ad'), 0.4)
+            if x % 8 == 3 or y % 9 == 4:
+                c = mix(sea, hx('#6f98ad'), 0.35)   # graticule
+        if 0 <= y <= 3 and 1 <= x <= 28:
+            c = hx('#7a2a22') if y in (0, 3) else (hx('#e9dcc0') if (x % 3 and y in (1, 2) and 4 <= x <= 25) else hx('#7a2a22'))
         # compass rose / scale bar, bottom right
         if 21 <= x <= 25 and 40 <= y <= 44 and (x == 23 or y == 42):
             c = hx('#7a2a22')
@@ -1239,6 +1268,970 @@ for _var, _es in (('fecha', 'Lunes 21 de junio'), ('nodebo', 'No debo hablar en 
             F(f'pizarron_{_var}_{_col + 1}_{_row + 1}', f'Pizarrón "{_es}" ({_col + 1}/5, fila {_row + 1})',
               f'Chalkboard "{_es}" ({_col + 1}/5, row {_row + 1})', chalkboard_parts(_var, _col, _row), env=('wall',),
               sound='stone')
-F('crucifijo_chico', 'Crucifijo de pared', 'Small wall crucifix', crucifix_small_parts(), env=('wall',), collision='none')
 F('mapa_argentina', 'Mapa escolar de la Argentina', 'School map of Argentina', map_parts(), env=('wall',), collision='none',
   sound='wool')
+
+
+# ============================================================================================ CHAPEL
+def flame_tone(ctx):
+    """Candle flame (cutout): teardrop with white-yellow core, orange rim, blue base."""
+    w, h = ctx.w, ctx.h
+    x = (ctx.i + 0.5) / w * 2 - 1
+    y = (ctx.j + 0.5) / h            # 0 top .. 1 bottom
+    width = 0.95 * math.sin(min(1.0, y * 1.15) * math.pi * 0.62) * (1.0 if y < 0.85 else (1 - (y - 0.85) * 4))
+    if abs(x) > width or y < 0.04:
+        return None
+    if y > 0.86:
+        return hx('#4d63c8') if abs(x) < width * 0.35 else T(FLAME, 1)
+    c = abs(x) / max(0.01, width)
+    k = 6 - int(c * 2.6) - (1 if y < 0.3 else 0) - (1 if y < 0.15 else 0)
+    if c < 0.35 and 0.55 < y < 0.8:
+        k = 5   # dark-ish zone above the wick
+    return T(FLAME, k)
+
+
+def flame_parts(cx, cz, y0, h=2.6, w=1.6):
+    return [plane((cx - w / 2, y0, cz), (cx + w / 2, y0 + h, cz), flame_tone, shade=False),
+            plane((cx, y0, cz - w / 2), (cx, y0 + h, cz + w / 2), flame_tone, shade=False)]
+
+
+def candle_tone(seed=0, burnt=0.0):
+    """Wax: smooth creamy body, vertical drips, darker melted rim at the top."""
+    def t(ctx):
+        P = tp(ctx)
+        k = 5
+        if ctx.face == 'up':
+            d = max(abs(ctx.s - 0.5), abs(ctx.t - 0.5))
+            return (WAX, 3 if d < 0.2 else 4)
+        col = ctx.i
+        dl = int(hh(col, seed, 3) * 8) if hh(col, seed) < 0.45 else 0
+        if ctx.j < dl:
+            k = 6 + (ctx.j == dl - 1)
+        if ctx.j == 0:
+            k = 4
+        if ctx.i == 0 or ctx.i == ctx.w - 1:
+            k -= 1
+        if burnt and hh(P[0], P[1], P[2], seed) < burnt * 0.2:
+            k -= 1
+        return (WAX, k)
+    return t
+
+
+def candle(cx, cz, y0, y1, r=0.8, lit=True, seed=0):
+    P = [box((cx - r, y0, cz - r), (cx + r, y1, cz + r), fin(candle_tone(seed), ao=0.5, dust=0)),
+         box((cx - 0.12, y1, cz - 0.12), (cx + 0.12, y1 + 0.7, cz + 0.12), fin(flat(IRON, 0), ao=0, dust=0))]
+    if lit:
+        P += flame_parts(cx, cz, y1 + 0.2, h=2.4 * (r / 0.8) ** 0.4, w=1.4 * (r / 0.8) ** 0.4)
+    return P
+
+
+# ------------------------------------------------------------------------------------------------ corpus painting
+def corpus_tone(kind, small=False):
+    """Painted plaster/wood corpus: ivory skin with ochre shadows, ribs, wounds, dark hair & beard."""
+    skin = SKIN_C if small else SKIN
+
+    def t(ctx):
+        i, j, w, h = ctx.i, ctx.j, ctx.w, ctx.h
+        f = ctx.face
+        if kind == 'head':
+            if f == 'up':
+                return (HAIR, 3 + (hh(i, j) > 0.6))
+            if f == 'south':
+                return (HAIR, 2 + (j % 3 == 0))
+            if f in ('west', 'east'):
+                if i < w * 0.6 or j > h * 0.6:
+                    return (HAIR, 3 + (hh(i, j, 1) > 0.6))
+                return (skin, 4)
+            # front face
+            if small:
+                return (HAIR, 3) if j == 0 else (skin, 4)
+            if j < 1 or i == 0 or i == w - 1:
+                return (HAIR, 3)
+            if j >= h - 2 and 0 < i < w - 1:
+                return (HAIR, 2 if j == h - 1 else 3)           # beard
+            if j == 2 and i in (1, w - 2):
+                return (HAIR, 2)                                 # closed eyes (lid lines)
+            if j == 2:
+                return (skin, 3)
+            if j == 1 and i in (2,):
+                return (REDP, 4)                                 # blood from the thorns
+            return (skin, 5 if i in (2, 3) else 4)
+        if kind == 'torso':
+            if f == 'north' and not small:
+                k = 5
+                if j in (3, 5, 7) and 0 < i < w - 1:
+                    k = 4                                        # ribs
+                if i in (0, w - 1):
+                    k = 3
+                if i == w // 2 and j > 8:
+                    k = 4                                        # abdomen line
+                if j in (6, 7) and i == w - 2:
+                    return (REDP, 4 if j == 6 else 3)            # side wound
+                return (skin, k)
+            return (skin, 3 if f in ('west', 'east', 'down') else 4)
+        if kind == 'arm':
+            if f == 'down':
+                return (skin, 3)
+            if (i < 2 or i >= w - 2) and f in ('north', 'up'):
+                if not small and (i in (0, w - 1)):
+                    return (skin, 3)
+                if not small and i in (1, w - 2) and f == 'north':
+                    return (REDP, 3)                             # nail wound in the palm
+            return (skin, 4 if f != 'up' else 5)
+        if kind == 'legs':
+            if f == 'north' and i == w // 2:
+                return (skin, 3)                                 # gap between the legs
+            if f == 'north' and not small and j == h - 2 and i in (1, w - 2):
+                return (REDP, 3)
+            return (skin, 4 if f in ('north', 'up') else 3)
+        if kind == 'cloth':
+            k = 6 + (1 if (i // 2) % 3 == 0 else 0) - (1 if (i // 2) % 3 == 2 else 0)
+            if j == h - 1:
+                k -= 1
+            return (LINEN, k)
+        if kind == 'thorns':
+            if (i + j * 2) % 3 == 0 or hh(i, j, 7) < 0.25:
+                return (HAIR, 3 + (hh(i, j) > 0.5)) if hh(i, j, 2) > 0.2 else None
+            return None
+        return (skin, 4)
+    return t
+
+
+def crucifix_small_parts():
+    mW = fin(outline(wood(NOGAL, seed=81, base=4, wear=0.3)), dust=0.4)
+    mB = fin(brass(seed=84, sheen=False, base=4))
+    ct = lambda k: fin(corpus_tone(k, small=True), dust=0.2, ao=0.6)
+    P = [
+        box((7.0, 2.0, 15.0), (9.0, 15.0, 16), mW),                  # upright
+        box((3.6, 10.2, 15.1), (7.0, 12.0, 16), mW),                 # arms (split: no coplanar overlap)
+        box((9.0, 10.2, 15.1), (12.4, 12.0, 16), mW),
+        box((7.3, 13.4, 14.7), (8.7, 14.4, 15.0), mB),               # INRI plaque
+        box((7.45, 11.2, 14.3), (8.55, 12.4, 15.0), ct('head')),
+        box((7.35, 7.9, 14.4), (8.65, 11.2, 15.0), ct('torso')),
+        box((4.2, 10.7, 14.6), (7.35, 11.4, 15.0), ct('arm')),
+        box((8.65, 10.7, 14.6), (11.8, 11.4, 15.0), ct('arm')),
+        box((7.25, 7.2, 14.3), (8.75, 8.3, 15.0), ct('cloth')),
+        box((7.55, 3.6, 14.5), (8.45, 7.2, 15.0), ct('legs')),
+    ]
+    # dried olive sprig tucked behind the cross (Domingo de Ramos)
+    leaf = {'#': hx('#6e6a3a'), '+': hx('#8f8a52'), '=': hx('#48452a'), 's': hx('#5a4630')}
+
+    def sprig(ctx):
+        rows = ['.....+#..', '...+#=.+.', '..#+s=+#.', '.+#.s.=..', '#+=.s+#=.', '.=.s.=...', '..s+#....', '.s=......', 's........']
+        ch = rows[ctx.j * 9 // ctx.h][ctx.i * 9 // ctx.w]
+        return leaf.get(ch)
+    P.append(plane((8.6, 11.5, 15.6), (13.0, 16.0, 15.6), sprig))
+    return P
+
+
+def crucifix_big_parts():
+    """Chapel crucifix: 2 blocks tall (place it 1 block above the floor), gilded finials, painted corpus."""
+    mW = fin(outline(wood(NOGAL, seed=101, base=3, wear=0.25)), dust=0.5)
+    mG = fin(brass(GOLD, seed=102, base=5, tarnish=0.2), dust=0.4)
+    ct = lambda k: fin(corpus_tone(k), dust=0.35, ao=0.7)
+
+    def inri(ctx):
+        if ctx.face != 'north':
+            return (GOLD, 4)
+        pts = set(draw_text(F35, 'INRI', 1, 1))
+        return (PAPER, 1) if (ctx.i, ctx.j) in pts else (PAPER, 6 - (ctx.edge() == 0) * 2)
+    P = [
+        box((6.6, 0.0, 14.4), (9.4, 30.4, 16.0), mW),                # upright
+        box((-2.2, 21.2, 14.6), (6.6, 24.0, 16.0), mW),              # crossbar halves
+        box((9.4, 21.2, 14.6), (18.2, 24.0, 16.0), mW),
+        box((6.2, 30.4, 14.2), (9.8, 32.0, 16.0), mG),               # finials
+        box((-3.4, 20.8, 14.2), (-2.2, 24.4, 16.0), mG),
+        box((18.2, 20.8, 14.2), (19.4, 24.4, 16.0), mG),
+        box((6.0, 0.0, 14.2), (10.0, 1.2, 16.0), mG),
+        box((5.0, 26.2, 14.0), (11.0, 29.4, 14.4), fin(inri, dust=0.3)),   # INRI
+        box((6.6, 1.2, 12.4), (9.4, 1.8, 14.4), mW),                 # suppedaneum
+        box((7.0, 22.6, 12.4), (9.0, 25.4, 14.2), ct('head'), rot=('z', 22.5, (8.0, 22.6, 13.3))),
+        box((6.6, 24.0, 12.1), (9.4, 24.8, 14.5), ct('thorns'), faces=('north', 'south', 'west', 'east'),
+            rot=('z', 22.5, (8.0, 22.6, 13.3))),
+        box((7.5, 21.6, 12.9), (8.5, 22.8, 13.9), ct('torso')),      # neck
+        box((6.7, 15.6, 12.6), (9.3, 21.8, 14.4), ct('torso')),      # chest
+        box((6.95, 13.8, 12.8), (9.05, 15.6, 14.3), ct('torso')),    # belly
+        box((9.0, 20.7, 13.0), (17.0, 21.9, 14.2), ct('arm'), rot=('z', 22.5, (9.0, 21.3, 13.6))),
+        box((-1.0, 20.7, 13.0), (7.0, 21.9, 14.2), ct('arm'), rot=('z', -22.5, (7.0, 21.3, 13.6))),
+        box((6.5, 11.6, 12.4), (9.5, 14.4, 14.6), ct('cloth')),      # perizonium
+        box((9.2, 10.0, 12.7), (10.0, 12.6, 14.2), ct('cloth')),     # knot flap
+        box((7.0, 7.4, 12.7), (9.0, 11.8, 14.2), ct('legs')),        # thighs
+        box((7.2, 3.0, 12.3), (8.8, 7.6, 13.7), ct('legs')),         # shins, knees forward
+        box((7.1, 1.8, 12.5), (8.9, 3.0, 14.1), ct('legs')),         # crossed feet
+        box((7.8, 2.2, 12.2), (8.2, 2.6, 12.5), fin(flat(IRON, 2))), # nail
+    ]
+    return P
+
+
+# ------------------------------------------------------------------------------------------------ statues
+def virgin_tone(kind):
+    """Virgen de Luján style: celeste mantle with gold border and white stars, white gown, golden rays."""
+    def t(ctx):
+        i, j, w, h, f = ctx.i, ctx.j, ctx.w, ctx.h, ctx.face
+        P = tp(ctx)
+        if kind == 'gown':
+            # front: white gown strip in the middle of the mantle cone, with gold embroidery
+            if f == 'north':
+                mid = abs(i + 0.5 - w / 2)
+                strip = w * (0.16 + 0.22 * (j / h))
+                if mid < strip:
+                    if mid > strip - 1:
+                        return (GOLD, 5)
+                    k = 7 if (i + j) % 6 else 5
+                    if j % 7 == 3 and abs(i + 0.5 - w / 2) < 1.5:
+                        return (GOLD, 6)
+                    return (LINEN, k)
+                if mid < strip + 1.0:
+                    return (GOLD, 4)
+            if ctx.edge() == 0 and f != 'up' and j == h - 1:
+                return (GOLD, 4)
+            k = 5
+            if (i * 7 + j * 3) % 11 == 0 and ctx.edge() > 0:
+                return (LINEN, 8)                                # white stars
+            u = (i if f in ('north', 'south') else i) + 0.5
+            if math.sin(u * 0.9 + j * 0.05) > 0.6:
+                k += 1
+            if math.sin(u * 0.9 + 2.2) < -0.75:
+                k -= 1
+            return (CELESTE, k)
+        if kind == 'face':
+            if f == 'north':
+                if j <= 0 or i == 0 or i == w - 1:
+                    return (HAIR, 3)
+                if j == 2 and i in (1, w - 2):
+                    return (HAIR, 1)                             # lowered eyes
+                if j == 4 and i in (2, 3) and w >= 6:
+                    return (REDP, 5)                             # lips
+                return (SKIN, 6 if 1 < i < w - 2 else 5)
+            return (HAIR, 3 + (hh(i, j) > 0.7)) if f != 'down' else (SKIN, 4)
+        if kind == 'hands':
+            if f == 'north':
+                if i == w // 2 - 1 + (w % 2) and j > 0:
+                    return (SKIN, 3)                         # the two palms pressed together
+                return (SKIN, 6 if j == 0 else 5)
+            return (SKIN, 4)
+        if kind == 'base':
+            if j == 0 or j == h - 1:
+                return (GOLD, 5)
+            k = 4 + ((i // 3 + j // 3) % 2) if f == 'north' else 4
+            return (NOGAL, k)
+        return (GOLD, 5)
+    return t
+
+
+def rays_tone(ctx):
+    """Silver-gilt resplendor behind the Virgin: rays radiating from the head, alternating straight / wavy."""
+    w, h = ctx.w, ctx.h
+    cx, cy = w / 2, h * 0.17
+    x, y = ctx.i + 0.5 - cx, ctx.j + 0.5 - cy
+    r = math.hypot(x, y * 1.05)
+    a = math.atan2(y, x)
+    n = 26
+    ang = (a / (2 * math.pi) * n) % 1.0
+    ray = abs(ang - 0.5)
+    wavy = int(a / (2 * math.pi) * n) % 2
+    reach = (h * 0.98 if wavy else h * 0.86)
+    if r < 3.5 or r > reach - abs(math.sin(a)) * 4:
+        return None
+    width = 0.22 - r / reach * 0.12 + (0.06 * math.sin(r * 0.9) if wavy else 0)
+    if ray < width:
+        k = 6 - int(r / reach * 3) + (1 if ray < width * 0.4 else 0)
+        return T(GOLD, k)
+    if r < 6.5:
+        return T(GOLD, 4)
+    return None
+
+
+def virgin_parts():
+    vt = lambda k: fin(virgin_tone(k), dust=0.6, ao=0.8)
+    P = [
+        box((2.5, 0.0, 3.0), (13.5, 2.8, 13.0), vt('base')),         # gilded wooden pedestal
+        box((3.0, 2.8, 3.5), (13.0, 3.4, 12.5), fin(brass(GOLD, base=4, seed=111))),
+    ]
+    tiers = [(2.0, 3.4, 7.0), (2.6, 7.0, 10.5), (3.3, 10.5, 14.0), (4.0, 14.0, 17.0), (4.7, 17.0, 20.0), (5.4, 20.0, 22.4)]
+    for (inset, y0, y1) in tiers:
+        P.append(box((inset + 0.8, y0, 5.0 + inset * 0.3), (16 - inset - 0.8, y1, 11.0 - inset * 0.3), vt('gown')))
+    P += [
+        box((7.3, 17.4, 4.5), (8.7, 19.6, 6.4), vt('hands')),        # joined hands
+        box((6.8, 16.6, 4.9), (9.2, 17.6, 6.6), fin(brass(GOLD, base=5, seed=116))),   # gold cuffs
+        box((6.5, 22.2, 6.2), (9.5, 25.4, 9.2), vt('face')),         # head
+        box((6.1, 21.0, 7.6), (9.9, 25.6, 10.0), fin(virgin_tone('gown'), dust=0.3)),   # veil/mantle over the head
+        box((6.3, 25.4, 6.0), (9.7, 26.4, 9.6), fin(brass(GOLD, base=6, seed=112))),    # crown band
+        box((6.6, 26.4, 6.3), (9.4, 27.6, 9.3), fin(brass(GOLD, base=5, seed=113))),
+        box((7.6, 27.6, 7.5), (8.4, 29.0, 8.3), fin(brass(GOLD, base=6, seed=114))),    # cross on the crown
+        plane((-3.0, 4.0, 11.4), (19.0, 31.8, 11.4), rays_tone, faces=('north', 'south')),
+        box((4.4, 3.4, 3.4), (11.6, 4.2, 4.4), fin(brass(NICKEL, base=6, seed=115))),  # silver crescent moon
+    ]
+    return P
+
+
+def ines_tone(kind):
+    def t(ctx):
+        i, j, w, h, f = ctx.i, ctx.j, ctx.w, ctx.h, ctx.face
+        if kind == 'tunic':
+            k = 6 + (1 if (i // 2) % 3 == 0 else 0) - (1 if (i // 2) % 3 == 2 else 0)
+            if j >= h - 1:
+                return (GOLD, 4)
+            return (LINEN, k)
+        if kind == 'mantle':
+            k = 4 + (1 if math.sin((i + j * 0.4) * 0.8) > 0.5 else 0) - (1 if math.sin((i + j * 0.4) * 0.8) < -0.7 else 0)
+            if ctx.edge() == 0 and f != 'up':
+                return (GOLD, 5)
+            return (VELVET_R, k + 1)
+        if kind == 'face':
+            if f == 'north':
+                if j <= 1:
+                    return (HAIR, 4 if j == 1 else 3)            # fringe
+                if i == 0 or i == w - 1:
+                    return (HAIR, 4)
+                if j == 3 and i in (1, w - 2):
+                    return (BAKE, 2)                             # eyes
+                if j == 3 and i in (2, w - 3):
+                    return (SKIN, 7)
+                if j == 5 and w // 2 - 1 <= i <= w // 2:
+                    return (REDP, 5)
+                if j == 4 and i in (1, w - 2):
+                    return (REDP, 7)                             # cheeks
+                return (SKIN, 6)
+            return (HAIR, 4 + (hh(i, j) > 0.6)) if f != 'down' else (SKIN, 5)
+        if kind == 'hair':
+            k = 4 + (1 if (i + j // 3) % 4 == 0 else 0) - (1 if (i * 3 + j) % 7 == 0 else 0)
+            return (HAIR, k)
+        if kind == 'skin':
+            return (SKIN, 6 if f in ('north', 'up') else 5)
+        if kind == 'lamb':
+            if f == 'north' and ctx.part.name == 'lambhead':
+                if j == 2 and i in (1, w - 2):
+                    return (BAKE, 2)
+                if j >= h - 2 and w // 2 - 1 <= i <= w // 2:
+                    return (SKIN, 4)
+            k = 6 + (1 if (i + (j % 2)) % 3 == 0 else 0) - (1 if (i * 2 + j) % 5 == 0 else 0)
+            return (WAX, k)
+        if kind == 'base':
+            if j == 0:
+                return (GOLD, 5)
+            return (MARBLE, 5 + ((i + j) % 9 == 0))
+        if kind == 'halo':
+            return None
+        return (LINEN, 6)
+    return t
+
+
+def halo_tone(ctx):
+    x = (ctx.i + 0.5) / ctx.w * 2 - 1
+    y = (ctx.j + 0.5) / ctx.h * 2 - 1
+    r = math.hypot(x, y)
+    if 0.8 < r < 1.0:
+        return T(GOLD, 6 if y < 0 else 5)
+    if r < 0.8 and int((math.atan2(y, x) + 3.2) * 4) % 2 == 0 and r > 0.55:
+        return T(GOLD, 4)
+    return None
+
+
+def palm_tone(ctx):
+    """Martyr's palm frond (cutout): central rib with leaflets angled upward."""
+    w, h = ctx.w, ctx.h
+    x = ctx.i + 0.5 - w / 2
+    y = ctx.j + 0.5
+    if abs(x) < 0.6:
+        return T(PINO, 5)
+    if y > h * 0.88:
+        return None
+    side = abs(x)
+    reach = (w / 2) * (0.35 + 0.65 * math.sin(min(1, y / (h * 0.85)) * math.pi * 0.95))
+    if side < reach and ((int(y) - int(side * 0.9)) % 3 == 0):
+        return T(GOLD, 3 + (side < reach * 0.5)) if hh(ctx.i, ctx.j) > 0.1 else T(VERDI, 2)
+    return None
+
+
+def ines_parts(body=True, head=True, head_only=False):
+    it = lambda k: fin(ines_tone(k), dust=0.6, ao=0.8)
+    P = []
+    hy = 0.0
+    if head_only:
+        hy = -14.0     # head centred low in its own block, for the turning display entity
+    if body:
+        P += [
+            box((3.0, 0.0, 3.5), (13.0, 2.6, 12.5), it('base')),
+            box((4.2, 2.6, 5.4), (11.8, 9.0, 10.6), it('tunic')),
+            box((4.8, 9.0, 5.8), (11.2, 15.0, 10.2), it('tunic')),
+            box((5.3, 15.0, 6.3), (10.7, 20.4, 9.7), it('tunic')),
+            box((4.0, 4.0, 8.6), (12.0, 16.0, 11.0), it('mantle')),      # red mantle at the back
+            box((4.6, 16.0, 8.4), (11.4, 20.2, 10.4), it('mantle')),
+            box((3.9, 9.5, 5.0), (12.1, 12.0, 8.0), it('mantle'), rot=('z', -22.5, (8, 10.7, 6.5))),  # drape across
+            box((4.0, 13.0, 6.8), (5.4, 19.6, 8.4), it('mantle')),       # right arm (down, holding the palm)
+            box((3.8, 12.2, 6.4), (5.4, 13.4, 8.2), it('skin')),         # hand
+            box((10.4, 15.0, 5.0), (11.8, 19.8, 8.2), it('mantle')),     # left arm cradling the lamb
+            box((8.6, 14.6, 3.6), (12.4, 17.4, 7.2), it('lamb'), name='lamb'),
+            box((11.4, 16.6, 2.8), (13.0, 18.6, 4.6), it('lamb'), name='lambhead'),
+            box((11.0, 18.0, 3.6), (11.6, 18.6, 4.2), it('lamb')),       # ear
+            box((12.8, 18.0, 3.6), (13.4, 18.6, 4.2), it('lamb')),
+            box((9.0, 14.0, 4.0), (9.8, 14.6, 4.8), it('lamb')),         # folded legs
+            box((11.2, 14.0, 4.0), (12.0, 14.6, 4.8), it('lamb')),
+            plane((2.6, 12.0, 7.3), (5.6, 26.0, 7.3), palm_tone, faces=('north', 'south')),
+        ]
+    if head or head_only:
+        H = [
+            box((6.3, 20.2, 6.1), (9.7, 23.8, 9.3), it('face')),
+            box((5.9, 15.5, 8.2), (10.1, 24.2, 10.0), it('hair')),        # long hair down the back
+            box((5.9, 20.4, 6.6), (6.3, 24.0, 8.2), it('hair')),
+            box((9.7, 20.4, 6.6), (10.1, 24.0, 8.2), it('hair')),
+            box((6.1, 23.8, 6.4), (9.9, 24.4, 8.4), it('hair')),
+            plane((4.6, 19.8, 10.3), (11.4, 26.6, 10.3), halo_tone, faces=('north', 'south')),
+        ]
+        if head_only:
+            H = [p for p in H]
+            for p in H:
+                if p.frm[1] < 18:
+                    p.frm = (p.frm[0], 18.0, p.frm[2])
+            shift(H, dy=hy)
+        P += H
+    return P
+
+
+# ------------------------------------------------------------------------------------------------ pews
+def pew_parts(side):
+    """Church pew piece, the sitter looks north. side: 'izq' (end panel on the west), 'centro', 'der'."""
+    mS = fin(wood(NOGAL, seed=121, boards=(2, 8), axis=0, worn_pal=RAW, wear=0.55))
+    mB = fin(wood(NOGAL, seed=123, axis=0, base=4))
+    mE = fin(panels(wood(NOGAL, seed=125, axis=1, base=3), wood(NOGAL, seed=126, axis=1, base=4),
+                    rects=((3, 4, -3, -7),), faces=('west', 'east'), carve=cross_carve))
+    mK = fin(cloth(LEATHER_B, base=4, seed=127, folds=0.0, weave=False, stains=0.2))
+    P = [
+        box((0, 6.8, 4.0), (16, 7.8, 12.0), mS),                     # seat
+        box((0, 6.3, 3.6), (16, 7.4, 4.2), mB),                      # rounded seat nose
+        box((0, 5.4, 4.3), (16, 6.8, 5.0), mB),                      # apron
+        box((0, 7.8, 11.4), (16, 9.0, 12.2), mB),                    # back bottom rail
+        box((0, 9.0, 11.7), (16, 14.6, 12.4), mS),                   # back boards
+        box((0, 14.6, 11.3), (16, 15.6, 12.9), mB),                  # top rail (hand rail for the row behind)
+        box((0, 10.2, 12.4), (16, 10.7, 14.0), mB),                  # hymn-book shelf behind
+        box((0, 10.7, 13.6), (16, 11.7, 14.0), mB),
+        box((0, 1.6, 12.9), (16, 2.4, 15.6), mB),                    # kneeler (for the row behind)
+        box((0.0, 2.4, 13.1), (16, 3.0, 15.4), mK),                  # worn leather pad
+    ]
+    if side in ('izq', 'der'):
+        x0, x1 = (0.0, 1.3) if side == 'izq' else (14.7, 16.0)
+        P += [
+            box((x0, 0, 3.2), (x1, 14.6, 13.0), mE),                 # carved end panel
+            box((x0 - 0.15, 14.6, 8.6), (x1 + 0.15, 16.4, 13.4), mB),   # scrolled top
+            box((x0 - 0.15, 8.6, 2.8), (x1 + 0.15, 9.8, 5.6), mB),   # arm scroll
+            box((x0 - 0.1, 0, 2.9), (x1 + 0.1, 0.8, 13.3), fin(painted(NOGAL, base=2, seed=128, grime=0.8))),
+            box((x0, 0, 13.0), (x1, 3.0, 15.8), mB),                 # kneeler bracket
+        ]
+    else:
+        P += [box((7.4, 0, 5.0), (8.6, 6.8, 11.6), mB), box((7.5, 0, 11.6), (8.5, 1.6, 15.2), mB)]
+    return P
+
+
+# ------------------------------------------------------------------------------------------------ altar
+def lace_tone(ctx):
+    """Bobbin-lace edging (cutout): solid band, a row of pin holes, then rounded scallops."""
+    i, j, h = ctx.i, ctx.j, ctx.h
+    if j == 0:
+        return T(LINEN, 7)
+    if j == 1:
+        return None if i % 2 == 0 else T(LINEN, 8)
+    u = (i % 8) - 3.5
+    reach = 3.6 - (j - 2) * 1.25
+    if abs(u) < reach:
+        if j == 2 and abs(u) < 1:
+            return None
+        return T(LINEN, 8 if (i + j) % 2 else 6)
+    return None
+
+
+def altar_tone(kind, emblem=False, off=(0, 0, 0)):
+    cl = cloth(LINEN, base=7, seed=131, fold_axis='i', folds=0.7, fold_px=2.6, stains=0.22, off=off)
+    wd = wood(NOGAL, seed=133, off=off, base=4, axis=1)
+    fr = wood(NOGAL, seed=134, off=off, base=3, axis=0)
+
+    def t(ctx):
+        if kind == 'cloth':
+            c = cl(ctx)
+            if ctx.face == 'north' and emblem:
+                cx = ctx.w // 2
+                pts = draw_text(F35, 'IHS', cx - 6, 4)
+                if (ctx.i, ctx.j) in set(pts):
+                    return T(GOLD, 6)
+                if ctx.i == cx and 0 <= ctx.j <= 2:
+                    return T(GOLD, 6)
+                if ctx.j == 1 and abs(ctx.i - cx) <= 1:
+                    return T(GOLD, 6)
+            if ctx.face == 'north' and ctx.j >= ctx.h - 2:
+                return T(GOLD, 5 if ctx.j == ctx.h - 2 else 3)          # gold braid above the lace
+            return c
+        if kind == 'base':
+            if ctx.face == 'north':
+                i, j, w, h = ctx.i, ctx.j, ctx.w, ctx.h
+                u = (i % 32) - 15.5 if w >= 32 else i - w / 2 + 0.5
+                top = 13 + int(abs(u) ** 2 / 14)
+                if abs(u) < 11 and top <= j < h - 3:
+                    if abs(u) >= 10 or j == top:
+                        return (GOLD, 4 + (j == top))
+                    pl, k = wd(ctx)
+                    return (pl, k - 1 - (j < top + 2) - (abs(u) > 8.5))
+                if j >= h - 3:
+                    return fr(ctx)
+            return fr(ctx)
+        return fr(ctx)
+    return t
+
+
+def altar_parts(side):
+    # front-facing piece: the viewer's left is +x in authoring space, so 'izq' has its open end at x=16
+    off = {'izq': (32, 0, 0), 'centro': (16, 0, 0), 'der': (0, 0, 0)}[side]
+    side = {'izq': 'der', 'der': 'izq'}.get(side, side)
+    emb = side == 'centro'
+    mBase = fin(altar_tone('base', off=off), dust=0.4)
+    mTop = fin(wood(NOGAL, seed=135, off=off, base=4, axis=0))
+    mCl = fin(altar_tone('cloth', emblem=emb, off=off), dust=0.5)
+    mPl = fin(marble(seed=137, base=5, off=off))
+    x0 = 0.0 if side != 'izq' else 1.0
+    x1 = 16.0 if side != 'der' else 15.0
+    c0 = 0.0 if side != 'izq' else 0.2
+    c1 = 16.0 if side != 'der' else 15.8
+    P = [
+        box((0, 0, 2.4), (16, 1.2, 15.0), mPl),                                 # marble step
+        box((x0, 1.2, 3.6), (x1, 14.6, 14.0), mBase),
+        box((x0 - 0.4, 1.2, 3.2), (x1 + (0.4 if side == 'der' else 0), 2.2, 14.4), mTop),   # base moulding
+        box((c0 + 0.2, 14.6, 2.6), (c1 - 0.2, 15.6, 14.8), mTop),               # mensa
+        box((c0, 15.6, 2.3), (c1, 15.9, 15.0), mCl),                            # cloth on top
+        box((c0, 10.6, 2.0), (c1, 15.9, 2.3), mCl, faces=('north', 'down', 'west', 'east')),   # front drop
+        plane((c0, 8.8, 1.95), (c1, 10.6, 1.95), lace_tone, faces=('north', 'south')),
+    ]
+    if side in ('izq', 'der'):
+        x = c0 if side == 'izq' else c1
+        x2 = x - 0.3 if side == 'izq' else x + 0.3
+        P.append(box((min(x, x2), 8.4, 2.0), (max(x, x2), 15.9, 15.0), mCl, faces=('west', 'east', 'down', 'north', 'south')))
+    return P
+
+
+# ------------------------------------------------------------------------------------------------ candlesticks
+def candelabro_parts(lit):
+    mB = fin(brass(seed=141, base=5), dust=0.5)
+    mD = fin(brass(seed=142, base=4, sheen=False), dust=0.5)
+    P = [
+        box((5.0, 0.0, 5.0), (11.0, 1.0, 11.0), mD),
+        box((4.4, 0.0, 4.4), (6.0, 1.4, 6.0), mB), box((10.0, 0.0, 4.4), (11.6, 1.4, 6.0), mB),   # claw feet
+        box((4.4, 0.0, 10.0), (6.0, 1.4, 11.6), mB), box((10.0, 0.0, 10.0), (11.6, 1.4, 11.6), mB),
+        box((5.8, 1.0, 5.8), (10.2, 2.4, 10.2), mB),
+        box((6.8, 2.4, 6.8), (9.2, 3.4, 9.2), mD),
+        box((7.3, 3.4, 7.3), (8.7, 22.0, 8.7), mB),                  # stem
+        box((6.7, 7.6, 6.7), (9.3, 9.0, 9.3), mB),                   # knops
+        box((6.9, 14.4, 6.9), (9.1, 15.6, 9.1), mB),
+        box((7.0, 19.6, 7.0), (9.0, 20.6, 9.0), mD),
+        box((5.6, 22.0, 5.6), (10.4, 22.6, 10.4), mB),               # drip pan
+        box((5.4, 22.6, 5.4), (10.6, 23.0, 5.8), mD), box((5.4, 22.6, 10.2), (10.6, 23.0, 10.6), mD),
+        box((5.4, 22.6, 5.8), (5.8, 23.0, 10.2), mD), box((10.2, 22.6, 5.8), (10.6, 23.0, 10.2), mD),
+        box((7.0, 22.6, 7.0), (9.0, 23.6, 9.0), mB),                 # socket
+    ]
+    P += candle(8.0, 8.0, 23.6, 29.6, r=0.85, lit=lit, seed=143)
+    # a wax drip running over the pan
+    P.append(box((8.85, 22.4, 7.6), (9.25, 23.6, 8.2), fin(flat(WAX, 6), ao=0, dust=0)))
+    return P
+
+
+def candelero_altar_parts(lit):
+    mB = fin(brass(seed=151, base=5), dust=0.4)
+    P = [
+        box((5.4, 0.0, 5.4), (10.6, 0.8, 10.6), mB),
+        box((6.2, 0.8, 6.2), (9.8, 1.6, 9.8), mB),
+        box((7.3, 1.6, 7.3), (8.7, 6.4, 8.7), mB),
+        box((6.8, 3.2, 6.8), (9.2, 4.2, 9.2), mB),
+        box((6.0, 6.4, 6.0), (10.0, 7.0, 10.0), mB),
+        box((7.0, 7.0, 7.0), (9.0, 7.8, 9.0), mB),
+    ]
+    P += candle(8.0, 8.0, 7.8, 13.4, r=0.75, lit=lit, seed=152)
+    return P
+
+
+def puddle_tone(centres, seed=0):
+    """Irregular wax puddle (cutout): union of blobs around the candles, creamy with darker dirty rim."""
+    def t(ctx):
+        if ctx.face != 'up':
+            return None
+        x, z = ctx.pos[0], ctx.pos[2]
+        best = 9.0
+        for (cx, cz, r) in centres:
+            d = math.hypot(x - cx, z - cz) - r - (vn(x / 1.7, z / 1.7, 0.5, seed) - 0.5) * 1.6
+            best = min(best, d)
+        if best > 0:
+            return None
+        k = 5 if best < -0.6 else 3
+        if hh(ctx.i, ctx.j, seed) < 0.06:
+            k -= 1
+        return (WAX, k)
+    return t
+
+
+def velas_piso_parts(lit):
+    cands = ((6.0, 7.0, 7.5, 1.1), (9.6, 6.2, 5.0, 0.9), (8.4, 10.0, 9.0, 1.0), (4.8, 10.4, 3.6, 0.8), (11.0, 9.4, 2.4, 1.2))
+    P = [box((1.0, 0.0, 1.5), (15.0, 0.3, 15.0), fin(puddle_tone([(x, z, r + 1.6) for (x, z, _, r) in cands], 161), ao=0, dust=0.5),
+             faces=('up',))]
+    for n, (x, z, hgt, r) in enumerate(cands):
+        P += candle(x, z, 0.3, 0.3 + hgt, r=r, lit=lit and n != 3, seed=162 + n)
+    return P
+
+
+# ------------------------------------------------------------------------------------------------ confessional
+def grille_tone(base_pal=NOGAL, holes=True):
+    """Pierced wooden grille: diamond lattice with see-through holes (cutout)."""
+    def t(ctx):
+        if ctx.face not in ('west', 'east', 'north', 'south'):
+            return T(base_pal, 3)
+        i, j = ctx.i, ctx.j
+        if ctx.edge() == 0:
+            return T(base_pal, 3)
+        a, b = (i + j) % 4, (i - j) % 4
+        if holes and a and b:
+            return None
+        return T(base_pal, 4 if (a == 0) else 3)
+    return t
+
+
+def confessional_parts(col, row):
+    """col: 'izq' | 'centro' | 'der' (viewer's left/right), row 0 = bottom, 1 = top. Front faces north."""
+    off = {'izq': (32, 0, 0), 'centro': (16, 0, 0), 'der': (0, 0, 0)}[col]
+    off = (off[0], row * 16, 0)
+    wd = lambda sd, **kw: wood(NOGAL, seed=171 + sd, off=off, worn_pal=RAW, **kw)
+    mFrame = fin(wd(0, base=4))
+    mPanel = fin(panels(wd(1, base=3, axis=1), wd(2, base=4, axis=1), rects=((3, 3, -3, -3),),
+                        faces=('north', 'south', 'west', 'east')))
+    mDoor = fin(panels(wd(3, base=4, axis=1), wd(4, base=4, axis=1),
+                       rects=((3, 4, -3, 14), (3, 18, -3, -4)) if row == 0 else ((3, 3, -3, 12),), faces=('north',)))
+    mCurt = fin(cloth(VELVET_P, base=4, seed=181, fold_axis='i', folds=0.9, fold_px=2.2, weave=False, stains=0.15,
+                      stain_col=hx('#2a1a20')), ao=0.5, dust=0.3)
+    mGr = fin(grille_tone(), ao=0, dust=0)
+    mPad = fin(cloth(LEATHER_B, base=3, seed=183, folds=0, weave=False, stains=0.2))
+    P = []
+    outer_x = {'izq': (14.6, 16.0), 'der': (0.0, 1.4)}
+    if row == 0:
+        P.append(box((0, 0, 0.6), (16, 1.0, 16), fin(wd(5, base=3, axis=0))))          # raised floor / plinth
+        P.append(box((0, 0, 0.2), (16, 0.6, 0.6), fin(painted(NOGAL, base=2, seed=185, grime=0.8))))
+    P.append(box((0, 0 if row else 1.0, 15.0), (16, 16, 16), mPanel))                    # back wall
+    if col == 'centro':
+        for (x0, x1) in ((0.0, 1.2), (14.8, 16.0)):
+            if row == 0:
+                P.append(box((x0, 1.0, 0.6), (x1, 9.0, 15.0), mPanel))
+                P.append(box((x0, 9.0, 1.0), (x1, 16.0, 4.0), mFrame))
+                P.append(box((x0, 9.0, 10.0), (x1, 16.0, 15.0), mFrame))
+                P.append(box((x0 + 0.3, 9.0, 4.0), (x1 - 0.3, 16.0, 10.0), mGr, faces=('west', 'east')))   # grille
+                P.append(box((x0, 15.2, 4.0), (x1, 16.0, 10.0), mFrame))
+            else:
+                P.append(box((x0, 0.0, 0.6), (x1, 2.0, 15.0), mFrame))
+                P.append(box((x0, 2.0, 0.6), (x1, 16.0, 15.0), mPanel))
+        if row == 0:
+            P.append(box((1.2, 1.0, 0.8), (14.8, 16.0, 1.6), mDoor))                     # priest's door
+            P.append(box((12.4, 8.0, 0.2), (13.4, 9.2, 0.8), M_BRASS))                    # knob
+            P.append(box((2.0, 1.0, 9.0), (14.0, 8.0, 14.6), fin(panels(wd(6, base=4), faces=('north',)))))  # priest's seat
+        else:
+            P.append(box((1.2, 0.0, 0.8), (14.8, 7.0, 1.6), mDoor))
+            P.append(box((1.2, 7.0, 1.0), (14.8, 13.0, 1.4), mCurt, faces=('north', 'south')))   # little curtain window
+            P.append(box((1.2, 13.0, 0.8), (14.8, 16.0, 1.6), mFrame))
+            P.append(box((1.2, 6.8, 0.4), (14.8, 7.4, 1.0), mFrame))
+    else:
+        x0, x1 = outer_x[col]
+        P.append(box((x0, 0 if row else 1.0, 0.6), (x1, 16, 15.0), mPanel))             # outer side wall
+        if row == 0:
+            ix = (1.2, 7.0) if col == 'der' else (9.0, 14.8)
+            kx = (10.0, 15.2) if col == 'der' else (0.8, 6.0)
+            P.append(box((kx[0], 1.0, 2.0), (kx[1], 3.6, 13.0), fin(wd(7, base=4))))      # kneeler next to the grille
+            P.append(box((kx[0] + 0.3, 3.6, 2.3), (kx[1] - 0.3, 4.2, 12.7), mPad))
+            P.append(box((kx[0], 10.0, 3.0), (kx[1], 10.8, 11.0), fin(wd(8, base=4))))     # elbow rest under the grille
+        # velvet curtain on the open front (pulled to the outer side)
+        cx0, cx1 = (8.0, 14.6) if col == 'izq' else (1.4, 8.0)
+        P.append(box((cx0, 0.0 if row else 1.4, 0.9), (cx1, 16 if row == 0 else 13.6, 1.6), mCurt, faces=('north', 'south', 'west', 'east', 'down')))
+        if row == 1:
+            P.append(box((0, 13.6, 1.0), (16, 14.2, 1.4), M_BRASS))                        # curtain rod
+    if row == 1:
+        P.append(box((0, 14.2, 0.2), (16, 16.0, 16), fin(wd(9, base=4, axis=0))))          # roof / cornice
+        P.append(box((0, 15.2, -0.4), (16, 16.4, 0.4), fin(wd(10, base=5, axis=0))))
+        if col == 'centro':
+            mG = fin(brass(GOLD, seed=187, base=5))
+            P += [box((5.0, 16.4, 1.0), (11.0, 17.6, 4.0), fin(wd(11, base=4))),           # crest + cross
+                  box((7.4, 17.6, 2.0), (8.6, 23.0, 3.0), mG), box((5.8, 20.4, 2.0), (10.2, 21.4, 3.0), mG)]
+    return P
+
+
+# ------------------------------------------------------------------------------------------------ fonts of water
+def water_tone(ctx):
+    i, j = ctx.i, ctx.j
+    k = 3
+    if (i * 3 + j * 5) % 13 == 0:
+        k = 5
+    if (i + j * 2) % 17 == 0:
+        k = 4
+    return (pal('#0f1b1e', '#162a2e', '#1e383c', '#2a4a4c', '#3e6262', '#6a8e8a'), k)
+
+
+def font_parts():
+    mM = fin(marble(seed=191, base=6))
+    mM2 = fin(marble(seed=192, base=5))
+    P = [
+        box((3.0, 0.0, 3.0), (13.0, 1.4, 13.0), mM2),
+        box((4.2, 1.4, 4.2), (11.8, 2.4, 11.8), mM),
+        box((5.8, 2.4, 5.8), (10.2, 8.0, 10.2), mM),                 # stem
+        box((5.2, 5.0, 5.2), (10.8, 5.8, 10.8), mM2),                # carved ring
+        box((4.6, 8.0, 4.6), (11.4, 9.2, 11.4), mM2),                # bowl foot
+        box((2.4, 9.2, 2.4), (13.6, 10.4, 13.6), mM),                # bowl bottom
+        box((2.0, 10.4, 2.0), (14.0, 14.0, 3.2), mM), box((2.0, 10.4, 12.8), (14.0, 14.0, 14.0), mM),   # bowl walls
+        box((2.0, 10.4, 3.2), (3.2, 14.0, 12.8), mM), box((12.8, 10.4, 3.2), (14.0, 14.0, 12.8), mM),
+        box((3.2, 10.4, 3.2), (12.8, 12.8, 12.8), fin(water_tone, ao=0.0, dust=0), faces=('up',)),
+        box((1.7, 13.4, 1.7), (14.3, 14.2, 14.3), mM2, faces=('north', 'south', 'west', 'east', 'down')),  # lip
+    ]
+    return P
+
+
+def stoup_parts():
+    """Pila de agua bendita: marble shell basin on the wall near the door."""
+    mM = fin(marble(seed=195, base=6), dust=0.3)
+    return [
+        box((5.0, 6.0, 15.0), (11.0, 14.0, 16.0), fin(marble(seed=196, base=5))),   # back plate
+        box((5.4, 6.5, 11.6), (10.6, 7.6, 15.0), mM),                               # basin bottom
+        box((5.0, 7.6, 11.2), (11.0, 9.6, 12.0), mM),                               # basin walls
+        box((5.0, 7.6, 12.0), (5.8, 9.6, 15.0), mM), box((10.2, 7.6, 12.0), (11.0, 9.6, 15.0), mM),
+        box((5.8, 7.6, 12.0), (10.2, 8.8, 15.0), fin(water_tone, ao=0, dust=0), faces=('up',)),
+        box((7.6, 4.8, 13.0), (8.4, 6.5, 14.0), mM),                                # drop
+        box((7.5, 14.0, 15.2), (8.5, 15.6, 15.8), fin(brass(GOLD, base=5, seed=197))),  # little cross
+        box((7.0, 14.6, 15.2), (9.0, 15.0, 15.8), fin(brass(GOLD, base=5, seed=198))),
+    ]
+
+
+# ------------------------------------------------------------------------------------------------ sanctuary lamp, chains
+def chain_tone(ctx):
+    """Chain links (cutout): an open ring seen flat, then a link seen edge-on, like vanilla chains."""
+    i, j, w = ctx.i, ctx.j, ctx.w
+    y = j % 7
+    c = (w - 1) / 2.0
+    d = abs(i - c)
+    if y < 4:
+        ring = ['.#.', '#.#', '#.#', '.#.'][y]
+        ix = int(round(i - c + 1))
+        if 0 <= ix < 3 and ring[ix] == '#':
+            return T(IRON, 6 if (y == 0 or ix == 0) else 4)
+        return None
+    if d < 0.6:
+        return T(IRON, 5 if y == 5 else 3)
+    return None
+
+
+def chain_parts(x=8.0, z=8.0, y0=0.0, y1=16.0, w=1.5):
+    return [plane((x - w / 2, y0, z), (x + w / 2, y1, z), chain_tone, faces=('north', 'south')),
+            plane((x, y0, z - w / 2), (x, y1, z + w / 2), chain_tone, faces=('west', 'east'))]
+
+
+def lamp_glass_tone(lit):
+    def t(ctx):
+        i, j, w, h = ctx.i, ctx.j, ctx.w, ctx.h
+        c = 1 - abs((i + 0.5) / w * 2 - 1)
+        if ctx.face == 'up':
+            d = math.hypot((i + 0.5) / w - 0.5, (j + 0.5) / h - 0.5)
+            if lit and d < 0.18:
+                return T(FLAME, 5)
+            return T(GLASSR, 5 if lit else 2)
+        k = (3 + int(c * 3.5) + (1 if j > h * 0.5 else 0)) if lit else (1 + int(c * 2))
+        if i == 1 or (j == 1 and i % 3 == 0):
+            k += 2                                               # glass highlights / moulded ribs
+        return T(GLASSR, k)
+    return t
+
+
+def sanctuary_lamp_parts(lit):
+    mB = fin(brass(seed=201, base=5, tarnish=0.4), dust=0.3, ao=0.6)
+    mGl = fin(lamp_glass_tone(lit), ao=0, dust=0)
+    P = [
+        box((7.6, 0.6, 7.6), (8.4, 1.6, 8.4), mB),                   # drop finial
+        box((7.0, 1.6, 7.0), (9.0, 2.6, 9.0), mB),
+        box((5.6, 2.6, 5.6), (10.4, 3.8, 10.4), mB),                 # cup
+        box((6.0, 3.8, 6.0), (10.0, 8.6, 10.0), mGl, shade=not lit), # red glass
+        box((5.6, 8.6, 5.6), (10.4, 9.4, 10.4), mB, faces=('north', 'south', 'west', 'east', 'down')),  # rim
+        box((5.6, 8.6, 5.6), (10.4, 9.4, 6.0), mB, faces=('up',)), box((5.6, 8.6, 10.0), (10.4, 9.4, 10.4), mB, faces=('up',)),
+        box((5.6, 8.6, 6.0), (6.0, 9.4, 10.0), mB, faces=('up',)), box((10.0, 8.6, 6.0), (10.4, 9.4, 10.0), mB, faces=('up',)),
+        box((5.7, 4.6, 5.7), (10.3, 5.2, 10.3), mB, faces=('north', 'south', 'west', 'east')),   # band
+    ]
+    for (x, z) in ((5.8, 5.8), (9.8, 5.8), (5.8, 9.8), (9.8, 9.8)):
+        P.append(box((x, 9.4, z), (x + 0.4, 12.0, z + 0.4), mB))     # straps up to the crown
+    P.append(box((5.6, 12.0, 5.6), (10.4, 12.6, 10.4), mB))          # crown
+    P.append(box((7.0, 12.6, 7.0), (9.0, 13.4, 9.0), mB))
+    P += chain_parts(8.0, 8.0, 13.4, 16.0, 1.4)
+    return P
+
+
+# ------------------------------------------------------------------------------------------------ harmonium
+def keys_tone(ctx):
+    """Keyboard top: yellowed ivory naturals with black sharps (2+3 pattern), worn middle keys."""
+    if ctx.face != 'up':
+        return (WAX, 4) if ctx.face != 'south' else (WAX, 5)
+    i, j, w, h = ctx.i, ctx.j, ctx.w, ctx.h
+    X = int(ctx.pos[0] * 2 + (16 if ctx.block.key.endswith('_der') else 0) * 2)
+    nat = X // 2                         # 2 px per natural key
+    sub = X % 2
+    oct_ = nat % 7
+    if j < h * 0.55 and (sub == 1 and oct_ in (0, 1, 3, 4, 5) or sub == 0 and oct_ in (1, 2, 4, 5, 6)):
+        if (sub == 1 and oct_ in (0, 1, 3, 4, 5)) or (sub == 0 and oct_ in (1, 2, 4, 5, 6)):
+            return (BAKE, 3 if j > 0 else 5)
+    if sub == 1 and j >= h * 0.55:
+        return (WAX, 3)                  # gaps between naturals
+    k = 6 - (1 if hh(nat, 3) < 0.3 else 0) - (1 if j == h - 1 else 0)
+    if 10 < nat < 22 and hh(nat, j, 5) < 0.25:
+        k -= 1                           # yellowed from use
+    return (WAX, k)
+
+
+def harmonium_parts(side):
+    """Reed organ (2 blocks wide); the organist sits on the SOUTH side looking north."""
+    off = (0, 0, 0) if side == 'izq' else (16, 0, 0)
+    wd = lambda sd, **kw: wood(NOGAL, seed=211 + sd, off=off, worn_pal=RAW, **kw)
+    mCase = fin(panels(wd(0, base=3, axis=1), wd(1, base=4, axis=1), rects=((3, 3, -3, -3),), faces=('south', 'west', 'east', 'north')))
+    mW = fin(wd(2, base=4))
+    mFret = fin(panels(wd(3, base=4, axis=0), rects=((2, 2, -2, -2),), faces=('south', 'north'),
+                       carve=lambda c, di, dj, w, h: -3 if ((di + dj) % 4 == 0 or (di - dj) % 4 == 0) and 1 < dj < h - 2 else 0))
+    mCloth = fin(cloth(VELVET_R, base=3, seed=219, folds=0, weave=True, stains=0.25))
+    mKeys = fin(keys_tone, ao=0.6, dust=0.6)
+    mIv = fin(flat(WAX, 6), ao=0, dust=0.3)
+    edge0, edge1 = (0.6, 16.0) if side == 'izq' else (0.0, 15.4)
+    P = [
+        box((edge0, 0.0, 2.6), (edge1, 1.2, 13.2), fin(painted(NOGAL, base=2, seed=221, grime=0.8))),   # plinth
+        box((edge0 + 0.4, 1.2, 3.0), (edge1 - (0.4 if side == 'der' else 0), 10.4, 12.6), mCase),        # lower case
+        box((edge0, 10.4, 2.8), (edge1, 11.2, 13.4), mW),                                               # key bed
+        box((edge0 + (2.0 if side == 'izq' else 0), 11.2, 9.8), (edge1 - (2.0 if side == 'der' else 0), 11.9, 14.2), mKeys),  # keys
+        box((edge0 + (2.0 if side == 'izq' else 0), 11.2, 14.2), (edge1 - (2.0 if side == 'der' else 0), 11.9, 14.6), mW),
+        box((edge0, 11.2, 3.0), (edge1, 15.0, 9.8), mW),                                                # stop rail block
+        box((edge0, 15.0, 3.0), (edge1, 24.0, 8.6), mFret),                                             # upper case (fretwork)
+        box((edge0, 16.0, 8.6), (edge1, 16.7, 11.0), mW),                                               # music rest ledge
+        box((edge0 - 0.2, 24.0, 2.6), (edge1 + 0.2 if side == 'der' else edge1, 25.0, 9.2), fin(wd(4, base=5, axis=0))),   # cornice
+        box((edge0, 4.4, 12.6), (edge1 - (0.4 if side == 'der' else 0), 6.4, 13.0), mW),                 # knee board
+    ]
+    if side == 'izq':
+        P += [box((0.6, 11.2, 9.8), (2.6, 13.4, 14.6), mW),                                         # key cheek
+              box((0.2, 25.0, 3.0), (2.0, 27.0, 5.0), fin(wd(5, base=5))),                          # finial
+              box((-1.2, 13.0, 9.0), (0.6, 13.6, 11.0), M_BRASS),                                   # candle bracket
+              box((-1.0, 13.6, 9.2), (0.4, 14.2, 10.8), M_BRASS)]
+        P += candle(-0.3, 10.0, 14.2, 17.4, r=0.6, lit=False, seed=223)
+        P += [box((3.0, 1.2, 12.2), (7.4, 2.6, 16.6), mCloth, rot=('x', -22.5, (5.2, 1.2, 12.2)))]   # bellows pedal
+    else:
+        P += [box((13.4, 11.2, 9.8), (15.4, 13.4, 14.6), mW),
+              box((14.0, 25.0, 3.0), (15.8, 27.0, 5.0), fin(wd(6, base=5)))]
+        P += [box((8.6, 1.2, 12.2), (13.0, 2.6, 16.6), mCloth, rot=('x', -22.5, (10.8, 1.2, 12.2)))]
+        # open hymn book on the music rest
+        mPg = fin(cloth(PAPER, base=7, seed=225, folds=0, weave=False, stains=0.3), ao=0.3, dust=0.4)
+        P += [box((-6.0, 16.7, 8.2), (0.0, 22.5, 8.6), mPg, rot=('y', 22.5, (0.0, 16.7, 8.4))),
+              box((0.0, 16.7, 8.2), (6.0, 22.5, 8.6), mPg, rot=('y', -22.5, (0.0, 16.7, 8.4)))]
+    # ivory stop knobs
+    xs = (3.5, 6.5, 9.5, 12.5) if side == 'izq' else (3.0, 6.0, 9.0, 12.0)
+    for x in xs:
+        P.append(box((x - 0.4, 13.2, 9.8), (x + 0.4, 14.0, 10.4), mIv))
+        P.append(box((x - 0.6, 12.4, 9.79), (x + 0.6, 12.8, 9.8), fin(flat(PAPER, 6), ao=0, dust=0), faces=('south',)))
+    return P
+
+
+# ------------------------------------------------------------------------------------------------ choir lecterns
+def lectern_label_tone(name):
+    pts = set(draw_text(F35, name, 1, 1)) if name else set()
+
+    def t(ctx):
+        if ctx.face != 'up':
+            return (PAPER, 4)
+        if (ctx.i, ctx.j) in pts:
+            return INK
+        k = 7 - (ctx.edge() == 0)
+        return (PAPER, k)
+    return t
+
+
+def score_tone(ctx):
+    """Sheet music: staves with notes."""
+    if ctx.face != 'up':
+        return (PAPER, 5)
+    i, j = ctx.i, ctx.j
+    if ctx.edge() == 0:
+        return (PAPER, 5)
+    y = j % 7
+    if y in (1, 2, 3, 4, 5) and 1 < i < ctx.w - 2:
+        if hh(i // 3, j // 7, 3) < 0.3 and y in (2, 3) and i % 3 == 1:
+            return INK
+        if hh(i // 3, j // 7, 4) < 0.3 and i % 3 == 2 and y in (1, 2, 3):
+            return INK
+        if y in (1, 3, 5):
+            return mix(T(PAPER, 6), INK, 0.45)
+    return (PAPER, 7)
+
+
+def atril_parts(kind):
+    """Choir lectern: the singer stands on the SOUTH side looking north. kind: 'vacio' | 'partitura' | 'albornoz'."""
+    mW = fin(outline(wood(NOGAL, seed=231, base=4, wear=0.5)))
+    mD = fin(wood(NOGAL, seed=233, axis=0, base=4, boards=(2, 12), worn_pal=RAW))
+    rot = ('x', 22.5, (8.0, 15.0, 9.0))
+    P = [
+        box((3.0, 0.0, 7.2), (13.0, 1.2, 8.8), mW), box((7.2, 0.0, 3.0), (8.8, 1.2, 13.0), mW),   # cross base
+        box((7.4, 1.2, 7.4), (8.6, 14.6, 8.6), mW),                   # column
+        box((7.0, 1.2, 7.0), (9.0, 2.6, 9.0), mW), box((7.1, 7.0, 7.1), (8.9, 8.0, 8.9), mW),
+        box((6.8, 13.8, 6.8), (9.2, 15.0, 9.2), mW),                  # head
+        box((-2.0, 15.0, 3.0), (18.0, 15.8, 15.0), mD, rot=rot),      # slanted desk
+        box((-2.0, 15.8, 14.2), (18.0, 16.8, 15.0), mW, rot=rot),     # ledge
+    ]
+    if kind in ('partitura', 'albornoz'):
+        mS = fin(score_tone, ao=0.4, dust=0.5)
+        P.append(box((0.5, 15.8, 4.0), (8.0, 15.9, 14.0), mS, rot=rot))
+        P.append(box((8.0, 15.8, 4.0), (15.5, 15.9, 14.0), mS, rot=rot))
+    if kind == 'albornoz':
+        P.append(box((-1.0, 15.9, 3.4), (17.0, 16.0, 6.4), fin(lectern_label_tone('T.ALBORNOZ'), ao=0, dust=0.3), rot=rot))
+    else:
+        P.append(box((-1.0, 15.9, 3.4), (17.0, 16.0, 6.4), fin(lectern_label_tone(''), ao=0, dust=0.3), rot=rot))
+    return P
+
+
+def reclinatorio_parts():
+    """Prie-dieu: the user kneels on the SOUTH side looking north."""
+    mW = fin(outline(wood(NOGAL, seed=241, base=4, wear=0.5)))
+    mF = fin(panels(wood(NOGAL, seed=243, axis=1, base=3), wood(NOGAL, seed=244, axis=1, base=4),
+                    rects=((3, 3, -3, -3),), faces=('south', 'north'), carve=cross_carve))
+    mPad = fin(cloth(VELVET_R, base=3, seed=245, folds=0, weave=True, stains=0.3))
+    return [
+        box((2.0, 0.0, 3.0), (3.4, 14.0, 5.0), mW), box((12.6, 0.0, 3.0), (14.0, 14.0, 5.0), mW),   # uprights
+        box((3.4, 2.0, 3.4), (12.6, 13.0, 4.4), mF),                  # front panel
+        box((1.6, 13.0, 2.4), (14.4, 14.0, 8.6), mW),                 # arm rest shelf
+        box((1.8, 14.0, 7.6), (14.2, 14.6, 8.6), mW),                 # lip
+        box((2.0, 0.0, 5.0), (3.4, 1.2, 14.6), mW), box((12.6, 0.0, 5.0), (14.0, 1.2, 14.6), mW),   # runners
+        box((2.0, 1.2, 9.0), (14.0, 2.4, 14.6), mW),                  # kneeler
+        box((2.3, 2.4, 9.3), (13.7, 3.4, 14.3), mPad),
+    ]
+
+
+# ============================================================================================ register: chapel
+F('crucifijo_chico', 'Crucifijo de pared', 'Small wall crucifix', crucifix_small_parts(), env=('wall',), collision='none')
+F('crucifijo_grande', 'Crucifijo grande de la capilla', 'Large chapel crucifix', crucifix_big_parts(), env=('wall',),
+  collision='none')
+F('virgen', 'Virgen de Luján', 'Our Lady of Luján statue', virgin_parts(), sound='stone')
+F('santa_ines', 'Santa Inés con el cordero', 'Saint Agnes with the lamb', ines_parts(), sound='stone')
+F('santa_ines_cuerpo', 'Santa Inés (sin cabeza)', 'Saint Agnes (headless body)', ines_parts(head=False), sound='stone')
+F('santa_ines_cabeza', 'Cabeza de Santa Inés', 'Saint Agnes head (for the turning display)', ines_parts(body=False, head_only=True),
+  sound='stone', collision='none')
+for _s, _es in (('izq', 'izquierda'), ('centro', 'centro'), ('der', 'derecha')):
+    F(f'banco_iglesia_{_s}', f'Banco de capilla ({_es})', f'Chapel pew ({_es})', pew_parts(_s))
+    F(f'altar_{_s}', f'Altar con mantel ({_es})', f'Altar with cloth ({_es})', altar_parts(_s), sound='stone')
+F('candelabro', 'Candelabro alto encendido', 'Tall candlestick (lit)', candelabro_parts(True), light=13, sound='metal')
+F('candelabro_apagado', 'Candelabro alto apagado', 'Tall candlestick (unlit)', candelabro_parts(False), sound='metal')
+F('candelero', 'Candelero de altar encendido', 'Altar candlestick (lit)', candelero_altar_parts(True), light=12, sound='metal')
+F('candelero_apagado', 'Candelero de altar apagado', 'Altar candlestick (unlit)', candelero_altar_parts(False), sound='metal')
+F('velas', 'Velas en el piso encendidas', 'Floor candles (lit)', velas_piso_parts(True), light=11, sound='candle',
+  collision='none')
+F('velas_apagadas', 'Velas en el piso apagadas', 'Floor candles (unlit)', velas_piso_parts(False), sound='candle',
+  collision='none')
+for _c, _ce in (('izq', 'izquierda'), ('centro', 'centro'), ('der', 'derecha')):
+    for _r, _re in ((0, 'abajo'), (1, 'arriba')):
+        F(f'confesionario_{_c}_{_re}', f'Confesionario ({_ce}, {_re})', f'Confessional ({_ce}, {_re})',
+          confessional_parts(_c, _r), env=('floor',) if _r == 0 else ())
+F('pila_bautismal', 'Pila bautismal', 'Baptismal font', font_parts(), sound='stone')
+F('pila_agua_bendita', 'Pila de agua bendita', 'Holy water stoup', stoup_parts(), env=('wall',), sound='stone')
+F('lampara_santisimo', 'Lámpara del Santísimo', 'Sanctuary lamp (lit)', sanctuary_lamp_parts(True), env=('ceil',), light=10,
+  sound='glass', collision='none')
+F('lampara_santisimo_apagada', 'Lámpara del Santísimo apagada', 'Sanctuary lamp (out)', sanctuary_lamp_parts(False),
+  env=('ceil',), sound='glass', collision='none')
+F('cadena', 'Cadena colgante', 'Hanging chain', chain_parts(), env=(), sound='metal', collision='none', directional=False)
+F('armonio_izq', 'Armonio (izquierda)', 'Harmonium (left)', harmonium_parts('izq'))
+F('armonio_der', 'Armonio (derecha)', 'Harmonium (right)', harmonium_parts('der'))
+F('atril_coro', 'Atril del coro', 'Choir lectern', atril_parts('vacio'))
+F('atril_coro_partitura', 'Atril del coro con partitura', 'Choir lectern with score', atril_parts('partitura'))
+F('atril_albornoz', 'Atril 8 "T. ALBORNOZ"', 'Choir lectern 8 "T. ALBORNOZ"', atril_parts('albornoz'))
+F('reclinatorio', 'Reclinatorio', 'Prie-dieu', reclinatorio_parts())

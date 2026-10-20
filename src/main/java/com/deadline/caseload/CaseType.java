@@ -2,6 +2,8 @@ package com.deadline.caseload;
 
 import com.deadline.DeadLine;
 import com.deadline.caseload.sites.ConventSite;
+import com.deadline.director.CaseScript;
+import com.deadline.director.colegio.ColegioScript;
 import com.deadline.caseload.sites.MoralesHouseSite;
 import com.deadline.caseload.sites.SiteBuilder;
 import com.deadline.registry.ModEntities;
@@ -16,8 +18,8 @@ import net.minecraft.world.level.Level;
 
 /** Every haunted location the hotline can send you to (case 1: the girls' school, case 2: the Morales house). */
 public enum CaseType {
-	COLEGIO("colegio", 3, 4, 1800, ConventSite::new, () -> ModEntities.MONJA, () -> ModItems.INVERTED_ROSARY),
-	CASA_MORALES("casa", 4, 5, 1600, MoralesHouseSite::new, () -> ModEntities.POSEIDA, () -> ModItems.CURSED_DOLL);
+	COLEGIO("colegio", 3, 4, 1800, ConventSite::new, () -> ModEntities.MONJA, () -> ModItems.INVERTED_ROSARY, ColegioScript::new),
+	CASA_MORALES("casa", 4, 5, 1600, MoralesHouseSite::new, () -> ModEntities.POSEIDA, () -> ModItems.CURSED_DOLL, null);
 
 	public static final Codec<CaseType> CODEC = Codec.STRING.xmap(CaseType::byKey, CaseType::key);
 
@@ -29,8 +31,11 @@ public enum CaseType {
 	private final Supplier<EntityType<?>> boss;
 	private final Supplier<Item> anchor;
 	private final ResourceKey<Level> level;
+	private final Supplier<CaseScript> scriptFactory;
+	private CaseScript script;
 
-	CaseType(String key, int difficulty, int callers, int reward, Supplier<SiteBuilder> builder, Supplier<EntityType<?>> boss, Supplier<Item> anchor) {
+	CaseType(String key, int difficulty, int callers, int reward, Supplier<SiteBuilder> builder, Supplier<EntityType<?>> boss, Supplier<Item> anchor,
+			Supplier<CaseScript> script) {
 		this.key = key;
 		this.difficulty = difficulty;
 		this.callers = callers;
@@ -39,10 +44,23 @@ public enum CaseType {
 		this.boss = boss;
 		this.anchor = anchor;
 		this.level = ResourceKey.create(Registries.DIMENSION, DeadLine.id("caso_" + key));
+		this.scriptFactory = script;
 	}
 
 	public String key() {
 		return key;
+	}
+
+	/** Cases run by the director (Python-authored site, chapters and beats) instead of the classic anchor loop. */
+	public boolean scripted() {
+		return scriptFactory != null;
+	}
+
+	public CaseScript script() {
+		if (script == null && scriptFactory != null) {
+			script = scriptFactory.get();
+		}
+		return script;
 	}
 
 	public int difficulty() {

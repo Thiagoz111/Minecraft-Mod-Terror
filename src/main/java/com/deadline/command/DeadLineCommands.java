@@ -33,6 +33,9 @@ import net.minecraft.server.level.ServerPlayer;
  * /deadline jumpscare &lt;entity&gt; [player]
  * /deadline kit [player]               full hunter kit
  * /deadline calls &lt;minSeconds&gt; &lt;maxSeconds&gt;  how often the phone rings
+ * /deadline chapter &lt;n&gt;              replay a chapter of the scripted case from its checkpoint
+ * /deadline beat &lt;id&gt;                 fire a scripted beat now
+ * /deadline flag &lt;name&gt;               raise a director flag
  * </pre>
  */
 public final class DeadLineCommands {
@@ -70,6 +73,12 @@ public final class DeadLineCommands {
 				.then(Commands.literal("kit")
 						.executes(c -> kit(self(c)))
 						.then(Commands.argument("player", EntityArgument.player()).executes(c -> kit(EntityArgument.getPlayer(c, "player")))))
+				.then(Commands.literal("chapter")
+						.then(Commands.argument("n", IntegerArgumentType.integer(1, 20)).executes(DeadLineCommands::chapter)))
+				.then(Commands.literal("beat")
+						.then(Commands.argument("id", StringArgumentType.greedyString()).executes(DeadLineCommands::beat)))
+				.then(Commands.literal("flag")
+						.then(Commands.argument("name", StringArgumentType.word()).executes(DeadLineCommands::flag)))
 				.then(Commands.literal("calls")
 						.then(Commands.argument("min", IntegerArgumentType.integer(5))
 								.then(Commands.argument("max", IntegerArgumentType.integer(5)).executes(DeadLineCommands::calls)))));
@@ -125,6 +134,38 @@ public final class DeadLineCommands {
 
 	private static int scare(CommandContext<CommandSourceStack> c, ServerPlayer p) {
 		Fx.jumpscare(p, StringArgumentType.getString(c, "entity"));
+		return 1;
+	}
+
+	private static int chapter(CommandContext<CommandSourceStack> c) throws CommandSyntaxException {
+		ServerPlayer p = self(c);
+		com.deadline.director.Run r = com.deadline.director.Director.of(p);
+		if (r == null) {
+			c.getSource().sendFailure(Component.literal("No scripted case running (use /deadline start colegio)"));
+			return 0;
+		}
+		int n = IntegerArgumentType.getInteger(c, "n");
+		r.jump(n, p);
+		return 1;
+	}
+
+	private static int beat(CommandContext<CommandSourceStack> c) throws CommandSyntaxException {
+		ServerPlayer p = self(c);
+		com.deadline.director.Run r = com.deadline.director.Director.of(p);
+		com.deadline.director.Beat b = r == null ? null : r.compiled.find(StringArgumentType.getString(c, "id"));
+		if (b == null) {
+			c.getSource().sendFailure(Component.literal("Unknown beat"));
+			return 0;
+		}
+		r.fire(b, p);
+		return 1;
+	}
+
+	private static int flag(CommandContext<CommandSourceStack> c) throws CommandSyntaxException {
+		com.deadline.director.Run r = com.deadline.director.Director.of(self(c));
+		if (r != null) {
+			r.flag(StringArgumentType.getString(c, "name"));
+		}
 		return 1;
 	}
 

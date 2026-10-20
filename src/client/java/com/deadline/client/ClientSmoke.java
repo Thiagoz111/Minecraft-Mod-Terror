@@ -211,6 +211,81 @@ public final class ClientSmoke {
 		});
 	}
 
+	/** Places the hunter at a site marker of the running scripted case, looking at yaw/pitch. */
+	private static void at(Minecraft mc, String point, float yaw, float pitch) {
+		server(mc, p -> {
+			com.deadline.director.Run r = com.deadline.director.Director.of(p);
+			if (r == null) {
+				DeadLine.LOGGER.warn("DEADLINE-CLIENT no director run for {}", point);
+				return;
+			}
+			net.minecraft.world.phys.Vec3 v = r.at(point);
+			p.teleportTo((ServerLevel) p.level(), v.x, v.y, v.z, Set.of(), yaw, pitch, false);
+		});
+	}
+
+	private static void director(Minecraft mc, java.util.function.Consumer<com.deadline.director.Run> code) {
+		server(mc, p -> {
+			com.deadline.director.Run r = com.deadline.director.Director.of(p);
+			if (r != null) {
+				code.accept(r);
+			} else {
+				DeadLine.LOGGER.warn("DEADLINE-CLIENT no director run");
+			}
+		});
+	}
+
+	/** Walks the scripted Colegio case through its first set pieces and screenshots each one. */
+	private static void colegioTour() {
+		step(10, mc -> cmd(mc, "deadline start colegio " + mc.player.getName().getString()));
+		shot(80, "colegio_1_arrive");
+		step(1, mc -> at(mc, "spawn", 0F, -8F));
+		shot(30, "colegio_1_facade");
+		// crossing the threshold: door slam, bell, then the chapter card of chapter 2
+		step(1, mc -> at(mc, "hall_centro", 180F, 0F));
+		shot(25, "colegio_2_hall");
+		shot(65, "colegio_2_card");
+		// the blackboard (roll call skipped): NO MIRES ATRÁS
+		step(1, mc -> {
+			cmd(mc, "deadline flag lista_done");
+			at(mc, "aula_centro", 90F, 2F);
+		});
+		shot(60, "colegio_3_board");
+		step(1, mc -> at(mc, "aula_centro", -90F, 2F));
+		step(15, mc -> at(mc, "aula_centro", 90F, 2F));
+		shot(20, "colegio_3_te_dije");
+		step(1, mc -> {
+			at(mc, "aula_centro", -90F, 4F);
+			server(mc, p -> p.addEffect(new MobEffectInstance(MobEffects.NIGHT_VISION, 100, 0, false, false)));
+		});
+		shot(10, "colegio_3_nun_behind");
+		step(1, mc -> server(mc, p -> p.removeEffect(MobEffects.NIGHT_VISION)));
+		// dinner: the dining hall and the hatch
+		step(1, mc -> cmd(mc, "deadline chapter 3"));
+		shot(40, "colegio_4_dinner_card");
+		step(1, mc -> at(mc, "refectorio", 90F, 6F));
+		shot(30, "colegio_4_refectorio");
+		// office
+		step(1, mc -> cmd(mc, "deadline chapter 4"));
+		step(5, mc -> at(mc, "hall", 0F, 0F));
+		shot(60, "colegio_5_office_card");
+		// chapel and the upper choir
+		step(1, mc -> cmd(mc, "deadline chapter 5"));
+		step(5, mc -> at(mc, "capilla_puerta", 0F, -10F));
+		shot(30, "colegio_6_chapel");
+		step(1, mc -> director(mc, r -> {
+			net.minecraft.world.phys.Vec3 v = r.at("coro_alto");
+			ServerPlayer p = r.star();
+			if (p != null) {
+				p.teleportTo(r.level, v.x, v.y - 6, v.z + 10, Set.of(), 180F, -28F, false);
+			}
+		}));
+		shot(30, "colegio_6_choir_loft");
+		step(1, mc -> cmd(mc, "deadline home " + mc.player.getName().getString()));
+		step(40, mc -> {
+		});
+	}
+
 	private static void build() {
 		// --- setup: creative, clear day, then night look
 		step(80, mc -> server(mc, p -> {
@@ -310,7 +385,11 @@ public final class ClientSmoke {
 		step(5, mc -> mc.options.hideGui = false);
 
 		// --- every case site, at night, with the real lighting
+		colegioTour();
 		for (CaseType t : CaseType.values()) {
+			if (t.scripted()) {
+				continue;
+			}
 			step(10, mc -> cmd(mc, "deadline start " + t.key() + " " + mc.player.getName().getString()));
 			shot(70, "case_" + t.key() + "_arrive");
 			shot(90, "case_" + t.key());

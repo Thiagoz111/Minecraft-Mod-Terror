@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "deadline:block/colegio_candelero_apagado"
+  },
+  "facing=east": {
+   "model": "deadline:block/colegio_candelero_apagado",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "deadline:block/colegio_candelero_apagado",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "deadline:block/colegio_candelero_apagado",
+   "y": 270
+  }
+ }
+}

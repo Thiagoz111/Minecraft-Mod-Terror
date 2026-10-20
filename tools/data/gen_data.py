@@ -9,7 +9,7 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 sys.path.insert(0, os.path.join(HERE, '..', 'audio'))
-from lang import ITEMS, ENTITIES, BLOCKS, CASES, BESTIARY, SPIRIT_BOX, MISC, WEAKNESS
+from lang import ITEMS, ENTITIES, BLOCKS, CASES, BESTIARY, SPIRIT_BOX, MISC, WEAKNESS, SCRIPT
 from sounds_def import SOUNDS
 from lines import LINES, TEXTS, SPEAKERS
 
@@ -112,7 +112,7 @@ def ref(m):
 
 
 SIMPLE_ITEMS = ['crucifix', 'holy_water', 'salt', 'spirit_box', 'camera', 'ritual_book', 'spirit_jar', 'spirit_jar_full',
-                'pills', 'rosary', 'inverted_rosary', 'cursed_doll']
+                'pills', 'rosary', 'inverted_rosary', 'cursed_doll', 'llave_capilla']
 EGGS = ['monja', 'poseida', 'sombra', 'muneca', 'anima']
 
 
@@ -248,6 +248,8 @@ def lang():
     for name, (_, sub_es, sub_en, _) in SOUNDS.items():
         es[f'subtitles.{NS}.{name}'] = sub_es
         en[f'subtitles.{NS}.{name}'] = sub_en
+    for k, (e, n) in SCRIPT.items():
+        es[k], en[k] = e, n
     for k, v in LINES.items():
         es[f'{NS}.line.{k}'], en[f'{NS}.line.{k}'] = v['es'], v['en']
     for k, (e, n) in TEXTS.items():

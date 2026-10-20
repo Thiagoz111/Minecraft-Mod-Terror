@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "deadline:block/colegio_pila_bautismal"
+  },
+  "facing=east": {
+   "model": "deadline:block/colegio_pila_bautismal",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "deadline:block/colegio_pila_bautismal",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "deadline:block/colegio_pila_bautismal",
+   "y": 270
+  }
+ }
+}

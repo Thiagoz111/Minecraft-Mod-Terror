@@ -1,4 +1,4 @@
-"""DEAD LINE case sites authored in Python.
+"""DEAD LINE case sites authored in Python (module name avoids the stdlib `site`).
 
 A site is a sparse voxel map of block states plus named markers. `Site.export()` writes
 `src/main/resources/data/deadline/sites/<key>.json`, which the mod places in batches when a case starts

@@ -70,6 +70,7 @@ public final class ClientState {
 		objCase = "";
 		objStage = -1;
 		phone = new PhoneDataPayload(false, 0, 0, 100F, 0, List.of(), "", 0, 0, 0);
+		com.deadline.client.hud.StoryHud.reset();
 	}
 
 	/** Lang key of the current objective line for a case stage. */

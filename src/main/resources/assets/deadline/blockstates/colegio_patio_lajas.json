@@ -1,0 +1,15 @@
+{
+ "variants": {
+  "": [
+   {
+    "model": "deadline:block/colegio_patio_lajas_0"
+   },
+   {
+    "model": "deadline:block/colegio_patio_lajas_1"
+   },
+   {
+    "model": "deadline:block/colegio_patio_lajas_2"
+   }
+  ]
+ }
+}

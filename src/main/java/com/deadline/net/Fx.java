@@ -66,6 +66,43 @@ public final class Fx {
 		send(p, FxPayload.CASE_END, solved ? 1.0F : 0.0F, reward, 0, 0, 0, "");
 	}
 
+	/**
+	 * Objective checklist of a scripted chapter. Text format: place key, chapter title key, then one
+	 * "objective_key=0|1" per line.
+	 */
+	public static void checklist(ServerPlayer p, String placeKey, String chapterKey, int chapter, java.util.List<String> objectives) {
+		StringBuilder sb = new StringBuilder(placeKey).append('\n').append(chapterKey);
+		for (String o : objectives) {
+			sb.append('\n').append(o);
+		}
+		send(p, FxPayload.CHECKLIST, 1.0F, chapter, 0, 0, 0, sb.toString());
+	}
+
+	/** Subtitle bar: speaker name key + line key (either may be "" ; a leading '#' means literal text). */
+	public static void subtitle(ServerPlayer p, String speakerKey, String lineKey, int ticks) {
+		send(p, FxPayload.SUBTITLE, 1.0F, ticks, 0, 0, 0, speakerKey + "\n" + lineKey);
+	}
+
+	/** Reprimand stamp ("AMONESTACIÓN") with its reason and the new total. */
+	public static void stamp(ServerPlayer p, String reasonKey, int total) {
+		send(p, FxPayload.STAMP, 1.0F, total, 0, 0, 0, reasonKey);
+	}
+
+	/** Noise meter: level 0-100; flags bit0 = the nun heard you, bit1 = microphone active. */
+	public static void noise(ServerPlayer p, float level, int flags) {
+		send(p, FxPayload.NOISE, level, flags, 0, 0, 0, "");
+	}
+
+	/** Big centred text (prayers, the file, the diary). progress in 0..1 draws a bar, negative hides it; ticks 0 clears. */
+	public static void bigText(ServerPlayer p, String key, int ticks, float progress) {
+		send(p, FxPayload.BIG_TEXT, progress, ticks, 0, 0, 0, key);
+	}
+
+	/** Chapter title card (title key + subtitle key). */
+	public static void chapterCard(ServerPlayer p, String titleKey, String subKey, int ticks) {
+		send(p, FxPayload.CHAPTER, 1.0F, ticks, 0, 0, 0, titleKey + "\n" + subKey);
+	}
+
 	/** Plays a sound for one player only, at a world position. */
 	public static void soundAt(ServerPlayer p, SoundEvent sound, Vec3 pos, float volume) {
 		send(p, FxPayload.SOUND_AT, volume, 0, pos.x, pos.y, pos.z, BuiltInRegistries.SOUND_EVENT.getKey(sound).toString());

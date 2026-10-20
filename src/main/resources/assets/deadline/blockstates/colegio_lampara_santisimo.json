@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "deadline:block/colegio_lampara_santisimo"
+  },
+  "facing=east": {
+   "model": "deadline:block/colegio_lampara_santisimo",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "deadline:block/colegio_lampara_santisimo",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "deadline:block/colegio_lampara_santisimo",
+   "y": 270
+  }
+ }
+}

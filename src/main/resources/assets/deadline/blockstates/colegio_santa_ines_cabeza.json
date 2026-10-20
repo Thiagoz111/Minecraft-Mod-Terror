@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "deadline:block/colegio_santa_ines_cabeza"
+  },
+  "facing=east": {
+   "model": "deadline:block/colegio_santa_ines_cabeza",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "deadline:block/colegio_santa_ines_cabeza",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "deadline:block/colegio_santa_ines_cabeza",
+   "y": 270
+  }
+ }
+}

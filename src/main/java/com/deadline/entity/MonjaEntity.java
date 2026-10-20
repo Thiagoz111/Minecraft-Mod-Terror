@@ -26,7 +26,8 @@ import net.minecraft.world.level.LightLayer;
 
 /** Sor Agonia only moves in darkness. Light (flashlight, candles, flares) freezes and burns her. */
 public class MonjaEntity extends HauntEntity {
-	public static final int ACT_IDLE = 0, ACT_HUNT = 1, ACT_BURN = 2, ACT_SCREAM = 3;
+	public static final int ACT_IDLE = 0, ACT_HUNT = 1, ACT_BURN = 2, ACT_SCREAM = 3, ACT_CONDUCT = 4, ACT_SIT = 5, ACT_CEILING = 6,
+			ACT_BLOW = 7, ACT_WET = 8, ACT_KNEEL_WALL = 9, ACT_REVEAL = 10;
 	private int teleportCooldown = 240;
 	private int whisperCooldown = 120;
 	private int screamTimer;
@@ -62,7 +63,7 @@ public class MonjaEntity extends HauntEntity {
 	@Override
 	public void tick() {
 		super.tick();
-		if (HauntEntity.SHOWCASE) {
+		if (HauntEntity.SHOWCASE || this.scripted) {
 			return;
 		}
 		if (!(this.level() instanceof ServerLevel level) || this.isWeakened()) {
