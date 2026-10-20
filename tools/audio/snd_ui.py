@@ -430,7 +430,7 @@ def phone_vibrate():
         motor = dsp.osc(f, L, 'square') * 0.35 + dsp.osc(f, L, 'saw') * 0.4 + dsp.osc(f * 2, L, 'sine') * 0.25
         motor = dsp.lowpass(motor, 1400, 2)
         pulses = np.maximum(0, dsp.osc(f, L, 'sine')) ** 14
-        rattle = dsp.bandpass(dsp.noise(L, 'white', 20 + k), 1700, 5200, 2) * pulses * 1.6
+        rattle = dsp.bandpass(dsp.noise(L, 'white', 20 + k), 1300, 3600, 2) * pulses * 0.9
         tick = dsp.bandpass(dsp.noise(L, 'white', 30 + k), 600, 1600, 2) * pulses * 0.6
         x = motor + rattle + tick
         x = dsp.peak(x, 240, 6, 1.5)  # table resonance
@@ -446,7 +446,7 @@ def phone_notify():
     n1 = dsp.mix((fm_bell(e6, 1.3, ratio=2.0, index=1.4, decay=4.0, seed=1), 0, 1.0), (fm_bell(e6 * 2.76, 0.5, 1.0, 0.3, 9, 2), 0, 0.3))
     n2 = dsp.mix((fm_bell(b5, 1.5, ratio=2.0, index=1.3, decay=3.3, seed=3), 0, 1.0), (fm_bell(b5 * 2.76, 0.5, 1.0, 0.3, 9, 4), 0, 0.25))
     ghost = fm_bell(f5, 1.4, ratio=3.5, index=0.8, decay=2.6, seed=5)  # tritone under: something is wrong
-    y = dsp.mix((n1, 0, 0.8), (n2, 0.12, 0.8), (ghost, 0.12, 0.22))
+    y = dsp.mix((n1, 0, 1.0), (n2, 0.12, 0.72), (ghost, 0.12, 0.2))
     y = dsp.echo(y, 0.16, 0.25, 3, 3000)
     return dsp.reverb(y, 1.1, 0.28, 6000, seed=8)
 
@@ -464,11 +464,11 @@ def phone_accept():
         L = 0.055
         b = dsp.osc(f, L, 'sine') + 0.3 * dsp.osc(f * 1.5, L, 'square')
         b = dsp.bandpass(b, 400, 3400, 2) * env_ar(n_of(L), 0.004, 0.01)
-        blips.append((b, 0.11 + i * 0.075, 0.35))
+        blips.append((b, 0.11 + i * 0.075, 0.12))
     # something exhales on the line as it opens
-    br = breath(0.01, 0.55, seed=7, rasp=0.6, low=0.7, gap=0.0)
+    br = breath(0.0, 0.55, seed=7, rasp=0.6, low=0.7, gap=0.0)
     br = dsp.phone_voice(br)
-    y = dsp.mix((click1, 0, 1.0), (click2, 0.04, 1.0), (line, 0, 0.32), *blips, (br, 0.42, 0.3), length=total)
+    y = dsp.mix((click1, 0, 1.0), (click2, 0.04, 1.0), (line, 0, 0.22), *blips, (br, 0.42, 0.22), length=total)
     return dsp.reverb(y, 0.3, 0.08, 5000, seed=6)
 
 
@@ -488,7 +488,7 @@ def phone_hangup():
         b = dsp.phone_voice(b * 0.6)[:m] * env_ar(m, 0.006, 0.012)
         if i == 2:
             b = dsp.bitcrush(b, 5, 6) * dsp.env_points(m, [(0, 1), (0.7, 0.9), (1, 0)])
-        beeps.append((b, st, 0.85))
+        beeps.append((b, st, 0.5))
     hiss = dsp.bandpass(dsp.noise(total, 'pink', 12), 300, 3400, 2) * dsp.env_points(n_of(total), [(0, 0), (0.12, 0.6), (0.7, 0.5), (1, 0)])
     burst = dsp.bandpass(dsp.noise(0.18, 'white', 13), 900, 5000, 2) * dsp.env_points(n_of(0.18), [(0, 0), (0.1, 1), (1, 0)])
     y = dsp.mix((clunk, 0, 1.0), *beeps, (hiss, 0, 0.06), (burst, 1.04, 0.12), length=total)
@@ -500,10 +500,8 @@ def voice_1():
     """Woman crying: '¿Hola? ¿Me escucha? Por favor... necesito ayuda.'"""
     p = [tts_n('¿Hola?', 'ef_dora', 0.9), tts_n('¿Me escucha?', 'ef_dora', 0.9), tts_n('Por favor... necesito ayuda.', 'ef_dora', 0.8)]
     p = [dsp.tremolo(wobble(dsp.pitch_shift(x, 1.0), 6.5, 0.5, 40 + i, 0.35), 7.0, 0.35) for i, x in enumerate(p)]
-    sq = dsp.osc(dsp.glide(560, 410, 0.6), 0.6, 'saw')
-    whimper = vowel(sq, 'u') * dsp.env_points(n_of(0.6), [(0, 0), (0.2, 1), (1, 0)])
     seq = dsp.concat(sob(1, 0.3), p[0], dsp.silence(0.18), sob(2, 0.26), p[1], dsp.silence(0.12),
-                     sob(3, 0.22), sob(4, 0.3), p[2], norm(whimper, 0.25), dsp.silence(0.2))
+                     sob(3, 0.22), sob(4, 0.3), p[2], dsp.silence(0.1), shaky_exhale(45, 0.9), dsp.silence(0.2))
     return bad_line(seq, 51, drops=0.6, wow=0.5)
 
 
@@ -513,7 +511,7 @@ def voice_2():
          tts_n('Por favor... vengan rápido.', 'em_santa', 0.9)]
     w = [norm(whisperize(x, 60 + i) + 0.14 * dsp.lowpass(x, 900, 2), 0.7) for i, x in enumerate(p)]
     w = [dsp.peak(x, 180, 5, 1.0) for x in w]  # mouth glued to the mic
-    inh = [breath(0.28, 0.01, 70 + i, gap=0.0, gain_in=0.5) for i in range(3)]
+    inh = [breath(0.28, 0.0, 70 + i, gap=0.0, gain_in=0.3) for i in range(3)]
     seq = dsp.concat(inh[0], w[0], dsp.silence(0.35), inh[1], w[1], dsp.silence(0.3), inh[2], w[2], dsp.silence(0.25))
     return bad_line(seq, 52, drops=1.0, wow=0.6, line_noise=0.03)
 
@@ -543,7 +541,7 @@ def voice_4():
     p = [tts_n('¡Ayuda! ¡Algo me está siguiendo!', 'em_alex', 1.12), tts_n('¡Está entre los árboles!', 'em_alex', 1.15),
          tts_n('¡No, no, no!', 'em_alex', 1.2)]
     p = [wobble(dsp.pitch_shift(x, 1.5), 7.5, 0.4, 90 + i, 0.4) for i, x in enumerate(p)]
-    pant = lambda s: dsp.concat(*[breath(0.14, 0.16, s + j, gap=0.02, gain_in=0.9) for j in range(3)])  # noqa: E731
+    pant = lambda s: dsp.concat(*[breath(0.14, 0.16, s + j, gap=0.02, gain_in=0.9) for j in range(3)]) * 0.38  # noqa: E731
     seq = dsp.concat(pant(100), p[0], pant(110), p[1], pant(120), p[2])
     n = len(seq)
     # running footsteps crunching under it
@@ -589,8 +587,8 @@ def voice_6():
     stut = dsp.concat(seg, seg, seg * 0.8)
     h3 = dsp.concat(stut, dsp.time_stretch(h, 0.55))
     h3 = dsp.demonic(h3, semis=-6, layers=(-12, 0), wet=0.35)
-    h3 = norm(dsp.mix((h3, 0, 1.0), (dsp.pitch_shift(h3, 7) if False else h3 * 0, 0, 0)), 0.85)
-    seq = dsp.concat(a, dsp.silence(0.7), h1, dsp.silence(0.75), norm(h2, 0.65), dsp.silence(0.65), h3, dsp.silence(0.3))
+    h3 = norm(h3, 0.85)
+    seq = dsp.concat(a, dsp.silence(0.55), h1, dsp.silence(0.6), norm(h2, 0.65), dsp.silence(0.5), h3, dsp.silence(0.3))
     return bad_line(seq, 56, drops=0.8, wow=0.7)
 
 
@@ -638,7 +636,7 @@ def teleport_whoosh():
     cr = crackle(tail_len, 60, 208, 1200) * dsp.env_points(nt, [(0, 1), (1, 0)])
     hum = dsp.osc(55, tail_len, 'saw')
     hum = dsp.lowpass(hum, 400, 2) * dsp.env_points(nt, [(0, 0.6), (0.6, 0.2), (1, 0)])
-    y = dsp.mix((norm(a), 0, 0.55), (norm(b), 0, 0.32), (norm(c), 0, 0.22), (norm(d), 0, 0.3),
+    y = dsp.mix((norm(a), 0, 0.55), (norm(b), 0, 0.42), (norm(c), 0, 0.3), (norm(d), 0, 0.3),
                 (suck, arrive - 0.45, 0.6), (norm(impact), arrive, 1.0),
                 (norm(ftail), arrive, 0.45), (norm(cr), arrive, 0.25), (hum, arrive, 0.18), length=total)
     y = dsp.drive(y * 1.2, 1.4)
@@ -674,67 +672,89 @@ def case_solved():
 
 # ====================================================================== jumpscares
 def jumpscare(v):
-    total = 1.75 if v == 1 else 1.9
+    """The clip-maker: instant hit (crack + kick + dissonant orchestral stab) -> scream on top -> sub drop."""
+    total = 1.7 if v == 1 else 1.85
     n = n_of(total)
     seed = 400 + v * 50
-    imp = dsp.drive(dsp.lowpass(dsp.noise(0.3, 'white', seed), 9000, 2) * dsp.env_exp(0.3, 20) * 3, 2.5)
-    kick = dsp.osc(dsp.glide(160, 40, 0.45), 0.45, 'sine') * dsp.env_exp(0.45, 8)
-    if v == 1:
-        names = ['C2', 'C#2', 'G2', 'C3', 'F#3', 'G3', 'C#4', 'G4', 'C5', 'C#5', 'F#5', 'G6']
-    else:
-        names = ['A1', 'Bb1', 'E2', 'A2', 'Eb3', 'E3', 'Bb3', 'Eb4', 'A4', 'Bb4', 'E5', 'Bb5', 'Eb6']
+    crack = dsp.highpass(dsp.noise(0.15, 'white', seed), 1200, 2) * dsp.env_exp(0.15, 32)
+    imp = dsp.lowpass(dsp.noise(0.45, 'white', seed + 1), 3500, 2) * dsp.env_exp(0.45, 11)
+    kick = dsp.osc(dsp.glide(190, 42, 0.5), 0.5, 'sine') * dsp.env_exp(0.5, 7)
+    hit = dsp.drive(norm(dsp.mix((crack, 0, 0.8), (imp, 0, 0.7), (kick, 0, 1.0))) * 2.5, 2.5)
+    if v == 1:   # brass + low strings, C / C# / F# / G cluster
+        names = ['C2', 'C#2', 'G2', 'C3', 'F#3', 'G3', 'C#4', 'G4', 'C5', 'C#5', 'F#5']
+        f_open, f_close = 6500, 650
+    else:        # A / Bb / Eb / E cluster, darker, with organ-ish square layer
+        names = ['A1', 'Bb1', 'E2', 'A2', 'Eb3', 'E3', 'Bb3', 'Eb4', 'A4', 'Bb4', 'E5']
+        f_open, f_close = 5000, 500
     stab = sum(saw_ens(hz(nm), total, 3, 16, seed + i) for i, nm in enumerate(names)) / len(names)
-    stab = dsp.sweep_lowpass(stab, 9000, 900, 64)
-    stab = dsp.drive(norm(stab) * 3.0, 3.0)
-    stab *= dsp.env_points(n, [(0, 0), (0.004, 1), (0.12, 0.8), (0.55, 0.45), (1, 0)])
-    screech = violin_screech(2600 if v == 1 else 3100, 3500 if v == 1 else 2300, total, seed + 5, 5, 1.2, 16)
-    screech *= dsp.env_points(n, [(0, 0), (0.01, 1), (0.6, 0.6), (1, 0)])
-    sub = dsp.osc(dsp.glide(100, 26, total), total, 'sine') * dsp.env_points(n, [(0, 0), (0.01, 1), (0.7, 0.7), (1, 0)])
-    sub = sub + 0.35 * dsp.lowpass(dsp.drive(sub * 3, 3), 300, 2)
-    if v == 1:
-        scr = scream(1.35, 1180, seed + 7, 'scream_f', rise=1.15, fall=0.78, rough=0.55, breath_amt=0.3)
-        scr2 = scream(1.25, 1590, seed + 8, 'scream_f', rise=1.08, fall=0.7, rough=0.35, breath_amt=0.35)
-        voice = dsp.mix((norm(scr), 0, 1.0), (norm(scr2), 0.02, 0.45))
-        metal = np.zeros(1, np.float32)
-    else:
-        scr = scream(1.5, 620, seed + 7, 'scream_m', rise=1.2, fall=0.7, rough=0.8, breath_amt=0.35)
-        scr2 = scream(1.4, 1350, seed + 8, 'scream_f', rise=1.1, fall=0.75, rough=0.5, breath_amt=0.3)
-        roar = dsp.lowpass(dsp.pitch_shift(scr, -12), 1800, 2)
-        voice = dsp.mix((norm(scr), 0, 1.0), (norm(scr2), 0.03, 0.6), (norm(roar), 0, 0.7))
-        metal = metal_ir(1.6, seed + 9, 420, 30, 0.8)
-        metal = dsp.highpass(metal, 900, 2)
-    y = dsp.mix((imp, 0, 0.6), (kick, 0, 0.7), (norm(stab), 0, 0.75), (norm(screech), 0.0, 0.32),
-                (norm(voice), 0.03, 0.75), (norm(sub), 0, 0.7), (norm(metal), 0, 0.3), length=total)
-    y = dsp.drive(y * 1.6, 1.8)
-    y = dsp.reverb(y, 1.6, 0.22, 6000, seed=seed + 10)
-    return fit(y, n_of(total + 0.35)) * dsp.env_points(n_of(total + 0.35), [(0, 1), (0.85, 1), (1, 0)])
+    if v == 2:
+        stab = stab + 0.5 * sum(saw_ens(hz(nm), total, 2, 8, seed + 40 + i, shape='square') for i, nm in enumerate(names[:5])) / 5
+    stab = dsp.sweep_lowpass(stab, f_open, f_close, 64)
+    stab = dsp.drive(norm(stab) * 2.6, 2.6)
+    stab *= dsp.env_points(n, [(0, 0), (0.003, 1), (0.07, 0.85), (0.22, 0.5), (0.7, 0.32), (1, 0)])
+    sub = dsp.osc(dsp.glide(92, 27, total), total, 'sine') * dsp.env_points(n, [(0, 0), (0.008, 1), (0.6, 0.75), (1, 0)])
+    sub = sub + 0.4 * dsp.lowpass(dsp.drive(sub * 3, 3), 320, 2)  # harmonics so phones/laptops still feel it
+    if v == 1:   # female shriek, two throats
+        scr = scream(1.4, 1180, seed + 7, 'scream_f', rise=1.15, fall=0.75, rough=0.55, breath_amt=0.14)
+        scr2 = scream(1.25, 1590, seed + 8, 'scream_f', rise=1.08, fall=0.7, rough=0.35, breath_amt=0.14)
+        voice = dsp.mix((norm(scr), 0, 1.0), (norm(scr2), 0.02, 0.4))
+        screech = violin_screech(2600, 3400, total, seed + 5, 5, 1.2, 16) * dsp.env_points(n, [(0, 0), (0.01, 1), (0.5, 0.5), (1, 0)])
+        extra = np.zeros(1, np.float32)
+        g_scr, g_ex = 0.16, 0.0
+    else:        # demonic roar under a woman's scream, metal crash, screaming strings
+        scr = scream(1.55, 600, seed + 7, 'scream_m', rise=1.22, fall=0.66, rough=0.85, breath_amt=0.18)
+        scr2 = scream(1.4, 1350, seed + 8, 'scream_f', rise=1.1, fall=0.75, rough=0.5, breath_amt=0.14)
+        roar = dsp.lowpass(dsp.pitch_shift(scr, -12), 1600, 2)
+        voice = dsp.mix((norm(scr), 0, 0.9), (norm(scr2), 0.05, 0.6), (norm(roar), 0, 0.8))
+        screech = violin_screech(3300, 2100, total, seed + 5, 6, 1.6, 18) * dsp.env_points(n, [(0, 0), (0.01, 1), (0.6, 0.6), (1, 0)])
+        extra = dsp.highpass(metal_ir(1.6, seed + 9, 420, 30, 0.8), 900, 2)
+        g_scr, g_ex = 0.3, 0.32
+    y = dsp.mix((hit, 0, 0.95), (norm(stab), 0, 0.55), (norm(screech), 0.0, g_scr), (norm(voice), 0.025, 0.8),
+                (norm(sub), 0, 0.5), (norm(extra), 0, g_ex), length=total)
+    y = dsp.drive(y * 1.15, 1.25)
+    y = dsp.reverb(y, 1.5, 0.2, 6000, seed=seed + 10)
+    m = n_of(total + 0.3)
+    return fit(y, m) * dsp.env_points(m, [(0, 1), (0.85, 1), (1, 0)])
 
 
 # ====================================================================== anchor
 def anchor_pulse():
-    total = 2.5
+    """Cursed object's heartbeat: punchy lub-dub with a fleshy mid knock, dissonant throb and a hiss after."""
+    total = 2.4
     n = n_of(total)
 
-    def thump(f0, seed, L=0.7):
+    def thump(f0, seed, L=0.6):
         m = n_of(L)
         t = taxis(m)
         f = f0 * (0.72 + 0.9 * np.exp(-t * 16))
-        body = dsp.osc(f, L, 'sine') * np.exp(-t * 6.5)
-        click = dsp.lowpass(dsp.noise(L, 'white', seed), 700, 2) * np.exp(-t * 55) * 0.5
-        x = dsp.drive((body + click) * 2.2, 2.2)
-        return dsp.peak(x, 115, 6, 1.2)
+        body = dsp.osc(f, L, 'sine') * np.exp(-t * 8.5)
+        knock = dsp.bandpass(dsp.noise(L, 'white', seed), 140, 1100, 2) * np.exp(-t * 32)
+        x = dsp.drive((body + 0.9 * norm(knock)) * 2.6, 2.6)
+        x = dsp.peak(x, 115, 6, 1.2)
+        return dsp.peak(x, 340, 5, 1.4)
 
     lub = thump(56, 501)
-    dub = thump(50, 502) * 0.78
-    pre = dsp.reverse(dsp.reverb(lub, 0.9, 1.0, 1200, seed=503))[-n_of(0.35):] * 0.35
-    drone = saw_ens(41.2, total, 3, 20, 504) + 0.5 * dsp.osc(58.3, total, 'sine')
-    drone = dsp.lowpass(drone, 240, 2)
-    dr_env = dsp.env_points(n, [(0, 0.15), (0.06, 0.15), (0.16, 0.9), (0.26, 0.55), (0.36, 0.8), (0.75, 0.25), (1, 0)])
-    growl_src = dsp.noise(total, 'pink', 505)
-    fry = np.maximum(0, dsp.osc(31 * (1 + 0.1 * snoise(n, 3, 506)), total, 'sine')) ** 10
-    growl = dsp.bandpass(growl_src * fry, 90, 700, 2) * dsp.env_points(n, [(0, 0), (0.15, 0.6), (0.5, 0.4), (1, 0)])
-    y = dsp.mix((pre, 0.0, 1.0), (lub, 0.32, 1.0), (dub, 0.6, 1.0), (drone * dr_env, 0, 0.45), (norm(growl), 0, 0.18), length=total)
-    return dsp.reverb(y, 1.9, 0.28, 1600, seed=507)
+    dub = thump(49, 502) * 0.8
+    pre = dsp.reverse(dsp.reverb(lub, 0.9, 1.0, 1500, seed=503))[-n_of(0.3):] * 0.4
+    # dissonant low cluster that swells with each beat (audible on small speakers)
+    throb = (saw_ens(hz('A2'), total, 2, 14, 504) + saw_ens(hz('A#2'), total, 2, 14, 505)
+             + 0.7 * saw_ens(hz('D#3'), total, 2, 14, 506) + 0.8 * saw_ens(41.2, total, 2, 20, 507))
+    throb = dsp.drive(dsp.lowpass(throb, 700, 2) * 2, 2)
+    th_env = dsp.env_points(n, [(0, 0.05), (0.12, 0.05), (0.15, 1.0), (0.24, 0.35), (0.27, 0.8), (0.45, 0.25), (1, 0)])
+    # wet squelch on each beat
+    sq = np.zeros(n, np.float32)
+    for st, g in ((0.29, 1.0), (0.57, 0.7)):
+        L = 0.18
+        piece = dsp.bandpass(dsp.noise(L, 'pink', int(st * 1000)), 300, 1400, 2) * dsp.env_points(n_of(L), [(0, 0), (0.15, 1), (1, 0)])
+        s0 = n_of(st)
+        sq[s0:s0 + len(piece)] += piece * g
+    # evil exhale after the beat
+    hiss = sweep_bp(dsp.noise(1.3, 'pink', 508), 1800, 260, q=1.2, steps=40)
+    fry = np.maximum(0, dsp.osc(33 * (1 + 0.1 * snoise(n_of(1.3), 3, 509)), 1.3, 'sine')) ** 8
+    hiss = hiss * (0.5 + 1.2 * fry) * dsp.env_points(n_of(1.3), [(0, 0), (0.15, 1), (1, 0)])
+    y = dsp.mix((pre, 0.0, 0.8), (lub, 0.3, 1.0), (dub, 0.58, 1.0), (throb * th_env, 0, 0.2), (norm(sq), 0, 0.2),
+                (norm(hiss), 0.75, 0.14), length=total)
+    return dsp.reverb(y, 1.8, 0.22, 2200, seed=510)
 
 
 def anchor_purify():
@@ -772,9 +792,14 @@ def anchor_purify():
         s = n_of(tt)
         e = min(n, s + len(ping))
         sp[s:e] += ping[:e - s]
-    y = dsp.mix((flash, 0, 0.35), (norm(bells), 0, 0.55), (ch, 0.05, 0.5), (norm(sizzle), 0, 0.42),
+    boom = dsp.osc(dsp.glide(110, 36, 1.5), 1.5, 'sine') * dsp.env_exp(1.5, 3.2)
+    crack = dsp.highpass(dsp.noise(0.2, 'white', 641), 2000, 2) * dsp.env_exp(0.2, 30)
+    impact = dsp.drive(norm(dsp.mix((boom, 0, 1.0), (crack, 0, 0.8))) * 2, 2)
+    y = dsp.mix((impact, 0, 0.6), (flash, 0, 0.35), (norm(bells), 0, 0.55), (ch, 0.05, 0.5), (norm(sizzle), 0, 0.42),
                 (norm(growl), 0.03, 0.55), (norm(whoosh), 0.2, 0.3), (norm(sp), 0, 0.22), length=total)
-    return dsp.reverb(y, 3.0, 0.32, 6500, seed=640)
+    y = dsp.reverb(y, 2.8, 0.32, 6500, seed=640)
+    m = n_of(total + 0.9)
+    return fit(y, m) * dsp.env_points(m, [(0, 1), (0.8, 1), (1, 0)])
 
 
 # ====================================================================== stingers
@@ -788,11 +813,14 @@ def stinger_piano():
     rev *= np.linspace(0.3, 1.0, len(rev)) ** 1.5
     hit = (piano(hz('A0'), 2.0, 1.0, 720) + piano(hz('Bb1'), 2.0, 1.0, 721) + 0.7 * piano(hz('A1'), 2.0, 1.0, 722)
            + 0.5 * piano(hz('Eb6'), 2.0, 1.0, 723)) * dsp.env_exp(2.0, 1.4)
-    hit = dsp.drive(norm(hit) * 1.5, 1.5)
+    knock = dsp.mix((dsp.osc(dsp.glide(120, 38, 1.0), 1.0, 'sine') * dsp.env_exp(1.0, 5), 0, 1.0),
+                    (dsp.lowpass(dsp.noise(0.2, 'white', 725), 2500, 2) * dsp.env_exp(0.2, 25), 0, 0.6))
+    hit = dsp.mix((norm(hit), 0, 1.0), (norm(knock), 0, 0.6))
+    hit = dsp.drive(norm(hit) * 2.0, 2.0)
     hit = dsp.reverb(hit, 2.2, 0.3, 3500, seed=724)
     sub = dsp.osc(dsp.glide(38, 45, 2.4), 2.4, 'sine') * np.linspace(0, 1, n_of(2.4)) ** 2
     swell = dsp.mix((norm(rev), 0, 1.0), (sub, 0, 0.35))
-    return dsp.concat(norm(swell, 0.85), norm(hit, 1.0))
+    return dsp.concat(norm(swell, 0.5), norm(hit, 1.0))
 
 
 def stinger_strings():
@@ -807,8 +835,28 @@ def stinger_strings():
     return dsp.reverb(y, 2.4, 0.33, 5000, seed=805)
 
 
+def gliding_comb(x, freq, fb=0.9):
+    """Feedback comb whose pitch follows freq (array, Hz) -> screeching resonance that moves like a real scrape."""
+    n = len(x)
+    d = SR / fit(np.asarray(freq, np.float64), n)
+    y = np.zeros(n)
+    xs = x.astype(np.float64)
+    lp = 0.0
+    for i in range(n):
+        j = i - d[i]
+        if j >= 1:
+            k = int(j)
+            fr = j - k
+            past = y[k] * (1 - fr) + y[k + 1] * fr
+            lp = 0.6 * past + 0.4 * lp   # damping inside the loop
+            y[i] = xs[i] + fb * lp
+        else:
+            y[i] = xs[i]
+    return y.astype(np.float32)
+
+
 def stinger_metal():
-    """A blade dragged along rusted metal, squeal rising, ending in a clang."""
+    """A blade dragged along rusted metal: stick-slip grind, moving screech resonances, ending in a clang."""
     L = 2.1
     n = n_of(L)
     t = taxis(n)
@@ -816,14 +864,21 @@ def stinger_metal():
     stick = np.maximum(0, dsp.osc(rate, L, 'saw')) ** 6
     exc = dsp.noise(L, 'white', 902) * (0.25 + stick * 1.5) * dsp.env_points(n, [(0, 0), (0.15, 0.5), (0.95, 1.0), (1, 0)])
     ir = metal_ir(1.2, 903, 330, 28, 1.2)
-    scr = signal.fftconvolve(exc, ir)[:n + len(ir)].astype(np.float32)
-    scr = dsp.highpass(scr, 200, 2)
+    body = signal.fftconvolve(exc, ir)[:n].astype(np.float32)
+    body = dsp.lowpass(dsp.highpass(body, 200, 2), 6500, 2)
+    # contact point slides -> resonance pitch wanders upward, with a second inharmonic comb
+    path = 1 + 0.05 * snoise(n, 2.5, 907)
+    grit = dsp.bandpass(exc, 300, 5000, 2) * 0.3
+    c1 = gliding_comb(grit, dsp.glide(240, 610, L) * path, 0.965)
+    c2 = gliding_comb(grit, dsp.glide(240, 610, L) * path * 1.414, 0.95)
+    combs = dsp.lowpass(dsp.highpass(c1 + 0.7 * c2, 220, 2), 7000, 2)
     sq_f = 2870 * (1 + 0.012 * np.sin(TWO_PI * 6 * t)) * dsp.env_points(n, [(0, 1), (1, 1.06)])
     squeal = dsp.osc(sq_f, L, 'sine') + 0.3 * dsp.osc(sq_f * 2.01, L, 'sine')
     squeal *= dsp.env_points(n, [(0, 0), (0.35, 0), (0.7, 0.8), (0.97, 1), (1, 0)]) * (0.7 + 0.3 * snoise(n, 15, 904))
     clang = metal_ir(2.5, 905, 210, 30, 0.9)
-    clang += 0.6 * dsp.osc(dsp.glide(90, 45, 2.5), 2.5, 'sine') * dsp.env_exp(2.5, 3)
-    y = dsp.mix((norm(scr), 0, 0.8), (norm(squeal), 0, 0.22), (norm(clang), L - 0.03, 0.9))
+    clang = dsp.mix((clang, 0, 1.0), (dsp.osc(dsp.glide(90, 45, 2.5), 2.5, 'sine') * dsp.env_exp(2.5, 3), 0, 0.6),
+                    (dsp.highpass(dsp.noise(0.1, 'white', 908), 1500, 2) * dsp.env_exp(0.1, 40), 0, 0.8))
+    y = dsp.mix((norm(body), 0, 0.35), (norm(combs), 0, 0.75), (norm(squeal), 0, 0.16), (norm(clang), L - 0.03, 0.9))
     return dsp.reverb(y, 2.6, 0.3, 4500, seed=906)
 
 

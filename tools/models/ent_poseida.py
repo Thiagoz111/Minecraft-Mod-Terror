@@ -320,10 +320,10 @@ FPAL = {
 
 FACE_BASE = [
     # 012345678901234567
-    "567888888888888765",  # r0  y-23 forehead (under the fringe)
-    "678888899888888876",  # r1
-    "678888888888888876",  # r2
-    "567777777777777765",  # r3  brow line (bottom of the forehead plate)
+    "456777777777777654",  # r0  y-23 forehead (under the fringe)
+    "567777788777777765",  # r1
+    "567777777777777765",  # r2
+    "456666666666666654",  # r3  brow line (bottom of the forehead plate)
     "4.......76.......4",  # r4  socket band: cols 1-7 / 10-16 recessed pockets
     "4.......76.......4",  # r5
     "4.......76.......4",  # r6
@@ -342,13 +342,13 @@ FACE_BASE = [
 
 EYE = [
     # 7 wide: cols 1-7 (right eye, viewer's left); mirrored for the left eye
-    "KrvwwrK",  # r4 top of the white in the lid's shadow
-    "rWWWWWr",  # r5
-    "rWWWWWr",  # r6
+    "KvwWwvK",  # r4 top of the white in the lid's shadow
+    "kWWWWWk",  # r5
+    "kWWWWWe",  # r6
     "KrWWWrK",  # r7
-    "kKRrRKk",  # r8 inflamed red lower rim
+    "kKrRrKk",  # r8 inflamed red lower rim
     "qkkkkkq",  # r9 dark circles
-    "Qqqqqq4",  # r10
+    "4qqqqq4",  # r10
 ]
 
 MOUTH_ART = [
@@ -364,19 +364,17 @@ MOUTH_ART = [
 
 # hand-placed details: (row, col, char)
 FACE_MARKS = [
-    # three self-inflicted scratches over the left eye (viewer's right)
+    # three self-inflicted scratches across the forehead (viewer's right), scabbed at the top
+    (0, 12, 'X'), (1, 11, 'x'), (2, 10, 'x'),
     (0, 14, 'X'), (1, 13, 'x'), (2, 12, 'x'), (3, 11, 'b'),
-    (0, 16, 'X'), (1, 15, 'x'), (2, 14, 'x'), (3, 13, 'b'),
-    (1, 17, 'X'), (2, 16, 'x'), (3, 15, 'x'),
-    # spider veins from the outer eye corners over the temples
-    (2, 0, 'V'), (3, 0, 'V'), (4, 0, 'u'), (1, 1, 'u'), (2, 2, 'u'),
-    (5, 17, 'V'), (6, 17, 'u'), (3, 17, 'u'), (8, 16, 'u'), (9, 17, 'V'),
-    (8, 0, 'u'), (9, 0, 'V'), (10, 1, 'u'),
+    (1, 15, 'X'), (2, 14, 'x'),
+    # spider veins crawling from the sockets over the temples
+    (3, 0, 'V'), (2, 1, 'u'), (4, 0, 'u'), (8, 0, 'V'), (9, 1, 'u'),
+    (3, 17, 'V'), (2, 16, 'u'), (8, 17, 'V'), (9, 16, 'u'),
     # veins from the mouth corners down the jaw
-    (13, 1, 'V'), (14, 2, 'V'), (15, 2, 'u'), (16, 3, 'V'), (13, 16, 'V'), (14, 15, 'V'), (16, 14, 'u'),
-    (17, 4, 'u'), (17, 13, 'V'),
+    (14, 1, 'V'), (15, 2, 'u'), (16, 2, 'V'), (14, 16, 'V'), (15, 15, 'u'), (16, 15, 'V'),
     # blood running from the lower lip down the chin
-    (16, 8, 'b'), (17, 8, 'B'), (16, 5, 'b'), (16, 12, 'b'), (17, 12, 'b'), (16, 13, 'B'),
+    (16, 8, 'b'), (17, 8, 'B'), (16, 12, 'b'), (17, 12, 'b'), (16, 5, 'B'),
     # blood tear from the right eye
     (10, 3, 'b'), (11, 3, 'B'),
 ]
@@ -469,26 +467,23 @@ def tear_y(z):
 
 
 def cheek_tear(t, y, z):
-    if z > 0.5:
+    """The grin is torn back along the jaw line to below the ear (thin black slit, raw red lips)."""
+    if z > -1.0:
         return None
     yc = tear_y(z)
     d = y - yc
     if t == 'jaw':
-        if z > -2.5:
+        if z > -3.5:
             return None
-        if d < 1.0:
-            return MOUTH[1]
-        if d < 2.0:
+        if d < 0.9:
+            return MOUTH[1] if z < -5 else BLOOD[3]
+        if d < 1.9 and hash3(math.floor(z), 0, 0, 191) > 0.35:
             return BLOOD[4]
-        if d < 3.0 and int(z * 3) % 2 == 0:
-            return BLOOD[3]
         return None
-    if -1.0 < d <= 0.0 and z > -3:
-        return MOUTH[1]
-    if d > -1.0:
-        return BLOOD[4] if d > -0.0 or z < -3 else MOUTH[1]
-    if d > -2.0:
-        return BLOOD[3] if int(z * 2) % 2 == 0 else BLOOD[4]
+    if -1.0 < d <= 0.0:
+        return MOUTH[1] if z < -4 else BLOOD[3]
+    if -2.0 < d <= -1.0 and hash3(math.floor(z), 1, 0, 191) > 0.4:
+        return BLOOD[4]
     return None
 
 
@@ -601,6 +596,29 @@ def strand_plane(paths, seed):
     return f
 
 
+# fringe: per-column strand length (rows from y=-24), x = -10 + col. Long side curtains frame the
+# face; ragged bangs; one long wet strand falls across the right eye onto the cheek.
+FRINGE_L = [19, 18, 9, 5, 4, 14, 4, 3, 5, 3, 2, 4, 3, 5, 3, 4, 6, 10, 18, 19]
+
+
+def fringe_mat(ctx):
+    lx, ly, lz = local(ctx)
+    c = ctx.cube
+    col = int(math.floor(lx - c.origin[0]))
+    j = int(math.floor(ly - c.origin[1]))
+    L = FRINGE_L[col] if 0 <= col < len(FRINGE_L) else 0
+    if j >= L:
+        return None
+    if j >= L - 2 and col % 2 == 1 and L > 4:
+        return None  # tapered strand ends
+    v = 0.30 + hash3(col, 0, 0, 175) * 0.3 + (0.18 if j == 2 else 0) - (0.1 if col % 3 == 0 else 0)
+    if L > 8 and j > 6:
+        v -= 0.08
+    if col == 5 and j > 9:
+        return pick(BLOOD, 0.45)  # blood-matted strand tip
+    return pick(HAIR, v)
+
+
 # ------------------------------------------------------------------ the nightgown
 def gown_value(ctx, p, base=0.66):
     x, y, z = p
@@ -610,22 +628,36 @@ def gown_value(ctx, p, base=0.66):
     return v
 
 
+STAIN_W = [3.6, 3.4, 3.0, 2.6, 2.6, 2.2, 2.0, 1.8, 1.6, 1.6, 1.4, 1.2, 1.0]
+
+
 def stain(ctx, p):
-    """Blood + black bile vomited down the front: returns a colour or None."""
+    """Black bile + blood vomited down the front (an organic flow with drips)."""
     x, y, z = p
-    if ctx.face != 'front' and not (ctx.face == 'top' and z < -3):
+    if ctx.face != 'front':
         return None
+    row = math.floor(y + 4)
     col = math.floor(x)
-    # main streak: wide under the chin, narrowing and dripping lower down
-    w = 3.2 - (y + 3) * 0.1 + (vnoise(col * 0.7, 0, 0, 121) - 0.5) * 1.6
-    xc = 0.6 + math.sin(y * 0.25) * 0.8
-    if abs(x - xc) < w and y < 9:
-        core = abs(x - xc) < w * 0.45
-        return BILE[1] if core and (y < 2 or hash3(col, 0, 0, 123) > 0.5) else BLOOD[3] if core else BLOOD[4]
-    # drips running from the streak down the skirt
-    L = hash3(col, 0, 0, 125)
-    if abs(x - 0.5) < 6 and L > 0.45 and y < 9 + (L - 0.45) * 22:
-        return BLOOD[3] if hash3(col, 1, 0, 125) > 0.4 else BILE[2]
+    xc = 0.3 + math.sin(y * 0.33) * 1.1
+    if 0 <= row < len(STAIN_W):
+        w = STAIN_W[row] + (hash3(row, 0, 0, 121) - 0.5) * 1.1
+        dx = abs(x - xc)
+        if dx < w:
+            if dx < w * 0.5:
+                return BILE[1] if hash3(col, row, 0, 123) > 0.15 else BILE[3]
+            return BLOOD[2] if dx < w - 0.9 else BLOOD[4]
+    # drips: thin runs of different length from the bottom of the flow and the collar
+    if y > -2:
+        L = hash3(col, 0, 0, 125)
+        start = 7 if abs(x - xc) < 3 else -2
+        if abs(x - 0.5) < 5.5 and L > 0.5 and y < start + (L - 0.5) * 26:
+            if abs(x - 0.5) > 3.5 and L < 0.75:
+                return None
+            tip = y > start + (L - 0.5) * 26 - 1.5
+            return BLOOD[4] if tip else (BLOOD[2] if hash3(col, 1, 0, 125) > 0.45 else BILE[2])
+    # a few splatter dots on the skirt
+    if y > 9 and hash3(col, math.floor(y), 0, 127) > 0.965:
+        return BLOOD[3]
     return None
 
 
@@ -748,8 +780,8 @@ def lace_mat(ctx):
     p = dpos(ctx)
     v = 0.62 + face_light(ctx) + (0.12 if (i + j) % 2 == 0 else 0)
     c = pick(LACE, v)
-    if f == 'front' and abs(p[0] - 0.5) < 3 and j >= 1:
-        c = BLOOD[3] if hash3(i, j, 0, 161) > 0.4 else BILE[2]
+    if f == 'front' and abs(p[0] - 0.3) < 2.2 and j >= 1 and hash3(i, j, 0, 161) > 0.3:
+        c = BILE[1] if abs(p[0] - 0.3) < 1 else BLOOD[3]
     return c
 
 
@@ -819,8 +851,7 @@ def build():
     box('head', (-8, -10, -8.5), (16, 2, 0), mat=teeth_mat(1))
     # hair cap (shell) + fringe strands over the forehead and the right eye
     box('head', (-9, -23, -8), (18, 13, 15), mat=hair_cap_mat, inflate=1.0)
-    box('head', (-9, -24, -9.6), (8, 13, 0), mat=strand_plane([(1, 0.25, 12), (3, 0.35, 10), (5, 0.1, 6), (0, 0.05, 9)], 171))
-    box('head', (1, -24, -9.6), (8, 6, 0), mat=strand_plane([(6, -0.4, 5), (2, 0.2, 3), (4, -0.1, 4)], 173))
+    box('head', (-10, -24, -9.5), (20, 19, 0), mat=fringe_mat)
 
     bone('jaw', (0, -10, 1), 'head', mat=head_mat)
     box('jaw', (-8, -10, -9), (16, 5, 10), name='jaw')
@@ -837,10 +868,10 @@ def build():
     for side, sx in (('right', -1), ('left', 1)):
         sh_y = -1 if sx > 0 else 0  # right shoulder dropped
         ax = 6.8 * sx
-        arm = bone(f'{side}_arm', (ax, sh_y, 0.5), 'body', rot=(-12, 0, -6 * sx), mat=skin_mat)
+        arm = bone(f'{side}_arm', (ax, sh_y, 0.5), 'body', rot=(-10, 0, -16 * sx), mat=skin_mat)
         box(arm.name, (ax - 2, sh_y - 1, -1.5), (4, 8, 4))
         box(arm.name, (ax - 3, sh_y - 2.5, -2.5), (6, 5, 6), mat=sleeve_mat)
-        fa = bone(f'{side}_forearm', (ax, sh_y + 7, 0.5), arm.name, rot=(-14, 0, 4 * sx), mat=skin_mat)
+        fa = bone(f'{side}_forearm', (ax, sh_y + 7, 0.5), arm.name, rot=(-16 if sx < 0 else 14, 0, 2 * sx), mat=skin_mat)
         box(fa.name, (ax - 1.5, sh_y + 7, -1), (3, 9, 3))
         box(fa.name, (ax - 1.5, sh_y + 6, 1.5), (3, 2, 2), mat=knob_mat)
         hy = sh_y + 16

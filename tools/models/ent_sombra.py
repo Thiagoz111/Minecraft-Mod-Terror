@@ -377,98 +377,113 @@ def smoke_mat(seed, start=0.0, strands=3.0):
 
 
 # ------------------------------------------------------------------ face decals
-EYE_R = (4.0, 7.0)   # right eye (viewer's left) centre on the cranium front, in face texels
-EYE_L = (11.0, 7.0)
-SEAM = 15.0          # the head/jaw seam in combined face rows (cranium rows 0..14, jaw rows 15..)
+# Face texels on the cranium front (w = 18, h = 17). Row 0 is the top (inside the hat).
+EYE_R = (5.0, 8.0)    # right eye (viewer's left)
+EYE_L = (12.0, 8.0)   # left eye (viewer's right)
+GRIN_RISE = 5.2       # how far the corners of the grin climb toward the eyes
 
 
-def bite_row(i, w):
-    """Row of the bite line of the grin (combined rows): a crescent rising toward both corners."""
+def bite_row(i, w, seam):
+    """Row of the bite line (combined rows: cranium 0..seam-1, jaw seam..): a crescent rising at the corners."""
     d = abs((i + 0.5) - w / 2) / (w / 2)
-    return SEAM - 4.6 * d ** 1.8
+    return seam - GRIN_RISE * d ** 1.7
 
 
-def grin_cell(i, row, w, seed):
-    """What the grin paints at combined (i, row): None / 'tooth' / 'gap' / 'lip' / 'lipl' / 'gum'."""
-    b = bite_row(i, w)
-    up = 1.6 + 1.2 * hash3(i, 0, 0, seed)
-    lo = 1.3 + 1.0 * hash3(i, 1, 0, seed)
-    y = row + 0.5
-    if b - up <= y < b:
-        return 'tooth' if i % 2 == 0 else 'gap'
-    if b <= y < b + lo:
-        return 'tooth' if i % 2 == 1 else 'gap'
-    if b - up - 1 <= y < b - up:
+def grin_cell(i, row, w, seam, seed):
+    """What the grin paints at combined (i, row): crisp crescent of needle teeth.
+
+    upper lip (black) / upper teeth (even columns, 2-3 rows) / lower teeth (odd columns, 1-2 rows) /
+    lower lip (black) / lit lip below. Returns None or a key of GRIN_COL."""
+    bi = int(round(bite_row(i, w, seam)))
+    fang = i % 2 == 0 and hash3(i, 2, 0, seed) > 0.7
+    k = row - bi
+    if i % 2 == 0:
+        if k in (-2, -1):
+            return 'tip' if k == -1 else 'root'
+        if k == 0:
+            return 'fangtip' if fang else 'gap'
+        if k == 1 and fang:
+            return 'fangtip'
+    else:
+        if k == 0:
+            return 'ltooth'
+        if k == 1 and hash3(i, 3, 0, seed) > 0.5:
+            return 'ltooth'
+        if k in (-2, -1):
+            return 'gap'
+    if k == -3:
         return 'lip'
-    if b + lo <= y < b + lo + 1:
-        return 'lipl'
+    if k in (1, 2):
+        return 'lip' if k == 1 else 'lipl'
     return None
 
 
-GRIN_COL = {'tooth': TOOTH[5], 'gap': MAW[1], 'lip': VOID, 'lipl': SHADE[4]}
+GRIN_COL = {'root': TOOTH[2], 'tip': TOOTH[4], 'fangtip': TOOTH[5], 'ltooth': TOOTH[3], 'gap': MAW[0],
+            'lip': VOID, 'lipl': SHADE[5]}
 
 
 def face_front_decal(img, u0, v0, w, h):
-    """Cranium front: shaded brow, deep sockets with ember eyes + glow spill, cheekbones, grin."""
+    """Cranium front: under-brim shadow, scowling brow, deep sockets with ember spill, cheekbones, grin."""
     px = img.load()
     for j in range(h):
         for i in range(w):
             x, y = i + 0.5, j + 0.5
             c = None
-            # under-brim shadow
-            if j <= 4:
-                c = SHADE[1]
-            # brow ridges: sloping toward the centre (scowl)
+            if j <= 5:
+                c = SHADE[1]  # under-brim shadow
             for (ex, ey), sgn in ((EYE_R, 1), (EYE_L, -1)):
-                dx, dy = x - ex, y - ey
-                browy = ey - 2.2 + sgn * dx * 0.28
-                if abs(dx) < 3.2 and abs(y - browy) < 0.5:
-                    c = SHADE[4] if abs(dx) < 2.2 else SHADE[3]
-                # socket (slanted ellipse)
-                a = math.radians(18 * sgn)
+                dx, dy = x - (ex + 0.5), y - (ey + 0.5)
+                # brow ridge: a violet rim sloping down toward the centre (scowl)
+                browy = -2.3 + sgn * dx * 0.36
+                if abs(dx) < 3.4 and abs(dy - browy) < 0.5:
+                    c = SHADE[6] if abs(dx) < 2.0 else SHADE[5]
+                elif abs(dx) < 3.4 and abs(dy - browy + 1) < 0.5:
+                    c = SHADE[2]
+                a = math.radians(20 * sgn)
                 uu = dx * math.cos(a) + dy * math.sin(a)
                 vv = -dx * math.sin(a) + dy * math.cos(a)
-                r = (uu / 2.7) ** 2 + (vv / 1.55) ** 2
+                r = (uu / 2.6) ** 2 + (vv / 1.45) ** 2
                 if r <= 1.0:
                     c = VOID
-                elif r <= 1.9 and c is None:
-                    c = mix(SHADE[2], GLOW[0], 0.55 * (1.9 - r))  # ember light spilling on the skin
-            # cheekbones: lit ridge under the outer corner of each eye, sunken hollow below
-            for ex, sgn in ((EYE_R[0], -1), (EYE_L[0], 1)):
-                cx = ex + sgn * 1.5 - sgn * (y - 9.5) * 0.9
-                if 9 <= j <= 11 and abs(x - cx) < 0.6:
-                    c = SHADE[4]
-                elif 9 <= j <= 12 and abs(x - (cx - sgn * 1.0)) < 0.6:
-                    c = SHADE[1]
+                elif r <= 2.2 and (c is None or c == SHADE[1]):
+                    c = mix(SHADE[2], GLOW[0], 0.75 * (2.2 - r) / 1.2)  # ember light on the skin
+            # cheekbones: lit ridge running from under the outer eye corner down toward the jaw corner
+            for ex, sgn in ((EYE_R[0] + 0.5, -1), (EYE_L[0] + 0.5, 1)):
+                cx = ex + sgn * 2.2 - sgn * (y - 10.5) * 0.55
+                if 10 <= j <= 12 and abs(x - cx) < 0.55:
+                    c = SHADE[5]
+                elif 10 <= j <= 13 and abs(x - (cx - sgn * 1.0)) < 0.55:
+                    c = SHADE[0]
             if c is not None:
                 px[u0 + i, v0 + j] = c
-    # the eyes themselves (base layer: hot core so they read even without the glow pass)
-    for (ex, ey) in (EYE_R, EYE_L):
+    for (ex, ey) in (EYE_R, EYE_L):  # hot core (also readable without the glow pass)
         ix, iy = int(ex), int(ey)
         px[u0 + ix, v0 + iy] = GLOW[5]
-        px[u0 + ix - 1, v0 + iy] = GLOW[3]
-        px[u0 + ix + 1, v0 + iy] = GLOW[2]
-    # the grin
+        px[u0 + ix + 1, v0 + iy] = GLOW[3]
+        px[u0 + ix - 1, v0 + iy] = GLOW[1]
     for j in range(h):
         for i in range(w):
-            g = grin_cell(i, j, w, 401)
+            g = grin_cell(i, j, w, h, 401)
             if g:
                 px[u0 + i, v0 + j] = GRIN_COL[g]
 
 
 def eyes_glow_decal(img, u0, v0, w, h):
-    """Emissive layer of the cranium front: ember eyes + faint red glow in the gaps of the grin."""
+    """Emissive pass for the cranium front: ember eyes + the faintest red in the gaps of the grin."""
     px = img.load()
-    for (ex, ey) in (EYE_R, EYE_L):
+    for (ex, ey), sgn in ((EYE_R, 1), (EYE_L, -1)):
         ix, iy = int(ex), int(ey)
         px[u0 + ix, v0 + iy] = GLOW[7]
-        px[u0 + ix - 1, v0 + iy] = GLOW[5]
-        px[u0 + ix + 1, v0 + iy] = GLOW[4]
-        for di, dj, k in ((-2, 0, 2), (2, 0, 2), (0, -1, 3), (0, 1, 3), (-1, -1, 1), (1, -1, 1), (-1, 1, 1), (1, 1, 1)):
-            px[u0 + ix + di, v0 + iy + dj] = GLOW[k]
+        px[u0 + ix + 1, v0 + iy] = GLOW[5]
+        px[u0 + ix - 1, v0 + iy] = GLOW[4]
+        for di, dj, k in ((-2, 0, 2), (2, 0, 2), (0, -1, 3), (0, 1, 2), (1, -1, 2), (-1, 1, 1), (1, 1, 1),
+                          (-1, -1, 1), (-3, sgn * -1 if sgn > 0 else 1, 0), (3, 1 if sgn > 0 else -1, 0)):
+            x, y = ix + di, iy + dj
+            if 0 <= x < w and 0 <= y < h:
+                px[u0 + x, v0 + y] = GLOW[k]
     for j in range(h):
         for i in range(w):
-            if grin_cell(i, j, w, 401) == 'gap':
+            if grin_cell(i, j, w, h, 401) == 'gap' and abs(i + 0.5 - w / 2) < w / 2 - 3:
                 px[u0 + i, v0 + j] = GLOW[0]
 
 
@@ -476,63 +491,66 @@ def jaw_front_decal(img, u0, v0, w, h):
     px = img.load()
     for j in range(h):
         for i in range(w):
-            g = grin_cell(i, j + SEAM, w, 403)
+            g = grin_cell(i, j + 100, w, 100, 403)
             if g:
                 px[u0 + i, v0 + j] = GRIN_COL[g]
-            elif j >= 3 and (i in (w // 2 - 4, w // 2 + 3)) and j <= 4:
-                px[u0 + i, v0 + j] = SHADE[1]  # chin creases
+            elif j >= 4 and abs((i + 0.5) - w / 2) > w / 2 - 3:
+                px[u0 + i, v0 + j] = SHADE[1]  # the jaw narrows toward the chin
 
 
 def jaw_glow_decal(img, u0, v0, w, h):
     px = img.load()
     for j in range(h):
         for i in range(w):
-            if grin_cell(i, j + SEAM, w, 403) == 'gap':
+            if grin_cell(i, j + 100, w, 100, 403) == 'gap':
                 px[u0 + i, v0 + j] = GLOW[0]
 
 
 def grin_side_decal(front_high):
-    """Continue the grin around the side of the head toward the ear (a Glasgow smile)."""
+    """The grin keeps going around the side of the skull toward the ear (a Glasgow smile)."""
     def fn(img, u0, v0, w, h):
         px = img.load()
-        b0 = SEAM - 4.6
-        for k in range(0, 8):
+        b0 = h - GRIN_RISE
+        for k in range(0, 9):
             i = (w - 1 - k) if front_high else k
-            b = b0 - k * 0.55
+            b = b0 - k * 0.5
             jj = int(b)
-            if 0 <= jj < h:
-                px[u0 + i, v0 + jj] = MAW[1] if k < 6 else SHADE[1]
-                if k < 4:
-                    if jj - 1 >= 0:
-                        px[u0 + i, v0 + jj - 1] = TOOTH[4] if k % 2 == 0 else MAW[1]
-                    if jj + 1 < h:
-                        px[u0 + i, v0 + jj + 1] = TOOTH[3] if k % 2 == 1 else MAW[1]
-                if jj - 2 >= 0 and k < 6:
-                    px[u0 + i, v0 + jj - 2] = VOID
+            if not 0 <= jj < h:
+                continue
+            px[u0 + i, v0 + jj] = MAW[1] if k < 7 else SHADE[1]
+            if k < 5:
+                if jj - 1 >= 0:
+                    px[u0 + i, v0 + jj - 1] = (TOOTH[3] if k % 2 == 0 else MAW[1])
+                if jj + 1 < h:
+                    px[u0 + i, v0 + jj + 1] = (TOOTH[2] if k % 2 == 1 else MAW[1])
+            if jj - 2 >= 0 and k < 7:
+                px[u0 + i, v0 + jj - 2] = VOID
+            if jj + 2 < h and k < 7:
+                px[u0 + i, v0 + jj + 2] = SHADE[5] if k < 5 else SHADE[3]
     return fn
 
 
 def palate_glow_decal(img, u0, v0, w, h):
-    """Emissive: embers smouldering deep in the palate (bottom face, front edge at high j)."""
+    """Emissive: embers smouldering in the palate (bottom face; front edge at high j)."""
     px = img.load()
     for j in range(h):
         for i in range(w):
             if j < h - 12 or i < 2 or i > w - 3:
                 continue
             n = hash3(i // 2, j // 2, 0, 911)
-            if n > 0.55 and (i + j) % 2 == 0:
-                px[u0 + i, v0 + j] = GLOW[0] if n < 0.8 else GLOW[1]
+            if n > 0.5 and (i + j) % 2 == 0:
+                px[u0 + i, v0 + j] = GLOW[0] if n < 0.82 else GLOW[1]
 
 
 def tongue_glow_decal(img, u0, v0, w, h):
-    """Emissive: the throat end of the tongue bed glows (top face, front edge at low... high j)."""
+    """Emissive: the tongue bed smoulders deeper toward the throat (top face)."""
     px = img.load()
     for j in range(h):
         for i in range(w):
             if i < 3 or i > w - 4:
                 continue
             n = hash3(i // 2, j // 2, 1, 913)
-            if n > 0.6 and (i + j) % 2 == 1:
+            if n > 0.55 and (i + j) % 2 == 1:
                 px[u0 + i, v0 + j] = GLOW[0] if n < 0.85 else GLOW[1]
 
 
@@ -562,129 +580,132 @@ def build():
     def mbox(b, sx, frm, size, **kw):
         return box(b, mx(sx, frm, size), size, **kw)
 
-    WAIST = -14.0
+    WAIST = -13.0
 
-    # ---------------- legs (mostly hidden; dissolve into smoke)
+    # ---------------- legs (mostly hidden inside the coat; they dissolve into smoke)
     for side, sx in (('right', -1), ('left', 1)):
-        leg = bone(f'{side}_leg', (5.0 * sx, WAIST, 1.0), rot=(0, 0, -2 * sx), mat=trouser_mat)
-        box(leg.name, (-3.5, 0, -3.5), (7, 20, 7))
-        box(leg.name, (-3, 19, -3), (6, 18, 6))
+        leg = bone(f'{side}_leg', (4.5 * sx, WAIST, 1.0), rot=(0, 0, -2 * sx), mat=trouser_mat)
+        box(leg.name, (-3, 0, -3), (6, 20, 6))
+        box(leg.name, (-2.5, 19, -2.5), (5, 18, 5))
 
-    # ---------------- body: waist, belt, coat lining
+    # ---------------- body: pinched waist, belt + buckle, coat lining
     bone('body', (0, WAIST, 1.0), mat=coat_mat)
-    box('body', (-10.5, -16, -6.5), (21, 16, 13), mat=chest_mat)
-    box('body', (-12, -2, -8.5), (24, 3, 17), mat=belt_mat)
-    box('body', (-6.5, -3, -9.2), (5, 5, 1), mat=buckle_mat)
-    box('body', (-9.5, 1, -5.5), (19, 14, 11), mat=lining_mat)
+    box('body', (-9, -16, -6), (18, 16, 12), mat=chest_mat)
+    box('body', (-10.5, -2, -8), (21, 3, 16), mat=belt_mat)
+    box('body', (-6.5, -2.5, -8.7), (5, 4, 1), mat=buckle_mat)
+    box('body', (-8.5, 1, -5), (17, 14, 10), mat=lining_mat)
 
     # ---------------- coat skirt: five flaring panels dissolving into smoke
-    FL = 34.0
-    fr = bone('coat_front_right', at('body', -5.75, 0, -6.5), 'body', rot=(-7, 0, 7), flen=FL, smoke=0.5, fseed=1)
-    box(fr.name, (-5.75, 0, -1), (12, int(FL), 2))
-    box(fr.name, (-5.75, FL - 8, 0), (12, 14, 0), mat=smoke_mat(501))
-    box(fr.name, (-4.5, 6, -1.6), (4, 2, 1), mat=lapel_mat)  # pocket flap
-    fl = bone('coat_front_left', at('body', 5.75, 0, -7.1), 'body', rot=(-7, 0, -7), flen=FL, smoke=0.5, fseed=2)
-    box(fl.name, (-6.25, 0, -1), (12, int(FL), 2))
-    box(fl.name, (-6.25, FL - 8, 0), (12, 14, 0), mat=smoke_mat(503))
-    box(fl.name, (0.5, 6, -1.6), (4, 2, 1), mat=lapel_mat)
-    box(fl.name, (-5.5, 1, -1.5), (3, 10, 0), mat=coat_mat)  # hanging belt tail
+    FF = 31.0
+    fr = bone('coat_front_right', at('body', -5.0, 0, -6.0), 'body', rot=(-9, 0, 10), flen=FF, smoke=0.48, fseed=1)
+    box(fr.name, (-5.5, 0, -1), (11, int(FF), 2))
+    box(fr.name, (-5.5, FF - 9, 0), (11, 13, 0), mat=smoke_mat(501))
+    box(fr.name, (-4.5, 5, -1.6), (4, 2, 1), mat=lapel_mat)  # pocket flap
+    fl = bone('coat_front_left', at('body', 5.0, 0, -6.6), 'body', rot=(-9, 0, -10), flen=FF, smoke=0.48, fseed=2)
+    box(fl.name, (-5.5, 0, -1), (11, int(FF), 2))
+    box(fl.name, (-5.5, FF - 9, 0), (11, 13, 0), mat=smoke_mat(503))
+    box(fl.name, (0.5, 5, -1.6), (4, 2, 1), mat=lapel_mat)
+    box(fl.name, (-4.5, 1, -1.4), (3, 11, 0), mat=coat_mat)  # hanging belt tail
+    FS = 29.0
     for side, sx in (('right', -1), ('left', 1)):
-        sd = bone(f'coat_side_{side}', at('body', 10.3 * sx, 0, 0.5), 'body', rot=(0, 0, -12 * sx), flen=FL - 3,
+        sd = bone(f'coat_side_{side}', at('body', 9.3 * sx, 0, 0.5), 'body', rot=(0, 0, -19 * sx), flen=FS,
                   smoke=0.45, fseed=3 + sx)
-        mbox(sd.name, sx, (-1, 0, -6.5), (2, int(FL - 3), 13))
-        mbox(sd.name, sx, (0, FL - 10, -6), (0, 14, 12), mat=smoke_mat(505 + sx))
-    bk = bone('coat_back', at('body', 0, 0, 6.5), 'body', rot=(13, 0, 0), flen=FL + 4, smoke=0.5, fseed=6)
-    box(bk.name, (-11.5, 0, -1), (23, int(FL + 4), 2))
-    box(bk.name, (-11.5, FL - 4, 0), (23, 16, 0), mat=smoke_mat(509))
+        mbox(sd.name, sx, (-1, 0, -6), (2, int(FS), 12))
+        mbox(sd.name, sx, (0, FS - 9, -5.5), (0, 13, 11), mat=smoke_mat(505 + sx))
+    FB = 33.0
+    bk = bone('coat_back', at('body', 0, 0, 6.0), 'body', rot=(16, 0, 0), flen=FB, smoke=0.5, fseed=6)
+    box(bk.name, (-10.5, 0, -1), (21, int(FB), 2))
+    box(bk.name, (-10.5, FB - 9, 0), (21, 14, 0), mat=smoke_mat(509))
 
-    # ---------------- chest: hunched, broad padded shoulders, yoke, lapels, popped collar
-    CH = 14
+    # ---------------- chest: hunched, V-tapered, broad padded shoulders, humped yoke, lapels, popped collar
+    CH = 20
     bone('chest', at('body', 0, -15, 0.5), 'body', rot=(CH, 0, 0), mat=coat_mat)
-    box('chest', (-12, -17, -7), (24, 17, 13), mat=chest_mat)
-    box('chest', (-15, -18, -7.5), (30, 5, 14))
-    box('chest', (-14, -18.5, 1), (28, 11, 6))
-    for k, yy in enumerate((-9, -5, -1)):
+    box('chest', (-10, -9, -6.5), (20, 10, 13), mat=chest_mat)
+    box('chest', (-12, -17, -7), (24, 9, 14), mat=chest_mat)
+    box('chest', (-16, -18.5, -7.5), (32, 5, 15))
+    box('chest', (-14.5, -19, 0), (29, 12, 8))   # yoke: the hump of the back
+    for k, yy in enumerate((-8, -4.5, -1)):
         for sx in (-1, 1):
-            box('chest', (4.5 * sx - 1, yy, -8), (2, 2, 1), mat=button_mat)
+            box('chest', (4 * sx - 1, yy, -7.5 if yy > -7 else -8), (2, 2, 1), mat=button_mat)
     for side, sx in (('right', -1), ('left', 1)):
-        lp = bone(f'lapel_{side}', at('chest', 5.5 * sx, -16.5, -7), 'chest', rot=(0, 0, 18 * sx), mat=lapel_mat)
-        mbox(lp.name, sx, (-3, 0, -1.5), (5, 12, 2))
-        cl = bone(f'collar_{side}', at('chest', 6.5 * sx, -17.5, -1.5), 'chest', rot=(-6, 0, 14 * sx), mat=lapel_mat)
-        mbox(cl.name, sx, (-1, -11, -6), (2, 11, 11))
-    cb = bone('collar_back', at('chest', 0, -17.5, 4), 'chest', rot=(-16, 0, 0), mat=lapel_mat)
-    box(cb.name, (-7.5, -12, -1), (15, 12, 2))
+        lp = bone(f'lapel_{side}', at('chest', 4.5 * sx, -17, -7.2), 'chest', rot=(0, 0, 21 * sx), mat=lapel_mat)
+        mbox(lp.name, sx, (-4, 0, -1.5), (7, 11, 2))
+        cl = bone(f'collar_{side}', at('chest', 7 * sx, -18, -1.5), 'chest', rot=(-8, 0, 16 * sx), mat=lapel_mat)
+        mbox(cl.name, sx, (-1, -12, -6.5), (2, 12, 11))
+    cb = bone('collar_back', at('chest', 0, -18, 4), 'chest', rot=(-18, 0, 0), mat=lapel_mat)
+    box(cb.name, (-8, -13, -1), (16, 13, 2))
 
-    # ---------------- neck + head
-    bone('neck', at('chest', 0, -17, -1), 'chest', rot=(24, 0, 0), mat=skin_mat)
+    # ---------------- neck + head (long skull, needle grin, unhinging jaw)
+    bone('neck', at('chest', 0, -17, -1), 'chest', rot=(26, 0, 0), mat=skin_mat)
     box('neck', (-3, -11, -3), (6, 12, 6))
-    bone('head', at('neck', 0, -10, 0), 'neck', rot=(-34, 0, 16), mat=skin_mat)
-    box('head', (-8, -20, -12), (16, 15, 16), decals={
+    bone('head', at('neck', 0, -10, 0), 'neck', rot=(-44, 0, 16), mat=skin_mat)
+    box('head', (-9, -22, -13), (18, 17, 17), decals={
         'front': face_front_decal, 'eyes:front': eyes_glow_decal,
         'west': grin_side_decal(True), 'east': grin_side_decal(False),
         'eyes:bottom': palate_glow_decal})
-    box('head', (-6, -6, -3), (12, 7, 6))
+    box('head', (-6.5, -6, -3), (13, 7, 6))
     # upper needle teeth hanging from the palate (hidden inside the jaw while it is shut)
-    box('head', (-7.5, -5, -11.6), (15, 3, 0), mat=teeth_mat(3.0, 421, 1))
+    box('head', (-8.5, -5, -12.6), (17, 3, 0), mat=teeth_mat(3.0, 421, 1))
     for sx in (-1, 1):
-        box('head', (7.6 * sx, -5, -11), (0, 2, 9), mat=teeth_mat(2.0, 423 + sx, 1, axis='z'))
+        box('head', (8.6 * sx, -5, -12), (0, 2, 10), mat=teeth_mat(2.2, 423 + sx, 1, axis='z'))
 
     hz = r.abs_pivot['head'][2]
     bone('jaw', at('head', 0, -5.5, -1), 'head', rot=(0, 0, 0), mat=jaw_mat, head_z=hz)
-    box('jaw', (-8.5, -5, -12.5), (17, 6, 11), ref='head', decals={
+    box('jaw', (-9.5, -5, -13.5), (19, 7, 12), ref='head', decals={
         'front': jaw_front_decal, 'eyes:front': jaw_glow_decal, 'eyes:top': tongue_glow_decal})
-    box('jaw', (-3.5, 1, -12), (7, 3, 6), ref='head')
-    box('jaw', (-2, 4, -11), (4, 2, 4), ref='head')
-    box('jaw', (-7.5, -8, -11.9), (15, 3, 0), mat=teeth_mat(3.0, 431, -1), ref='head')
+    box('jaw', (-4.5, 2, -13), (9, 3, 8), ref='head')
+    box('jaw', (-2.5, 5, -12), (5, 3, 5), ref='head')
+    box('jaw', (-8.5, -8, -12.9), (17, 3, 0), mat=teeth_mat(3.0, 431, -1), ref='head')
     for sx in (-1, 1):
-        box('jaw', (7.9 * sx, -7, -11.5), (0, 2, 9), mat=teeth_mat(2.0, 433 + sx, -1, axis='z'), ref='head')
+        box('jaw', (8.9 * sx, -7, -12.5), (0, 2, 10), mat=teeth_mat(2.0, 433 + sx, -1, axis='z'), ref='head')
 
-    # ---------------- hat: wide snap brim, pinched crown, plum band
-    bone('hat', at('head', 0, -17, -4), 'head', rot=(5, 0, -4), mat=felt_mat)
-    box('hat', (-20, -1, -11), (40, 2, 22))
-    box('hat', (-9, -12, -9), (18, 11, 18), mat=crown_mat)
-    box('hat', (-8, -15, -8), (16, 3, 16), mat=crown_mat)
-    box('hat', (-8, -17, -7), (6, 2, 14), mat=crown_mat)
-    box('hat', (2, -17, -7), (6, 2, 14), mat=crown_mat)
-    box('hat', (-9.5, -4, -9.5), (19, 3, 19), mat=band_mat)
-    bone('hat_brim_front', at('hat', 0, 0, -11), 'hat', rot=(12, 0, 0), mat=felt_mat)
-    box('hat_brim_front', (-17, -1, -5), (34, 2, 5))
-    box('hat_brim_front', (-12, -1, -8), (24, 2, 3))
-    bone('hat_brim_back', at('hat', 0, 0, 11), 'hat', rot=(16, 0, 0), mat=felt_mat)
-    box('hat_brim_back', (-17, -1, 0), (34, 2, 5))
-    box('hat_brim_back', (-12, -1, 5), (24, 2, 3))
+    # ---------------- hat: very wide snap brim, pinched + creased crown, plum band
+    bone('hat', at('head', 0, -19, -4.5), 'head', rot=(6, 0, -5), mat=felt_mat)
+    box('hat', (-22, -1, -12), (44, 2, 24))
+    box('hat', (-10, -8, -10), (20, 7, 20), mat=crown_mat)
+    box('hat', (-9, -10, -8), (18, 2, 17), mat=crown_mat)
+    box('hat', (-9, -12, -6), (7, 2, 13), mat=crown_mat)
+    box('hat', (2, -12, -6), (7, 2, 13), mat=crown_mat)
+    box('hat', (-10.5, -4, -10.5), (21, 3, 21), mat=band_mat)
+    bone('hat_brim_front', at('hat', 0, 0, -12), 'hat', rot=(13, 0, 0), mat=felt_mat)
+    box('hat_brim_front', (-19, -1, -5), (38, 2, 5))
+    box('hat_brim_front', (-14, -1, -8), (28, 2, 3))
+    bone('hat_brim_back', at('hat', 0, 0, 12), 'hat', rot=(17, 0, 0), mat=felt_mat)
+    box('hat_brim_back', (-19, -1, 0), (38, 2, 5))
+    box('hat_brim_back', (-14, -1, 5), (28, 2, 3))
 
-    # ---------------- arms: impossibly long sleeves, spider hands
+    # ---------------- arms: impossibly long thin sleeves, spider hands
     ARM = {
-        # side: (arm rot, forearm rot, hand rot, curl per finger)
-        'right': ((-CH - 4, 0, 5), (7, 0, -2), (6, 0, 0), (12, 16, 20, 24)),
-        'left': ((-CH - 12, 0, -4), (-24, 0, 3), (14, 0, 4), (34, 40, 44, 48)),
+        # side: (arm rot, forearm rot, hand rot, finger tip curls)
+        'right': ((-CH - 3, 0, 5), (8, 0, -2), (6, 0, 0), (10, 14, 18, 22)),
+        'left': ((-CH - 12, 0, -5), (-26, 0, 3), (16, 0, 4), (34, 40, 44, 50)),
     }
     for side, sx in (('right', -1), ('left', 1)):
         arot, frot, hrot, curls = ARM[side]
-        arm = bone(f'{side}_arm', at('chest', 15 * sx, -15, 0), 'chest', rot=arot, mat=coat_mat, flen=None)
+        arm = bone(f'{side}_arm', at('chest', 15.5 * sx, -15.5, 0), 'chest', rot=arot, mat=coat_mat)
         box(arm.name, (-4.5, -3.5, -4.5), (9, 7, 9))
-        box(arm.name, (-3, 3, -3), (6, 20, 6))
+        box(arm.name, (-2.5, 3, -2.5), (5, 20, 5))
         fa = bone(f'{side}_forearm', at(arm.name, 0, 22, 0), arm.name, rot=frot, mat=coat_mat)
-        box(fa.name, (-2.5, -1, -2.5), (5, 16, 5))
-        box(fa.name, (-3, 14, -3), (6, 5, 6), mat=lapel_mat)
+        box(fa.name, (-2, -1, -2), (4, 16, 4))
+        box(fa.name, (-2.5, 14, -2.5), (5, 5, 5), mat=lapel_mat)
         hd = bone(f'{side}_hand', at(fa.name, 0, 18, 0), fa.name, rot=hrot, mat=hand_mat)
         box(hd.name, (-1.5, -1, -1.5), (3, 3, 3))
         box(hd.name, (-4, 1, -1), (8, 6, 2))
         box(hd.name, (-4, 6, -1.5), (8, 2, 3))
-        # fingers from the thumb side (inner, -sx) to the pinky (outer, +... sx)
-        lens = ((7, 6, 3), (8, 7, 4), (8, 6, 3), (6, 5, 3))
-        fan = (-6, 1, 6, 12)
+        # fingers from the thumb side (index, inner) to the pinky (outer)
+        lens = ((9, 8, 4), (10, 9, 5), (10, 8, 4), (8, 6, 3))
+        fan = (-7, 0, 6, 13)
         for k in range(4):
-            xc = (3 - 2 * k) * -sx  # index at the inner side
+            xc = (3 - 2 * k) * -sx
             p, m, c = lens[k]
             fg = bone(f'{side}_finger{k}', at(hd.name, xc, 7.5, 0), hd.name, rot=(4, 0, -fan[k] * sx), mat=hand_mat)
             box(fg.name, (-1, 0, -1), (2, p, 2))
             tp = bone(f'{side}_finger{k}_tip', at(fg.name, 0, p, 0), fg.name, rot=(curls[k], 0, 0), mat=hand_mat)
             box(tp.name, (-1, 0, -1), (2, m, 2))
             box(tp.name, (-0.5, m, -0.5), (1, c, 1), mat=nail_mat)
-        th = bone(f'{side}_thumb', at(hd.name, 4.0 * -sx, 2.5, -0.5), hd.name, rot=(-10, 0, 28 * sx), mat=hand_mat)
-        box(th.name, (-1, 0, -1), (2, 6, 2))
-        box(th.name, (-0.5, 6, -0.5), (1, 3, 1), mat=nail_mat)
+        th = bone(f'{side}_thumb', at(hd.name, 4.0 * -sx, 2.5, -0.5), hd.name, rot=(-12, 0, 30 * sx), mat=hand_mat)
+        box(th.name, (-1, 0, -1), (2, 7, 2))
+        box(th.name, (-0.5, 7, -0.5), (1, 4, 1), mat=nail_mat)
 
     m = Model('sombra', 256, 256, r.roots)
     m.scale = 0.5

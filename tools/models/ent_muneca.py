@@ -150,21 +150,22 @@ def limb_mat(ctx):
 
 
 # ------------------------------------------------------------------ the face
-# 14 x 12 front face of the porcelain mask ('.' = broken away / socket, seen through to what is behind)
+# 14 x 12 front face of the porcelain mask.  '.' = socket cut through the mask (seen through to the
+# glass eyeball / the darkness behind).  The broken temple chunk is overlaid procedurally (chunk_hit).
 FACE = [
     # 0123456789ABCD
-    "ooooooooocCh..",   # r0  under the fringe; broken temple on the right
-    "oooooooocooh..",   # r1
-    "wWWWWWoocohh.h",   # r2  heavy painted upper lid + lashes
-    "W....Wooch..ho",   # r3  glass eye opening (cols 1-4) | ragged eye hole (cols 9-12)
-    "o....eoco....o",   # r4
-    "o....oocoh...h",   # r5
-    "ruuuurnohk..co",   # r6  lower lid | hole lower rim leaking
-    "rRRRRrNNcktrRr",   # r7  rouge, nostrils, crack, tear
-    "rRLSlSlSlLktRr",   # r8  sewn upper lip (crooked: rises on the left)
-    "orLm......mkro",   # r9  marionette slits either side of the chin
-    "ooom......mkoo",   # r10
-    "ggom......mtgg",   # r11
+    "oooooooooooooo",   # r0  under the fringe
+    "ooooooooocoooo",   # r1
+    "WWWWWWooWWWWWW",   # r2  heavy painted upper lids + lashes
+    "W....eoce....W",   # r3  glass eye (1-4) | empty socket (9-12)
+    "o....ooco....o",   # r4
+    "o....ocoo...ho",   # r5
+    "oueueoNNc.kkrr",   # r6  painted lower lashes | the socket leaks
+    "rRLLSoSoScRkRr",   # r7  thread punctures above the lip, smile curls up on the left
+    "rrRLLlllLLLkRr",   # r8  upper lip
+    "orRm......LkRo",   # r9  marionette slits around the chin, right corner drops
+    "oorm......mkoo",   # r10
+    "goom......mtog",   # r11
 ]
 
 
@@ -175,6 +176,8 @@ def face_px(ctx, ch):
     cx = (i - 6.5) / 7.0
     cy = (j - 6.0) / 6.0
     base = 0.86 - cx * cx * 0.16 - max(0.0, cy) * cy * 0.12
+    if j <= 1:
+        base -= 0.08 * (2 - j)                    # shadow under the fringe
     if ch == 'o':
         v = base
         g = vnoise(x * 0.3 + 7, y * 0.3, 1, 3)
@@ -195,7 +198,7 @@ def face_px(ctx, ch):
     if ch == 'e':
         return LASH[2]
     if ch == 'u':
-        return mix(pick(PORC, base - 0.06), ROUGE[0], 0.25)
+        return mix(pick(PORC, base - 0.06), ROUGE[0], 0.3)
     if ch == 'r':
         return mix(pick(PORC, base), ROUGE[2], 0.55)
     if ch == 'R':
@@ -203,7 +206,7 @@ def face_px(ctx, ch):
     if ch == 'n':
         return pick(PORC, base - 0.12)
     if ch == 'N':
-        return mix(ROUGE[0], CRACK, 0.35)
+        return mix(ROUGE[0], CRACK, 0.45)
     if ch == 'L':
         return LIP[1]
     if ch == 'l':
@@ -219,12 +222,23 @@ def face_px(ctx, ch):
     return pick(PORC, base)
 
 
+CHUNK_ZMAX = -1.5
+
+
 def chunk_hit(x, y, z):
-    """The broken-away chunk of the right temple, as a 3D region (shared by mask, hair, bow)."""
-    if z > -3.6:
+    """The broken-away chunk of the left temple, as a 3D region (shared by mask, skull and hair)."""
+    if z > CHUNK_ZMAX:
         return False
-    jag = (hash3(int(math.floor(x)), int(math.floor(y)), 0, 211) - 0.5) * 1.2
-    return ((x - 7.6) / 5.0) ** 2 + ((y + 2.6) / 3.9) ** 2 < 1.0 + jag * 0.25
+    jag = (hash3(int(math.floor(x * 1.0)), int(math.floor(y * 1.0)), int(math.floor(z)), 211) - 0.5) * 0.35
+    return ((x - 7.8) / 5.0) ** 2 + ((y + 2.8) / 3.4) ** 2 < 1.0 + jag
+
+
+def near_chunk(x, y, z, r=0.9):
+    for dx, dy, dz in ((r, 0, 0), (-r, 0, 0), (0, r, 0), (0, -r, 0), (0, 0, r), (0, 0, -r),
+                       (r, -r, 0), (-r, r, 0)):
+        if chunk_hit(x + dx, y + dy, z + dz):
+            return True
+    return False
 
 
 def plate_mat(ctx):
@@ -232,12 +246,17 @@ def plate_mat(ctx):
     f = ctx.face
     if f == 'back':
         return None
+    x, y, z = A(ctx)
     if f == 'front':
+        if chunk_hit(x, y, z - 0.01):
+            return None
         ch = FACE[ctx.j][ctx.i]
         if ch == '.':
             return None
+        if near_chunk(x, y, z - 0.01, 1.0) and ch == 'o':
+            # broken rim: lit edge on the lower/left lip of the break, dark crack on the other sides
+            return CHIP if (chunk_hit(x + 1.0, y, z) or chunk_hit(x, y - 1.0, z)) else CRACK
         return face_px(ctx, ch)
-    x, y, z = A(ctx)
     if chunk_hit(x, y, z):
         return None
     if f == 'bottom':
@@ -249,11 +268,8 @@ def plate_mat(ctx):
     c = pick(PORC, v)
     if f in ('west', 'east') and 5 <= y <= 9:
         c = mix(c, ROUGE[1], 0.28)
-    # chipped rim around the break
-    if f in ('top', 'east'):
-        dx = 0.4
-        if chunk_hit(x + dx, y + dx, z) or chunk_hit(x - dx, y - dx, z) or chunk_hit(x, y + 0.9, z) or chunk_hit(x - 0.9, y, z):
-            c = CHIP
+    if f in ('top', 'east') and near_chunk(x, y, z, 0.8):
+        c = CHIP
     return c
 
 
@@ -262,6 +278,13 @@ def skull_mat(ctx):
     f = ctx.face
     if f == 'front':
         return pick(VOID, 0.2)
+    x, y, z = A(ctx)
+    if f in ('top', 'east') and chunk_hit(x, y, z):
+        # broken shell seen through the hair: thin bright porcelain rim, then darkness
+        out = 0.9
+        rim = not (chunk_hit(x + out, y, z) and chunk_hit(x - out, y, z) and chunk_hit(x, y, z + out)
+                   and chunk_hit(x, y + out, z) and chunk_hit(x, y - out, z))
+        return CHIP if rim else pick(VOID, 0.15)
     return porcelain(ctx)
 
 

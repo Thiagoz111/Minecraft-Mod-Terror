@@ -38,6 +38,7 @@ REVIEW = os.environ.get(
     'DEADLINE_REVIEW_DIR',
     '/tmp/claude-0/-home-user-Minecraft-Mod-Terror/f464a6ad-b203-50f8-a993-93d7fecfc5d1/scratchpad/audio/ambience')
 TWO_PI = 2 * np.pi
+STEMS = bool(os.environ.get('STEMS'))
 
 
 # =====================================================================================  helpers
@@ -190,9 +191,8 @@ def creverb(x, decay=2.5, damp=4000.0, predelay=0.03, seed=7, hf_decay=0.45, cro
     """Circular stereo reverb (wet only) for a periodic stereo buffer."""
     L = len(x)
     ir = make_ir(decay, damp, predelay, seed, hf_decay)
-    if len(ir) > L:
-        ir = np.sum([ir[i:i + L] for i in range(0, len(ir), L)], axis=0) if len(ir) % L == 0 else \
-            np.pad(ir, ((0, L - len(ir) % L), (0, 0))).reshape(-1, L, 2).sum(0)
+    if len(ir) > L:  # fold an IR longer than the loop (never happens for 45 s+ loops, kept for safety)
+        ir = np.pad(ir, ((0, -len(ir) % L), (0, 0))).reshape(-1, L, 2).sum(0)
     X = np.fft.rfft(x, axis=0)
     H = np.fft.rfft(ir, n=L, axis=0)
     inl = (1 - cross) * X[:, 0] + cross * X[:, 1]
@@ -302,6 +302,9 @@ class Scene:
         st = dsp.pan(x, float(np.clip(p, -1, 1))) if x.ndim == 1 else x
         if dry:
             put(self.dry, st, t, dry)
+            if STEMS:
+                self.stem_ev = self.stem_ev if hasattr(self, 'stem_ev') else np.zeros((self.L, 2), np.float32)
+                put(self.stem_ev, st, t, dry)
         if send and wet:
             put(self.buses[send][0], st, t, wet)
 
@@ -309,13 +312,26 @@ class Scene:
         if x.ndim == 1:
             x = np.stack([x, x], 1)
         self.dry += x * dry
+        if STEMS:
+            self.stem_bed = (self.stem_bed if hasattr(self, 'stem_bed') else 0) + x * dry
         if send and wet:
             self.buses[send][0] += x * wet
 
     def mix(self):
         out = self.dry.copy()
+        wet = 0
         for buf, kw in self.buses.values():
-            out += creverb(buf, **kw)
+            wet = wet + creverb(buf, **kw)
+        out += wet
+        if STEMS:
+            def db(v):
+                return f'{20 * np.log10(v + 1e-12):6.1f}'
+            for nm, st in (('bed', getattr(self, 'stem_bed', None)), ('events', getattr(self, 'stem_ev', None)),
+                           ('reverb', wet), ('total', out)):
+                if st is not None and np.ndim(st) == 2:
+                    m = st.mean(1)
+                    print(f'    stem {nm:7s} rms {db(np.sqrt(np.mean(m ** 2)))} dB  peak {db(np.max(np.abs(m)))} dB'
+                          f'  p99.9 {db(np.percentile(np.abs(m), 99.9))} dB')
         return out
 
 
@@ -506,19 +522,19 @@ def build_casa():
     gust = curve(L, 102, rate=0.11, power=1.7)
     gust_s = gust[:, None]
     # room tone + structure-borne rumble
-    sc.bed(bed(L, 103, True, 0.5, lp=170, hp=25, tilt=-6) * 0.06)
+    sc.bed(bed(L, 103, True, 0.5, lp=170, hp=25, tilt=-6) * 0.02)
     # draught through the gaps, breathing with the gusts
     draft = bed(L, 104, True, 0.3, hp=260, lp=2400, tilt=-3, peaks=[(700, 6, 2)])
-    sc.bed(draft * (0.012 + 0.05 * gust_s), send='room', wet=0.3)
+    sc.bed(draft * (0.004 + 0.022 * gust_s), send='room', wet=0.3)
     # whistle through a cracked window and under a door
     h1 = howl(L, 105, 520, 0.55, 0.08, 16) * (gust_s ** 2.2)
     h2 = howl(L, 106, 1180, 0.35, 0.11, 10) * (curve(L, 107, 0.15, 3.0)[:, None] * gust_s)
-    sc.bed(h1 * 0.035 + h2 * 0.012, send='room', wet=0.5)
+    sc.bed(h1 * 0.02 + h2 * 0.007, send='room', wet=0.5)
     # unease: sub drone with slow beating (E1 vs F1) swelling in and out
     sw = keyframes(L, [(0, 0.35), (15, 0.6), (30, 1.0), (40, 0.25), (50, 0.7)])
     sub = (loop_tone(L, 41.2, seed=1) + 0.8 * loop_tone(L, 43.65, seed=2) + 0.35 * loop_tone(L, 82.4, seed=3)
            + 0.25 * loop_tone(L, 87.3, seed=4)) * sw
-    sc.bed(sub * 0.022)
+    sc.bed(sub * 0.012)
 
     # --- grandfather clock in the next room: tick-tock every second; it STOPS for 4 s, then resumes
     for s in range(60):
@@ -558,8 +574,12 @@ def build_casa():
     t0 = 27.6
     for i in range(5):
         tt = t0 + i * 0.78 + r.normal(0, 0.03)
-        st = thump(400 + i, f=r.uniform(48, 58), dur=0.6, click=0.5, muffle=260)
-        sc.add(st, tt, p=0.1 + 0.08 * i, dry=0.32, send='house', wet=0.18)
+        st = thump(400 + i, f=r.uniform(52, 62), dur=0.6, click=1.1, muffle=520)
+        exc = np.zeros(N(0.003), np.float32)
+        exc[0] = 1
+        knock = modal(exc, [(r.uniform(180, 220), 45, 1), (r.uniform(420, 480), 70, .6), (r.uniform(900, 1000), 110, .3)], 0.25)
+        st = norm(st + 0.5 * norm(knock)[:len(st)])
+        sc.add(st, tt, p=0.1 + 0.08 * i, dry=0.45, send='house', wet=0.2)
         cr = creak(0.35, 410 + i, 30, 15, modes=((140, 30, 1), (330, 45, .6), (700, 70, .3)), hiss=0.0)
         sc.add(far(cr, 0.55), tt + 0.05, p=0.1 + 0.08 * i, dry=0.08, send='house', wet=0.06)
     # a door slams far away in the house
@@ -861,7 +881,7 @@ def calliope(notes, seed, beat=0.58, droop=0.0, cut=None):
         t0, t1 = sec(s), sec(s + l)
         if cut is not None and t0 >= cut:
             continue
-        d = min(t1 - t0, (cut - t0) if cut is not None else 99) * 0.92
+        d = min((t1 - t0) * 0.92, (cut - t0) if cut is not None else 99)
         a = N(t0)
         k = N(d + 0.12)
         f = midi(m) * 2 ** (r.normal(0, 22) / 1200) * wow[a:a + k] * sag[a:a + k]
