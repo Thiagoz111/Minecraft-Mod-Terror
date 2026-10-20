@@ -646,7 +646,7 @@ def eye_glow(side):
 
 
 EYE_X = (-8, 1)              # left edge of the right / left eye, head-local
-EYE_Y = -14                  # top edge of the eyes, head-local
+EYE_Y = -15                  # top edge of the eyes, head-local
 
 
 def skull_mat(ctx):
@@ -711,9 +711,18 @@ def skull_mat(ctx):
         v += strands(x, z, 59)
         return pick(FUR, v)
     if t == 'gullet':
-        if f == 'front' or f == 'top':
+        if f == 'top':
             return pick(GUM, 0.3 + (0.1 if ctx.j % 2 == 0 else 0))
-        return mix(pick(FUR, v), pick(TAN, v), 0.5)
+        if f == 'front':
+            if ly < 4.0:
+                return pick(GUM, 0.3 + (0.1 if ctx.j % 2 == 0 else 0))     # floor of the mouth
+            v += 0.04
+        if f == 'bottom':
+            return mix(pick(TAN, v + 0.05), pick(SKIN, 0.5), 0.35)          # bald, stretched underneath
+        cc = mix(pick(FUR, v + strands(lz, y, 61) * 0.6), pick(TAN, v), 0.45 + ly / 7.0 * 0.3)
+        if f in ('west', 'east') and ly > 5.0:
+            cc = mix(cc, pick(SKIN, 0.5), 0.3)
+        return cc
     return pick(FUR, v)
 
 
@@ -817,7 +826,9 @@ def nose_mat(ctx):
     if f == 'front':
         i = ctx.i if sx < 0 else w - 1 - ctx.i
         ch = NOSE_ART[ctx.j][i]
-        return {'.': None, 's': NOSE[5], 'S': NOSE[7], 'd': NOSE[2], 'N': NOSE[0], 'k': NOSE[1]}[ch]
+        if sx > 0 and ch in 'sS':
+            ch = 'd' if ch == 's' else 's'           # one wet glint only (light from the upper left)
+        return {'.': None, 's': NOSE[4], 'S': NOSE[7], 'd': NOSE[2], 'N': NOSE[0], 'k': NOSE[1]}[ch]
     if f == 'top':
         i = ctx.i if sx < 0 else w - 1 - ctx.i
         if i == 0 and ctx.j == 0:
@@ -1166,7 +1177,7 @@ def build():
     box('head', (-9, -6, -14), (5, 6, 14), name='side', hp=hp)
     box('head', (4, -6, -14), (5, 6, 14), name='side', hp=hp)
     box('head', (-4, -6, -6), (8, 6, 6), mat=throat_mat, name='throat')
-    box('head', (-4, 0.5, -7), (8, 4, 7), name='gullet', hp=hp)
+    box('head', (-4, 0.5, -7), (8, 7, 7), name='gullet', hp=hp)          # loose dewlap under the throat
     box('head', (EYE_X[0], EYE_Y, -15), (7, 7, 1), mat=eye_mat, name='eye', side='r',
         decals={'eyes:front': eye_glow('r')})
     box('head', (EYE_X[1], EYE_Y, -15), (7, 7, 1), mat=eye_mat, name='eye', side='l',
@@ -1175,7 +1186,7 @@ def build():
     # chunky tan brows, inner ends raised (the cute puppy-eyes look), as bones so they can furrow
     for side, sx in (('right', -1), ('left', 1)):
         bb = f'{side}_brow'
-        b.lbone(bb, 'head', (4.5 * sx, -15.6, -14.6), rot=(0, 0, 13 * -sx), mat=brow_mat)
+        b.lbone(bb, 'head', (4.5 * sx, -16.7, -14.6), rot=(0, 0, 13 * -sx), mat=brow_mat)
         box(bb, (-2.5, -1, -1), (5, 2, 2), name='brow')
 
     # the four muzzle flaps
@@ -1183,32 +1194,32 @@ def build():
         ub, lb = f'jaw_upper_{side}', f'jaw_lower_{side}'
         b.lbone(ub, 'head', (0.5 * sx, -1, -13), rot=(-3, 3 * -sx, 0), mat=flap_mat)
         x0 = -6.0 if sx < 0 else 0.0
-        box(ub, (x0, -4, -14), (5, 4, 14), name='flap', upper=True, sx=sx)
-        box(ub, (-3.0 if sx < 0 else 0.0, -4.3, -16), (3, 2, 2), mat=nose_mat, name='nose', sx=sx)
-        box(ub, (-5.7 if sx < 0 else 4.7, 0, -13), (0, 3, 12), mat=teeth_mat, name='teeth', down=True,
-            fang_at=11, step=2, off=0)
-        box(ub, (-2.3 if sx < 0 else 1.3, 0, -12.5), (0, 2, 11), mat=teeth_mat, name='teeth', down=True,
+        box(ub, (x0, -4, -12), (5, 4, 12), name='flap', upper=True, sx=sx)
+        box(ub, (-3.0 if sx < 0 else 0.0, -4.3, -14), (3, 2, 2), mat=nose_mat, name='nose', sx=sx)
+        box(ub, (-5.7 if sx < 0 else 4.7, 0, -11.5), (0, 3, 10), mat=teeth_mat, name='teeth', down=True,
+            fang_at=9, step=2, off=0)
+        box(ub, (-2.3 if sx < 0 else 1.3, 0, -11), (0, 2, 9), mat=teeth_mat, name='teeth', down=True,
             step=2, off=1)
-        box(ub, (-5.7 if sx < 0 else 0.7, 0, -13.6), (5, 4, 0), mat=teeth_mat, name='teeth', down=True,
+        box(ub, (-5.7 if sx < 0 else 0.7, 0, -11.6), (5, 4, 0), mat=teeth_mat, name='teeth', down=True,
             canine=True, step=2, off=0)
-        box(ub, (-12.0 if sx < 0 else 5.0, -4, -8), (6, 5, 0), mat=whisker_mat, name='whisker', sx=sx)
+        box(ub, (-12.0 if sx < 0 else 5.0, -4, -7), (6, 5, 0), mat=whisker_mat, name='whisker', sx=sx)
 
         b.lbone(lb, 'head', (0.5 * sx, 0, -6), rot=(4, 3 * -sx, 0), mat=flap_mat)
         lx0 = -5.0 if sx < 0 else 0.0
-        box(lb, (lx0, 0, -20), (4, 4, 20), name='flap', upper=False, sx=sx)
-        box(lb, (-4.6 if sx < 0 else 3.6, -3, -19), (0, 3, 11), mat=teeth_mat, name='teeth', down=False,
+        box(lb, (lx0, 0, -18), (4, 4, 18), name='flap', upper=False, sx=sx)
+        box(lb, (-4.6 if sx < 0 else 3.6, -3, -17), (0, 3, 10), mat=teeth_mat, name='teeth', down=False,
             step=2, off=1)
-        box(lb, (-4.6 if sx < 0 else 0.6, -3, -19.6), (4, 3, 0), mat=teeth_mat, name='teeth', down=False,
+        box(lb, (-4.6 if sx < 0 else 0.6, -3, -17.6), (4, 3, 0), mat=teeth_mat, name='teeth', down=False,
             canine=True, step=2, off=1)
-        box(lb, (-1.9 if sx < 0 else 0.9, -2, -18), (0, 2, 12), mat=teeth_mat, name='teeth', down=False,
+        box(lb, (-1.9 if sx < 0 else 0.9, -2, -16), (0, 2, 10), mat=teeth_mat, name='teeth', down=False,
             step=2, off=0)
         if sx < 0:
-            box(lb, (-5.1, 4, -12), (0, 5, 1), mat=drool_mat, name='drool')
+            box(lb, (-5.1, 4, -11), (0, 5, 1), mat=drool_mat, name='drool')
 
     # black tongue lolling out of the front
     b.lbone('tongue', 'head', (0, -0.5, -8), rot=(0, -13, 0), mat=tongue_mat)
-    box('tongue', (-2.5, -0.5, -20), (5, 1, 20), name='tongue')
-    b.lbone('tongue_tip', 'tongue', (0, 0, -20), rot=(62, -10, 18), mat=tongue_mat)
+    box('tongue', (-2.5, -0.5, -18), (5, 1, 18), name='tongue')
+    b.lbone('tongue_tip', 'tongue', (0, 0, -18), rot=(62, -10, 18), mat=tongue_mat)
     box('tongue_tip', (-2.5, -0.5, -9), (5, 1, 9), name='tongue')
     box('tongue_tip', (-1.5, -0.5, -12), (3, 1, 3), name='tongue')
 

@@ -35,7 +35,7 @@ import time
 import numpy as np
 from scipy import signal
 from scipy.fft import dct
-from scipy.ndimage import median_filter, uniform_filter1d
+from scipy.ndimage import median_filter, minimum_filter1d, uniform_filter1d
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import dsp  # noqa: E402
@@ -123,6 +123,23 @@ def expander(x, thresh_db=-30.0, ratio=2.5, win=0.01, smooth=0.012, floor_db=-40
     gdb = np.clip(np.where(lv < thresh_db, (lv - thresh_db) * (ratio - 1), 0.0), floor_db, 0)
     gdb = uniform_filter1d(gdb, n_of(smooth))
     return (x * 10 ** (gdb / 20)).astype(np.float32)
+
+
+def limit(x, ceiling, look=0.004):
+    """Look-ahead brickwall limiter (min-filter + equal-width smoothing never overshoots the ceiling)."""
+    g = np.minimum(1.0, ceiling / (np.abs(x) + 1e-12))
+    w = 2 * n_of(look) + 1
+    g = uniform_filter1d(minimum_filter1d(g, w), w)
+    return (x * g).astype(np.float32)
+
+
+def deess(x, f=4800.0, thresh_db=-9.0, ratio=3.0):
+    """Tame sibilant spikes: duck the band above f when it dominates the full-band level."""
+    hi = dsp.highpass(x, f, 2)
+    lo = x - hi
+    rel = 20 * np.log10((rms_env(hi, 0.006) + 1e-7) / (rms_env(x, 0.006) + 1e-7))
+    gdb = uniform_filter1d(np.where(rel > thresh_db, (thresh_db - rel) * (1 - 1 / ratio), 0.0), n_of(0.004))
+    return (lo + hi * 10 ** (gdb / 20)).astype(np.float32)
 
 
 def wobble_delay(x, rate=0.6, depth_ms=1.0, seed=0, jitter_ms=0.0, flutter_hz=0.0, flutter_ms=0.0):
@@ -403,9 +420,17 @@ def mfcc(x, hop=441, nfft=1024):
     return (C - C.mean(0)) / (C.std(0) + 1e-6)
 
 
+def align_feats(x, hop=441, w_e=3.0):
+    """MFCC 1-10 + log loudness (weighted: closures and syllable nuclei are the best cross-speaker landmarks) + deltas."""
+    C = mfcc(x, hop)[:, :10]
+    e = np.log(rms_env(x, 0.012)[::hop][:len(C)] + 1e-5)
+    e = np.pad((e - e.mean()) / (e.std() + 1e-6), (0, max(0, len(C) - len(e))), mode='edge')[:len(C)]
+    return np.concatenate([C, w_e * e[:, None], 0.7 * np.gradient(C, axis=0), 2 * w_e * np.gradient(e)[:, None]], 1)
+
+
 def dtw_map(ref, src, hop=441):
-    """Per-sample map ref timeline -> src sample position (symmetric DTW, slopes 1/2..2)."""
-    A, B = mfcc(ref, hop), mfcc(src, hop)
+    """Per-sample map ref timeline -> src sample position (symmetric DTW, slopes 1/2..2, ends pinned)."""
+    A, B = align_feats(ref, hop), align_feats(src, hop)
     D = np.sqrt(((A[:, None, :] - B[None, :, :]) ** 2).sum(-1))
     N, M = D.shape
     INF = 1e18
@@ -423,7 +448,7 @@ def dtw_map(ref, src, hop=441):
         st = np.stack([c0, c1, c2])
         back[i] = np.argmin(st, 0)
         acc[i] = np.min(st, 0)
-    i, j = N - 1, int(np.argmin(acc[N - 1] / (N + np.arange(M))))
+    i, j = N - 1, M - 1
     if acc[i, j] >= INF:
         return np.linspace(0, len(src) - 1, len(ref))
     path = [(i, j)]
@@ -438,7 +463,7 @@ def dtw_map(ref, src, hop=441):
         path.append((i, j))
     path = np.array(path[::-1])
     jj = np.interp(np.arange(N), path[:, 0], path[:, 1])
-    jj = np.maximum.accumulate(uniform_filter1d(jj, 5))
+    jj = np.maximum.accumulate(uniform_filter1d(jj, 3))
     return np.clip(np.interp(np.arange(len(ref)), np.arange(N) * hop, jj * hop), 0, len(src) - 1)
 
 
@@ -570,48 +595,54 @@ def chapel(x, seed=2, wet=0.3, decay=3.6, dry=1.0):
 def phone_line(x, seed=0, bed=0.006):
     """dsp.phone_voice + a handset colour and a quiet line bed with 80 ms lead-in/out."""
     y = dsp.phone_voice(dsp.peak(x, 1800, 2.5, 1.2))
-    y = dsp.peak(y, 1000, 2, 1.5)
+    y = dsp.lowpass(dsp.peak(y, 1000, 2, 1.5), 3900, 4)     # the earpiece: no crushed images above the band
     pad = n_of(0.08)
     y = np.concatenate([np.zeros(pad, np.float32), y, np.zeros(pad, np.float32)])
     nb = dsp.bandpass(dsp.noise(len(y) / SR, 'pink', seed + 77), 300, 3400, 2)
     return (y + bed * nb / (np.max(np.abs(nb)) + 1e-9) * np.max(np.abs(y)) * 4).astype(np.float32)
 
 
+def mic_switch(seed=0, gain=0.25, on=True):
+    """Old PA microphone key: a dull thump through the speaker plus a small contact click."""
+    L = n_of(0.07)
+    t = taxis(L)
+    y = dsp.osc(105 if on else 80, L / SR, 'sine')[:L] * np.exp(-t * (85 if on else 60)) * 0.7
+    k = n_of(0.01)
+    y[:k] += dsp.bandpass(dsp.noise(0.01, 'white', seed), 500, 3200, 2)[:k] * np.exp(-taxis(k) * 450)
+    return norm(dsp.bandpass(y, 70, 3500, 2), gain)
+
+
 def pa_speaker(x, seed=0):
-    """1980s school loudspeaker: horn + paper cone, 50 Hz hum, slapback down the long corridor."""
+    """1980s school loudspeaker: horn + paper cone, 50 Hz hum while the mic is open, corridor slapback."""
     y = dsp.bandpass(x, 300, 3500, 4)
     y = dsp.peak(y, 950, 6, 2.0)            # horn throat
     y = dsp.peak(y, 2300, 7, 3.0)           # cone break-up
     y = dsp.peak(y, 3200, 3, 4.0)
-    # horn mouth reflection: short comb (0.55 ms) adds the 'honk'
-    d = n_of(0.00055)
+    d = n_of(0.00055)                       # horn mouth reflection: short comb -> the 'honk'
     y = y + 0.35 * np.concatenate([np.zeros(d, np.float32), y[:-d]])
-    y = dsp.drive(norm(y, 1.0) * 1.6, 1.8)
-    y = dsp.bandpass(y, 280, 3800, 2)
-    # mains hum through the amplifier (Argentina: 50 Hz) + a little buzz
-    n = len(y)
+    y = dsp.drive(norm(y, 1.0) * 1.5, 1.7)
+    y = norm(dsp.bandpass(y, 280, 3800, 2), 0.9)
+    # nearest speaker + the next ones down the corridor + the corridor's own slapback
+    taps = [(0.0, 1.0), (0.052, 0.26), (0.118, 0.2), (0.205, 0.12), (0.33, 0.07)]
+    out = dsp.mix(*[(dsp.lowpass(y, 3600 - 600 * i, 2) if i else y, dl, g) for i, (dl, g) in enumerate(taps)])
+    out = space(out, 1.4, 0.15, 3200, 0.02, [(31, 0.18), (63, 0.12), (97, 0.08)], 0.25, 300, seed + 9)
+    # the amplifier bed only while the mic is keyed: on-click ... speech ... +0.3 s ... off-click
+    lead = n_of(0.08)
+    end = int(np.where(voiced_mask(y, -40))[0][-1]) + n_of(0.3)
+    m = max(len(out), end + n_of(0.1))
+    n = lead + m
     t = taxis(n)
     hum = sum(np.sin(TWO_PI * 50 * k * t) / k ** 1.3 for k in range(1, 8)).astype(np.float32)
-    hum = dsp.highpass(hum, 90, 2) * 0.012
-    hiss = dsp.bandpass(dsp.noise(n / SR, 'white', seed + 5), 1500, 6000, 2) * 0.006
-    y = norm(y, 0.9)
-    # several speakers along the corridor + the corridor slapback
-    taps = [(0.0, 1.0), (0.052, 0.38), (0.118, 0.3), (0.205, 0.2), (0.33, 0.12)]
-    out = dsp.mix(*[(dsp.lowpass(y, 3600 - 600 * i, 2) if i else y, dl, g) for i, (dl, g) in enumerate(taps)])
-    out = space(out, 1.5, 0.22, 3200, 0.02, [(31, 0.2), (63, 0.15), (97, 0.1)], 0.3, 300, seed + 9)
-    m = len(out)
-    lead = n_of(0.07)
-    bed = np.concatenate([hum, hum[:max(0, m + 2 * lead - n)]])[:m + 2 * lead] + \
-        np.concatenate([hiss, hiss[:max(0, m + 2 * lead - n)]])[:m + 2 * lead]
-    bed = bed * dsp.env_points(m + 2 * lead, [(0, 0), (lead / (m + 2 * lead), 1), (1 - lead / (m + 2 * lead), 1), (1, 0)])
-    # mic switch on: a soft thump + click on the speaker
-    click = np.zeros(lead, np.float32)
-    k = n_of(0.012)
-    click[:k] = (dsp.bandpass(dsp.noise(0.012, 'white', seed + 3), 400, 3000, 2) * np.exp(-taxis(k) * 400))[:k] * 0.25
-    th = dsp.osc(110, 0.04, 'sine')[:n_of(0.04)] * np.exp(-taxis(n_of(0.04)) * 90) * 0.18
-    click[:len(th)] += th
-    voice = np.concatenate([click, out, np.zeros(lead, np.float32)])
-    return (voice + bed * np.max(np.abs(out))).astype(np.float32)
+    hum = dsp.highpass(hum, 90, 2) / 3.0 * 0.03
+    hiss = dsp.bandpass(dsp.noise(n / SR, 'white', seed + 5), 1500, 6000, 2) * 0.012
+    gate = np.zeros(n, np.float32)
+    gate[n_of(0.02):lead + end] = 1
+    gate = uniform_filter1d(gate, n_of(0.012))
+    voice = np.zeros(n, np.float32)
+    voice[lead:lead + len(out)] += out[:n - lead]
+    voice[n_of(0.005):n_of(0.005) + n_of(0.07)] += mic_switch(seed, 0.22)
+    voice[lead + end:lead + end + n_of(0.07)] += mic_switch(seed + 1, 0.16, on=False)[:max(0, n - lead - end)]
+    return (voice + (hum + hiss) * gate).astype(np.float32)
 
 
 def tape84(x, seed=0, drops=((0.31, 0.06), (0.62, 0.05))):

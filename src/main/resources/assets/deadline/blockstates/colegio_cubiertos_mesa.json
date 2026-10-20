@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "deadline:block/colegio_cubiertos_mesa"
+  },
+  "facing=east": {
+   "model": "deadline:block/colegio_cubiertos_mesa",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "deadline:block/colegio_cubiertos_mesa",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "deadline:block/colegio_cubiertos_mesa",
+   "y": 270
+  }
+ }
+}

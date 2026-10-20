@@ -689,20 +689,19 @@ def chalk_stroke(seed, dur, pressure=1.0, speed=1.0, squeak=False, tap=1.0):
     k = np.linspace(0, 1, n)
     env = np.minimum(1, k * dur / 0.004) * np.minimum(1, (1 - k) * dur / 0.014)
     env *= pressure * (1 + 0.25 * snoise(n, 18, seed + 1))
-    tex = bp(white(n, seed + 2), 1500, 8000)
-    tex = dsp.peak(tex, 3300, 6.0, 1.4)
-    tex *= grain(n, 220 + 380 * speed, seed + 3, 1.6) * 0.5 + 0.5
-    lam = 160 * speed * env
-    crumbs = dsp.highpass(pulse_train(n, poisson_times(lam, seed + 4), r.uniform(.3, 1, len(poisson_times(lam, seed + 4))),
-                                      burst(0.0004, seed + 5)), 2000, 2)
-    scratch = norm(tex) * env * (0.7 + 0.3 * speed) + 0.4 * norm(crumbs + 1e-9)
+    tex = bp(white(n, seed + 2), 1800, 6500)
+    tex = dsp.lowpass(dsp.peak(tex, 3300, 7.0, 1.4), 7500, 2)
+    tex *= grain(n, 160 + 300 * speed, seed + 3, 2.4) * 0.8 + 0.2  # gritty, crackly drag rather than hiss
+    ci = poisson_times(220 * speed * env, seed + 4)
+    crumbs = dsp.highpass(pulse_train(n, ci, r.uniform(.3, 1, len(ci)), burst(0.0004, seed + 5)), 2000, 2)
+    scratch = norm(tex) * env * (0.7 + 0.3 * speed) + 0.3 * norm(crumbs + 1e-9) * env
     board = excite(bp(white(n, seed + 6), 200, 3000) * env, BOARD, 0.12)
-    out[:n] += scratch
-    out += 0.18 * fit(norm(board), len(out))
+    out[:n] += 0.8 * scratch
+    out += 0.22 * fit(norm(board), len(out))
     if tap:
-        add(out, knock(seed + 8, BOARD, 0.12, contact=0.0004, click=0.0), 0, 0.42 * tap)
+        add(out, knock(seed + 8, BOARD, 0.12, contact=0.0004, click=0.0), 0, 0.6 * tap)
         tk = excite(fit(half_sine(0.00015), N(0.02)), CHALK, 0.03)
-        add(out, norm(tk), 0, 0.5 * tap)
+        add(out, norm(tk), 0, 0.75 * tap)
     if squeak:
         s0 = r.uniform(0.1, 0.35)
         sl = r.uniform(0.4, 0.75) * (1 - s0)
@@ -753,7 +752,7 @@ def tiza_rompe():
     r = dsp.rng(70)
     n = N(1.3)
     out = np.zeros(n, np.float32)
-    add(out, chalk_stroke(71, 0.07, 0.9, 1.4, True, 1.0), 0.0, 0.6)  # pressing harder...
+    add(out, chalk_stroke(71, 0.07, 0.9, 1.4, True, 1.0), 0.0, 0.3)  # pressing harder...
     ts = 0.075
     cl = np.zeros(N(0.05), np.float32)
     for k, (dt, a) in enumerate([(0, 1.0), (0.0007, .6), (0.0021, .45), (0.0045, .25)]):
@@ -791,6 +790,7 @@ def pupitres_giran():
         m = N(ln)
         k = np.linspace(0, 1, m)
         v = np.minimum(1, k * ln / ri.uniform(0.12, 0.3)) ** 0.7
+        v *= 0.55 + 0.45 * k ** 1.5  # they speed up as they swing round to face you
         v *= 1 + 0.35 * snoise(m, 3.5, 410 + i)
         for _p in range(ri.integers(0, 3)):  # a hitch: the chair sticks, then lurches on
             c = ri.uniform(0.2, 0.8)
@@ -808,16 +808,17 @@ def pupitres_giran():
             tj = ri.uniform(0.15, 0.95)
             add(joints, knock(460 + 10 * i + _j, CHAIR[3:] + [(4200, 300, .6)], 0.06, contact=0.0004, click=0.5), tj * ln, v[int(tj * (m - 1))])
         ch = sc + 0.35 * norm(rough) + 0.3 * joints
-        d = ri.uniform(0.0, 1.0)
-        ch = dsp.lowpass(ch, 11000 - 6500 * d, 2) / (1 + 1.6 * d)
-        add(out, ch, start)
+        d = ri.uniform(0.0, 0.25) if i < 3 else ri.uniform(0.35, 1.0)  # three right next to you, the rest across the room
+        ch = dsp.lowpass(ch, 11000 - 6500 * d, 2) / (1 + 2.2 * d)
+        add(out, ch, start, 0.55)
         # all of them land at once: four legs clack on the tiles
-        tl = T + ri.normal(0, 0.0035)
-        add(out, knock(480 + i, CHAIR + [(3900, 260, .5)], 0.25, contact=0.0009, click=0.45), tl, 1.6 / (1 + 1.6 * d))
+        tl = T + ri.normal(0, 0.003)
+        add(out, knock(480 + i, CHAIR + [(3900, 260, .5)], 0.25, contact=0.0009, click=0.5), tl, 2.2 / (1 + 1.6 * d))
+        add(out, knock(490 + i, CHAIR[2:] + [(4400, 300, .5)], 0.12, contact=0.0006, click=0.5), tl + ri.uniform(0.012, 0.03), 0.6 / (1 + 1.6 * d))
     tb = taxis(N(0.5))
-    add(out, np.sin(TWO_PI * 70 * tb) * np.exp(-tb * 16) * np.minimum(1, tb / 0.003), T, 1.2)
+    add(out, np.sin(TWO_PI * np.cumsum(62 * (1 + 0.6 * np.exp(-tb * 40))) / SR) * np.exp(-tb * 14) * np.minimum(1, tb / 0.002), T, 2.5)
     out = norm(out)
-    return verb(out, 'aula', wet=0.4, decay=1.15)
+    return verb(out, 'aula', wet=0.2, decay=1.15)
 
 
 # ====================================================================== 9. lamp burst
@@ -885,11 +886,11 @@ def luces_fuera():
     ph = TWO_PI * np.cumsum(f) / SR
     hum = np.sin(ph / 2) + 0.7 * np.sin(ph) + 0.35 * np.sin(1.5 * ph) + 0.2 * np.sin(2 * ph)
     hum_env = np.where(t < t0, 1.0, np.exp(-(t - t0) * 1.5)) * np.minimum(1, t / 0.15)
-    y = 0.35 * tubes * np.minimum(1, t / 0.15) + 0.3 * norm(hum) * hum_env
+    y = 0.16 * tubes * np.minimum(1, t / 0.15) + 0.13 * norm(hum) * hum_env
     out = np.zeros(n + N(0.3), np.float32)
     out[:n] = y
     # KA-: lever and spring
-    add(out, knock(103, [(1850, 60, 1), (3200, 80, .8), (5100, 110, .6), (7200, 150, .4)], 0.2, contact=0.0003, click=0.6), t0 - 0.045, 0.35)
+    add(out, knock(103, [(1850, 60, 1), (3200, 80, .8), (5100, 110, .6), (7200, 150, .4)], 0.2, contact=0.0003, click=0.6), t0 - 0.045, 0.55)
     tsp = taxis(N(0.3))
     add(out, np.sin(TWO_PI * 640 * tsp * (1 + 0.01 * np.exp(-tsp * 20))) * np.exp(-tsp * 18), t0 - 0.04, 0.06)
     # spark across the knife contacts
@@ -898,9 +899,9 @@ def luces_fuera():
     add(out, norm(spk + 1e-9), t0 - 0.002, 0.3)
     # -CHUNK: the contact block slams home in its iron box
     box = [(85, 14, 1), (140, 18, .8), (260, 25, .7), (410, 35, .5), (720, 50, .35), (1300, 80, .2), (2400, 120, .15)]
-    add(out, knock(106, box, 0.6, contact=0.0025, click=0.4), t0, 1.0)
+    add(out, knock(106, box, 0.6, contact=0.0025, click=0.5), t0, 1.3)
     tb = taxis(N(0.8))
-    add(out, np.sin(TWO_PI * 46 * tb) * np.exp(-tb * 5.5) * np.minimum(1, tb / 0.004), t0, 0.7)
+    add(out, np.sin(TWO_PI * 46 * tb) * np.exp(-tb * 7) * np.minimum(1, tb / 0.004), t0, 0.55)
     for k, tt in enumerate([1.25, 1.95, 2.75]):  # cooling glass and filaments ticking in the dark
         add(out, glass_ping(107 + k, r.uniform(3800, 6500), 260, 1.0, 0.6), tt, 0.05)
     return verb(out, 'hall', wet=0.3)
@@ -918,7 +919,7 @@ def silla_arrastra(v):
     if v == 1:
         sp = env_pts(n, [(0, 0), (0.18, .75), (0.5, 1.0), (0.95, .85), (1.3, .7), (1.44, 0), (1.5, 0)])
     else:  # two pulls with a catch on a board seam in between
-        sp = env_pts(n, [(0, 0), (0.12, .9), (0.5, .8), (0.62, 0), (0.76, 0), (0.86, 1.0), (1.3, .75), (1.42, 0), (1.5, 0)])
+        sp = env_pts(n, [(0, 0), (0.12, .9), (0.48, .8), (0.58, 0), (0.83, 0), (0.92, 1.0), (1.3, .75), (1.42, 0), (1.5, 0)])
     sp = np.clip(sp * (1 + 0.28 * snoise(n, 4, 111 + v)), 0, None)
     rate = 16 + 32 * sp
     idx, a = stick_slip(n, rate, 112 + v, 0.35, sp, 0.4)
@@ -927,11 +928,11 @@ def silla_arrastra(v):
     # leg squeal riding on top, intermittent
     idx2, a2 = stick_slip(n, 135 + 60 * sp, 114 + v, 0.15, sp * (snoise(n, 5, 115 + v) > 0.1), 0.5)
     squeal = norm(excite(pulse_train(n, idx2, a2, half_sine(0.0004)), [(620, 40, 1), (1240, 55, .6), (1870, 70, .4), (2480, 90, .25)], 0.15) + 1e-9)
-    rough = bp(white(n, 116 + v), 350, 3200) * grain(n, 90, 117 + v, 2.2) * sp
+    rough = dsp.lowpass(bp(white(n, 116 + v), 300, 2200), 2600, 2) * grain(n, 90, 117 + v, 2.2) * sp
     y = np.zeros(len(groan) + N(0.6), np.float32)
     y[:len(groan)] += groan
-    y[:len(squeal)] += 0.22 * squeal
-    y[:n] += 0.3 * norm(rough)
+    y[:len(squeal)] += 0.2 * squeal
+    y[:n] += 0.2 * norm(rough)
     # floorboard seams under the legs: double knocks (front legs, back legs)
     pos = np.cumsum(sp) / SR
     seams = np.searchsorted(pos, np.arange(0.11, pos[-1], 0.11) + r.uniform(0, 0.05))
@@ -940,7 +941,7 @@ def silla_arrastra(v):
             for k, dt in enumerate((0.0, r.uniform(0.04, 0.07))):
                 add(y, knock(118 + 3 * j + k, FLOOR + [(900, 60, .4)], 0.25, contact=0.002, click=0.15), s / SR + dt, 0.35 * (1 - 0.4 * k))
     if v == 2:  # the catch: a hard hitch before the second pull
-        add(y, knock(130, HEAVY_CHAIR, 0.35, contact=0.0015, click=0.3), 0.6, 0.7)
+        add(y, knock(130, HEAVY_CHAIR, 0.35, contact=0.0015, click=0.3), 0.585, 0.7)
     # a board creaking under the weight, then the chair settles
     cr = creak(0.5, 131 + v, 30, 22, ((280, 30, 1), (610, 45, .7), (1150, 70, .45), (2100, 100, .25)), hiss=0.05)
     add(y, cr, 0.55 if v == 1 else 0.95, 0.25)
@@ -957,11 +958,13 @@ def silla_gira():
     sp = env_pts(n, [(0, 0), (0.1, .55), (0.45, .9), (0.72, .45), (0.86, .85), (1.55, .7), (1.86, 0), (2.15, 0)])
     sp = np.clip(sp * (1 + 0.2 * snoise(n, 3, 121)), 0, None)
     # iron screw squeal: harmonic stick-slip whose pitch follows the speed, stuttering on and off
-    f = (480 + 340 * sp) * (1 + 0.012 * snoise(n, 90, 122))
+    f = (480 + 340 * sp) * (1 + 0.03 * snoise(n, 220, 122) + 0.02 * snoise(n, 9, 129))
     ph = TWO_PI * np.cumsum(f) / SR
-    sq = sum(np.sin(m * ph + m) / m ** 1.1 for m in range(1, 9))
+    # stick-slip: a jittery pulse-like wave (sharp slip, slow stick), harmonics rough rather than pure
+    saw = (ph / TWO_PI) % 1.0
+    sq = np.tanh(6 * (saw - 0.5)) + 0.15 * dsp.highpass(white(n, 130), 2000, 2) * (saw < 0.2)
     gate = smooth((snoise(n, 7, 123) > -0.15).astype(np.float32), 0.012)
-    sq = sq * sp ** 1.4 * gate
+    sq = sq * sp ** 1.4 * gate * (0.6 + 0.4 * grain(n, 70, 131, 1.2) / 2)
     sq = dsp.peak(dsp.peak(dsp.peak(sq, 1450, 9, 5), 2900, 7, 5), 4300, 4, 4)
     sq = dsp.highpass(sq, 400, 2)
     # wooden seat joints creaking
@@ -969,8 +972,8 @@ def silla_gira():
     wood = excite(pulse_train(n, idx, a, burst(0.0015, 125)), [(210, 35, 1), (460, 50, .8), (830, 60, .6), (1500, 90, .4), (2600, 130, .2)], 0.3)
     grind = bp(white(n, 126), 200, 900) * grain(n, 40, 127) * sp
     y = np.zeros(n + N(0.6), np.float32)
-    y[:n] += 0.55 * norm(sq)
-    y[:len(wood)] += 0.6 * norm(wood)[:len(y)]
+    y[:n] += 0.4 * norm(sq)
+    y[:len(wood)] += 0.75 * norm(wood)[:len(y)]
     y[:n] += 0.1 * norm(grind)
     # stop: wood clunk + the spring under the seat ringing faintly
     add(y, knock(128, [(140, 20, .8), (260, 28, 1), (520, 40, .7), (980, 60, .45), (1800, 90, .25)], 0.4, contact=0.003, click=0.2), 1.87, 0.55)
@@ -990,8 +993,8 @@ def telefono_ring():
         rr = dsp.rng(seed)
         m = []
         for ra, a, d in ratios:
-            for s in (-0.0018, 0.0018):
-                m.append((f0 * ra * (1 + s + rr.uniform(-3e-4, 3e-4)), d, a * 0.5))
+            for s, g in ((-0.0007, 0.68), (0.0007, 0.32)):  # unequal doublet: a gentle, irregular shimmer
+                m.append((f0 * ra * (1 + s + rr.uniform(-3e-4, 3e-4)), d, a * g))
         return m
     ta = np.arange(0.006, ring_on, 1 / 25.0)
     ta = ta + r.normal(0, 0.0012, len(ta))
@@ -1028,9 +1031,11 @@ def telefono_linea():
     hiss_env = env_pts(n, [(0, 0), (0.05, .45), (0.6, .4), (1.05, 1.0), (1.3, .9), (1.34, .3), (1.5, .25)])
     hiss = white(n, 141) * hiss_env * (1 + 0.4 * snoise(n, 9, 142))
     hiss = tv_filter(hiss, 'bp', 900 + 1600 * smooth(hiss_env, 0.1), 48, 1.6) + 0.4 * hiss
-    lam = 22 + 90 * np.exp(-0.5 * ((t - 1.0) / 0.18) ** 2)
+    lam = (45 + 160 * np.exp(-0.5 * ((t - 1.0) / 0.2) ** 2)) * (0.4 + 0.6 * (snoise(n, 8, 147) > 0))
     ci = poisson_times(lam, 143)
     crackle = pulse_train(n, ci, np.minimum(1, r.exponential(0.3, len(ci))), burst(0.0006, 144))
+    for j in range(5):  # a few fat pops on the line
+        add(crackle, burst(0.003, 148 + j, 1.5), r.uniform(0.1, 1.3), r.uniform(1.0, 2.0))
     hum = sum(np.sin(TWO_PI * 50 * k * t) / k for k in range(1, 9))
     out = 0.35 * norm(hiss) + 0.6 * norm(crackle + 1e-9) + 0.09 * norm(hum)
     # exchange relays: a clunk, a run of dial pulses (10 per second), the line seizing at the end
@@ -1061,18 +1066,19 @@ def mate_sorbo():
     pull = env_pts(n, [(0, 0), (0.06, .9), (0.25, 1.0), (0.55, .85), (0.62, 0), (0.78, 0), (0.85, 1.0), (1.3, .9), (1.42, .6), (1.47, 0), (1.75, 0)])
     pull = np.clip(pull * (1 + 0.2 * snoise(n, 6, 151)), 0, None)
     # air rushing through the filter and the steel tube (open pipe ~17 cm -> 1 kHz series)
-    air = bp(white(n, 152), 900, 8000)
-    for fpk, g in [(1010, 7), (2020, 6), (3030, 5), (4040, 3), (5050, 2)]:
+    air = dsp.lowpass(bp(white(n, 152), 800, 7000), 6500, 2)
+    for fpk, g in [(1010, 8), (2020, 7), (3030, 5), (4040, 3), (5050, 2)]:
         air = dsp.peak(air, fpk, g, 5)
-    # the dry rattle of the last drops: a 25-45 Hz stutter
+    # the dry rattle of the last drops: a 25-45 Hz stutter that gets wetter in the second pull
     fr = 33 * (1 + 0.25 * snoise(n, 3, 153))
     phr = np.cumsum(fr) / SR
-    rattle = 0.3 + 0.7 * np.clip(np.sin(TWO_PI * phr) + 0.6 * snoise(n, 60, 154), 0, 1) ** 0.7
+    rattle = 0.12 + 0.88 * np.clip(np.sin(TWO_PI * phr) + 0.6 * snoise(n, 60, 154), 0, 1) ** 0.6
     airy = norm(air) * pull * rattle
     # gurgle: slugs of water bursting into bubbles in the yerba
     out = np.zeros(n + N(0.3), np.float32)
     out[:n] += 0.55 * airy
-    lam = 70 * pull ** 1.5 * (0.5 + 0.5 * (snoise(n, 4, 155) > 0))
+    wetter = env_pts(n, [(0, 0.6), (0.7, 0.8), (0.85, 1.0), (1.47, 1.6), (1.75, 1.6)])
+    lam = 85 * pull ** 1.5 * wetter * (0.5 + 0.5 * (snoise(n, 4, 155) > 0))
     for j, i in enumerate(poisson_times(lam, 156)):
         add(out, bubble(r.uniform(550, 1900), 1700 + j, r.uniform(0.3, 1.2), r.uniform(0.2, 1.0), r.uniform(0.6, 1.4)), i / SR, 0.35)
     slosh = dsp.lowpass(white(n, 157), 900, 2) * grain(n, 12, 158, 2.0) * pull
@@ -1186,7 +1192,7 @@ def muro_cae():
     bt = ti - 0.15 + r.gamma(2.0, 0.28, 85)
     bt = bt[bt < 2.75]
     for j, tb_ in enumerate(np.sort(bt)):
-        a = r.uniform(0.25, 0.9) * np.exp(-max(0, tb_ - 0.7) / 1.1)
+        a = r.uniform(0.25, 0.9) * np.exp(-max(0, tb_ - 0.7) / 1.7)
         add(out, brick(300 + j, a), tb_)
         if r.random() < 0.5:
             add(out, brick(500 + j, a * 0.35, 0.5), tb_ + r.uniform(0.05, 0.16))
@@ -1194,7 +1200,7 @@ def muro_cae():
     slide_env = env_pts(n, [(0, 0), (0.55, 0), (0.75, 1.0), (1.6, .55), (2.7, .1), (3.2, 0)])
     rub = bp(white(n, 240), 180, 2600) * grain(n, 55, 241, 2.0) * slide_env
     dust = bp(white(n, 242), 2500, 9000) * env_pts(n, [(0, 0), (0.8, 0), (1.3, 1.0), (3.2, .3), (3.6, 0)])
-    out += 0.3 * norm(rub) + 0.05 * norm(dust)
+    out += 0.2 * norm(rub) + 0.04 * norm(dust)
     lam = 30 * env_pts(n, [(0, 0), (1.8, 0), (2.1, 1), (3.1, .1), (3.6, 0)])
     for j, i in enumerate(poisson_times(lam, 243)):
         add(out, brick(700 + j, r.uniform(.03, .1), 0.1), i / SR)
@@ -1209,12 +1215,12 @@ def tumba_tapa():
     dur = 2.5
     n = N(dur)
     r = dsp.rng(210)
-    sp = env_pts(n, [(0, 0), (0.09, 0), (0.13, .95), (0.26, .55), (0.8, .7), (0.95, .25), (1.08, .8), (1.9, .62), (2.25, .15), (2.31, 0), (2.5, 0)])
-    sp = np.clip(sp * (1 + 0.25 * snoise(n, 6, 211)), 0, None)
+    sp = env_pts(n, [(0, 0), (0.09, 0), (0.13, .95), (0.26, .5), (0.8, .7), (0.9, .08), (1.02, .05), (1.12, .85), (1.9, .62), (2.25, .15), (2.31, 0), (2.5, 0)])
+    sp = np.clip(sp * (1 + 0.3 * snoise(n, 6, 211)), 0, None)
     idx, a = stick_slip(n, 9 + 26 * sp, 212, 0.35, sp, 0.4)
     grind = norm(excite(pulse_train(n, idx, a, burst(0.002, 213)), detune(STONE, r, 0.03), 0.45))
-    rough = bp(white(n, 214), 180, 2200)
-    rough = dsp.peak(rough, 700, 5, 1.5) * grain(n, 45, 215, 2.0) * sp
+    rough = dsp.lowpass(bp(white(n, 214), 150, 1600), 1800, 2)
+    rough = dsp.peak(rough, 600, 5, 1.5) * grain(n, 45, 215, 2.0) * sp
     gl = 55 * sp
     gi = poisson_times(gl, 216)
     grit = dsp.highpass(pulse_train(n, gi, r.uniform(.2, 1, len(gi)), burst(0.0005, 217)), 1500, 2)

@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "deadline:block/colegio_atril_lectura"
+  },
+  "facing=east": {
+   "model": "deadline:block/colegio_atril_lectura",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "deadline:block/colegio_atril_lectura",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "deadline:block/colegio_atril_lectura",
+   "y": 270
+  }
+ }
+}

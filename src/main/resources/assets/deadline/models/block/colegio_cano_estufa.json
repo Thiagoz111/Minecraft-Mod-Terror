@@ -1,0 +1,145 @@
+{
+ "parent": "minecraft:block/block",
+ "textures": {
+  "t": "deadline:block/colegio_cano_estufa",
+  "particle": "deadline:block/colegio_cano_estufa"
+ },
+ "elements": [
+  {
+   "from": [
+    5.0,
+    0.0,
+    10.6
+   ],
+   "to": [
+    9.0,
+    16.0,
+    14.6
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      0.0,
+      0.0,
+      2.0,
+      8.0
+     ],
+     "texture": "#t"
+    },
+    "south": {
+     "uv": [
+      2.0,
+      0.0,
+      4.0,
+      8.0
+     ],
+     "texture": "#t"
+    },
+    "west": {
+     "uv": [
+      4.0,
+      0.0,
+      6.0,
+      8.0
+     ],
+     "texture": "#t"
+    },
+    "east": {
+     "uv": [
+      6.0,
+      0.0,
+      8.0,
+      8.0
+     ],
+     "texture": "#t"
+    },
+    "up": {
+     "uv": [
+      8.0,
+      0.0,
+      10.0,
+      2.0
+     ],
+     "texture": "#t"
+    },
+    "down": {
+     "uv": [
+      10.0,
+      0.0,
+      12.0,
+      2.0
+     ],
+     "texture": "#t"
+    }
+   }
+  },
+  {
+   "from": [
+    4.6,
+    7.0,
+    10.2
+   ],
+   "to": [
+    9.4,
+    7.8,
+    15.0
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      12.0,
+      0.0,
+      14.5,
+      0.5
+     ],
+     "texture": "#t"
+    },
+    "south": {
+     "uv": [
+      12.0,
+      0.5,
+      14.5,
+      1.0
+     ],
+     "texture": "#t"
+    },
+    "west": {
+     "uv": [
+      12.0,
+      1.0,
+      14.5,
+      1.5
+     ],
+     "texture": "#t"
+    },
+    "east": {
+     "uv": [
+      12.0,
+      1.5,
+      14.5,
+      2.0
+     ],
+     "texture": "#t"
+    },
+    "up": {
+     "uv": [
+      8.0,
+      2.0,
+      10.5,
+      4.5
+     ],
+     "texture": "#t"
+    },
+    "down": {
+     "uv": [
+      10.5,
+      2.0,
+      13.0,
+      4.5
+     ],
+     "texture": "#t"
+    }
+   }
+  }
+ ]
+}

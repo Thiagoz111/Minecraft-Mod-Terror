@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "deadline:block/colegio_ollas_piso"
+  },
+  "facing=east": {
+   "model": "deadline:block/colegio_ollas_piso",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "deadline:block/colegio_ollas_piso",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "deadline:block/colegio_ollas_piso",
+   "y": 270
+  }
+ }
+}

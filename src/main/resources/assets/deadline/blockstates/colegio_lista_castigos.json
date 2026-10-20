@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "deadline:block/colegio_lista_castigos"
+  },
+  "facing=east": {
+   "model": "deadline:block/colegio_lista_castigos",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "deadline:block/colegio_lista_castigos",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "deadline:block/colegio_lista_castigos",
+   "y": 270
+  }
+ }
+}
