@@ -36,6 +36,7 @@ import net.minecraft.server.level.ServerPlayer;
  * /deadline chapter &lt;n&gt;              replay a chapter of the scripted case from its checkpoint
  * /deadline beat &lt;id&gt;                 fire a scripted beat now
  * /deadline flag &lt;name&gt;               raise a director flag
+ * /deadline voice on|off               allow / forbid capturing your voice (Simple Voice Chat)
  * </pre>
  */
 public final class DeadLineCommands {
@@ -79,6 +80,9 @@ public final class DeadLineCommands {
 						.then(Commands.argument("id", StringArgumentType.greedyString()).executes(DeadLineCommands::beat)))
 				.then(Commands.literal("flag")
 						.then(Commands.argument("name", StringArgumentType.word()).executes(DeadLineCommands::flag)))
+				.then(Commands.literal("voice")
+						.then(Commands.literal("on").executes(c -> voice(c, false)))
+						.then(Commands.literal("off").executes(c -> voice(c, true))))
 				.then(Commands.literal("calls")
 						.then(Commands.argument("min", IntegerArgumentType.integer(5))
 								.then(Commands.argument("max", IntegerArgumentType.integer(5)).executes(DeadLineCommands::calls)))));
@@ -166,6 +170,15 @@ public final class DeadLineCommands {
 		if (r != null) {
 			r.flag(StringArgumentType.getString(c, "name"));
 		}
+		return 1;
+	}
+
+	private static int voice(CommandContext<CommandSourceStack> c, boolean off) throws CommandSyntaxException {
+		ServerPlayer p = self(c);
+		com.deadline.voice.Voice.optOut(p, off);
+		c.getSource().sendSuccess(() -> Component.literal(!com.deadline.voice.Voice.available()
+				? "Simple Voice Chat is not installed"
+				: off ? "Voice capture OFF (nothing is recorded)" : "Voice capture ON"), false);
 		return 1;
 	}
 

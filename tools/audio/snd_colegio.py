@@ -82,6 +82,15 @@ def add(buf, x, t, g=1.0):
     return buf
 
 
+def padsum(*parts):
+    """Sum (array, gain) pairs of different lengths."""
+    n = max(len(a) for a, _g in parts)
+    out = np.zeros(n, np.float32)
+    for a, g in parts:
+        out[:len(a)] += a * g
+    return out
+
+
 def white(n, seed):
     return dsp.rng(seed).standard_normal(n).astype(np.float32)
 
@@ -1281,7 +1290,8 @@ def regla_rompe():
     form = norm(form) * sw
     shimmer = dsp.pitch_shift(form, 12)
     shimmer = fit(shimmer, nch) * (1 + 0.3 * snoise(nch, 9, 2400))
-    choir = verb(form, 'capilla', wet=0.55, decay=5.0) + 0.55 * fit(verb(dsp.highpass(shimmer, 1200, 2), 'capilla', wet=1.0, dry=0.0, decay=6.0, seed=9), N(cl) + N(6.0 * 1.35) + N(0.035))
+    choir = padsum((verb(form, 'capilla', wet=0.55, decay=5.0), 1.0),
+                   (verb(dsp.highpass(shimmer, 1200, 2), 'capilla', wet=1.0, dry=0.0, decay=6.0, seed=9), 0.55))
     for j in range(9):  # sparkles in the vault
         fz = notes[j % 6] * 4
         tz = r.uniform(0.9, 3.8)

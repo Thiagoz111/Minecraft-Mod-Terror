@@ -1,33 +1,28 @@
-"""Choripan, version completa -- the possessed family dachshund, stretched into a 4.5-block demon (DEAD LINE).
+"""Choripan, version completa -- the possessed family dachshund, stretched into a 4.6-block demon (DEAD LINE).
 
 Authored at 2x texel density (model.scale = 0.5).  +Y down, ground y = 24, faces -Z, right_* on -X.
 
 Design
 ------
-Silhouette (side): a sausage dog pulled like taffy.  From the nose (z ~ -75) to the tail tip (z ~ +78)
-the body is a CHAIN: the head on a raised, stretched neck, the chest (seg1, still wearing what is left of
-the Nona's red sweater) on two short, bowed, perfectly normal dachshund legs, then five short fur
-"links" (seg2..seg6) and the rump (hips), each link separated from the next by a band of stretched,
-hairless pink-grey skin with ribs pushing through as ridges.  The back is a gentle arch.  Three pairs of
-thin, far-too-long HUMAN arms grow out of the flanks of seg3, seg5 and the hips: elbows jut up above
-the spine like a spider's knees, forearms come down to flat palms with long fingers on the floor.  The
-tiny dachshund tail still sticks up at the end and wags.
+Silhouette (side): a sausage dog pulled like taffy and tied off into links like a string of chorizos.  From the
+nose (z ~ -72) to the tail tip (z ~ +74) the body is a CHAIN of bones: the head on a raised, stretched neck, the
+chest (seg1, still wearing the shreds of the Nona's red sweater) on two short, bowed, perfectly normal dachshund
+legs, then five fur links (seg2..seg6) and the rump (hips).  Every link is tied to the next by a band of hairless,
+stretched, see-through pink-grey skin: a rib cage of partial rib arcs and a knobbly spine ridge, then a pinched
+waist where the skin is pulled thinnest.  The chain carries a hunch: it climbs from the chest to a crest at
+seg3/seg4, sags at seg5 and lifts again into the rump, and the links taper (chest 14 wide -> waist 11 -> hips 13).
+Three pairs of thin, far-too-long, NOT symmetrical human arms grow out of the flanks of seg3, seg5 and the hips:
+spider elbows above the spine, knobbly elbows and wrists, dirty hands -- one flat, one on its knuckles, one
+clawing on its fingertips, one with an extra joint and a wrist broken backwards.  The dachshund tail (now big
+enough to read) still sticks up and wags.
 
-Silhouette (front): a cute dog face (huge round eyes, split nose) on a long muzzle, two absurdly long
-ears hanging almost to the ground like curtains, and the six arms fanning out behind it.
-
-Face (the clip close-up and the jumpscare portrait):
-* the eyes stay BIG and round (6x6 bulging discs, black lid ring, tan "puppy brow" dots) but are milk
-  white, cataract-veined, with a tiny red pinpoint pupil each, both looking slightly inward (derp);
-  emissive layer 'eyes' = the milk white (dim) + the red pinpoints (full bright);
-* the muzzle splits from the nose to the throat into four flaps (jaw_upper_right/left,
-  jaw_lower_right/left): the black nose is cut in half with raw red cut faces, black dog lips, a
-  1-texel slit of interlocking needle teeth (zero-thickness planes) all along the lips, overbite fangs
-  outside, red gums, a ridged palate, a deep red cavity inside the skull ending in a black throat;
-* a long black tongue (tongue + tongue_tip) lolls out of the front like a panting dog.
-Palette: red-brown coat ramp #7a3a1c -> #c06a33 (darker back stripe), stretched skin pink-grey with
-purple shadows and blue veins, bone-pale rib ridges, raw red torn edges, red cable-knit sweater with a
-white "C", a light-blue (celeste) collar with a brass tag.
+Face (the clip close-up and the jumpscare portrait): it must still be Choripan.  The cute form's identity markers
+are kept -- tan muzzle and jowls, chunky tan brows (inner ends raised: puppy eyes), big almond eyes with a 2x2
+glint, one big round black nose -- but the eyes are milk-white with tiny red pinpoint pupils (2x2, one hot texel,
+emissive layer 'eyes') looking slightly inward, and the tan muzzle is TORN OPEN from the nose to the throat into
+four flaps (jaw_upper_right/left, jaw_lower_right/left): the nose is cut in half down a raw red seam, each flap
+is lined with crooked needle teeth in two offset rows (zero-thickness planes), red gums, a ridged palate, a deep
+red throat and a long black tongue (tongue + tongue_tip).
 """
 import math
 
@@ -44,28 +39,31 @@ def pal(*h):
 
 # ------------------------------------------------------------------ palettes (dark -> light, hue shifted)
 FUR = pal('#260b07', '#3f150b', '#5c2111', '#7a3a1c', '#8f4622', '#a6552a', '#c06a33', '#d88a4c', '#ecab6c')
-TAN = pal('#a8642e', '#c88446', '#dea263')
-SKIN = pal('#1e1219', '#36202b', '#52343f', '#704c55', '#8e666b', '#ab8282', '#c69e99', '#dcbcb2')
-HUMAN = pal('#2a1a1a', '#47302d', '#6a4a43', '#8d6a5e', '#ad8a7a', '#c8a796', '#dec1ae', '#eed8c6')
-VEIN = pal('#3a3463', '#544a86', '#6b4f7c')
-BONE = pal('#8c7f72', '#bdb1a2', '#e2d8c8', '#f6efe2')
+TAN = pal('#7d4320', '#9a5728', '#b46c33', '#c98243', '#d99a57', '#e6b16d', '#f0c687', '#f8dcab')
+SKIN = pal('#26141f', '#3e2232', '#583443', '#734b55', '#8e6568', '#ab8282', '#c69e99', '#d9b6ab', '#e9cdbf')
+PURPLE = hx('#4a2b52')
+ORGAN = pal('#2c0f22', '#4a1a2e', '#66283a', '#7e3a46')
+HUMAN = pal('#271a1d', '#443034', '#654a4c', '#876866', '#a8857f', '#c3a198', '#d9bcb0', '#ead4c8')
+VEIN = pal('#3b3468', '#4f4583', '#6a578f')
+BONE = pal('#6e6252', '#9c907c', '#c9bea8', '#e6dcc8', '#f8f2e4')
 RAW = pal('#2e050b', '#561019', '#80202a', '#a8383e', '#c95a5a', '#e08a82')
+BLOOD = pal('#1c0205', '#3d0609', '#640b11', '#8c1419')
 GUM = pal('#300510', '#5a0c1c', '#8a1628', '#b52a38', '#d4484e', '#e8706c')
-TEETH = pal('#5a5244', '#9a917c', '#d4ccb6', '#f2ecdc', '#fffdf4')
+TEETH = pal('#4e463a', '#857b66', '#b9b09a', '#ddd6c2', '#f4efe0', '#fffef8')
 TONGUE = pal('#030205', '#0c0910', '#18121d', '#261d2c', '#3a2e42', '#594a66', '#8a7a9c')
 THROAT = pal('#000000', '#0c0105', '#1e040a', '#3a0812', '#5c0f1b')
-NOSE = pal('#050406', '#121016', '#221f2a', '#38343f', '#625d70', '#b4b0c8')
+NOSE = pal('#050304', '#0d090b', '#191215', '#2a2125', '#43383d', '#6e6268', '#a89ca3', '#d8d0d6')
 LIP = pal('#08060a', '#16121a', '#2a2228')
-MILK = pal('#5e6672', '#8a939c', '#b2bac0', '#cfd5d8', '#e4e8e8', '#f3f5f2', '#ffffff')
-PUPIL = hx('#ff1e12')
-PUPIL_D = hx('#9a0c0c')
+MILK = pal('#56606e', '#7d8894', '#a3adb6', '#c3cbd0', '#dce1e2', '#eef0ee', '#ffffff')
+PUPIL = hx('#ff2a14')
+PUPIL_D = hx('#a80d10')
 BLOODSHOT = hx('#c4706c')
 KNIT = pal('#22040a', '#3e0810', '#5e0e18', '#7e1620', '#9e2228', '#bb3432', '#d24e44', '#e47060')
 KNIT_W = pal('#8f877e', '#bfb7ab', '#e3dccf', '#f6f1e6')
 CELESTE = pal('#1d3a5c', '#2f5f8f', '#4f8fc4', '#75b2e2', '#a4d2f2')
 BRASS = pal('#3b2a10', '#7a5a22', '#b8913e', '#e6c66a', '#fff0b0')
 PAD = pal('#120c0e', '#241a1c', '#3a2c2c', '#544040')
-NAIL = pal('#1a1410', '#3c3228', '#6e6250', '#a29478')
+NAIL = pal('#0e0a08', '#2a221c', '#4e4436', '#7a6c58', '#a29478')
 DIRT = hx('#2a1d14')
 
 
@@ -92,7 +90,7 @@ def local(ctx):
 
 
 def A(ctx):
-    """Absolute authoring coordinates (rest pose, before any bone rotation)."""
+    """Authoring coordinates of the texel (the bone's straightened rest frame, before bone rotations)."""
     lx, ly, lz = local(ctx)
     o = ctx.cube.a0
     return o[0] + lx, o[1] + ly, o[2] + lz
@@ -125,6 +123,12 @@ def at(points):
     return fn
 
 
+def art(rows, cmap, i, j, flip=False):
+    row = rows[j]
+    ch = row[len(row) - 1 - i] if flip else row[i]
+    return cmap.get(ch)
+
+
 # ------------------------------------------------------------------ fur
 def strands(across, along, seed, clump=2.0, brk=3.5):
     """Directional fur: clumps `clump` texels wide, broken every ~`brk` texels along the lay."""
@@ -138,7 +142,7 @@ def strands(across, along, seed, clump=2.0, brk=3.5):
 
 
 def fur_val(ctx, base=0.5):
-    """Body fur value: lay runs along Z on the trunk (nose -> tail)."""
+    """Body fur value: lay runs along Z on the trunk (nose -> tail); a clean dark stripe down the back."""
     x, y, z = A(ctx)
     f = ctx.face
     v = base + face_light(ctx) * 1.1
@@ -147,65 +151,54 @@ def fur_val(ctx, base=0.5):
         v += strands(y, z, 11 + s)
         v -= clamp((y - (ctx.cube.a0[1] + ctx.cube.size[1] * 0.55)) / 6.0) * 0.12   # belly side darker
     elif f in ('top', 'bottom'):
+        if f == 'top' and abs(x) < 2.6:
+            return v - 0.2 + strands(x, z, 21 + s) * 0.35          # the dachshund back stripe, kept clean
         v += strands(x, z, 21 + s)
     else:
         v += strands(x, y, 31 + s, 2.0, 3.0)
-    if f == 'top' and abs(x) < 2.6:
-        v -= 0.14                                   # darker back stripe
     if edge(ctx) == 0 and not is_plane(ctx):
         v -= 0.06
     return v
 
 
-def torn_fur(ctx, v):
-    """Torn ends of a fur link: a ragged rim of dark fur tips and raw red flesh where the skin was pulled out."""
+def link_fur(ctx):
+    """A fur link: clean coat, 1 jagged texel of torn dark tips at each cut end, blood only on a few links."""
     c = ctx.cube
+    f = ctx.face
+    t = tag(ctx)
+    v = fur_val(ctx, 0.53)
+    if t == 'keel':
+        v -= 0.07
     lx, ly, lz = local(ctx)
     w, h, d = c.size
-    f = ctx.face
     tf, tb = getattr(c, 'tear', (False, False))
     if f in ('front', 'back'):
         torn = tf if f == 'front' else tb
         if not torn:
-            return pick(FUR, v)
-        e = edge(ctx)
-        if e == 0:
-            return pick(FUR, v - 0.12)
-        if e == 1 and hash3(ctx.i, ctx.j, cseed(ctx), 5) > 0.45:
-            return pick(FUR, v - 0.22)
-        return pick(RAW, 0.65 - e * 0.12 + hash3(ctx.i, ctx.j, 3, 9) * 0.15)
+            return pick(FUR, v - (0.06 if edge(ctx) == 0 else 0))
+        if edge(ctx) == 0:
+            return pick(FUR, v - 0.16)
+        return pick(RAW, 0.38 + hash3(ctx.i, ctx.j, 3, 9) * 0.2)      # the cut meat (mostly hidden in the skin tube)
     across = lx if f in ('top', 'bottom') else ly
     for k, (torn, dist) in enumerate(((tf, lz), (tb, d - lz))):
-        if not torn:
+        if not torn or dist >= 1.0:
             continue
-        jag = 0.35 + hash3(math.floor(across), cseed(ctx), 1 + k, 13) * 1.35
-        if dist < jag - 0.55:
-            return pick(RAW, 0.55 + hash3(math.floor(across), 2, 3, 4) * 0.25)
-        if dist < jag:
-            return pick(FUR, v - 0.22)
-        # blood trickling down the flank from the torn rim
-        if f in ('west', 'east') and dist < 1.0:
-            col = math.floor(lz) + 31 * k + cseed(ctx)
-            if hash3(col, 7, 1, 77) > 0.55 and ly < 2.0 + hash3(col, 8, 2, 78) * 5.0:
-                return pick(RAW, 0.3 if ly > 1.5 else 0.42)
-    return pick(FUR, v)
-
-
-def fur_mat(ctx):
-    t = tag(ctx)
-    v = fur_val(ctx, 0.52)
-    if t in ('core', 'cap', 'keel', 'rump'):
-        if t == 'keel':
-            v -= 0.06
-        return torn_fur(ctx, v)
+        hh = hash3(math.floor(across), cseed(ctx), k, 13)
+        if hh > 0.86 and f != 'bottom':
+            return pick(RAW, 0.48)
+        if hh > 0.3:
+            return pick(FUR, v - 0.22)                               # ragged dark fur tips
+    if getattr(c, 'drip', False) and f in ('west', 'east') and d - lz < 2.2 and lz > 0.5:
+        col = math.floor(lz) + cseed(ctx)
+        if hash3(col, 7, 1, 77) > 0.35 and ly < 1.5 + hash3(col, 8, 2, 78) * 5.0:
+            return pick(BLOOD, 2.6 / 4 if ly > 1.0 else 3.4 / 4)
     return pick(FUR, v)
 
 
 def leg_fur(ctx):
-    """Dachshund legs and tail: fur laid along the limb, darker at the back, short and shiny."""
+    """Dachshund legs: short shiny fur laid along the limb."""
     x, y, z = A(ctx)
     f = ctx.face
-    t = tag(ctx)
     v = 0.52 + face_light(ctx) * 1.1
     if f in ('front', 'back', 'west', 'east'):
         v += strands(x + z, y, 41 + cseed(ctx) % 5, 1.5, 3.0)
@@ -213,11 +206,34 @@ def leg_fur(ctx):
         v += strands(x, z, 47)
     if edge(ctx) == 0 and not is_plane(ctx):
         v -= 0.06
-    if t == 'tail':
-        if f == 'top':
-            v -= 0.12
-        return pick(FUR, v)
+    if f == 'front' and tag(ctx) == 'shoulder':
+        return mix(pick(FUR, v), pick(TAN, v), 0.35)
     return pick(FUR, v)
+
+
+def tail_mat(ctx):
+    """The big wagging tail: dark top stripe, paler underside, a tan tip so the wag reads from far away."""
+    f = ctx.face
+    lx, ly, lz = local(ctx)
+    w, h, d = ctx.cube.size
+    x, y, z = A(ctx)
+    v = 0.55 + face_light(ctx) * 1.1
+    v += strands(lx + ly, z, 81, 1.5, 3.0)
+    if f == 'top':
+        v -= 0.14
+    if edge(ctx) == 0:
+        v -= 0.05
+    c = pick(FUR, v)
+    if tag(ctx) == 'tip':
+        tt = clamp((lz - (d - 4.0)) / 3.0)                           # last ~3 texels go tan
+        if f == 'back':
+            tt = 1.0
+        if f == 'bottom':
+            tt = max(tt, 0.4)
+        c = mix(c, pick(TAN, 0.55 + face_light(ctx)), tt)
+    elif f == 'bottom':
+        c = mix(c, pick(TAN, 0.45), 0.35)
+    return c
 
 
 def paw_mat(ctx):
@@ -231,11 +247,11 @@ def paw_mat(ctx):
         return pick(PAD, 0.3 + (0.3 if (ctx.i + ctx.j) % 3 == 0 else 0))
     if t == 'toes':
         if f in ('front', 'top'):
-            if ctx.i in (1, 3) if w == 5 else ctx.i == 2:
+            if (ctx.i in (1, 3)) if w == 5 else ctx.i == 2:
                 return pick(FUR, v - 0.25)          # grooves between toes
             if f == 'front' and ctx.j == ctx.h - 1:
                 return pick(PAD, 0.15 if ctx.i % 2 == 0 else 0.6)   # claw tips
-        return pick(FUR, v + 0.04)
+        return mix(pick(FUR, v + 0.04), pick(TAN, v), 0.3)
     if f == 'top' and lz < 2:
         if ctx.i in (1, 3):
             return pick(FUR, v - 0.22)
@@ -244,142 +260,201 @@ def paw_mat(ctx):
     return pick(FUR, v)
 
 
-# ------------------------------------------------------------------ stretched skin
-def skin_core(ctx, base=0.55, along_axis='z'):
-    x, y, z = A(ctx)
-    f = ctx.face
-    v = base + face_light(ctx) * 1.0
-    if along_axis == 'z':
-        across = y if f in ('west', 'east') else x
-        along = z
-    else:
-        across = x + z
-        along = y
-    # stretch striations: thin darker lines running along the pull
-    if math.floor(across) % 3 == 0 and hash3(math.floor(across), math.floor(along / 4), 0, 3) > 0.3:
-        v -= 0.12
-    elif math.floor(across) % 3 == 1 and hash3(math.floor(across), math.floor(along / 3), 1, 3) > 0.6:
-        v += 0.08
-    # translucent: darker shapes under the skin (organs / rib shadows) on the flanks
-    if f in ('west', 'east', 'bottom'):
-        blob = hash3(math.floor(along / 3), math.floor(across / 3), cseed(ctx), 17)
-        if blob > 0.66:
-            v -= 0.16
-    # wet sheen along the top
-    if f == 'top' and abs(x) < 1.5:
-        v += 0.12
-    return v
-
-
-def vein_hit(ctx, along, across, seed):
-    p = 1.6 * math.sin(along * 0.55 + seed * 1.7) + 0.8 * math.sin(along * 1.3 + seed)
-    c0 = (seed % 5) - 2.0
-    return abs(across - c0 - p) < 0.5
+# ------------------------------------------------------------------ stretched skin bands
+def vein_on(across, along, seed, amp=1.2, freq=0.42):
+    """A connected 1-texel vein meandering along `along` (slope < 1 texel per texel, so it never breaks)."""
+    c0 = (hash3(seed, 1, 2, 3) - 0.5) * 4.0
+    p = c0 + amp * math.sin(along * freq + seed * 1.7) + 0.5 * amp * math.sin(along * freq * 2.3 + seed)
+    return abs(math.floor(across) + 0.5 - p) < 0.5
 
 
 def skin_mat(ctx):
-    """Stretched, hairless pink-grey skin between the fur links: striated, wet, veined, see-through-ish."""
+    """Hairless skin pulled out of the fur: warm pink-grey, striated along the pull, purple underneath,
+    see-through (dark organ shapes), connected blue veins, a few stretch tears."""
     x, y, z = A(ctx)
     f = ctx.face
+    c_ = ctx.cube
     t = tag(ctx)
-    if t == 'arm':
-        v = skin_core(ctx, 0.56, 'y')
-        lx, ly, lz = local(ctx)
-        c = pick(SKIN, v)
-        if f in ('front', 'west', 'east', 'back') and vein_hit(ctx, ly, ctx.i, cseed(ctx)):
-            c = mix(c, VEIN[1], 0.55)
-        return c
-    v = skin_core(ctx, 0.5)
-    c = pick(SKIN, v)
-    # irritated pink where the skin is pulled out of the fur
     lx, ly, lz = local(ctx)
-    d = ctx.cube.size[2]
-    if f in ('west', 'east', 'top') and (lz < 4.5 or lz > d - 2.0):
-        c = mix(c, RAW[4], 0.22)
-    if f in ('west', 'east', 'top'):
-        across = y if f != 'top' else x
-        if vein_hit(ctx, z, across - (ctx.cube.a0[1] + ctx.cube.size[1] / 2 if f != 'top' else 0), cseed(ctx)):
-            c = mix(c, VEIN[1] if (cseed(ctx) % 2) else VEIN[2], 0.6)
+    w, h, d = c_.size
+    pinch = t == 'pinch'
+    v = (0.66 if pinch else 0.6) + face_light(ctx) * 0.85
+    across = y if f in ('west', 'east') else x
+    k = math.floor(across)
+    # stretch striations running along the pull
+    if k % 2 == 0 and hash3(k, math.floor(z / (2.5 if pinch else 3.5)), 1, 3) > 0.3:
+        v -= 0.11
+    elif hash3(k, math.floor(z / 2), 4, 3) > 0.82:
+        v += 0.07
+    if edge(ctx) == 0 and f in ('west', 'east', 'top', 'bottom') and (lz < 1 or lz > d - 1):
+        v -= 0.12                                               # crease where it vanishes into the fur
+    c = pick(SKIN, v)
+    if f == 'bottom':
+        c = mix(c, PURPLE, 0.45)
+    elif f in ('west', 'east', 'front', 'back') and ly > h * 0.55:
+        c = mix(c, PURPLE, 0.32 * (ly - h * 0.55) / (h * 0.45))
+    if f in ('west', 'east'):
+        sd = cseed(ctx) + (7 if f == 'east' else 0)
+        # organs seen through the skin: a soft dark oval (gut loop / lung shadow)
+        oz = 1.5 + hash3(sd, 2, 0, 5) * max(0.5, d - 3.0)
+        oy = h * (0.45 + hash3(sd, 3, 0, 5) * 0.25)
+        r = ((lz - oz) / (2.4 if pinch else 2.8)) ** 2 + ((ly - oy) / (1.6 if pinch else 2.1)) ** 2
+        if r < 1.0:
+            c = mix(c, ORGAN[1 if r < 0.45 else 2], 0.55 if pinch else 0.42)
+        # a stretch tear across the pull: red slit with dark lips
+        tz = math.floor(1 + hash3(sd, 4, 0, 5) * max(1.0, d - 2.0))
+        ty = math.floor(h * 0.2 + hash3(sd, 5, 0, 5) * h * 0.3)
+        if hash3(sd, 6, 0, 5) > 0.35 and math.floor(lz) == tz and ty <= math.floor(ly) <= ty + 2:
+            return RAW[2] if math.floor(ly) == ty + 1 else RAW[1]
+        if vein_on(ly, z, sd, 1.0, 0.5):
+            c = mix(c, VEIN[1], 0.6)
+    elif f == 'top':
+        if vein_on(lx + 0.5, z, cseed(ctx) + 3, 1.3, 0.38):
+            c = mix(c, VEIN[2], 0.45)
+    # blood around a rib spike
+    for sp in SPIKES:
+        if sp[0] == ctx.bone.name and f in ('west', 'east', 'top'):
+            dx, dy, dz = x - sp[1], y - sp[2], z - sp[3]
+            if abs(dz) < 1.6 and abs(dx) < 1.6 and -1.0 < dy < 3.5 - abs(dz):
+                c = BLOOD[2] if abs(dz) < 0.7 else BLOOD[1]
     return c
 
 
 def rib_mat(ctx):
-    """A rib pushing through the stretched skin: pale ridge crest, dark creases where the skin folds."""
+    """A partial rib arc pushing out under the skin: bone-pale crest on top, fading down the flank."""
     f = ctx.face
     lx, ly, lz = local(ctx)
     w, h, d = ctx.cube.size
-    if f in ('front', 'back'):
-        e = edge(ctx)
-        if e == 0:
-            return pick(SKIN, 0.62 + face_light(ctx))
-        return pick(SKIN, 0.25)                   # crease (mostly hidden inside the tube)
-    if f == 'bottom':
-        return pick(SKIN, 0.35)
     v = 0.62 + face_light(ctx) * 0.8
+    if f == 'bottom':
+        return pick(SKIN, 0.28)
+    if f in ('front', 'back'):
+        if edge(ctx) == 0:
+            return mix(pick(SKIN, 0.4), PURPLE, 0.25)            # the fold where it meets the tube
+        return pick(SKIN, 0.55)
     c = pick(SKIN, v)
-    if f == 'top' and abs(lx - w / 2) < w * 0.25:
-        c = mix(c, BONE[1], 0.35)                 # the bone shows through on the crest
-    if f in ('west', 'east') and ly < h * 0.35:
-        c = mix(c, BONE[1], 0.2)
+    if f == 'top':
+        mid = abs(lx - w / 2) / (w / 2)
+        c = mix(c, BONE[3], 0.55 - mid * 0.3)
+        if ctx.i in (0, ctx.w - 1):
+            c = mix(c, PURPLE, 0.3)
+    else:
+        tt = ly / h                                               # 0 at the crest, 1 where the arc fades
+        c = mix(c, BONE[2], clamp(0.5 - tt * 0.7))
+        if ly > h - 1.0:
+            c = mix(pick(SKIN, 0.4), PURPLE, 0.3)
     return c
 
 
+def spine_mat(ctx):
+    """The spine ridge on top of a band: vertebra knobs every 2 texels, dark folds between them."""
+    f = ctx.face
+    lx, ly, lz = local(ctx)
+    w, h, d = ctx.cube.size
+    v = 0.6 + face_light(ctx) * 0.8
+    knob = (math.floor(lz) % 2 == 0)
+    if f == 'top':
+        if knob:
+            return mix(pick(SKIN, v), BONE[3], 0.6)
+        return pick(SKIN, 0.38)
+    if f in ('west', 'east'):
+        if ly > h - 1.0:
+            return mix(pick(SKIN, 0.35), PURPLE, 0.35)
+        if ly < 1.0 and knob:
+            return mix(pick(SKIN, v), BONE[2], 0.4)
+        return pick(SKIN, v - (0.06 if not knob else 0))
+    if f in ('front', 'back'):
+        return mix(pick(SKIN, 0.5), BONE[2], 0.3)
+    return pick(SKIN, 0.3)
+
+
 def spike_mat(ctx):
-    """A broken rib tip piercing the skin: bone, bloody at the base."""
+    """A broken rib punched out through the skin: sharp pale tip, bloody shaft and base."""
     lx, ly, lz = local(ctx)
     h = ctx.cube.size[1]
-    v = 0.6 + face_light(ctx)
-    if ly > h - 1.0:
-        return pick(RAW, 0.5)
+    f = ctx.face
+    if f == 'top':
+        return BONE[4]
+    if f == 'bottom':
+        return BLOOD[1]
+    if ly > h - 2.0:
+        return BLOOD[2] if ly > h - 1.0 else RAW[2]
+    if ly > h - 3.0 and (ctx.i + ctx.j) % 2 == 0:
+        return RAW[3]
+    v = 0.85 - ly / h * 0.4 + face_light(ctx)
     return pick(BONE, v)
 
 
 # ------------------------------------------------------------------ human arms (grown out of the flanks)
 def arm_mat(ctx):
-    """Long human arm: hairless pink-grey skin, knobbly bone at the elbow, veins, dirty knuckles."""
+    """Long human arm: sickly skin, redder where it tore out of the dog, darker and filthier toward the hand,
+    knobbly elbow/wrist bones, connected veins, an ulna ridge, cracked black nails."""
+    c = ctx.cube
     f = ctx.face
     t = tag(ctx)
     lx, ly, lz = local(ctx)
-    w, h, d = ctx.cube.size
+    w, h, d = c.size
     v = 0.56 + face_light(ctx) * 0.9
     if edge(ctx) == 0 and not is_plane(ctx):
         v -= 0.05
-    if t == 'elbow':
-        c = pick(HUMAN, v + 0.1)
-        if f in ('top', 'front', 'west', 'east') and edge(ctx) > 0:
-            c = mix(c, BONE[2], 0.4)                # the bone end straining the skin
-        return c
-    if t == 'shoulder':
-        # where the arm burst out of the dog: torn fur collar around raw skin
-        if ly < 1.0 or edge(ctx) == 0:
-            return pick(FUR, 0.45 + face_light(ctx) + hash3(ctx.i, ctx.j, 1, 2) * 0.15)
-        return pick(RAW, 0.55 + hash3(ctx.i, ctx.j, 2, 3) * 0.2)
-    if t in ('upper', 'fore'):
-        c = pick(HUMAN, v)
-        if f in ('west', 'back') and vein_hit(ctx, ly, lx + lz, cseed(ctx)):
-            c = mix(c, VEIN[1], 0.3)
-        if t == 'fore' and ly > h - 3:
-            c = mix(c, DIRT, 0.25)                  # filthy wrists
-        if t == 'upper' and ly < 2:
-            c = mix(c, RAW[3], 0.35)
-        return c
-    if t == 'palm':
+    s = clamp((getattr(c, 'yb', 0.0) + ly) / max(1.0, getattr(c, 'limb', 1.0)))   # 0 joint -> 1 next joint
+    if t == 'collar':
+        # where the arm burst out of the dog: a torn fur collar around raw meat
+        if f in ('top', 'bottom'):
+            return pick(RAW, 0.5 + hash3(ctx.i, ctx.j, 2, 3) * 0.25) if edge(ctx) > 0 else pick(FUR, 0.3)
+        if ly < 1.5 or hash3(ctx.i, 1, cseed(ctx), 2) > 0.6 and ly < 2.5:
+            return pick(FUR, 0.42 + face_light(ctx) + hash3(ctx.i, ctx.j, 1, 2) * 0.15)
+        return pick(RAW, 0.5 + hash3(ctx.i, ctx.j, 2, 3) * 0.2)
+    if t in ('knob', 'wknob'):
+        cc = mix(pick(HUMAN, v + 0.08), BONE[2], 0.45)
+        if edge(ctx) == 0:
+            cc = mix(cc, HUMAN[1], 0.45)                          # dark crease round the knob
+        elif (ctx.i + ctx.j) % 3 == 0:
+            cc = mix(cc, BONE[3], 0.4)
+        return cc
+    if t in ('upper', 'bicep', 'fore', 'ulna', 'jseg'):
+        lower = t in ('fore', 'ulna', 'jseg')
+        if lower:
+            v -= s * 0.14
+        cc = pick(HUMAN, v)
+        if t == 'ulna':
+            cc = mix(cc, BONE[2], 0.3 if f != 'bottom' else 0.0)    # tendon / ulna ridge catching the light
+        if not lower and s < 0.3:
+            cc = mix(cc, RAW[3], (0.3 - s) * 1.6)                   # raw, inflamed where it burst out
+        if lower:
+            cc = mix(cc, DIRT, s * 0.45)                          # filthy toward the wrist
+        # connected veins winding down the limb
+        if f in ('west', 'east', 'front', 'back') and t != 'ulna':
+            across = ctx.i
+            if vein_on(across, ly + getattr(c, 'yb', 0.0), cseed(ctx) + (3 if f in ('front', 'back') else 0),
+                       0.8, 0.35):
+                cc = mix(cc, VEIN[1], 0.55)
+        return cc
+    if t in ('palm', 'knuckles'):
         if f == 'bottom':
-            return mix(pick(HUMAN, 0.3), DIRT, 0.5)
-        c = pick(HUMAN, v)
-        if f == 'top' and ctx.j <= 1:
-            c = pick(HUMAN, v - 0.12)                # knuckle row
-        return c
+            return mix(pick(HUMAN, 0.28), DIRT, 0.55)
+        cc = mix(pick(HUMAN, v - 0.06), DIRT, 0.3)
+        if t == 'knuckles' and f in ('front', 'bottom', 'top'):
+            if ctx.i % 2 == 1:
+                cc = mix(cc, HUMAN[1], 0.5)                     # creases between the curled fingers
+            elif f == 'front':
+                cc = mix(cc, BONE[2], 0.25)                     # knuckle bones
+        if t == 'palm' and f == 'top' and ctx.j >= ctx.h - 2:
+            cc = mix(cc, HUMAN[2], 0.35)                        # knuckle row
+        return cc
     if t in ('finger', 'thumb'):
-        if f == 'bottom':
-            return mix(pick(HUMAN, 0.3), DIRT, 0.5)
-        tip = (lz < 1.0) if t == 'finger' else (getattr(ctx.cube, 'tipx', 0) * (lx - w / 2) > 0 and abs(lx - w / 2) > w / 2 - 1)
-        if tip:
-            return pick(NAIL, 0.55 + face_light(ctx)) if f == 'top' else NAIL[0]   # cracked nail, black dirt
-        c = pick(HUMAN, v)
-        if t == 'finger' and f == 'top' and int(lz) % 3 == 1:
-            c = pick(HUMAN, v - 0.13)                # extra knuckle creases (one too many)
-        return c
+        if f == 'bottom' and getattr(c, 'tip', 'front') == 'front':
+            return mix(pick(HUMAN, 0.3), DIRT, 0.55)
+        tipd = getattr(c, 'tip', 'front')
+        is_tip = (lz < 1.0) if tipd == 'front' else (ly > h - 1.0) if tipd == 'bottom' else (
+            (lx < 1.0) if tipd == 'west' else (lx > w - 1.0))
+        if is_tip:
+            return pick(NAIL, 0.6 + face_light(ctx)) if f in ('top', 'front') else NAIL[0]   # cracked black nail
+        cc = mix(pick(HUMAN, v - 0.04), DIRT, 0.3)
+        alongv = lz if tipd == 'front' else ly if tipd == 'bottom' else lx
+        if math.floor(alongv) % 3 == 1:
+            cc = mix(cc, HUMAN[1], 0.4)                         # one knuckle crease too many
+        return cc
     return pick(HUMAN, v)
 
 
@@ -408,28 +483,25 @@ def knit_px(i, j, v):
 def sweater_mat(ctx):
     """Remnant of the sweater around the chest: torn back edge and rips (the fur shows through)."""
     f = ctx.face
-    x, y, z = A(ctx)
     lx, ly, lz = local(ctx)
     w, h, d = ctx.cube.size
     if f == 'bottom':
-        # only a strap under the chest between the front legs
-        return pick(KNIT, 0.3) if lz < 3 else None
+        return pick(KNIT, 0.3) if lz < 3 else None             # only a strap under the chest
     if f == 'back':
         return None
     v = 0.55 + face_light(ctx) * 1.0
     if f in ('top', 'west', 'east'):
         across = lx if f == 'top' else ly
-        rag = 3.5 + hash3(math.floor(across / 1.5), 4, 0, 77) * 4.5
+        rag = 3.0 + hash3(math.floor(across / 1.5), 4, 0, 77) * 4.5
         if d - lz < rag:
             return None                                         # ragged torn back edge
         if d - lz < rag + 1:
             return pick(KNIT, v - 0.25)                         # frayed, stretched last row
-        if f == 'top' and (abs(lx - 3) < 1.2 and 3 < lz < 6):
+        if f == 'top' and (abs(lx - 4) < 1.2 and 3 < lz < 6):
             return None                                         # a rip on the back
         if f in ('west', 'east'):
-            # the white "C" on both flanks
-            ci = int(lz) - 2 if f == 'east' else int(d - lz) - 4
-            cj = int(ly) - 3
+            ci = int(lz) - 2 if f == 'east' else int(d - lz) - 3
+            cj = int(ly) - 4
             if 0 <= cj < len(C_ROWS) and 0 <= ci < 5:
                 ch = C_ROWS[cj][ci if f == 'east' else 4 - ci]
                 if ch == 'W':
@@ -456,18 +528,19 @@ def sweater_mat(ctx):
 
 
 def shred_mat(ctx):
-    """Strips of the sweater hanging from the spine: knit, frayed bottoms, loose yarn."""
+    """Strips of the sweater hanging from the spine: knit, frayed bottoms, a loose yarn end."""
     f = ctx.face
     lx, ly, lz = local(ctx)
     w, h, d = ctx.cube.size
-    t = tag(ctx)
     if is_plane(ctx):
         if f not in ('west', 'front'):
             return None
         u = ctx.i
+        if u == ctx.w - 1 and ctx.j >= h - 5 and getattr(ctx.cube, 'yarn', False):
+            return pick(KNIT, 0.55 + (0.12 if ctx.j % 2 else -0.05))          # a loose yarn end
         fray = h - 1 - math.floor(hash3(u, cseed(ctx), 0, 31) * 3.2)
-        if t == 'yarn':
-            return pick(KNIT, 0.55 + (0.12 if ctx.j % 2 else -0.05))
+        if getattr(ctx.cube, 'yarn', False) and u == ctx.w - 1:
+            fray = h - 6
         if ctx.j > fray:
             return None
         if ctx.j == fray:
@@ -485,8 +558,7 @@ def collar_mat(ctx):
     f = ctx.face
     lx, ly, lz = local(ctx)
     w, h, d = ctx.cube.size
-    t = tag(ctx)
-    if t == 'tag':
+    if tag(ctx) == 'tag':
         if f != 'front':
             return None
         if (ctx.i, ctx.j) in ((0, 0), (ctx.w - 1, 0)):
@@ -502,38 +574,44 @@ def collar_mat(ctx):
     return pick(CELESTE, v)
 
 
+def neck_mat(ctx):
+    """The stretched neck: the same see-through skin, trachea rings show as ridges."""
+    if tag(ctx) == 'ring':
+        return rib_mat(ctx)
+    return skin_mat(ctx)
+
+
 # ------------------------------------------------------------------ head
-def eye_rows():
-    """Big round milk-white eye, 6x6.  '.' = transparent corner (the black lid shows behind)."""
-    return [
-        ".abba.",
-        "aHwcca",
-        "bwcccb",
-        "bccccb",
-        "accccd",
-        ".dddd.",
-    ]
-
-
-EYE_COLS = {'a': MILK[2], 'b': MILK[3], 'c': MILK[4], 'w': MILK[5], 'H': MILK[6], 'd': MILK[3]}
+# eye: 7 x 7, the cute almond shape (cut corners, black upper lid, 2x2 glint top-left, bright lower iris),
+# but the iris is milk white.  The pupil is added per side (both turned slightly inward: derp).
+EYE_ART = [
+    ".KKKKK.",
+    "KHHaaaK",
+    "KHabbbK",
+    "KabbbbK",
+    "KbbbbbK",
+    "KbcccbK",
+    ".KcccK.",
+]
+EYE_COLS = {'K': LIP[0], 'H': MILK[6], 'a': MILK[2], 'b': MILK[4], 'c': MILK[5]}
 
 
 def eye_px(i, j, side):
-    rows = eye_rows()
-    ch = rows[j][i if side == 'r' else 5 - i]
+    ch = EYE_ART[j][i]
     if ch == '.':
         return None
+    pi = 3 if side == 'r' else 2                     # pupil columns pi, pi+1 (turned inward)
+    if j in (3, 4) and i in (pi, pi + 1):
+        hot = (i == (pi if side == 'r' else pi + 1)) and j == 3
+        return PUPIL if hot else PUPIL_D
     c = EYE_COLS[ch]
-    pi = 3 if side == 'r' else 2                    # pupils both turned inward (derp)
-    if (i, j) == (pi, 3):
-        return PUPIL
-    if abs(i - pi) + abs(j - 3) == 1:
-        c = mix(c, BLOODSHOT, 0.25)                 # faint pink ring round the pinpoint
+    if ch in 'abc' and abs(i - (pi + 0.5)) <= 1.6 and 2 <= j <= 5:
+        c = mix(c, BLOODSHOT, 0.28)                 # faint pink ring round the pinpoint
     # bloodshot threads creeping in from the outer corner
-    if side == 'r' and (i, j) in ((0, 3), (1, 3), (1, 4)):
-        c = mix(c, BLOODSHOT, 0.55)
-    if side == 'l' and (i, j) in ((5, 2), (4, 2), (4, 3)):
-        c = mix(c, BLOODSHOT, 0.55)
+    if side == 'r' and (i, j) in ((1, 4), (1, 3), (2, 5)):
+        c = mix(c, BLOODSHOT, 0.5)
+    if side == 'l' and (i, j) in ((5, 4), (5, 3), (4, 5)):
+        c = mix(c, BLOODSHOT, 0.5)
     return c
 
 
@@ -541,66 +619,63 @@ def eye_mat(ctx):
     side = getattr(ctx.cube, 'side', 'r')
     if ctx.face == 'front':
         return eye_px(ctx.i, ctx.j, side)
+    if ctx.face in ('west', 'east') and ctx.j in (5, 6):
+        return pick(FUR, 0.4)
     return LIP[0]
 
 
 def eye_glow(side):
     pts = []
-    for j in range(6):
-        for i in range(6):
+    for j in range(7):
+        for i in range(7):
             c = eye_px(i, j, side)
-            if c is None:
+            if c is None or c == LIP[0]:
                 continue
             if c == PUPIL:
-                pts.append((i, j, hx('#ff3a24')))
+                pts.append((i, j, hx('#ff4a2a')))
+            elif c == PUPIL_D:
+                pts.append((i, j, hx('#d01818')))
             else:
-                pts.append((i, j, (int(c[0] * 0.9), int(c[1] * 0.94), int(c[2] * 0.96), 255)))
+                pts.append((i, j, (int(c[0] * 0.82), int(c[1] * 0.86), int(c[2] * 0.9), 255)))
     return at(pts)
 
 
-HY, HZ = 2.0, -46.0          # authored head pivot (the neck joint under the back of the skull)
-EYE_X = (-8, 2)              # left edge of the right / left eye disc, head-relative
-EYE_Y = -12                  # top edge of the eye discs, head-relative
-
-
-def in_disc(i, j):
-    """Texel (i, j) inside the 6x6 eye disc (corners cut)."""
-    if not (0 <= i < 6 and 0 <= j < 6):
-        return False
-    return (i, j) not in ((0, 0), (5, 0), (0, 5), (5, 5))
+EYE_X = (-8, 1)              # left edge of the right / left eye, head-local
+EYE_Y = -14                  # top edge of the eyes, head-local
 
 
 def skull_mat(ctx):
-    """Head fur.  Front: forehead, black lid rings, tan puppy-brow dots; the inside of the mouth cavity is flesh."""
+    """Head fur.  Front: forehead with a lighter blaze, fur round the almond eyes, tan under the eyes."""
     f = ctx.face
     t = tag(ctx)
-    x, y, z = A(ctx)
     lx, ly, lz = local(ctx)
+    o = ctx.cube.a0
+    hp = ctx.cube.hp                                  # head pivot (authored)
+    x, y, z = o[0] + lx - hp[0], o[1] + ly - hp[1], o[2] + lz - hp[2]
     v = 0.56 + face_light(ctx) * 1.05
-    y -= HY
-    z -= HZ
     if t == 'skull':
         if f == 'front':
             tx, ty = math.floor(x), math.floor(y)
-            # black lid ring hugging the round eye discs (4-neighbours of the disc), fur bridge between
             for ex0 in EYE_X:
-                if in_disc(tx - ex0, ty - EYE_Y):
-                    return LIP[0]
-                if any(in_disc(tx + dx - ex0, ty + dy - EYE_Y) for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))):
-                    return LIP[1] if ty > EYE_Y + 3 else LIP[0]
-            # tan puppy brows, raised at the inner ends (sad, cute)
-            if ty == EYE_Y - 2 and (-6 <= tx <= -4 or 3 <= tx <= 5):
-                return TAN[1] if (tx in (-4, 3)) else TAN[0]
-            v += 0.04 - abs(x) / 9 * 0.1
-            v += (hash3(math.floor(x / 2), math.floor(y / 2), 1, 61) - 0.5) * 0.12
+                ii, jj = tx - ex0, ty - EYE_Y
+                if 0 <= ii < 7 and 0 <= jj < 7:
+                    return pick(FUR, 0.4)               # behind the eye's cut corners: lid fur
+                if -1 <= ii <= 7 and jj == 7:
+                    return pick(FUR, 0.3)               # soft shadow under the eye
+            if ty >= EYE_Y + 7:
+                return mix(pick(FUR, v), pick(TAN, v), 0.55)   # tan cheeks between eyes and muzzle
+            v += 0.05 - abs(x) / 9 * 0.12
+            if abs(x) < 1.5 and ty < EYE_Y + 3:
+                v += 0.06                                # a lighter blaze on the forehead
+            v += (hash3(math.floor(x / 2), math.floor(y / 2), 1, 61) - 0.5) * 0.1
             return pick(FUR, v)
         if f == 'bottom' and abs(x) < 4 and z < -6:
             # palate: ridged flesh, seen when the jaws open
             return pick(GUM, 0.45 + (0.18 if int(z) % 2 == 0 else -0.05) - abs(x) * 0.04)
         if f == 'top':
-            v += strands(x, z, 51)
             if abs(x) < 2.6:
-                v -= 0.12
+                return pick(FUR, v - 0.18 + strands(x, z, 51) * 0.4)
+            v += strands(x, z, 51)
         elif f in ('west', 'east'):
             v += strands(y, z, 53)
         else:
@@ -611,24 +686,37 @@ def skull_mat(ctx):
     if t == 'side':
         inner = (f == 'east' and x < 0) or (f == 'west' and x > 0)
         if inner:
-            # cavity wall: red flesh with ridges, darker toward the throat
             return pick(GUM, 0.55 - (z + 14) * 0.04 + (0.1 if int(y) % 2 == 0 else 0))
         if f == 'bottom':
-            return pick(FUR, v - 0.05)
+            return mix(pick(FUR, v - 0.05), pick(TAN, v), 0.4)
         if f == 'front':
-            # cheeks beside the muzzle: whisker spots
-            c = pick(FUR, v + 0.03 + (hash3(ctx.i, ctx.j, 3, 3) - 0.5) * 0.1)
+            # tan jowls beside the muzzle with whisker dots (the cute cheeks)
+            c = pick(TAN, v + 0.02 + (hash3(ctx.i, ctx.j, 3, 3) - 0.5) * 0.08)
             if (ctx.i + ctx.j * 2) % 4 == 0 and 1 <= ctx.j <= 4:
-                c = pick(FUR, 0.18)
+                c = pick(TAN, 0.25)
             return c
         v += strands(y, z, 57)
-        return pick(FUR, v)
+        c = pick(FUR, v)
+        if f in ('west', 'east'):
+            c = mix(c, pick(TAN, v), clamp(-(z + 6) / 8.0) * 0.7)     # tan toward the front
+        return c
     if t == 'dome':
-        v += strands(x, z, 59)
         if abs(x) < 2.6 and f == 'top':
-            v -= 0.12
+            return pick(FUR, v - 0.18)
+        v += strands(x, z, 59)
         return pick(FUR, v)
+    if t == 'gullet':
+        if f == 'front' or f == 'top':
+            return pick(GUM, 0.3 + (0.1 if ctx.j % 2 == 0 else 0))
+        return mix(pick(FUR, v), pick(TAN, v), 0.5)
     return pick(FUR, v)
+
+
+def brow_mat(ctx):
+    v = 0.62 + face_light(ctx) * 0.9
+    if edge(ctx) == 0 and ctx.face in ('front', 'top'):
+        v -= 0.06
+    return pick(TAN, v)
 
 
 def throat_mat(ctx):
@@ -647,7 +735,8 @@ def throat_mat(ctx):
 
 
 def flap_mat(ctx):
-    """The four muzzle flaps.  Outside: dog muzzle fur, black lips, whisker spots.  Inside: gums and raw cut faces."""
+    """The four muzzle flaps.  Outside: the cute TAN muzzle (so you see it tear), black lips, whisker dots.
+    Inside: gums and raw cut faces."""
     f = ctx.face
     c = ctx.cube
     lx, ly, lz = local(ctx)
@@ -656,10 +745,9 @@ def flap_mat(ctx):
     sx = c.sx                                         # -1 right flap (on -X), +1 left flap
     outer_face = 'west' if sx < 0 else 'east'
     seam_face = 'east' if sx < 0 else 'west'
-    v = 0.5 + face_light(ctx) * 1.05
+    v = 0.55 + face_light(ctx) * 1.0
     deep = lz / max(1.0, d) * 0.28                   # darker toward the throat
     if f == seam_face:
-        # the cut: striated raw flesh, a gum line with a row of small inner teeth toward the mouth
         gum_edge = (ly > h - 1.0) if up else (ly < 1.0)
         if gum_edge:
             if int(lz) % 2 == 0 and lz < d - 3:
@@ -667,11 +755,10 @@ def flap_mat(ctx):
             return pick(GUM, 0.62 - deep)
         vv = 0.52 + hash3(ctx.i, ctx.j, 9, 9) * 0.12 - deep
         if int(ly) % 2 == 0:
-            vv -= 0.14                               # muscle striations
+            vv -= 0.14                               # muscle striations of the cut
         return pick(RAW, vv)
     inner_face = 'bottom' if up else 'top'
     if f == inner_face:
-        # gums/palate (upper) or the floor of the mouth (lower); teeth sockets on the outer row
         seam_col = (lx > w - 1.0) if sx < 0 else (lx < 1.0)
         out_col = (lx < 1.0) if sx < 0 else (lx > w - 1.0)
         if out_col:
@@ -681,77 +768,101 @@ def flap_mat(ctx):
         return pick(GUM, 0.42 + (0.16 if int(lz) % 2 == 0 else 0) + (0.08 if up else -0.05) - deep)
     if f == 'back':
         return pick(RAW, 0.35)
-    # outside: muzzle fur (darker toward the nose), black lip line on the mouth edge
+    # outside: tan muzzle (the cute form's), black lip line on the mouth edge
     lip = (ly > h - 1.0) if up else (ly < 1.0)
     if f in (outer_face, 'front') and lip:
         return LIP[1] if (ctx.i % 3) else LIP[2]
-    near_nose = clamp(1.0 - lz / 5.0) if f != 'front' else 1.0
-    v -= near_nose * 0.12
-    if not up:
-        v += 0.04                                    # chin a touch paler
-    if f == 'top':
-        v += strands(lx, lz, 63)
-        if (sx < 0 and lx > w - 1.0) or (sx > 0 and lx < 1.0):
-            return pick(RAW, 0.62)                   # the split line seen from above
-    elif f in ('west', 'east'):
-        v += strands(ly, lz, 65)
-        if up and 1 <= ly <= 3 and 2 <= lz <= 9 and (int(lz) + int(ly)) % 3 == 0:
-            return pick(FUR, 0.15)                   # whisker spots
-    elif f == 'bottom':
-        v -= 0.04
     if f == 'front':
         if (sx < 0 and lx > w - 1.0) or (sx > 0 and lx < 1.0):
-            return pick(RAW, 0.55)
-    if edge(ctx) == 0:
-        v -= 0.05
-    return pick(FUR, v)
+            return pick(RAW, 0.55)                   # the torn seam seen from the front
+        return pick(TAN, v + 0.06 - (0.06 if not up else 0))
+    if f == 'top':
+        if (sx < 0 and lx > w - 1.0) or (sx > 0 and lx < 1.0):
+            return pick(RAW, 0.62)                   # the split line seen from above
+        cc = mix(pick(FUR, v + strands(lx, lz, 63)), pick(TAN, v), clamp(0.85 - lz / d))
+        return cc
+    if f in ('west', 'east'):
+        cc = pick(TAN, v + strands(ly, lz, 65) * 0.6 - (0.06 if not up else 0))
+        if lz > d - 5:
+            cc = mix(cc, pick(FUR, v), (lz - (d - 5)) / 5 * 0.6)    # coat creeping in toward the cheeks
+        if up and 1 <= ly <= 3 and 2 <= lz <= 9 and (int(lz) + int(ly)) % 3 == 0:
+            return pick(TAN, 0.15)                   # whisker dots
+        return cc
+    if f == 'bottom':
+        return pick(TAN, v - 0.04)
+    return pick(TAN, v)
+
+
+NOSE_ART = [               # right half; column 2 is the cut seam side.  '.' = transparent (rounded corner)
+    ".sS",
+    "dNk",
+    ".kN",
+]
 
 
 def nose_mat(ctx):
-    """Half of the black nose, cut down the middle (raw red cut face on the seam side)."""
+    """Half of the big round black nose, cut down the middle: rounded outer corners, a nostril comma,
+    a wet glint on top, a raw red cut face on the seam side."""
     f = ctx.face
     c = ctx.cube
     sx = c.sx
     seam_face = 'east' if sx < 0 else 'west'
-    lx, ly, lz = local(ctx)
     w, h, d = c.size
     if f == seam_face:
-        return pick(RAW, 0.45 + ctx.j * 0.1)
+        return pick(RAW, 0.4 + ctx.j * 0.12)
     if f == 'front':
-        rows = ["hHhr", "mOOr", "llOr"]
-        ch = rows[ctx.j][ctx.i if sx < 0 else w - 1 - ctx.i]
-        return {'h': NOSE[4], 'H': NOSE[5], 'm': NOSE[2], 'O': NOSE[0], 'l': NOSE[1], 'r': RAW[3]}[ch]
+        i = ctx.i if sx < 0 else w - 1 - ctx.i
+        ch = NOSE_ART[ctx.j][i]
+        return {'.': None, 's': NOSE[5], 'S': NOSE[7], 'd': NOSE[2], 'N': NOSE[0], 'k': NOSE[1]}[ch]
     if f == 'top':
-        seam = (ctx.i == w - 1) if sx < 0 else (ctx.i == 0)
-        if seam:
+        i = ctx.i if sx < 0 else w - 1 - ctx.i
+        if i == 0 and ctx.j == 0:
+            return None
+        if i == 2:
             return RAW[3]
-        return NOSE[5] if (ctx.j == 1 and ctx.i == (1 if sx < 0 else w - 2)) else NOSE[3]
+        return NOSE[7] if (i == 1 and ctx.j == 1) else NOSE[4]
     if f == 'bottom':
         return NOSE[0]
     return NOSE[2]
 
 
 def teeth_mat(ctx):
-    """Needle teeth on zero-thickness planes.  cube.down: teeth hang from the top row (upper jaw) or stand on the bottom row."""
+    """Needle teeth on zero-thickness planes: uneven, crooked, some missing, darker roots, bright points,
+    longer canines at the front corner.  cube.down: hanging from the top row (upper jaw)."""
     c = ctx.cube
     f = ctx.face
     if f not in ('west', 'front'):
         return None
     i, j = ctx.i, ctx.j
-    h = ctx.h
+    h, w = ctx.h, ctx.w
     down = c.down
     k = j if down else h - 1 - j                     # distance from the root row
+    sd = cseed(ctx)
     if k == 0:
-        return pick(GUM, 0.55)
-    if i % 2 == 1:
+        return pick(GUM, 0.5 + (0.15 if i % 3 == 0 else 0))
+    step = getattr(c, 'step', 2)
+    off = getattr(c, 'off', 0)
+    n = (i + off) // step
+    col = (i + off) % step
+    crooked = hash3(n, sd, 5, 23) > 0.75             # bent tooth: the point shifts one column
+    want = 0 if not crooked else (1 if k >= 2 else 0)
+    if col != want:
         return None
-    n = i // 2
-    ln = 1 + int(hash3(n, cseed(ctx), 0, 21) * (h - 0.5))
-    if getattr(c, 'canine', False) and (n == 0 or i >= ctx.w - 2):
+    if hash3(n, sd, 9, 29) > 0.86:
+        return None                                  # a missing tooth
+    ln = 1 + int(hash3(n, sd, 0, 21) ** 0.7 * (h - 1))
+    front_i = i if f == 'front' else (w - 1 - i if getattr(c, 'front_hi', False) else i)
+    if getattr(c, 'canine', False) and (n == 0 or i >= w - 2):
+        ln = h - 1
+    elif getattr(c, 'fang_at', None) is not None and abs(front_i - c.fang_at) <= 1:
         ln = h - 1
     if k > ln:
         return None
-    return pick(TEETH, 0.95 - (ln - k) * 0.18) if k == ln else pick(TEETH, 0.55 + k * 0.1)
+    if k == ln:
+        return TEETH[5]                              # bright point
+    if k == ln - 1:
+        return TEETH[4]
+    return TEETH[1] if k == 1 else TEETH[2]          # stained root
 
 
 def tongue_mat(ctx):
@@ -810,7 +921,6 @@ def ear_mat(ctx):
     sx = c.sx
     tip = c.name == 'ear_tip'
     if tip:
-        # rounded, slightly ragged lower end
         dy = ly - (h - 4.5)
         if dy > 0:
             half = d / 2 * math.sqrt(max(0.0, 1 - (dy / 4.5) ** 2))
@@ -821,16 +931,17 @@ def ear_mat(ctx):
     inner = (f == 'east' and sx < 0) or (f == 'west' and sx > 0)
     v = 0.5 + face_light(ctx) * 1.0
     if inner:
-        cc = pick(SKIN, 0.5 - ly / max(1, h) * 0.15)
         if lz < 1.0 or lz > d - 1.0:
             return pick(FUR, v - 0.12)
+        cc = pick(SKIN, 0.55 - ly / max(1, h) * 0.15)
+        if vein_on(lz, ly, cseed(ctx), 0.9, 0.4):
+            cc = mix(cc, VEIN[1], 0.4)
         return cc
     if f in ('front', 'back'):
         return pick(FUR, v - 0.18)
     v += strands(lz, y, 71 + (1 if tip else 0), 2.0, 4.0)
-    # soft waves running down the leather
     if int((y + lz * 0.6) / 3) % 2 == 0:
-        v -= 0.05
+        v -= 0.05                                    # soft waves running down the leather
     if lz < 1.0 or lz > d - 1.0:
         v -= 0.12                                    # darker rim
     return pick(FUR, v)
@@ -846,7 +957,7 @@ def euler_zyx(R):
 
 
 def dir_rot(d):
-    """Rotation (Rz * Rx) taking the hanging direction (0, 1, 0) onto unit vector d."""
+    """Rotation (Rz * Rx) taking the hanging direction (0, 1, 0) onto vector d."""
     d = np.asarray(d, float)
     d = d / np.linalg.norm(d)
     ax = math.asin(max(-1.0, min(1.0, d[2])))
@@ -858,501 +969,618 @@ def R_deg(rx, ry, rz):
     return rot_matrix(math.radians(rx), math.radians(ry), math.radians(rz))
 
 
-# ------------------------------------------------------------------ module contract
-DEFAULT_MAT = fur_mat
-FOCUS = 'head'
-
-# body chain: (bone, parent, pivot z, centre y, width, height, fur length, gap)
-SEGMENTS = [
-    ('seg2', 'seg1', -21, 2.5, 12, 12, 8, 6),
-    ('seg3', 'seg2', -7, 1.0, 12, 12, 8, 6),
-    ('seg4', 'seg3', 7, 0.0, 12, 12, 8, 6),
-    ('seg5', 'seg4', 21, 1.0, 12, 12, 8, 6),
-    ('seg6', 'seg5', 35, 2.0, 12, 12, 8, 6),
-    ('hips', 'seg6', 49, 3.0, 13, 12, 12, 6),
-]
-SEG_C = {'seg1': 4.0, **{s[0]: s[3] for s in SEGMENTS}}
-
-# human arm pairs: (index, parent segment, shoulder z, elbow (out, y, dz), wrist (out, dz), hand yaw)
-ARMS = [
-    (1, 'seg3', 3.0, (16.0, -9.0, -6.0), (20.0, -17.0), 35),
-    (2, 'seg5', 31.0, (17.0, -10.0, 2.0), (21.0, -4.0), 12),
-    (3, 'hips', 61.0, (16.0, -8.0, 8.0), (20.0, 14.0), -25),
-]
+def wrapdeg(a):
+    while a > 180:
+        a -= 360
+    while a <= -180:
+        a += 360
+    return a
 
 
-def arm_rig(idx, side, E=None, W=None, hand_world=None, seg_R=None, seg_T=None):
-    """Rest (or re-targeted) kinematics of one human arm.
-
-    Returns shoulder S, lengths L1/L2 (fixed by the rest pose) and MC Euler angles (degrees) of the
-    arm, forearm and hand bones.  For a pose pass world targets: elbow E, wrist W (the wrist lands on
-    the line from E toward W at the fixed forearm length), hand_world (3x3) and the parent segment's
-    world rotation/translation (seg_R, seg_T) if the segment itself moves in that pose."""
-    a = {k[0]: k for k in ARMS}[idx]
-    _, seg, zs, (eo, ey, edz), (wo, wdz), yaw = a
-    sx = -1 if side == 'right' else 1
-    c = SEG_C[seg]
-    S = np.array([5.0 * sx, c + 2.0, zs])
-    E0 = np.array([eo * sx, ey, zs + edz])
-    W0 = np.array([wo * sx, 22.0, zs + wdz])
-    L1 = int(round(np.linalg.norm(E0 - S)))
-    R1w = dir_rot(E0 - S)
-    L2 = int(round(np.linalg.norm(W0 - (S + R1w @ np.array([0, L1, 0])))))
-    Hw = R_deg(0, -yaw * sx, 0)
-    if E is not None:
-        segR = np.eye(3) if seg_R is None else seg_R
-        segT = np.zeros(3) if seg_T is None else np.asarray(seg_T, float)
-        Sw = segR @ S + segT                      # shoulder in the world for this pose
-        R1w = dir_rot(np.asarray(E, float) - Sw)
-        Ew = Sw + R1w @ np.array([0, L1, 0])
-        R2w = dir_rot(np.asarray(W, float) - Ew)
-        Hw = hand_world if hand_world is not None else Hw
-        R1 = segR.T @ R1w
-    else:
-        R1 = R1w
-        R2w = dir_rot(W0 - (S + R1w @ np.array([0, L1, 0])))
-        segR = np.eye(3)
-    R1world = segR @ R1
-    R2 = R1world.T @ R2w
-    Rh = R2w.T @ Hw
-    return {'S': S, 'L1': L1, 'L2': L2, 'a1': euler_zyx(R1), 'a2': euler_zyx(R2), 'ah': euler_zyx(Rh)}
-
-
-def _wrap(d):
-    d = math.radians(d)
-    while d > math.pi:
-        d -= 2 * math.pi
-    while d <= -math.pi:
-        d += 2 * math.pi
-    return d
-
-
-def arm_pose(idx, side, E, W, hand_world=None, seg_R=None, seg_T=None):
-    """Pose deltas (radians, added to rest) for the arm, forearm and hand bones of one arm."""
-    r0 = arm_rig(idx, side)
-    r1 = arm_rig(idx, side, E, W, hand_world, seg_R, seg_T)
-    out = {}
-    for key, bn in (('a1', f'arm_{idx}_{side}'), ('a2', f'forearm_{idx}_{side}'), ('ah', f'hand_{idx}_{side}')):
-        out[bn] = tuple(_wrap(r1[key][k] - r0[key][k]) for k in range(3)) + (0.0, 0.0, 0.0)
-    return out
-
-
-def arm_ik(idx, side, W, pole, hand_world=None, seg_R=None, seg_T=None):
-    """Two-bone IK: wrist on W (world), elbow bent toward `pole`; returns pose deltas."""
-    g = arm_rig(idx, side)
-    L1, L2 = g['L1'], g['L2']
-    segR = np.eye(3) if seg_R is None else seg_R
-    segT = np.zeros(3) if seg_T is None else np.asarray(seg_T, float)
-    S = segR @ g['S'] + segT
+def two_bone(S, W, L1, L2, pole):
+    """Elbow position for a two-bone chain S -> E -> W with the elbow bent toward `pole`."""
+    S = np.asarray(S, float)
     W = np.asarray(W, float)
     d = W - S
     n = float(np.linalg.norm(d))
-    n = max(abs(L1 - L2) + 0.5, min(L1 + L2 - 0.5, n))
+    n = max(abs(L1 - L2) + 0.3, min(L1 + L2 - 0.3, n))
     u = d / np.linalg.norm(d)
     a = (L1 * L1 - L2 * L2 + n * n) / (2 * n)
     h = math.sqrt(max(0.0, L1 * L1 - a * a))
     pv = np.asarray(pole, float)
     pv = pv - u * float(pv @ u)
     pv = pv / max(1e-6, float(np.linalg.norm(pv)))
-    E = S + u * a + pv * h
-    return arm_pose(idx, side, E, S + u * n, hand_world, seg_R, seg_T)
+    return S + u * a + pv * h
 
 
-def rad(*deg):
-    return tuple(math.radians(v) for v in deg)
+# ------------------------------------------------------------------ layout
+C0 = 4.0                     # chain axis height of the chest (authored)
+Z1F = -34.0                  # front of the chest = seg1 pivot
+SEG1_L = 15
+# body links: (bone, parent, skin band length, fur length, width, height, inflate, rest pitch deg (+ = rear up),
+#              blood drips)
+LINKS = [
+    ('seg2', 'seg1', 5, 7, 13, 12, 0.15, 13, False),
+    ('seg3', 'seg2', 7, 6, 12, 12, 0.30, 10, True),
+    ('seg4', 'seg3', 6, 6, 11, 11, 0.20, -13, False),
+    ('seg5', 'seg4', 8, 6, 11, 11, 0.40, -24, True),
+    ('seg6', 'seg5', 7, 7, 12, 11, 0.10, 6, False),
+    ('hips', 'seg6', 5, 10, 13, 12, 0.25, 16, True),
+]
+LINK = {L[0]: L for L in LINKS}
+SPIKES = []                  # (bone, x, y, z) authored base of each rib spike (filled by build, used by skin_mat)
+
+# the six human arms.  elbow = (|x| out from the midline, world y, dz from the shoulder); wrist = (|x| out, dz);
+# joint (extra elbow) likewise.  hand variants: flat, fist (on its knuckles), claw (on its fingertips),
+# twist (wrist broken backwards, fingers pointing back).  fingers: lengths inner -> outer.
+ARMS = {
+    (1, 'right'): dict(seg='seg3', elbow=(13.0, -14.0, -5.0), wrist=(21.0, -16.0), hand='flat', yaw=34,
+                       fingers=(6, 9, 8, 7)),
+    (1, 'left'): dict(seg='seg3', elbow=(12.0, -8.0, -2.0), wrist=(17.0, -10.0), hand='fist', yaw=14),
+    (2, 'right'): dict(seg='seg5', elbow=(17.0, -9.0, 1.0), wrist=(23.0, -1.0), hand='claw', yaw=8,
+                       fingers=(4, 6, 6, 5)),
+    (2, 'left'): dict(seg='seg5', elbow=(11.0, -13.0, -3.0), joint=(20.0, 1.0, 4.0), wrist=(18.0, 1.0),
+                      hand='twist', yaw=158, fingers=(7, 8, 9, 6)),
+    (3, 'right'): dict(seg='hips', elbow=(14.0, -6.0, 5.0), wrist=(20.0, 12.0), hand='flat', yaw=-30,
+                       fingers=(8, 7, 9, 5)),
+    (3, 'left'): dict(seg='hips', elbow=(16.0, -10.0, 8.0), wrist=(21.0, 16.0), hand='claw', yaw=-20,
+                      fingers=(5, 6, 5, 4)),
+}
+HAND_DROP = {'flat': 2.0, 'twist': 2.0, 'fist': 4.0}      # wrist pivot height above the floor; claw: 1 + finger
+ARM_GEOM = {}                # filled by build(): lengths + forearm frame per arm (used by the pose IK)
 
 
-def P(rx=0.0, ry=0.0, rz=0.0, dx=0.0, dy=0.0, dz=0.0):
-    """Pose entry from degrees + texel offsets."""
-    return rad(rx, ry, rz) + (dx, dy, dz)
+def arm_names(idx, side):
+    return f'arm_{idx}_{side}', f'forearm_{idx}_{side}', f'joint_{idx}_{side}', f'hand_{idx}_{side}'
 
 
+def hand_drop(spec):
+    if spec['hand'] == 'claw':
+        return 1.0 + max(spec['fingers'])
+    return HAND_DROP[spec['hand']]
 
-def build():
-    r = Rig()
 
-    def box(bone, frm, size, mat=None, inflate=0.0, decals=None, name=None, **attrs):
-        c = r.box(bone, frm, size, mat=mat, inflate=inflate, decals=decals)
-        c.a0 = tuple(float(v) for v in frm)
+# ------------------------------------------------------------------ builder (world-space placement)
+class Build:
+    def __init__(self):
+        self.r = Rig()
+
+    def M(self, name):
+        return Model('tmp', 16, 16, self.r.roots).world_matrix(self.r.bones[name])
+
+    def bone(self, name, parent, Pw, Rw=None, mat=None):
+        """Bone with WORLD rest pivot Pw and WORLD rest orientation Rw."""
+        Rw = np.eye(3) if Rw is None else np.asarray(Rw, float)
+        if parent is None:
+            self.r.bone(name, tuple(float(v) for v in Pw), rot=euler_zyx(Rw), mat=mat)
+            return
+        M = self.M(parent)
+        Rp, Tp = M[:3, :3], M[:3, 3]
+        loc = Rp.T @ (np.asarray(Pw, float) - Tp)
+        pa = self.r.abs_pivot[parent]
+        self.r.bone(name, tuple(pa[i] + loc[i] for i in range(3)), parent=parent, rot=euler_zyx(Rp.T @ Rw), mat=mat)
+
+    def lbone(self, name, parent, loc, rot=(0, 0, 0), mat=None):
+        """Bone with its pivot in the PARENT's local frame and a local rotation (degrees)."""
+        pa = self.r.abs_pivot[parent] if parent else (0.0, 0.0, 0.0)
+        self.r.bone(name, tuple(pa[i] + loc[i] for i in range(3)), parent=parent, rot=rot, mat=mat)
+
+    def box(self, bone, lfrm, size, mat=None, inflate=0.0, decals=None, name=None, **attrs):
+        """Cube whose min corner is given in the BONE's local frame (relative to its pivot)."""
+        p = self.r.abs_pivot[bone]
+        frm = tuple(p[i] + lfrm[i] for i in range(3))
+        c = self.r.box(bone, frm, size, mat=mat, inflate=inflate, decals=decals)
+        c.a0 = frm
         c.name = name
         for k, v in attrs.items():
             setattr(c, k, v)
         return c
 
-    bone = r.bone
+    def wpos(self, bone, lp=(0, 0, 0)):
+        return (self.M(bone) @ np.array([*lp, 1.0]))[:3]
 
-    # ---------------- seg1: the chest (root) with the sweater remnant and the two real dachshund legs
-    c1 = SEG_C['seg1']
-    bone('seg1', (0, c1, -36), mat=fur_mat)
-    box('seg1', (-7, c1 - 6, -37), (14, 12, 16), name='core', tear=(False, True))
-    box('seg1', (-5, c1 - 7, -37), (10, 1, 16), name='cap', tear=(False, True))
-    box('seg1', (-5, c1 + 6, -35), (10, 1, 13), name='keel', tear=(False, True))
-    box('seg1', (-7, c1 - 6, -37), (14, 12, 13), mat=sweater_mat, name='sweater', inflate=0.6)
+    def wrot(self, bone):
+        return self.M(bone)[:3, :3]
 
+
+# ------------------------------------------------------------------ module contract
+DEFAULT_MAT = link_fur
+FOCUS = 'head'
+HEAD_TILT = 8.0              # rest dog head tilt (deg, zRot)
+CHEST_ROLL = -5.0            # rest: the chest leans onto its right shoulder
+
+
+def build():
+    b = Build()
+    box = b.box
+    SPIKES.clear()
+
+    # ---------------- seg1: the chest (root) with the sweater remnant
+    b.bone('seg1', None, (0.0, C0, Z1F), R_deg(0, 0, CHEST_ROLL), mat=link_fur)
+    box('seg1', (-7, -5.5, 0), (14, 11, SEG1_L), name='core', tear=(False, True))
+    box('seg1', (-5, -6.5, 0.5), (10, 1, SEG1_L - 1), name='cap', tear=(False, True))
+    box('seg1', (-5, 5.5, 1), (10, 1, SEG1_L - 2), name='keel', tear=(False, True))
+    box('seg1', (-7, -6.5, 0), (14, 13, 12), mat=sweater_mat, name='sweater', inflate=0.45)
+
+    # ---------------- body links: skin band (rib cage + pinched waist + spine ridge) then a fur link
+    parent, pz = 'seg1', float(SEG1_L)
+    for k, (name, par, Lb, Lf, W, Hh, infl, pitch, drip) in enumerate(LINKS):
+        roll = -CHEST_ROLL if par == 'seg1' else 0.0
+        b.lbone(name, par, (0.0, 0.0, pz), rot=(pitch, 0, roll), mat=link_fur)
+        ti = 0.04 * k                                       # tiny per-link growth: nested bands never share planes
+        box(name, (-4.5, -4.5, -3), (9, 9, max(3, Lb // 2 + 3)), mat=skin_mat, name='tube', inflate=ti)
+        box(name, (-3.5, -3.5, Lb // 2 - 1), (7, 7, Lb - Lb // 2 + 3), mat=skin_mat, name='pinch', inflate=ti)
+        nrib = 2 if Lb >= 7 else 1
+        for q in range(nrib):
+            rz = 0.3 + q * 2.0 if nrib == 2 else 0.8
+            box(name, (-5.5, -5.5, rz), (11, 5, 1), mat=rib_mat, name='rib', inflate=ti * 0.5)
+        box(name, (-1, -6, -1), (2, 3, Lb + 2), mat=spine_mat, name='spine', inflate=ti * 0.5)
+        last = name == 'hips'
+        z0 = float(Lb)
+        box(name, (-W / 2, -Hh / 2 + 1, z0), (W, Hh - 2, Lf), name='core', inflate=infl, tear=(True, not last), drip=drip)
+        box(name, (-W / 2 + 2, -Hh / 2, z0 + 0.5), (W - 4, 1, Lf - 1), name='cap', inflate=infl, tear=(True, not last))
+        box(name, (-W / 2 + 2, Hh / 2 - 1, z0 + 0.5), (W - 4, 1, Lf - 1), name='keel', inflate=infl, tear=(True, not last))
+        if last:
+            box(name, (-W / 2 + 2, -Hh / 2 + 2, z0 + Lf), (W - 4, Hh - 4, 1), name='rump', inflate=infl)
+        pz = float(Lb + Lf)
+
+    # broken ribs piercing the skin (seg3 band right flank, seg5 band left top)
+    for bn, lp in (('seg3', (-4.0, -4.0, 1.0)), ('seg5', (3.0, -4.0, 4.0))):
+        box(bn, (lp[0], lp[1] - 6.0, lp[2]), (1, 6, 1), mat=spike_mat, name='spike')
+        p = b.r.abs_pivot[bn]
+        SPIKES.append((bn, p[0] + lp[0] + 0.5, p[1] - 4.6, p[2] + lp[2] + 0.5))
+
+    # ---------------- the two real dachshund front legs (planted, bowed in, paws turned out)
     for side, sx in (('right', -1), ('left', 1)):
         lb, pb = f'front_{side}_leg', f'front_{side}_paw'
-        lx = 4.5 * sx
-        bone(lb, (lx, c1 + 4, -30), parent='seg1', rot=(0, 0, 5 * sx), mat=leg_fur)
-        box(lb, (lx - 2.5, c1 + 3, -32.5), (5, 6, 5), name='shoulder')
-        box(lb, (lx - 2, c1 + 9, -32), (4, 8, 4), name='leg')
-        bone(pb, (lx, 21, -30), parent=lb, rot=(0, -16 * sx, -5 * sx), mat=paw_mat)
-        box(pb, (lx - 2.5, 21, -34), (5, 3, 6), name='paw')
-        box(pb, (lx - 2, 22, -35), (4, 2, 1), name='toes')
+        Sw = b.wpos('seg1', (4.5 * sx, 3.0, 6.0))
+        Rl = R_deg(0, 0, 5 * sx)
+        b.bone(lb, 'seg1', Sw, Rl, mat=leg_fur)
+        Lleg = (21.0 - Sw[1]) / math.cos(math.radians(5))
+        box(lb, (-2.5, -1, -2.5), (5, 6, 5), name='shoulder')
+        box(lb, (-2, 4, -2), (4, int(math.ceil(Lleg - 3)), 4), name='leg')
+        Pw = Sw + Rl @ np.array([0.0, Lleg, 0.0])
+        Pw[1] = 21.0
+        b.bone(pb, lb, Pw, R_deg(0, -16 * sx, 0), mat=paw_mat)
+        box(pb, (-2.5, 0, -4), (5, 3, 6), name='paw')
+        box(pb, (-2, 1, -5), (4, 2, 1), name='toes')
 
     # ---------------- neck: stretched skin with trachea rings, the celeste collar and its brass tag
-    bone('neck', (0, HY, -36), parent='seg1', rot=(-35, 0, 0), mat=skin_mat)
-    box('neck', (-4.5, HY - 5, -48), (9, 9, 15), name='tube')
-    for k, z in enumerate((-41.0, -38.0)):
-        box('neck', (-5.5, HY - 6, z), (11, 9, 1), mat=rib_mat, name='ring')
-    box('neck', (-5.5, HY - 6, -45.5), (11, 11, 2), mat=collar_mat, name='collar')
-    box('neck', (-1, HY + 5, -44.5), (2, 3, 0), mat=collar_mat, name='tag')
+    b.lbone('neck', 'seg1', (0.0, -2.0, 0.0), rot=(-35, 0, -CHEST_ROLL * 0.6), mat=neck_mat)
+    box('neck', (-4.5, -5, -13), (9, 9, 16), name='tube')
+    for z in (-7.0, -4.0):
+        box('neck', (-5.5, -6, z), (11, 6, 1), name='ring')
+    box('neck', (-5.5, -6, -11.5), (11, 11, 2), mat=collar_mat, name='collar')
+    box('neck', (-1, 5, -10.5), (2, 3, 0), mat=collar_mat, name='tag')
 
-    # ---------------- head (pivot at the neck joint, under the back of the skull)
-    def H(x, y, z):
-        return (x, HY + y, HZ + z)
-
-    bone('head', (0, HY, HZ), parent='neck', rot=(35, 0, 0), mat=skull_mat)
-    box('head', H(-9, -14, -14), (18, 8, 14), name='skull')
-    box('head', H(-7, -15, -12), (14, 1, 10), name='dome')
-    box('head', H(-9, -6, -14), (5, 6, 14), name='side')
-    box('head', H(4, -6, -14), (5, 6, 14), name='side')
-    box('head', H(-4, -6, -6), (8, 6, 6), mat=throat_mat, name='throat')
-    box('head', H(EYE_X[0], EYE_Y, -15), (6, 6, 1), mat=eye_mat, name='eye', side='r',
+    # ---------------- head (pivot at the neck joint, under the back of the skull); level, with a dog tilt
+    Hp = b.wpos('neck', (0.0, 0.0, -11.0))
+    b.bone('head', 'neck', Hp, R_deg(0, 0, HEAD_TILT), mat=skull_mat)
+    hp = b.r.abs_pivot['head']
+    box('head', (-9, -16, -14), (18, 10, 14), name='skull', hp=hp)
+    box('head', (-7, -17, -12), (14, 1, 10), name='dome', hp=hp)
+    box('head', (-9, -6, -14), (5, 6, 14), name='side', hp=hp)
+    box('head', (4, -6, -14), (5, 6, 14), name='side', hp=hp)
+    box('head', (-4, -6, -6), (8, 6, 6), mat=throat_mat, name='throat')
+    box('head', (-4, 0.5, -7), (8, 4, 7), name='gullet', hp=hp)
+    box('head', (EYE_X[0], EYE_Y, -15), (7, 7, 1), mat=eye_mat, name='eye', side='r',
         decals={'eyes:front': eye_glow('r')})
-    box('head', H(EYE_X[1], EYE_Y, -15), (6, 6, 1), mat=eye_mat, name='eye', side='l',
+    box('head', (EYE_X[1], EYE_Y, -15), (7, 7, 1), mat=eye_mat, name='eye', side='l',
         decals={'eyes:front': eye_glow('l')})
+
+    # chunky tan brows, inner ends raised (the cute puppy-eyes look), as bones so they can furrow
+    for side, sx in (('right', -1), ('left', 1)):
+        bb = f'{side}_brow'
+        b.lbone(bb, 'head', (4.5 * sx, -15.6, -14.6), rot=(0, 0, 13 * -sx), mat=brow_mat)
+        box(bb, (-2.5, -1, -1), (5, 2, 2), name='brow')
 
     # the four muzzle flaps
     for side, sx in (('right', -1), ('left', 1)):
         ub, lb = f'jaw_upper_{side}', f'jaw_lower_{side}'
-        bone(ub, H(0.5 * sx, -1, -13), parent='head', rot=(-3, 3 * -sx, 0), mat=flap_mat)
-        x0 = -5.5 if sx < 0 else 0.5
-        box(ub, H(x0, -6, -27), (5, 5, 14), name='flap', upper=True, sx=sx)
-        nx0 = -4.5 if sx < 0 else 0.5
-        box(ub, H(nx0, -6.5, -29), (4, 3, 2), mat=nose_mat, name='nose', sx=sx)
-        lipx = -5.2 if sx < 0 else 5.2
-        box(ub, H(lipx, -1, -26), (0, 3, 12), mat=teeth_mat, name='teeth', down=True)
-        box(ub, H(-1.8 if sx < 0 else 1.8, -1, -25), (0, 2, 11), mat=teeth_mat, name='teeth', down=True)
-        box(ub, H(-5.2 if sx < 0 else 1.2, -1, -26.6), (4, 3, 0), mat=teeth_mat, name='teeth', down=True,
-            canine=True)
-        box(ub, H(-11.5 if sx < 0 else 5.5, -5, -21), (6, 5, 0), mat=whisker_mat, name='whisker', sx=sx)
+        b.lbone(ub, 'head', (0.5 * sx, -1, -13), rot=(-3, 3 * -sx, 0), mat=flap_mat)
+        x0 = -6.0 if sx < 0 else 0.0
+        box(ub, (x0, -5, -14), (5, 5, 14), name='flap', upper=True, sx=sx)
+        box(ub, (-3.0 if sx < 0 else 0.0, -5.5, -16), (3, 3, 2), mat=nose_mat, name='nose', sx=sx)
+        box(ub, (-5.7 if sx < 0 else 4.7, 0, -13), (0, 3, 12), mat=teeth_mat, name='teeth', down=True,
+            fang_at=11, step=2, off=0)
+        box(ub, (-2.3 if sx < 0 else 1.3, 0, -12.5), (0, 2, 11), mat=teeth_mat, name='teeth', down=True,
+            step=2, off=1)
+        box(ub, (-5.7 if sx < 0 else 0.7, 0, -13.6), (5, 4, 0), mat=teeth_mat, name='teeth', down=True,
+            canine=True, step=2, off=0)
+        box(ub, (-12.0 if sx < 0 else 5.0, -4, -8), (6, 5, 0), mat=whisker_mat, name='whisker', sx=sx)
 
-        bone(lb, H(0.5 * sx, 0, -6), parent='head', rot=(4, 3 * -sx, 0), mat=flap_mat)
-        lx0 = -4.5 if sx < 0 else 0.5
-        box(lb, H(lx0, 0, -26), (4, 4, 20), name='flap', upper=False, sx=sx)
-        box(lb, H(-4.1 if sx < 0 else 4.1, -3, -25), (0, 3, 11), mat=teeth_mat, name='teeth', down=False)
-        box(lb, H(-4.1 if sx < 0 else 1.1, -3, -25.6), (3, 3, 0), mat=teeth_mat, name='teeth', down=False,
-            canine=True)
-        box(lb, H(-1.4 if sx < 0 else 1.4, -2, -24), (0, 2, 12), mat=teeth_mat, name='teeth', down=False)
-        # a string of black drool from the corner of the mouth
-        box(lb, H(-4.6 if sx < 0 else 4.6, 4, -18 if sx < 0 else -15), (0, 4 if sx < 0 else 6, 1),
-            mat=drool_mat, name='drool')
+        b.lbone(lb, 'head', (0.5 * sx, 0, -6), rot=(4, 3 * -sx, 0), mat=flap_mat)
+        lx0 = -5.0 if sx < 0 else 0.0
+        box(lb, (lx0, 0, -20), (4, 4, 20), name='flap', upper=False, sx=sx)
+        box(lb, (-4.6 if sx < 0 else 3.6, -3, -19), (0, 3, 11), mat=teeth_mat, name='teeth', down=False,
+            step=2, off=1)
+        box(lb, (-4.6 if sx < 0 else 0.6, -3, -19.6), (4, 3, 0), mat=teeth_mat, name='teeth', down=False,
+            canine=True, step=2, off=1)
+        box(lb, (-1.9 if sx < 0 else 0.9, -2, -18), (0, 2, 12), mat=teeth_mat, name='teeth', down=False,
+            step=2, off=0)
+        if sx < 0:
+            box(lb, (-5.1, 4, -12), (0, 5, 1), mat=drool_mat, name='drool')
 
     # black tongue lolling out of the front
-    bone('tongue', H(0, -0.5, -8), parent='head', mat=tongue_mat)
-    box('tongue', H(-2.5, -1, -28), (5, 1, 20), name='tongue')
-    bone('tongue_tip', H(0, -0.5, -28), parent='tongue', rot=(52, 6, 0), mat=tongue_mat)
-    box('tongue_tip', H(-2.5, -1, -37), (5, 1, 9), name='tongue')
-    box('tongue_tip', H(-1.5, -1, -40), (3, 1, 3), name='tongue')
+    b.lbone('tongue', 'head', (0, -0.5, -8), mat=tongue_mat)
+    box('tongue', (-2.5, -0.5, -20), (5, 1, 20), name='tongue')
+    b.lbone('tongue_tip', 'tongue', (0, 0, -20), rot=(52, 6, 0), mat=tongue_mat)
+    box('tongue_tip', (-2.5, -0.5, -9), (5, 1, 9), name='tongue')
+    box('tongue_tip', (-1.5, -0.5, -12), (3, 1, 3), name='tongue')
 
-    # ears: limp and far too long, nearly touching the ground; turned a little toward the front
+    # ears: limp and far too long, hanging nearly to the ground (world-hanging, whatever the head tilt)
     for side, sx in (('right', -1), ('left', 1)):
         eb, tb = f'{side}_ear', f'{side}_ear_tip'
-        ex = 10.0 * sx
-        bone(eb, H(ex, -11, -4), parent='head', rot=(8, -24 * sx, -10 * sx), mat=ear_mat)
-        box(eb, H(ex - 1, -12, -6), (2, 17, 5), name='ear', sx=sx)
-        box(eb, H(ex - 1, -1, -7.5), (2, 6, 7), name='ear', sx=sx)
-        bone(tb, H(ex, 5, -4), parent=eb, rot=(-7, 0, 6 * sx), mat=ear_mat)
-        box(tb, H(ex - 1, 5, -8), (2, 21, 8), name='ear_tip', sx=sx)
+        Pw = b.wpos('head', (10.0 * sx, -13.0, -4.0))
+        b.bone(eb, 'head', Pw, EAR_WORLD(sx), mat=ear_mat)
+        box(eb, (-1, -1, -2), (2, 17, 5), name='ear', sx=sx)
+        box(eb, (-1.5, 9.5, -3.5), (3, 6, 7), name='ear', sx=sx)
+        b.lbone(tb, eb, (0, 16, 0), rot=(-7, 0, 6 * sx), mat=ear_mat)
+        box(tb, (-1, 0, -4), (2, 21, 8), name='ear_tip', sx=sx)
 
-    # ---------------- body links seg2..seg6 + hips: stretched skin band (ribs) then a fur link
-    for name, parent, pz, c, W, Hh, L, gap in SEGMENTS:
-        bone(name, (0, c, pz), parent=parent, mat=fur_mat)
-        box(name, (-4.5, c - 4.5, pz - 3), (9, 9, gap + 4), mat=skin_mat, name='tube')
-        for rz in (pz + 1.5, pz + 3.5):
-            box(name, (-5.5, c - 5.5, rz), (11, 9, 1), mat=rib_mat, name='rib')
-        z0 = pz + gap
-        last = name == 'hips'
-        box(name, (-W / 2, c - Hh / 2 + 1, z0), (W, Hh - 2, L), name='core', tear=(True, not last))
-        box(name, (-W / 2 + 2, c - Hh / 2, z0), (W - 4, 1, L), name='cap', tear=(True, not last))
-        box(name, (-W / 2 + 2, c + Hh / 2 - 1, z0), (W - 4, 1, L), name='keel', tear=(True, not last))
-        if last:
-            box(name, (-W / 2 + 2, c - Hh / 2 + 2, z0 + L), (W - 4, Hh - 4, 1), name='rump')
+    # ---------------- tail: big enough to read, carried high and curved up, tan tip -- it still wags
+    Lb, Lf = LINK['hips'][2], LINK['hips'][3]
+    b.lbone('tail', 'hips', (0, -3.5, Lb + Lf - 1.0), rot=(48, 0, 0), mat=tail_mat)
+    box('tail', (-2, -2, 0), (4, 4, 12), name='base')
+    b.lbone('tail_tip', 'tail', (0, 0, 11.5), rot=(26, 0, 0), mat=tail_mat)
+    box('tail_tip', (-1.5, -1.5, 0), (3, 3, 10), name='tip')
 
-    # a broken rib piercing the skin on the right flank of the seg3 gap
-    box('seg3', (-6.5, -4.0, -5.0), (1, 3, 1), mat=spike_mat, name='spike')
-    box('seg5', (5.5, -3.0, 22.5), (1, 2, 1), mat=spike_mat, name='spike')
+    # ---------------- sweater shreds hanging off the spine (band + two strips, one with a loose yarn end)
+    shreds = [('shred_1', 'seg2', 9.0, 11, 7), ('shred_2', 'seg3', 10.0, 8, 13),
+              ('shred_3', 'seg4', 9.0, 13, 6), ('shred_4', 'seg5', 11.0, 6, 11)]
+    for k, (name, par, zc, lr, ll) in enumerate(shreds):
+        W, Hh, infl = LINK[par][4], LINK[par][5], LINK[par][6]
+        top = -Hh / 2 - infl
+        b.lbone(name, par, (0, top, zc), mat=shred_mat)
+        box(name, (-W / 2 - 0.6, -0.6, -1.5), (W + 1, 1, 3), name='band', inflate=0.1)
+        box(name, (-W / 2 - 0.7, 0.2, -2.0), (0, lr, 4), name='strip', yarn=(k % 2 == 0))
+        box(name, (W / 2 + 0.7, 0.2, -1.5), (0, ll, 3), name='strip', yarn=(k % 2 == 1))
 
-    # ---------------- tail: a normal little dachshund tail, still wagging
-    ch = SEG_C['hips']
-    bone('tail', (0, ch - 4, 66), parent='hips', rot=(38, 0, 0), mat=leg_fur)
-    box('tail', (-1.5, ch - 5.5, 66), (3, 3, 9), name='tail')
-    bone('tail_tip', (0, ch - 4, 75), parent='tail', rot=(14, 0, 0), mat=leg_fur)
-    box('tail_tip', (-1, ch - 5, 74.5), (2, 2, 8), name='tail')
+    # ---------------- three pairs of human arms
+    ARM_GEOM.clear()
+    for (idx, side), spec in ARMS.items():
+        sx = -1 if side == 'right' else 1
+        seg = spec['seg']
+        _, Lb, Lf, W, Hh, infl, *_ = LINK[seg][1:]
+        ab, fb, jb, hb = arm_names(idx, side)
+        S = b.wpos(seg, (sx * (W / 2 - 1.0), 1.5, Lb + Lf / 2.0))
+        eo, ey, edz = spec['elbow']
+        E = np.array([sx * eo, ey, S[2] + edz])
+        wo, wdz = spec['wrist']
+        Wt = np.array([sx * wo, 24.0 - hand_drop(spec), S[2] + wdz])
+        Hw = R_deg(0, -spec['yaw'] * sx, 0)
+        L1 = int(round(float(np.linalg.norm(E - S))))
+        if 'joint' in spec:
+            jo, jy, jdz = spec['joint']
+            J = np.array([sx * jo, jy, S[2] + jdz])
+            E = S + (E - S) / np.linalg.norm(E - S) * L1
+            L2 = int(round(float(np.linalg.norm(J - E))))
+            L3 = int(round(float(np.linalg.norm(Wt - J))))
+            J = two_bone(E, Wt, L2, L3, J - (E + Wt) / 2)
+            R1w, R2w, R3w = dir_rot(E - S), dir_rot(J - E), dir_rot(Wt - J)
+        else:
+            L2 = int(round(float(np.linalg.norm(Wt - E))))
+            E = two_bone(S, Wt, L1, L2, E - (S + Wt) / 2)
+            R1w, R2w = dir_rot(E - S), dir_rot(Wt - E)
+            L3, J, R3w = 0, None, None
+        # upper arm
+        b.bone(ab, seg, S, R1w, mat=arm_mat)
+        box(ab, (-2.5, -1.5, -2.5), (5, 4, 5), name='collar')
+        box(ab, (-1.5, 0, -1.5), (3, L1 + 1, 3), name='upper', inflate=0.2, yb=0.0, limb=L1)
+        box(ab, (-2, 2, -2.2 if sx < 0 else -1.8), (4, 7, 4), name='bicep', yb=2.0, limb=L1)
+        # forearm (elbow knob on the outside of the bend, ulna ridge down the back, knobbly wrist)
+        b.bone(fb, ab, E, R2w, mat=arm_mat)
+        out = -((S - E) / np.linalg.norm(S - E) + ((J if J is not None else Wt) - E) /
+                np.linalg.norm((J if J is not None else Wt) - E))
+        ol = R2w.T @ out
+        ol[1] = 0.0
+        ol = ol / max(1e-6, float(np.linalg.norm(ol)))
+        box(fb, (ol[0] * 1.2 - 1.5, -2.5, ol[2] * 1.2 - 1.5), (3, 4, 3), name='knob')
+        box(fb, (-1, 0, -1), (2, L2, 2), name='fore', inflate=0.25, yb=0.0, limb=L2 + L3)
+        box(fb, (ol[0] * 1.15 - 0.5, 2.5, ol[2] * 1.15 - 0.5), (1, max(3, L2 - 6), 1), name='ulna',
+            yb=2.5, limb=L2 + L3)
+        last = fb
+        if J is not None:
+            b.bone(jb, fb, J, R3w, mat=arm_mat)
+            box(jb, (-1.5, -1.5, -1.5), (3, 3, 3), name='knob')
+            box(jb, (-1, 0, -1), (2, L3, 2), name='jseg', inflate=0.22, yb=float(L2), limb=L2 + L3)
+            last = jb
+        Ll = L3 if J is not None else L2
+        box(last, (-1.5, Ll - 2.5, -1.5), (3, 2, 3), name='wknob')
+        # hand
+        b.bone(hb, last, Wt, Hw, mat=arm_mat)
+        hv = spec['hand']
+        inner = -sx                                          # +x for the right hand: thumb on the inner side
+        if hv in ('flat', 'twist'):
+            box(hb, (-3.5, 0, -5), (7, 2, 6), name='palm')
+            fl = spec['fingers']
+            for q, fx in enumerate((-3.0, -1.0, 1.0, 3.0)):
+                ln = fl[3 - q] if inner > 0 else fl[q]
+                box(hb, (fx - 0.5, 1, -5 - ln), (1, 1, ln), name='finger', tip='front')
+            box(hb, (3.5 if inner > 0 else -7.5, 1, -3), (4, 1, 1), name='thumb', tip='east' if inner > 0 else 'west')
+        elif hv == 'claw':
+            box(hb, (-3.5, 0, -5), (7, 2, 6), name='palm')
+            fl = spec['fingers']
+            for q, fx in enumerate((-2.8, -0.9, 0.9, 2.8)):
+                ln = fl[3 - q] if inner > 0 else fl[q]
+                box(hb, (fx - 0.5, 1, -5.6 + (q % 2) * 0.3), (1, ln, 1), name='finger', tip='bottom')
+            box(hb, (3.6 if inner > 0 else -4.6, 1, -2), (1, 4, 1), name='thumb', tip='bottom')
+        else:  # fist: on its knuckles
+            box(hb, (-3.5, 0, -4.5), (7, 2, 5), name='palm')
+            box(hb, (-3.5, 1, -7), (7, 3, 3), name='knuckles', inflate=0.2)
+            box(hb, (3.6 if inner > 0 else -5.6, 1, -4), (2, 2, 3), name='thumb', tip='front')
+        ARM_GEOM[(idx, side)] = dict(L1=L1, L2=L2, L3=L3, jointed=J is not None)
 
-    # ---------------- sweater shreds hanging off the spine
-    shreds = [('shred_1', 'seg2', -11.0, 12, 8), ('shred_2', 'seg3', 3.0, 9, 14),
-              ('shred_3', 'seg4', 17.0, 14, 7), ('shred_4', 'seg5', 30.5, 7, 12)]
-    for name, parent, zc, lr, ll in shreds:
-        c = SEG_C[parent]
-        bone(name, (0, c - 6, zc), parent=parent, mat=shred_mat)
-        box(name, (-6.3, c - 6.4, zc - 1.5), (12, 1, 3), name='band', inflate=0.15)
-        box(name, (-6.5, c - 5.6, zc - 2.0), (0, lr, 4), name='strip')
-        box(name, (6.5, c - 5.6, zc - 1.5), (0, ll, 3), name='strip')
-        box(name, (-6.6, c - 5.6 + lr - 1, zc + 0.5), (0, 5, 1), name='yarn')
-
-    # ---------------- three pairs of human arms (spider elbows above the spine, flat palms, long fingers)
-    for idx, seg, zs, (eo, ey, edz), (wo, wdz), yaw in ARMS:
-        c = SEG_C[seg]
-        for side, sx in (('right', -1), ('left', 1)):
-            ab, fb, hb = f'arm_{idx}_{side}', f'forearm_{idx}_{side}', f'hand_{idx}_{side}'
-            g = arm_rig(idx, side)
-            S, L1, L2 = g['S'], g['L1'], g['L2']
-            a1, a2, ah = g['a1'], g['a2'], g['ah']
-            Sx, Sy, Sz = S
-            bone(ab, (Sx, Sy, Sz), parent=seg, rot=a1, mat=arm_mat)
-            box(ab, (Sx - 2.5, Sy - 1.5, Sz - 2.5), (5, 4, 5), name='shoulder')
-            box(ab, (Sx - 1.5, Sy, Sz - 1.5), (3, L1, 3), name='upper', inflate=0.3)
-            box(ab, (Sx - 2, Sy + 3, Sz - 2), (4, 6, 4), name='upper')
-            bone(fb, (Sx, Sy + L1, Sz), parent=ab, rot=a2, mat=arm_mat)
-            box(fb, (Sx - 2, Sy + L1 - 2, Sz - 2), (4, 4, 4), name='elbow')
-            box(fb, (Sx - 1, Sy + L1, Sz - 1), (2, L2, 2), name='fore', inflate=0.3)
-            box(fb, (Sx - 1.5, Sy + L1 + 2, Sz - 1.5), (3, 8, 3), name='fore')
-            hy = Sy + L1 + L2
-            bone(hb, (Sx, hy, Sz), parent=fb, rot=ah, mat=arm_mat)
-            box(hb, (Sx - 3.5, hy, Sz - 5), (7, 2, 6), name='palm')
-            for k, fx in enumerate((-3.0, -1.0, 1.0, 3.0)):
-                ln = (7, 9, 8, 6)[k if sx < 0 else 3 - k]
-                box(hb, (Sx + fx - 0.5, hy + 1, Sz - 5 - ln), (1, 1, ln), name='finger')
-            tx = Sx + 3.5 if sx < 0 else Sx - 3.5 - 4
-            box(hb, (tx, hy + 1, Sz - 4), (4, 1, 1), name='thumb', tipx=1 if sx < 0 else -1)
-
-    m = Model('choripan_demonio', 256, 224, r.roots)
+    m = Model('choripan_demonio', 256, 256, b.r.roots)
     m.scale = 0.5
     return m
 
 
-# ------------------------------------------------------------------ poses
-def _merge(*ds):
-    out = {}
-    for d in ds:
-        out.update(d)
-    return out
+def EAR_WORLD(sx):
+    """Rest world orientation of an ear: hanging straight down, the leather turned toward the front."""
+    return R_deg(4, -22 * sx, -6 * sx)
 
 
-def _sit_up(A):
-    """seg1 (root) pitched up by A degrees around its back end so seg2.. stay planted (seg2 counter-rotates)."""
-    c1 = SEG_C['seg1']
-    v = np.array([0.0, SEGMENTS[0][3] - c1, SEGMENTS[0][2] + 36.0])     # seg2 pivot relative to seg1's
-    R = R_deg(-A, 0, 0)
-    off = v - R @ v
-    return {'seg1': P(-A, 0, 0, 0, off[1], off[2]), 'seg2': P(A)}
+# ------------------------------------------------------------------ pose kit (world-space posing)
+class Kit:
+    def __init__(self):
+        self.m = build()
+        self.b = {bn.name: bn for bn in self.m.bones()}
+        self.rest = {n: (bn.rot, bn.pivot) for n, bn in self.b.items()}
+        self.d = {}
 
+    def _apply(self, n):
+        bn = self.b[n]
+        r0, p0 = self.rest[n]
+        d = self.d.get(n, [0.0] * 6)
+        bn.rot = tuple(r0[k] + d[k] for k in range(3))
+        bn.pivot = tuple(p0[k] + d[3 + k] for k in range(3))
 
-def _praying_hands():
-    out = {}
-    for side, sx in (('right', -1), ('left', 1)):
-        Hw = np.array([[0, -sx, 0], [0, 0, 1], [-sx, 0, 0]], float)
-        out.update(arm_ik(1, side, (2.0 * sx, 3.0, -39.0), (sx * 1.0, -0.6, 0.5), Hw))
-    return out
+    def set(self, n, rx=0.0, ry=0.0, rz=0.0, dx=0.0, dy=0.0, dz=0.0):
+        self.d[n] = [rx, ry, rz, dx, dy, dz]
+        self._apply(n)
 
+    def add(self, n, rx=0.0, ry=0.0, rz=0.0, dx=0.0, dy=0.0, dz=0.0):
+        d = self.d.get(n, [0.0] * 6)
+        self.d[n] = [d[0] + rx, d[1] + ry, d[2] + rz, d[3] + dx, d[4] + dy, d[5] + dz]
+        self._apply(n)
 
-def _folded_arms(seg_dz):
-    """Arms folded back over the flanks like a resting spider (for the transformation)."""
-    out = {}
-    for idx, seg, *_ in ARMS:
-        T = np.array([0.0, 0.0, seg_dz[seg]])
+    def M(self, n):
+        return self.m.world_matrix(self.b[n])
+
+    def R(self, n):
+        return self.M(n)[:3, :3]
+
+    def wpos(self, n, lp=(0, 0, 0)):
+        return (self.M(n) @ np.array([*lp, 1.0]))[:3]
+
+    def parentR(self, n):
+        p = self.b[n].parent
+        return self.R(p.name) if p is not None else np.eye(3)
+
+    def set_world_rot(self, n, Rw):
+        e = euler_zyx(self.parentR(n).T @ Rw)
+        r0 = self.rest[n][0]
+        d = self.d.get(n, [0.0] * 6)
+        d[:3] = [wrapdeg(e[k] - r0[k]) for k in range(3)]
+        self.d[n] = d
+        self._apply(n)
+
+    def set_world_pos(self, n, Pw):
+        p = self.b[n].parent
+        if p is None:
+            loc = np.asarray(Pw, float)
+        else:
+            M = self.M(p.name)
+            loc = M[:3, :3].T @ (np.asarray(Pw, float) - M[:3, 3])
+        p0 = self.rest[n][1]
+        d = self.d.get(n, [0.0] * 6)
+        d[3:] = [float(loc[k] - p0[k]) for k in range(3)]
+        self.d[n] = d
+        self._apply(n)
+
+    def lowest(self, names):
+        y = -1e9
+        for n in names:
+            M = self.M(n)
+            for c in self.b[n].cubes:
+                g = c.inflate
+                for px in (c.origin[0] - g, c.origin[0] + c.size[0] + g):
+                    for py in (c.origin[1] - g, c.origin[1] + c.size[1] + g):
+                        for pz in (c.origin[2] - g, c.origin[2] + c.size[2] + g):
+                            y = max(y, float((M @ np.array([px, py, pz, 1.0]))[1]))
+        return y
+
+    def table(self):
+        out = {}
+        for n, d in self.d.items():
+            if any(abs(v) > 1e-6 for v in d):
+                out[n] = tuple(math.radians(v) for v in d[:3]) + tuple(float(v) for v in d[3:])
+        return out
+
+    # ---- limbs
+    def arm(self, idx, side, W, pole, Hw):
+        """IK: wrist pivot of arm (idx, side) onto world point W, elbow bent toward `pole`, hand world rot Hw."""
+        g = ARM_GEOM[(idx, side)]
+        ab, fb, jb, hb = arm_names(idx, side)
+        S = self.wpos(ab)
+        W = np.asarray(W, float)
+        if g['jointed']:
+            self.set_world_rot(fb, self.R(fb))              # keep the zig-zag; solve on the effective link
+            v = self.R(fb).T @ (self.wpos(hb) - self.wpos(fb))
+            L2 = float(np.linalg.norm(v))
+            Q = dir_rot(v)
+        else:
+            L2, Q = float(g['L2']), np.eye(3)
+        E = two_bone(S, W, g['L1'], L2, pole)
+        self.set_world_rot(ab, dir_rot(E - S))
+        self.set_world_rot(fb, dir_rot(W - E) @ Q.T)
+        self.set_world_rot(hb, Hw)
+
+    def plant_arm(self, idx, side, xz, pole, yaw_deg, extra=None):
+        spec = ARMS[(idx, side)]
+        W = np.array([xz[0], 24.0 - hand_drop(spec), xz[1]])
+        Hw = R_deg(0, yaw_deg, 0) if extra is None else extra
+        self.arm(idx, side, W, pole, Hw)
+
+    def plant_leg(self, side, reach_deg, paw_yaw=None, bow=5.0):
+        """Front leg: swing it `reach_deg` (negative = forward) and lengthen nothing -- solve the swing so the
+        paw lands flat on the floor, keeping the requested direction as a hint."""
+        sx = -1 if side == 'right' else 1
+        lb, pb = f'front_{side}_leg', f'front_{side}_paw'
+        S = self.wpos(lb)
+        lp = self.b[pb].pivot                             # paw pivot in leg-local (rest geometry)
+        L = float(np.linalg.norm(lp))
+        drop = 21.0 - S[1]
+        sgn = -1.0 if reach_deg < 0 else 1.0
+        if abs(drop) >= L:
+            ang = 0.0
+        else:
+            ang = math.degrees(math.acos(max(-1.0, min(1.0, drop / L)))) * sgn
+        yaw = float(np.degrees(np.arctan2(self.R('seg1')[0, 2], self.R('seg1')[2, 2])))
+        self.set_world_rot(lb, R_deg(0, yaw, 0) @ R_deg(ang, 0, 0) @ R_deg(0, 0, bow * sx))
+        py = -16 * sx if paw_yaw is None else paw_yaw
+        self.set_world_rot(pb, R_deg(0, yaw + py, 0))
+        # residual (bow + rounding): nudge the paw pivot so it sits exactly on the floor
+        P = self.wpos(pb)
+        if abs(P[1] - 21.0) > 0.05:
+            self.set_world_pos(pb, (P[0], 21.0, P[2]))
+
+    def hang_ears(self, swing=0.0, clamp_y=23.4, splay=0.0):
+        Rh = self.R('head')
+        f = Rh @ np.array([0.0, 0.0, -1.0])
+        yaw = math.degrees(math.atan2(-f[0], -f[2]))
         for side, sx in (('right', -1), ('left', 1)):
-            S = arm_rig(idx, side)['S'] + T
-            W = S + np.array([sx * 6.0, -3.0, 18.0])
-            out.update(arm_ik(idx, side, W, (sx * 0.6, -1.0, -0.2), R_deg(0, 180, 0), seg_T=T))
-    return out
-
-
-SEGMENT_Z = {'seg1': -36.0, **{n[0]: float(n[2]) for n in SEGMENTS}}
-
-
-def _world(pose):
-    """World matrices of every bone with `pose` (radians / texels) added to the rest pose."""
-    m = build()
-    for bn in m.bones():
-        if bn.name in pose:
-            q = pose[bn.name]
-            bn.rot = tuple(bn.rot[k] + math.degrees(q[k]) for k in range(3))
-            bn.pivot = (bn.pivot[0] + q[3], bn.pivot[1] + q[4], bn.pivot[2] + q[5])
-    return {bn.name: m.world_matrix(bn) for bn in m.bones()}
-
-
-EAR_REST = {'right_ear': (8.0, 24.0, 10.0), 'left_ear': (8.0, -24.0, -10.0)}
-
-
-def _hang_ears(pose, swing=0.0):
-    """Add ear deltas to `pose` so both ears hang under gravity wherever the head ends up
-    (`swing` = extra backward fling in degrees, e.g. a lunge)."""
-    wm = _world(pose)
-    Rh = wm['head'][:3, :3]
-    f = Rh @ np.array([0.0, 0.0, -1.0])
-    yaw = math.atan2(-f[0], -f[2])
-    for ear, rest in EAR_REST.items():
-        Rrest = R_deg(*rest)
-        Rt = rot_matrix(0.0, yaw, 0.0) @ R_deg(swing, 0, 0) @ Rrest
-        loc = euler_zyx(Rh.T @ Rt)
-        pose[ear] = tuple(_wrap(loc[k] - rest[k]) for k in range(3)) + (0.0, 0.0, 0.0)
-    return pose
+            eb, tb = f'{side}_ear', f'{side}_ear_tip'
+            for k in range(40):
+                out = splay + k * 3.0
+                self.set_world_rot(eb, R_deg(0, yaw, 0) @ R_deg(swing, 0, out * -sx) @ EAR_WORLD(sx))
+                if self.lowest([eb, tb]) <= clamp_y:
+                    break
 
 
 def make_poses():
     poses = {}
-    jaws70 = {'jaw_upper_right': P(-26, 34, -12), 'jaw_upper_left': P(-26, -34, 12),
-              'jaw_lower_right': P(32, 28, 14), 'jaw_lower_left': P(32, -28, -14)}
-    # lunge: neck thrown forward, jaws open 70 deg into a 4-petal maw, ears flung back, front legs reaching
-    poses['lunge'] = _merge(jaws70, {
-        'neck': P(27, 0, 0), 'head': P(-14, 0, 0, 0, 0, -3),
-        'tongue': P(-8, 0, 0), 'tongue_tip': P(-34, 0, 0),
-        'right_ear_tip': P(25), 'left_ear_tip': P(25),
-        'seg1': P(0, 0, 0, 0, 2.5, 0), 'seg2': P(-4), 'seg3': P(-3), 'seg4': P(4), 'seg5': P(3),
-        'front_right_leg': P(-48, 0, 0), 'front_left_leg': P(-40, 0, 0),
-        'front_right_paw': P(30), 'front_left_paw': P(25),
-        'tail': P(10, 26, 0), 'tail_tip': P(0, 20, 0),
-    }, arm_ik(1, 'right', (-17.0, 21.0, -26.0), (-1.0, -1.0, 0.0)),
-        arm_ik(1, 'left', (17.0, 21.0, -22.0), (1.0, -1.0, 0.0)))
-    _hang_ears(poses['lunge'], 50)
-    # coil ("long hug"): every link yawed the same way, alternating strong/soft, with a slight rise and
-    # fall, so the body spirals ~3/4 of a turn round the victim on its LEFT (+X); the head rears up and
-    # turns in to look down at them; the inner human arms reach in and grab at chest height
+
+    # ------------------------------------------------ lunge
+    k = Kit()
+    k.set('jaw_upper_right', -28, 34, -12)
+    k.set('jaw_upper_left', -28, -34, 12)
+    k.set('jaw_lower_right', 34, 28, 14)
+    k.set('jaw_lower_left', 34, -28, -14)
+    k.set('right_brow', 0, 0, -22, 0, 0.6, 0)
+    k.set('left_brow', 0, 0, 22, 0, 0.6, 0)
+    k.set('neck', 27, 0, 0)
+    k.set('head', -14, 0, -HEAD_TILT, 0, 0, -3)
+    k.set('tongue', -8)
+    k.set('tongue_tip', -34)
+    k.set('right_ear_tip', 25)
+    k.set('left_ear_tip', 25)
+    k.set('seg1', 0, 0, 0, 0, 2.5, 0)
+    k.set('seg2', -6)
+    k.set('seg3', -2)
+    k.set('seg4', 5)
+    k.set('seg5', 4)
+    k.set('tail', 10, 26, 0)
+    k.set('tail_tip', 0, 20, 0)
+    k.plant_leg('right', -30)
+    k.plant_leg('left', -22)
+    reach = {(1, 'right'): (-24, -12, 40), (1, 'left'): (20, -10, -18), (2, 'right'): (-25, 5, 10),
+             (2, 'left'): (19, 9, -160), (3, 'right'): (-21, 26, 24), (3, 'left'): (22, 30, -20)}
+    for (idx, side), (x, dz, yaw) in reach.items():
+        sx = -1 if side == 'right' else 1
+        S = k.wpos(arm_names(idx, side)[0])
+        k.plant_arm(idx, side, (x, S[2] + dz), (sx * 0.6, -1.0, 0.0), yaw)
+    k.hang_ears(50)
+    poses['lunge'] = k.table()
+
+    # ------------------------------------------------ coil
+    k = Kit()
     yaw = [('seg2', 40), ('seg3', 32), ('seg4', 40), ('seg5', 32), ('seg6', 40), ('hips', 30)]
-    coil = {n: P(-4 if k % 2 else 3, a, 0) for k, (n, a) in enumerate(yaw)}
-    coil.update({'seg1': P(0, 30, 0), 'neck': P(-30, -55, 0), 'head': P(55, -20, 8),
-                 'jaw_upper_right': P(-16, 14, 0), 'jaw_upper_left': P(-16, -14, 0),
-                 'jaw_lower_right': P(20, 14, 0), 'jaw_lower_left': P(20, -14, 0),
-                 'tail': P(0, 40, 0), 'tail_tip': P(0, 30, 0), 'tongue_tip': P(-10)})
-    wm = _world(coil)
-    piv = [wm[n][:3, 3] for n in ('seg1', 'seg2', 'seg3', 'seg4', 'seg5', 'seg6', 'hips')]
+    for q, (n, a) in enumerate(yaw):
+        k.set(n, -4 if q % 2 else 3, a, 0)
+    k.set('seg1', 0, 30, 0)
+    k.set('neck', -30, -55, 0)
+    k.set('head', 55, -20, 8 - HEAD_TILT)
+    k.set('jaw_upper_right', -16, 14, 0)
+    k.set('jaw_upper_left', -16, -14, 0)
+    k.set('jaw_lower_right', 20, 14, 0)
+    k.set('jaw_lower_left', 20, -14, 0)
+    k.set('right_brow', 0, 0, -16, 0, 0.5, 0)
+    k.set('left_brow', 0, 0, 16, 0, 0.5, 0)
+    k.set('tail', 0, 40, 0)
+    k.set('tail_tip', 0, 30, 0)
+    k.set('tongue_tip', -10)
+    k.plant_leg('right', -8)
+    k.plant_leg('left', 8)
+    piv = [k.wpos(n) for n in ('seg1', 'seg2', 'seg3', 'seg4', 'seg5', 'seg6', 'hips')]
     cen = np.mean(np.array(piv), axis=0)
-    for idx, seg, *_ in ARMS:
-        M = wm[seg]
-        segR = M[:3, :3]
-        segT = M[:3, 3] - segR @ np.array([0.0, SEG_C[seg], SEGMENT_Z[seg]])
-        S = segR @ arm_rig(idx, 'left')['S'] + segT
+    for (idx, side), spec in ARMS.items():
+        ab = arm_names(idx, side)[0]
+        S = k.wpos(ab)
         dirc = cen - S
         dirc[1] = 0.0
         dirc = dirc / np.linalg.norm(dirc)
-        Wt = cen - dirc * 9.0
-        Wt[1] = -6.0 - idx * 5.0
-        b = math.atan2(-dirc[0], -dirc[2])
-        coil.update(arm_ik(idx, 'left', Wt, (0.0, -1.0, 0.0), rot_matrix(0.0, b, 0.0), segR, segT))
-    _hang_ears(coil)
-    poses['coil'] = coil
-    # vomit: neck arched up, snout to the sky, all four flaps peeled open, tongue out, legs braced
-    poses['vomit'] = _merge({
-        'jaw_upper_right': P(-30, 26, 10), 'jaw_upper_left': P(-30, -26, -10),
-        'jaw_lower_right': P(34, 26, -8), 'jaw_lower_left': P(34, -26, 8),
-        'neck': P(-24, 0, 0), 'head': P(-30, 0, 0), 'tongue': P(6), 'tongue_tip': P(20),
-        'seg1': P(0, 0, 0, 0, -1.5, 0), 'seg2': P(4), 'seg3': P(4), 'seg4': P(-3), 'seg5': P(-3),
-        'front_right_leg': P(-22, 0, 8), 'front_left_leg': P(-22, 0, -8),
-        'front_right_paw': P(18), 'front_left_paw': P(18), 'tail': P(-20, 0, 0)})
-    _hang_ears(poses['vomit'], 10)
-    # beg: the funniest one.  The chest sits up straight on the planted body, the stubby front paws beg,
-    # the head does the dog tilt, the first pair of human hands are pressed together, the tail wags
-    beg = _sit_up(72)
-    beg.update({'neck': P(62, 0, 0), 'head': P(6, 6, 22),
-                'front_right_leg': P(-6, 0, 4), 'front_left_leg': P(-9, 0, -4),
-                'front_right_paw': P(140), 'front_left_paw': P(146),
-                'tail': P(-8, 34, 0), 'tail_tip': P(0, 22, 0), 'tongue_tip': P(10, -32, 0)})
-    beg.update(_praying_hands())
-    _hang_ears(beg)
-    poses['beg'] = beg
-    # stretch: half length.  Every link slides 10.5 texels into the one in front (the skin bands and part
-    # of each fur link disappear), the neck telescopes in, the human arms fold over the back
-    dz = -10.5
-    st = {n: P(0, 0, 0, 0, 0, dz) for n, *_ in SEGMENTS}
-    st['head'] = P(0, 0, 0, 0, 0, 7.0)
-    acc, seg_dz = 0.0, {}
-    for n, *_ in SEGMENTS:
-        acc += dz
-        seg_dz[n] = acc
-    st.update(_folded_arms(seg_dz))
-    st.update({'right_ear': P(0, 0, -4), 'left_ear': P(0, 0, 4), 'tail': P(0, 20, 0)})
-    poses['stretch'] = st
+        bang = math.degrees(math.atan2(-dirc[0], -dirc[2]))
+        if side == 'left':
+            # inner arms reach in and grab the victim at chest height
+            Wt = cen - dirc * 9.0
+            Wt[1] = -6.0 - idx * 5.0
+            k.arm(idx, side, Wt, (0.0, -1.0, 0.0), R_deg(0, bang, 0))
+        else:
+            # outer arms brace on the floor, pushing away from the ring
+            Wt = S - dirc * 13.0
+            k.plant_arm(idx, side, (Wt[0], Wt[2]), (0.0, -1.0, 0.0), bang + 180 - 25)
+    k.hang_ears(0)
+    poses['coil'] = k.table()
+
+    # ------------------------------------------------ vomit
+    k = Kit()
+    k.set('jaw_upper_right', -30, 26, 10)
+    k.set('jaw_upper_left', -30, -26, -10)
+    k.set('jaw_lower_right', 34, 26, -8)
+    k.set('jaw_lower_left', 34, -26, 8)
+    k.set('right_brow', 0, 0, 14, 0, -0.5, 0)
+    k.set('left_brow', 0, 0, -14, 0, -0.5, 0)
+    k.set('neck', -24, 0, 0)
+    k.set('head', -30, 0, -HEAD_TILT)
+    k.set('tongue', 6)
+    k.set('tongue_tip', 20)
+    k.set('seg1', 0, 0, 0, 0, -1.5, 0)
+    k.set('seg2', 6)
+    k.set('seg3', 6)
+    k.set('seg4', -2)
+    k.set('seg5', -4)
+    k.set('tail', -20, 0, 0)
+    k.plant_leg('right', -12)
+    k.plant_leg('left', -12)
+    brace = {(1, 'right'): (-24, -6, 40), (1, 'left'): (22, -4, -30), (2, 'right'): (-25, 2, 20),
+             (2, 'left'): (23, 4, -150), (3, 'right'): (-23, 8, -20), (3, 'left'): (24, 10, 25)}
+    for (idx, side), (x, dz, yw) in brace.items():
+        sx = -1 if side == 'right' else 1
+        S = k.wpos(arm_names(idx, side)[0])
+        k.plant_arm(idx, side, (x, S[2] + dz), (sx * 0.4, -1.0, 0.0), yw)
+    k.hang_ears(10)
+    poses['vomit'] = k.table()
+
+    # ------------------------------------------------ beg (filled below)
+    poses['beg'] = make_beg()
+
+    # ------------------------------------------------ stretch
+    poses['stretch'] = make_stretch()
     return poses
+
+
+def make_beg():
+    k = Kit()
+    return k.table()
+
+
+def make_stretch():
+    k = Kit()
+    return k.table()
 
 
 POSES = make_poses()
 
-ANIM_NOTES = """Choripan, version completa -- animation notes.  Units: radians, offsets in model texels (2x density
-inside scale_root: 2 texels = 1 vanilla pixel).  t = ageInTicks, s = walk speed 0..1.  Every pose value is ADDED to the
-rest pose (apply(POSE_X, w)).  Golden rule: it is a monster that is still a dog -- the TAIL WAGS IN EVERY STATE (even
-while biting, coiling or vomiting) and the ears/tongue flop with dog physics.  Entity length ~4.7 blocks (nose z -75,
-tail tip z +78), height ~1.35 blocks; the origin sits under seg3/seg4.
-
-Bones (parent in brackets)
-* seg1 (ROOT, pivot at the front of the chest): chest + sweater remnant + the two real dachshund legs.  Follows the
-  entity body yaw.  Idle: breathing dy = sin(t*0.08)*0.4.  Chase: dy bob = -abs(sin(walk))*0.8*s, small roll
-  zRot = sin(walk)*0.05.
-* seg2, seg3, seg4, seg5, seg6, hips [each the child of the previous link; pivot at the FRONT of the link, inside the
-  stretched skin band]: the snake chain.  Drive yRot from a position-history buffer: each link's yaw = (heading of the
-  path point N ticks behind the previous link) - (previous link heading), N ~ 3 ticks per link at full speed, clamped
-  to +-0.9 per joint.  Add a travelling undulation while moving: yRot += sin(t*0.45 - k*0.9)*0.12*s (k = link index),
-  xRot += sin(t*0.3 - k*0.8)*0.04 (a lazy vertical wave).  The pink skin band + 2 rib ridges (rest pose authored 6 texels
-  long, overlapping 3 texels into the link in front) opens on the OUTSIDE of every bend -- that's the money shot.
-* neck [seg1, pivot inside the chest top, rest pitched 35 deg up]: takes 40% of look(); chase: xRot +0.2 (head lower,
-  forward).  Can stretch: offsets on 'head' along its z (pose 'lunge' uses dz -3).
-* head [neck, pivot at the neck joint under the back of the skull, rest +35 to level it]: 60% of look().  The DOG HEAD
-  TILT (zRot +-0.4 snapped in 3 ticks, held 20 ticks) whenever it hears the player's voice / a thrown item lands.
-* jaw_upper_right, jaw_upper_left [head, hinge at the back-inner edge of each upper muzzle half, by the eyes]:
-  the upper half of the split muzzle, each carrying half of the black nose, overbite needle teeth and whiskers.
-  Open = xRot negative (front rises) + yRot outward (right +, left -) + zRot outward.  Rest is ajar (3 deg) so the
-  needle slit always shows.  Idle: a twitch every 3-6 s: both upper flaps yRot +-0.08 for 4 ticks (the nose "unzips").
-* jaw_lower_right, jaw_lower_left [head, hinge at the throat under the skull]: the two lower halves, nose-to-throat.
-  Open = xRot positive + yRot outward.  Chase: the four flaps breathe open/closed: w = 0.15 + 0.15*sin(t*0.5),
-  apply(POSE_LUNGE jaws only, w).  Attack (lunge bite): snap to the full 'lunge' jaw values in 3 ticks, CLAMP shut
-  (back to rest) in 2 ticks on hit, chomp sound.  Always move the 4 flaps together, upper/lower mirrored.
-* tongue [head, root on the floor of the mouth]: black tongue, lies in the lip slit.  Pant while idle/chasing:
-  xRot = sin(t*0.6)*0.05, dz = -abs(sin(t*0.6))*1.0.
-* tongue_tip [tongue, hangs out of the front, rest 52 deg down]: dog-lolling pendulum, lagged 3 ticks behind the head
-  (xRot/yRot +-0.25, zRot from head roll).  'lunge' shoots it forward (xRot -0.6).
-* right_ear, left_ear [head, attached low on the back of the skull, turned 24 deg toward the front]: limp pendulums.
-  Counter-rotate against head pitch/roll so they keep hanging (the poses already include this), lag 4 ticks,
-  amplitude up to 0.5; fling back (xRot +0.9) on the lunge.  right_ear_tip, left_ear_tip [ear]: second pendulum stage,
-  2 ticks more lag, half amplitude -- the floppiest thing on the model; they nearly sweep the floor.
-* front_right_leg, front_left_leg [seg1]: the original short, bowed dachshund legs.  Normal quadruped trot,
-  xRot = +-cos(walk*1.4)*0.9*s (fast, tiny steps -- comic next to the long arms).  front_right_paw, front_left_paw
-  [leg]: turned-out feet; flex xRot +0.4 on the back swing; 'beg' curls them down 140 deg (the begging wrists).
-* arm_1_right/left [seg3], arm_2_right/left [seg5], arm_3_right/left [hips]: the human upper arms bursting from the
-  flanks (torn fur collar at the shoulder).  forearm_K_side [arm]: elbow knob + too-long forearm.  hand_K_side
-  [forearm]: flat palm, 4 over-long fingers with black nails, splayed thumb.  Rest stance: elbows above the spine like a
-  spider, palms flat on the floor.  Walk as a wave from front to back: pair K lifts when sin(walk*0.9 - K*1.6) > 0:
-  arm zRot += 0.35*lift*(right +, left -) (raises the elbow), forearm zRot -= 0.5*lift (folds), hand xRot -0.3*lift
-  (palm peels off the floor, fingers last).  Left/right of a pair alternate (phase + PI).  Idle: one random finger
-  hand tap every 2-4 s (hand xRot -0.15 for 2 ticks) -- drumming fingers.  Pose tables re-target them by IK (coil:
-  the left arms grab inward; beg: pair 1 presses its palms together; stretch: all folded over the back).
-* tail [hips], tail_tip [tail]: the tiny dachshund tail, carried up.  WAG ALWAYS: tail yRot = sin(t*1.6)*0.6,
-  tail_tip yRot = sin(t*1.6 - 0.8)*0.5; faster (t*2.4) when it sees food/a thrown item, slow (t*0.8) when hurt.
-* shred_1 [seg2], shred_2 [seg3], shred_3 [seg4], shred_4 [seg5]: strips of the Nona's red sweater hanging off the
-  spine (band + side strips + loose yarn, zero-thickness planes).  Flutter: zRot = sin(t*0.35 + k)*0.08, xRot = -0.25*s
-  (streaming back in the chase).
-* Emissive layer 'eyes': the milk-white eye discs (dim glow) + the red pinpoint pupils.  Optional: shrink the pupils'
-  apparent glow (alpha pulse 0.7..1.0) when it begs, full bright when it lunges.
-
-Poses
-* lunge: neck thrown forward and the head pushed 3 texels along it, chest dips, the muzzle peels open ~70 deg in four
-  petals (eyes stay visible above the maw), tongue shoots out, ears flung back, front paws and the first pair of arms
-  reach forward.  Ease in 3 ticks, hold 6, snap shut.
-* coil: the "long hug".  Every link yaws the same way (alternating ~0.7 / 0.55 rad, slight alternating pitch) so the
-  body rings ~3/4 of a turn round a victim on its LEFT; the neck rears up and the head looks down into the ring, jaws
-  half open; the three left arms reach in and grab at chest height.  In game, feed the real coil from the path buffer
-  (the victim's position) and use this table as the target shape; spiral 1.5 turns by adding dy per link.
-* vomit: neck arched up, snout to the sky, all four flaps peeled wide, tongue lolling, front legs braced, back
-  humped.  Spawn the black ectoplasm column at the head pivot + 18 texels along the snout direction.  Hold while the
-  'choripan.vomit' sound plays, add a shudder (seg2..seg6 yRot +-0.05 at t*3).
-* beg: THE gag.  seg1 is pitched up 72 deg around the chest's back end (offset already in the table) and seg2 counter-
-  rotates so the rest of the 8-legged body stays planted; the stubby paws hang curled in front of the chest, the head
-  does the dog tilt, the first pair of human hands press together "por favor" between the paws, tongue out, tail
-  wagging hard (keep the wag running on top).  Blend in over 10 ticks when the player holds a chorizo/choripan.
-* stretch: the transformation.  w = 1 is HALF length: every link slides 10.5 texels into the one in front (the skin
-  bands and ribs vanish inside the fur), the neck telescopes in (head dz +7), and all six human arms are folded over
-  the back like a resting spider's legs.  Script: start at w = 1 (also scale the arm/forearm/hand bones from 0 to 1
-  over the first 40% of the effect so they "sprout"), then ease w 1 -> 0 one link at a time from the FRONT
-  (seg2 first, hips last, 8 ticks apart) with a 'choripan.crack' per link -- the slinky going down the stairs.
-  Reverse it (0 -> 1, then scale everything down) for the post-choripan "boing" retraction.
-"""
+ANIM_NOTES = """(rewritten below)"""

@@ -53,6 +53,8 @@ public class DeadLine implements ModInitializer {
 			SanityManager.tick(server);
 			FlashlightLights.tick(server);
 			com.deadline.site.SitePlacer.tick(server);
+			com.deadline.voice.Voice.tick(server);
+			com.deadline.voice.NoiseMeter.tick(server);
 			com.deadline.director.Director.tick(server);
 		});
 		ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> CaseManager.onJoin(handler.getPlayer()));

@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "deadline:block/colegio_nicho_sellado"
+  },
+  "facing=east": {
+   "model": "deadline:block/colegio_nicho_sellado",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "deadline:block/colegio_nicho_sellado",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "deadline:block/colegio_nicho_sellado",
+   "y": 270
+  }
+ }
+}

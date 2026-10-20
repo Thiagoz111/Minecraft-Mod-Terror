@@ -1,0 +1,8 @@
+{
+ "parent": "minecraft:block/slab",
+ "textures": {
+  "bottom": "deadline:block/colegio_cripta_piedra_0",
+  "top": "deadline:block/colegio_cripta_piedra_0",
+  "side": "deadline:block/colegio_cripta_piedra_0"
+ }
+}

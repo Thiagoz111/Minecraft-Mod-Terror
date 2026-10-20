@@ -1,0 +1,15 @@
+{
+ "variants": {
+  "": [
+   {
+    "model": "deadline:block/colegio_piso_capilla_0"
+   },
+   {
+    "model": "deadline:block/colegio_piso_capilla_1"
+   },
+   {
+    "model": "deadline:block/colegio_piso_capilla_2"
+   }
+  ]
+ }
+}

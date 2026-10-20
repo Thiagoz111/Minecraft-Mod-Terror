@@ -1,0 +1,12 @@
+{
+ "variants": {
+  "": [
+   {
+    "model": "deadline:block/colegio_mosaico_bano_0"
+   },
+   {
+    "model": "deadline:block/colegio_mosaico_bano_1"
+   }
+  ]
+ }
+}

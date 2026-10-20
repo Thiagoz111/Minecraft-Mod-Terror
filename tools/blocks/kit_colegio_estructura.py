@@ -1836,12 +1836,9 @@ def p_cripta_piso(v):
     cv, lab, mortar = rubble(v, 3600 + v * 7, CRIPTA, Ramp('#15120e', '#211c16', '#2e271f', '#3b3329'), nsites=5, mind=12, mortar_w=1.2)
     X, Y = cv.X, cv.Y
     cv.mul(1.12)
-    if v == 2:
-        pud = blob(N, N, 16, 18, 9, 6, 3610, rough=0.3) & (lab >= 0)
-        cv.mul(np.where(pud, 0.6, 1.0))
-        pr = rim(pud, wrap=False)
-        cv.tint('#7f8a88', np.where(pr['in_top'], 0.4, 0))
-        cv.tint('#6f7a78', np.where(pud & (np.abs(X - 13 - (Y - 15) * 0.5) < 0.6), 0.35, 0))
+    if v == 2:   # mud and grit washed in over the stones
+        mud = (fbm(N, N, 3610, cells=4, octaves=3) > 0.58)
+        cv.put(Ramp('#1e1912', '#2a231a', '#373024'), np.full((N, N), 1) + (fbm(N, N, 3611, cells=16, octaves=1) > 0.6), mud)
     return cv.out()
 
 
@@ -2333,7 +2330,13 @@ TINY = {  # 5-row condensed font for small plates (variable width)
     '3': ['##', '.#', '##', '.#', '##'], '4': ['#.#', '#.#', '###', '..#', '..#'], '5': ['##', '#.', '##', '.#', '##'],
     '6': ['##', '#.', '##', '##', '##'], '7': ['##', '.#', '.#', '.#', '.#'], '8': ['###', '#.#', '###', '#.#', '###'],
     '9': ['###', '#.#', '###', '..#', '..#'], '-': ['..', '..', '##', '..', '..'], '.': ['.', '.', '.', '.', '#'],
-    'Ñ': ['#.#', '###', '###', '#.#', '#.#'],
+    'Ñ': ['#..#', '##.#', '#.##', '#..#', '#..#'],
+    'F': ['##', '#.', '##', '#.', '#.'], 'H': ['#.#', '#.#', '###', '#.#', '#.#'], 'J': ['.#', '.#', '.#', '.#', '##'],
+    'K': ['#.#', '##.', '#..', '##.', '#.#'], 'Q': ['###', '#.#', '#.#', '###', '..#'], 'W': ['#...#', '#...#', '#.#.#', '#.#.#', '.#.#.'],
+    'X': ['#.#', '#.#', '.#.', '#.#', '#.#'], 'Y': ['#.#', '#.#', '.#.', '.#.', '.#.'], 'Z': ['###', '..#', '.#.', '#..', '###'],
+    'Á': ['.#.', '#.#', '###', '#.#', '#.#'], 'É': ['##', '#.', '##', '#.', '##'], 'Í': ['#', '#', '#', '#', '#'],
+    'Ú': ['#.#', '#.#', '#.#', '#.#', '###'], '·': ['.', '.', '#', '.', '.'], '+': ['...', '.#.', '###', '.#.', '...'],
+    '/': ['..#', '..#', '.#.', '#..', '#..'], ',': ['.', '.', '.', '#', '#'],
 }
 
 
@@ -2345,7 +2348,7 @@ def tiny_mask(text):
         arr = np.array([[c == '#' for c in row] for row in g], bool)
         acc = np.zeros((1, arr.shape[1]), bool)
         if ch in ('Ó', 'Á', 'É', 'Í', 'Ú'):
-            acc[0, arr.shape[1] // 2 + (arr.shape[1] > 2)] = True
+            acc[0, min(arr.shape[1] - 1, arr.shape[1] // 2 + (arr.shape[1] > 2))] = True
         if ch == 'Ñ':
             acc[0, :] = True
         cols.append(np.vstack([acc, arr]))
@@ -2941,6 +2944,422 @@ def alero_tile_paint(face, w, h, part, cv):
     cv.col('#140906', ~dome & (Y >= h // 2))
 
 
+# =============================================================================================== STAINED GLASS
+GL = {   # stained glass colour ramps (dark -> light)
+    'blue': Ramp('#0c1640', '#132260', '#1c3285', '#2a46a6', '#3c5fc2', '#5a7fd6'),
+    'blue2': Ramp('#10204a', '#183068', '#22438a', '#3159a8', '#4672c0'),
+    'red': Ramp('#3e0a10', '#5e0f16', '#83171c', '#a52423', '#c23a2e', '#d65a44'),
+    'gold': Ramp('#5a3a06', '#86590c', '#b07c14', '#d09f22', '#e7c046', '#f3dc7e'),
+    'green': Ramp('#0f2a16', '#17401f', '#215a2a', '#2f7536', '#468f47'),
+    'white': Ramp('#8d9488', '#a8ae9f', '#c0c4b2', '#d6d7c3', '#e8e6d2'),
+    'flesh': Ramp('#8a5c40', '#a8765a', '#c49376', '#d9ae90', '#e8c6a8'),
+    'purple': Ramp('#24102e', '#371845', '#4c235e', '#633279'),
+    'brown': Ramp('#2a170c', '#3e2312', '#55321b'),
+    'pale': Ramp('#7f8f86', '#98a69c', '#b2bdb2', '#c8d0c4', '#dbe0d3'),
+}
+LEAD = np.array(C('#141216'))
+STONE_T = np.array(C('#8a8276'))
+
+
+def glass_compose(labels, colors, paint=None, seed=0, bars=(), alpha=205):
+    """labels: int map; colors: {label: ramp name}; paint: list of (mask, rgb, alpha) drawn on top (grisaille).
+    Returns float rgba (h, w, 4). Leads = 1 px between different labels. Each connected piece gets its own tone."""
+    h, w = labels.shape
+    out = np.zeros((h, w, 4))
+    streak = fbm(w, h, seed, cells=2, octaves=3, ax=2.5, ay=0.5)
+    piece_t = fbm(w, h, seed + 1, cells=3, octaves=1)
+    for lab, name in colors.items():
+        m = labels == lab
+        if not m.any():
+            continue
+        if name == 'stone':
+            out[m, :3] = STONE_T
+            out[m, 3] = 255
+            continue
+        ramp = GL[name]
+        base = ramp.n // 2
+        idx = base + posterize(streak, [(0.66, 1), (0.34, -1)]) + np.where(piece_t > 0.6, 1, 0) - np.where(piece_t < 0.3, 1, 0)
+        out[m, :3] = ramp[idx][m]
+        out[m, 3] = alpha if name not in ('white', 'pale') else alpha - 25
+    Y, X = np.mgrid[0:h, 0:w]
+    lead = (nb(labels, 1, 0, False, -1) != labels) | (nb(labels, 0, 1, False, -1) != labels)
+    lead &= (X > 0) & (Y > 0)
+    lead &= ~((labels < 0) & (nb(labels, 1, 0, False, -1) < 0) & (nb(labels, 0, 1, False, -1) < 0))
+    out[lead, :3] = LEAD
+    out[lead, 3] = 255
+    for yb in bars:
+        out[Y == yb, :3] = C('#0a0a0c')
+        out[Y == yb, 3] = 255
+    if paint:
+        for (m, rgb, a) in paint:
+            out[m, :3] = C(rgb)
+            out[m, 3] = np.maximum(out[m, 3], a)
+    out[labels < 0] = 0
+    return out
+
+
+def lancet_head_mask(w, h, top_off=0):
+    """Pointed (equilateral) arch head of a 24 px wide lancet: True inside the opening. Rows of the sup piece."""
+    Y, X = np.mgrid[0:h, 0:w]
+    xu = 2 + (X + 0.5) / 2.0          # block units across the opening (2..14)
+    yu = 16 - (Y + 0.5) / 2.0
+    ys = 4.0
+    inside = yu <= ys
+    left = ((xu - 14) ** 2 + (yu - ys) ** 2 <= 144) & (xu <= 8)
+    right = ((xu - 2) ** 2 + (yu - ys) ** 2 <= 144) & (xu > 8)
+    return inside | left | right
+
+
+def vitral_ines():
+    """Santa Inés with the lamb and the palm, under a gold canopy; blue diaper ground; red/gold border."""
+    W, H = 24, 96
+    Y, X = np.mgrid[0:H, 0:W]
+    lab = np.full((H, W), 1)           # 1 = blue ground
+    opening = np.ones((H, W), bool)
+    opening[0:32] = lancet_head_mask(W, 32)
+    # border: 2 px, alternating red / gold every 3 px
+    edge = (X < 2) | (X >= W - 2)
+    head_edge = ~lancet_head_mask(W, 32) if False else None
+    om = opening.copy()
+    inner = om & nb(om, 2, 0, False) & nb(om, -2, 0, False) & nb(om, 0, 2, False) & nb(om, 0, -2, False)
+    border = om & ~inner
+    lab = np.where(border, np.where(((X + Y) // 3) % 2 == 0, 2, 3), lab)
+    # canopy (gold architecture) rows 8..20 in the head
+    can = inner & (Y >= 9) & (Y <= 15) & (np.abs(X - 11.5) <= 7)
+    can |= inner & (Y >= 4) & (Y < 9) & (np.abs(X - 11.5) <= (Y - 3) * 0.9)
+    lab = np.where(can, 4, lab)
+    lab = np.where(can & (Y == 15), 5, lab)
+    # halo + head + hair
+    halo = ((X - 11.5) ** 2 + (Y - 24) ** 2 <= 22) & inner
+    lab = np.where(halo, 4, lab)
+    head = ((X - 11.5) ** 2 / 6.0 + (Y - 25) ** 2 / 9.0 <= 1)
+    hair = ((X - 11.5) ** 2 / 10.0 + (Y - 25.5) ** 2 / 12.0 <= 1) | ((np.abs(X - 11.5) <= 4) & (Y >= 25) & (Y <= 33))
+    lab = np.where(hair, 8, lab)
+    lab = np.where(head, 6, lab)
+    # body: red dress (central), green mantle on both sides falling to the feet
+    yb0, yb1 = 31, 80
+    t = np.clip((Y - yb0) / (yb1 - yb0), 0, 1)
+    halfw = 3.2 + t * 4.2
+    body = (np.abs(X - 11.5) <= halfw) & (Y >= yb0) & (Y <= yb1)
+    dress = body & (np.abs(X - 11.5) <= 1.6 + t * 2.0)
+    lab = np.where(body, 7, lab)
+    lab = np.where(dress, 9, lab)
+    # hands holding the palm (diagonal green frond from the right hand up to the left shoulder)
+    hand = ((X - 15.0) ** 2 + (Y - 46) ** 2 <= 2.2)
+    lab = np.where(hand, 6, lab)
+    palm = (np.abs((X - 15) + (Y - 46) * 0.42) <= 0.8) & (Y >= 33) & (Y <= 46)
+    palm |= ((np.abs((X - 15) + (Y - 46) * 0.42) <= 2.4) & (Y >= 33) & (Y <= 40) & ((Y % 2) == 0))
+    lab = np.where(palm & inner, 10, lab)
+    # lamb in her left arm / at her feet (inf piece)
+    lamb = ((X - 7.5) ** 2 / 14.0 + (Y - 70) ** 2 / 9.0 <= 1)
+    lamb_head = ((X - 3.5) ** 2 + (Y - 67) ** 2 <= 3.2)
+    lab = np.where(lamb, 11, lab)
+    lab = np.where(lamb_head & inner, 12, lab)
+    legs = ((X == 6) | (X == 9)) & (Y >= 72) & (Y <= 75)
+    lab = np.where(legs, 12, lab)
+    # ground + inscription
+    ground = inner & (Y >= 80) & (Y <= 83)
+    lab = np.where(ground, 10, lab)
+    plaque = inner & (Y >= 84) & (Y <= 92)
+    lab = np.where(plaque, 13, lab)
+    lab = np.where(~opening, -1, lab)
+    colors = {1: 'blue', 2: 'red', 3: 'gold', 4: 'gold', 5: 'white', 6: 'flesh', 7: 'green', 8: 'brown', 9: 'red',
+              10: 'green', 11: 'white', 12: 'brown', 13: 'purple'}
+    # grisaille paint: diaper lattice on the ground, face, drapery folds, letters, lamb fleece
+    paint = []
+    diaper = (lab == 1) & (((X + Y) % 6 == 0) | ((X - Y) % 6 == 0))
+    paint.append((diaper, '#0b1336', 230))
+    paint.append(((Y == 24) & ((X == 10) | (X == 13)), '#3a2014', 255))
+    paint.append(((Y == 27) & (X >= 11) & (X <= 12), '#7a4632', 255))
+    folds = ((lab == 7) | (lab == 9)) & ((X + (Y // 7)) % 4 == 0) & (Y > 36)
+    paint.append((folds, '#1a0a0a', 235))
+    fleece = (lab == 11) & (((X * 3 + Y * 5) % 7) == 0)
+    paint.append((fleece, '#8d9488', 230))
+    tm = np.zeros((H, W), bool)
+    stamp(tm, tiny_mask('S.INÉS'), 2, 85)
+    paint.append((tm & (lab == 13), '#e7c046', 255))
+    return glass_compose(lab, colors, paint, seed=4000, bars=(48, 64))
+
+
+def vitral_geo():
+    """Repeating window: pale grisaille quarries with a red/blue border and a medallion with a gold cross."""
+    W, H = 24, 96
+    Y, X = np.mgrid[0:H, 0:W]
+    opening = np.ones((H, W), bool)
+    opening[0:32] = lancet_head_mask(W, 32)
+    om = opening
+    inner = om & nb(om, 2, 0, False) & nb(om, -2, 0, False) & nb(om, 0, 2, False) & nb(om, 0, -2, False)
+    border = om & ~inner
+    # quarries: diamond lattice, each diamond its own label so leads appear
+    q = ((X + Y) // 6) * 100 + ((X - Y + 96) // 6)
+    lab = np.where(inner, 1000 + q, -1)
+    lab = np.where(border, np.where((Y // 4) % 2 == 0, 2, 3), lab)
+    # medallion (circle) in the med piece, quatrefoil in the head, small roundel in the inf
+    def roundel(cx, cy, r, ring_lab, fill_lab, cross_lab=None):
+        nonlocal lab
+        d = np.sqrt((X - cx) ** 2 + (Y - cy) ** 2)
+        lab = np.where(inner & (d <= r), ring_lab, lab)
+        lab = np.where(inner & (d <= r - 2), fill_lab, lab)
+        if cross_lab is not None:
+            cr = inner & (d <= r - 3) & ((np.abs(X - cx) <= 1) | (np.abs(Y - cy) <= 1))
+            lab = np.where(cr, cross_lab, lab)
+    roundel(11.5, 47.5, 8.5, 4, 5, 6)
+    roundel(11.5, 18, 5.5, 4, 7)
+    roundel(11.5, 76, 5.5, 4, 7)
+    colors = {2: 'red', 3: 'blue2', 4: 'gold', 5: 'blue', 6: 'gold', 7: 'red'}
+    for v in np.unique(lab):
+        if v >= 1000:
+            colors[int(v)] = 'pale'
+    paint = []
+    # grisaille vine on the quarries: small painted dots/strokes
+    vine = (lab >= 1000) & (((X * 2 + Y * 3) % 11) == 0)
+    paint.append((vine, '#4f5a52', 220))
+    return glass_compose(lab, colors, paint, seed=4100, bars=(48, 64))
+
+
+_VIT = {}
+
+
+def vit_img(name):
+    if name not in _VIT:
+        _VIT[name] = {'ines': vitral_ines, 'geo': vitral_geo}[name]()
+    return _VIT[name]
+
+
+def vitral_glass(name, piece):
+    off = {'sup': 0, 'med': 32, 'inf': 64}[piece]
+
+    def p(face, w, h, part):
+        x, y, z = face_coords(part, face, w, h)
+        img = vit_img(name)
+        col = np.clip(np.floor((14 - x) * 2).astype(int), 0, 23)
+        row = np.clip(off + np.floor((16 - y) * 2).astype(int), 0, 95)
+        if face == 'south':
+            col = 23 - col   # seen from outside the design is mirrored, as in real glass
+        a = img[row, col]
+        return np.clip(a, 0, 255).round().astype(np.uint8)
+    return p
+
+
+def vitral_parts(name, piece):
+    pl = pp_plaster('sillar')
+    parts = [P((0, 0, 0), (2, 16, 16), pl, name='jamb_l'), P((14, 0, 0), (16, 16, 16), pl, name='jamb_r')]
+    if piece == 'inf':
+        parts.append(P((1, 0, 0), (15, 1.5, 16), pl, name='sill'))
+    if piece == 'sup':
+        for xi in range(2, 14):
+            xm = xi + 0.5
+            ys = 4.0
+            ya = ys + (math.sqrt(max(0, 144 - (xm - 14) ** 2)) if xm <= 8 else math.sqrt(max(0, 144 - (xm - 2) ** 2)))
+            if ya < 16:
+                parts.append(P((xi, ya, 0), (xi + 1, 16, 16), pl, name='head_fill'))
+    it = pp_iron(seed=71, rust=0.15)
+    for yb in ((8.0,) if piece != 'sup' else ()):
+        parts.append(P((2, yb - 0.5, 7.4), (14, yb + 0.5, 8.6), it, name='saddle'))
+    parts.append(PL((2, 0 if piece != 'inf' else 1.5, 8.0), (14, 16, 8.0), vitral_glass(name, piece), name='glass'))
+    return parts
+
+
+def roseton():
+    """Rose window composition, 64 x 64 px over 2 x 2 blocks: 8 petals, oculus with IHS, stone tracery."""
+    W = 64
+    Y, X = np.mgrid[0:W, 0:W]
+    cx = cy = 31.5
+    d = np.sqrt((X - cx) ** 2 + (Y - cy) ** 2)
+    ang = (np.degrees(np.arctan2(Y - cy, X - cx)) + 360) % 360
+    lab = np.full((W, W), -1)
+    R = 29.0
+    lab = np.where(d <= R, 1, lab)                          # blue ground
+    sector = (ang // 45).astype(int)
+    # petals: circles of radius 8 centred at r=18 on each 45 deg axis
+    for k in range(8):
+        a = math.radians(k * 45 + 22.5)
+        px, py = cx + math.cos(a) * 18.5, cy + math.sin(a) * 18.5
+        pd = np.sqrt((X - px) ** 2 + (Y - py) ** 2)
+        lab = np.where(pd <= 7.5, 10 + k, lab)
+        lab = np.where(pd <= 4.0, 20 + k, lab)
+    # oculus
+    lab = np.where(d <= 9.5, 30, lab)
+    lab = np.where(d <= 7.0, 31, lab)
+    # stone tracery: outer ring, ring around the oculus, spokes between petals
+    stone = (d > R) & (d <= R + 2.5)
+    stone |= (np.abs(d - 10.5) < 1.2)
+    for k in range(8):
+        a = k * 45.0
+        diff = np.abs(((ang - a) + 180) % 360 - 180)
+        stone |= (diff * np.pi / 180 * d < 1.3) & (d > 10.5) & (d < R)
+    lab = np.where(stone, 99, lab)
+    lab = np.where(d > R + 2.5, -2, lab)
+    colors = {1: 'blue', 30: 'gold', 31: 'red', 99: 'stone'}
+    for k in range(8):
+        colors[10 + k] = 'red' if k % 2 == 0 else 'gold'
+        colors[20 + k] = 'blue2' if k % 2 == 0 else 'green'
+    tm = np.zeros((W, W), bool)
+    stamp(tm, tiny_mask('IHS'), 27, 28)
+    paint = [(tm & (lab == 31), '#f3dc7e', 255),
+             ((lab == 1) & (((X + Y) % 5 == 0)), '#0b1336', 220)]
+    img = glass_compose(lab, colors, paint, seed=4200)
+    img[lab == -2] = 0
+    # stone tracery shading
+    st = lab == 99
+    img[st & (nb(st, 1, 0, False) == False), :3] = C('#b4ab9c')
+    img[st & (nb(st, -1, 0, False) == False), :3] = C('#5f594f')
+    return img
+
+
+def roseton_glass(gx, gy):
+    """gx: 0 = left piece (as seen from the front), gy: 0 = top piece."""
+    def p(face, w, h, part):
+        x, y, z = face_coords(part, face, w, h)
+        img = vit_img('rose') if 'rose' in _VIT else _VIT.setdefault('rose', roseton())
+        col = np.clip(gx * 32 + np.floor((16 - x) * 2).astype(int), 0, 63)
+        row = np.clip(gy * 32 + np.floor((16 - y) * 2).astype(int), 0, 63)
+        if face == 'south':
+            col = 63 - col
+        return np.clip(img[row, col], 0, 255).round().astype(np.uint8)
+    return p
+
+
+def roseton_parts(gx, gy):
+    pl = pp_plaster('sillar')
+    parts = []
+    # stone fill outside the circle (stepped 1-unit columns), circle centre at the shared corner of the 4 pieces
+    ccx = 0.0 if gx == 0 else 16.0      # centre x in this block's units (left piece: centre on its x=0 side)
+    ccy = 0.0 if gy == 0 else 16.0      # top piece: centre at its bottom
+    Rr = 15.25
+    for xi in range(16):
+        xm = xi + 0.5
+        dx = xm - ccx
+        if abs(dx) >= Rr:
+            parts.append(P((xi, 0, 0), (xi + 1, 16, 16), pl, name='fill'))
+            continue
+        dy = math.sqrt(Rr * Rr - dx * dx)
+        if gy == 0:      # circle occupies y < dy (from the bottom of the top piece)
+            if dy < 16:
+                parts.append(P((xi, dy, 0), (xi + 1, 16, 16), pl, name='fill'))
+        else:            # bottom piece: circle occupies y > 16 - dy
+            if dy < 16:
+                parts.append(P((xi, 0, 0), (xi + 1, 16 - dy, 16), pl, name='fill'))
+    parts.append(PL((0, 0, 8.0), (16, 16, 8.0), roseton_glass(gx, gy), name='glass'))
+    return parts
+
+
+# =============================================================================================== CRYPT NICHES, HOLE, PLATES
+MARBLE = Ramp('#6e6a64', '#8e8a83', '#aaa69e', '#c0bcb3', '#d2cec5', '#e0ddd5', '#ebe9e2')
+
+
+def plaque_paint(lines, base_ramp=MARBLE, ink='#2a2724', broken=False, seed=0):
+    def fn(face, w, h, part, cv):
+        X, Y = cv.X, cv.Y
+        if face not in ('north',):
+            cv.put(base_ramp, np.full((h, w), 2))
+            return
+        f = fbm(w, h, 4300 + seed, cells=max(1, w // 8), octaves=3)
+        idx = np.full((h, w), 4) + posterize(f, [(0.7, 1), (0.3, -1)])
+        vein = path_mask(wander([(0, h * 0.3), (w * 0.5, h * 0.6), (w - 1, h * 0.4)], 4310 + seed, amp=3), w, h, wrap=False)
+        idx = np.where(vein, idx - 2, idx)
+        bd = border_px(w, h)[0]
+        idx = np.where(bd == 0, 2, np.where(bd == 1, idx + 1, idx))
+        cv.put(base_ramp, idx)
+        y = 3
+        for ln in lines:
+            tm = tiny_mask(ln)
+            th, tw = tm.shape
+            m = np.zeros((h, w), bool)
+            stamp(m, tm, (w - tw) // 2, y)
+            cv.col(ink, m)
+            cv.put(base_ramp, np.full((h, w), 6), nb(m, -1, 0, False) & ~m)
+            y += th + 2
+        if broken:
+            pts = wander([(w * 0.62, 0), (w * 0.55, h * 0.5), (w * 0.7, h - 1)], 4320 + seed, amp=2)
+            cm = path_mask(pts, w, h, wrap=False)
+            cv.col('#141210', cm)
+        # grime from the damp crypt
+        cv.tint('#3b3a2c', np.where((Y > h * 0.7) & (fbm(w, h, 4330 + seed, cells=4, octaves=2) > 0.5), 0.3, 0))
+    return pp_fn(fn)
+
+
+def nicho_parts(lines=None, open_=False, seed=0, broken=False):
+    """A niche set in the crypt wall (the block replaces a wall block). Named plaque spans 2 blocks (x -8..24) so the
+    names fit; for the open niche the plaque hangs below the opening."""
+    st = pp_plaster('cripta_piedra')
+    frame = pp_plaster('sillar', 2)
+    parts = [P((1, 13.5, -1.0), (15, 15.5, 1.0), frame, name='lintel'),
+             P((1, 0.5, -1.4), (15, 2.0, 1.0), frame, name='sill'),
+             P((1, 2.0, -1.0), (2.5, 13.5, 1.0), frame, name='jl'),
+             P((13.5, 2.0, -1.0), (15, 13.5, 1.0), frame, name='jr'),
+             P((0, 15.5, 0), (16, 16, 16), st), P((0, 0, 0), (16, 0.5, 16), st),
+             P((0, 0.5, 0), (1, 15.5, 16), st), P((15, 0.5, 0), (16, 15.5, 16), st)]
+    if open_:
+        dark = pp_fn(lambda face, w, h, part, cv: cv.put(CRIPTA, np.full((h, w), 1) + (border_px(w, h)[0] == 0) * -1))
+        parts += [P((2.5, 2.0, 14), (13.5, 13.5, 16), dark, name='back'),
+                  P((2.5, 2.0, 1.0), (13.5, 2.2, 14), dark, name='floor')]
+        if lines:
+            parts.append(P((-8, -7.5, -0.6), (24, 0.2, 0), plaque_paint(lines, seed=seed), name='plaque'))
+    else:
+        parts.append(P((2.5, 2.0, -0.2), (13.5, 13.5, 1.0), pp_plaster('cripta_piedra', 1), name='seal'))
+        if lines:
+            parts.append(P((-8, 2.5, -0.9), (24, 13.0, -0.3), plaque_paint(lines, seed=seed, broken=broken), name='plaque'))
+    return parts
+
+
+def ladrillo_hueco_parts():
+    """The 1984 wall with bricks knocked out: a real hole you can see (and shine a torch) through."""
+    tex = pp_plaster('muro_ladrillo')
+    inner = pp_fn(lambda face, w, h, part, cv: cv.put(CEMENTO, np.full((h, w), 2) + ((np.arange(w)[None, :] + np.arange(h)[:, None]) % 3 == 0)))
+    courses = [(0, 4, None), (4, 8, (6, 12)), (8, 12, (4, 13)), (12, 16, (7, 11))]
+    parts = []
+    for (y0, y1, hole) in courses:
+        if hole is None:
+            parts.append(P((0, y0, 0), (16, y1, 16), tex))
+        else:
+            parts.append(P((0, y0, 0), (hole[0], y1, 16), tex))
+            parts.append(P((hole[1], y0, 0), (16, y1, 16), tex))
+    return parts
+
+
+def wall_plate_parts(text_lines, w_units=10, h_units=7, big=False, ramp=ENAMEL, ink='#1f2b4c', y0=6):
+    """Enamel plate screwed to the wall behind (z=16)."""
+    def fn(face, w, h, part, cv):
+        X, Y = cv.X, cv.Y
+        idx = np.full((h, w), 4)
+        bd = border_px(w, h)[0]
+        idx = np.where(bd == 0, 1, np.where(bd == 1, 3, idx))
+        idx = np.where((bd == 2) & (Y < h // 2), 5, idx)
+        cv.put(ramp, idx)
+        if face == 'north':
+            yy = 3
+            for ln, f in text_lines:
+                tm = text_mask(ln)[2:, :] if f == 'big' else tiny_mask(ln)
+                th, tw = tm.shape
+                m = np.zeros((h, w), bool)
+                stamp(m, tm, (w - tw) // 2, yy)
+                cv.col(ink, m)
+                yy += th + 2
+            cv.put(BRASS, np.full((h, w), 5), ((X == 1) | (X == w - 2)) & ((Y == 1) | (Y == h - 2)))
+            chip = (X >= w - 4) & (Y >= h - 3) & (bd <= 1)
+            cv.put(IRON, np.full((h, w), 2), chip)
+    x0 = 8 - w_units / 2
+    return [P((x0, y0, 15.4), (x0 + w_units, y0 + h_units, 16), pp_fn(fn), name='plate')]
+
+
+def tablones_parts():
+    """Boards nailed across a door (Sor María's cell). Placed in front of the door, lower block; reaches up the
+    whole doorway."""
+    parts = []
+    specs = [(3, 2.4, 0), (11, 2.6, 22.5), (19, 2.4, -22.5), (26, 2.6, 0)]
+    for k, (y, hh, ang) in enumerate(specs):
+        pt = pp_paint(WEATHER, 4, seed=81 + k, chip=0.0, along='x', out=-1)
+        if ang:
+            parts.append(P((-1, y, 14.4), (17, y + hh, 15.6), pt, rot=('z', ang, (8, y + hh / 2, 15)), name='board'))
+        else:
+            parts.append(P((-1, y, 14.4), (17, y + hh, 15.6), pt, name='board'))
+    nail = pp_iron(base=5, seed=89, rust=0.4)
+    for (x, y) in ((0.5, 4), (15, 4), (0.5, 27.2), (15, 27.2)):
+        parts.append(P((x, y, 14.0), (x + 0.6, y + 0.6, 14.4), nail, name='nail'))
+    return parts
+
+
 # =============================================================================================== BLOCKS
 def cube(key, es, en, painter_name, variants=1, sound='plaster', up=None, down=None, **kw):
     mats = {}
@@ -3051,3 +3470,27 @@ cube('muro_ladrillo_grieta', 'Muro de ladrillo rajado', 'Bricked-up wall with cr
 # --- service floors
 cube('mosaico_bano', 'Mosaico del baño', 'Bathroom mosaic floor', 'mosaico_bano', 2, sound='tile')
 cube('baldosa_colorada', 'Baldosa colorada', 'Red kitchen tiles', 'baldosa_colorada', 2, sound='tile')
+
+# --- stained glass, rose window
+for nm, es_n, en_n in (('ines', 'Santa Inés', 'Saint Agnes'), ('geo', 'geométrico', 'geometric')):
+    for pc, es_p, en_p in (('inf', 'abajo', 'bottom'), ('med', 'medio', 'middle'), ('sup', 'ojiva', 'pointed top')):
+        F(f'vitral_{nm}_{pc}', f'Vitral {es_n} ({es_p})', f'Stained glass {en_n} ({en_p})', vitral_parts(nm, pc),
+          render='translucent', sound='glass', light=0)
+for gx, gy, k, es_p, en_p in ((0, 0, 'sup_izq', 'arriba izq.', 'top left'), (1, 0, 'sup_der', 'arriba der.', 'top right'),
+                              (0, 1, 'inf_izq', 'abajo izq.', 'bottom left'), (1, 1, 'inf_der', 'abajo der.', 'bottom right')):
+    F(f'roseton_{k}', f'Rosetón ({es_p})', f'Rose window ({en_p})', roseton_parts(gx, gy), render='translucent', sound='glass')
+
+# --- crypt niches and the broken wall
+F('nicho_garay', 'Nicho de Sor Purificación', 'Niche of Sister Purificación', nicho_parts(['SOR PURIFICACIÓN', 'GARAY', '1902 - 1971'], seed=1), sound='stone', collision='full')
+F('nicho_roldan', 'Nicho de Sor Inmaculada', 'Niche of Sister Inmaculada', nicho_parts(['SOR INMACULADA', 'ROLDÁN', '1915 - 1980'], seed=2), sound='stone', collision='full')
+F('nicho_iturbe', 'Nicho de la Madre Remedios', 'Niche of Mother Remedios', nicho_parts(['MADRE REMEDIOS', 'ITURBE', '1920 - 1991'], seed=3), sound='stone', collision='full')
+F('nicho_agonia', 'Nicho vacío de Sor María', "Sister María's empty niche", nicho_parts(['SOR MARÍA DE LA', 'AGONÍA  1951 -'], open_=True, seed=4), sound='stone', collision='full')
+F('nicho_sellado', 'Nicho sellado', 'Sealed niche', nicho_parts(None, seed=5), sound='stone', collision='full')
+F('nicho_roto', 'Nicho con lápida rota', 'Niche with broken plaque', nicho_parts(['R.I.P.', 'HNA. ESPERANZA', '1899 - 1962'], seed=6, broken=True), sound='stone', collision='full')
+F('muro_ladrillo_hueco', 'Muro de ladrillo con hueco', 'Bricked wall with a hole', ladrillo_hueco_parts(), sound='stone')
+
+# --- plates, boards
+F('cartel_aula_6', 'Cartel "6° GRADO"', '"6th grade" plate', wall_plate_parts([('6°', 'big'), ('GRADO', 't')], 10, 9, y0=4), sound='metal', collision='none')
+F('cartel_aula_4', 'Cartel "4° GRADO"', '"4th grade" plate', wall_plate_parts([('4°', 'big'), ('GRADO', 't')], 10, 9, y0=4), sound='metal', collision='none')
+F('cartel_direccion', 'Cartel "DIRECCIÓN"', '"Office" plate', wall_plate_parts([('DIRECCIÓN', 't')], 16, 5.5, y0=6, ramp=BRASS, ink='#2a1a08'), sound='metal', collision='none')
+F('tablones_clavados', 'Tablones clavados', 'Boards nailed across a door', tablones_parts(), breakable=True)

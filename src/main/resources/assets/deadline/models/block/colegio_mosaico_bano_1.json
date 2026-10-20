@@ -1,0 +1,12 @@
+{
+ "parent": "minecraft:block/cube",
+ "textures": {
+  "particle": "deadline:block/colegio_mosaico_bano_1",
+  "north": "deadline:block/colegio_mosaico_bano_1",
+  "south": "deadline:block/colegio_mosaico_bano_1",
+  "east": "deadline:block/colegio_mosaico_bano_1",
+  "west": "deadline:block/colegio_mosaico_bano_1",
+  "up": "deadline:block/colegio_mosaico_bano_1",
+  "down": "deadline:block/colegio_mosaico_bano_1"
+ }
+}

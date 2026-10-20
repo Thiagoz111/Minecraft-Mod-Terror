@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "deadline:block/colegio_vitral_ines_inf"
+  },
+  "facing=east": {
+   "model": "deadline:block/colegio_vitral_ines_inf",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "deadline:block/colegio_vitral_ines_inf",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "deadline:block/colegio_vitral_ines_inf",
+   "y": 270
+  }
+ }
+}

@@ -47,7 +47,7 @@ CHALK_Y = hx('#e8dc9a')
 CHALK_P = hx('#e6b4c0')
 # textiles
 LINEN = pal('#4f4b47', '#6a665f', '#86817a', '#a09b92', '#b8b2a8', '#ccc7bc', '#dcd8ce', '#e8e5dc', '#f1efe8')
-BLANKET = pal('#1e1d22', '#29282e', '#35343a', '#424147', '#504f55', '#605f64', '#727176')
+BLANKET = pal('#2f2e33', '#3c3b40', '#4a494e', '#59585c', '#69676b', '#79777a', '#8a888a', '#9c9a9b')
 NAVY = pal('#080c19', '#0d1426', '#131c35', '#1a2546', '#223058', '#2c3c6a')
 SMOCK = pal('#4c5361', '#626b7c', '#7a8496', '#919cad', '#a7b1c1', '#bbc4d2', '#cdd4df', '#dde2ea', '#ebeef3', '#f5f7f9')
 VELVET_R = pal('#1a0406', '#2a070b', '#3d0b10', '#521017', '#69171f', '#811f28', '#992b33', '#b03c41')
@@ -2329,21 +2329,27 @@ def bed_parts(piece, state):
     elif state == 'bulto':
         P.append(box((1.4, 9.4, z0), (14.6, 9.7, z1), sh))
         if head:
-            P.append(box((2.6, 9.7, 2.2), (13.4, 11.4, 6.4), sheet(seed=316, base=7, folds=0.4, px=4.0)))
-            P += [box((5.4, 11.2, 2.6), (10.6, 14.2, 6.8), shv),                                  # the covered head
-                  box((5.9, 14.2, 3.2), (10.1, 14.7, 6.2), shv),
-                  box((2.8, 9.7, 6.2), (13.2, 12.8, 16.0), shv),                                   # shoulders / back
-                  box((3.4, 12.8, 7.0), (12.6, 13.6, 16.0), shv),
-                  box((1.0, 6.2, 5.8), (1.4, 12.4, 16.0), shv, faces=('west', 'east', 'down')),    # sheet hanging
-                  box((14.6, 6.2, 5.8), (15.0, 12.4, 16.0), shv, faces=('west', 'east', 'down'))]
+            P += [box((2.6, 9.7, 2.2), (13.4, 11.2, 6.4), sheet(seed=316, base=7, folds=0.4, px=4.0)),   # pillow
+                  box((5.0, 11.2, 2.4), (11.0, 13.0, 7.0), shv),                                     # the covered head
+                  box((5.6, 13.0, 2.8), (10.4, 14.2, 6.6), shv),
+                  box((6.4, 14.2, 3.4), (9.6, 14.8, 6.0), shv),
+                  box((5.8, 9.7, 6.8), (10.2, 11.6, 8.0), shv),                                      # neck
+                  box((2.6, 9.7, 7.8), (13.4, 11.6, 16.0), shv),                                     # shoulders / back
+                  box((3.2, 11.6, 8.4), (12.8, 12.8, 16.0), shv),
+                  box((4.4, 12.8, 9.4), (11.6, 13.4, 16.0), shv),
+                  box((1.0, 6.2, 5.8), (1.4, 11.2, 16.0), shv, faces=('west', 'east', 'down', 'north')),
+                  box((14.6, 6.2, 5.8), (15.0, 11.2, 16.0), shv, faces=('west', 'east', 'down', 'north'))]
         else:
-            P += [box((3.2, 9.7, 0.0), (12.8, 12.6, 5.6), shv),                                   # hips
-                  box((3.8, 9.7, 5.6), (12.2, 11.6, 11.4), shv),                                  # legs
-                  box((4.4, 11.6, 6.0), (7.8, 12.2, 11.0), shv), box((8.2, 11.6, 6.0), (11.6, 12.2, 11.0), shv),
-                  box((4.6, 9.7, 11.4), (7.4, 12.8, 12.8), shv), box((8.6, 9.7, 11.4), (11.4, 12.8, 12.8), shv),   # feet up
-                  box((1.2, 9.7, 12.8), (14.8, 11.2, 14.6), mBl),                                  # blanket folded at the foot
-                  box((1.0, 6.2, 0.0), (1.4, 11.8, 12.8), shv, faces=('west', 'east', 'down')),
-                  box((14.6, 6.2, 0.0), (15.0, 11.8, 12.8), shv, faces=('west', 'east', 'down'))]
+            P += [box((2.8, 9.7, 0.0), (13.2, 11.8, 5.0), shv),                                      # hips
+                  box((3.6, 11.8, 0.0), (12.4, 12.8, 4.4), shv),
+                  box((3.6, 9.7, 5.0), (12.4, 11.2, 11.0), shv),                                     # legs
+                  box((4.2, 11.2, 5.0), (7.6, 12.0, 11.0), shv), box((8.4, 11.2, 5.0), (11.8, 12.0, 11.0), shv),
+                  box((4.2, 9.7, 11.0), (11.8, 12.6, 12.4), shv),                                    # feet tenting the sheet
+                  box((4.6, 12.6, 11.2), (7.2, 13.4, 12.2), shv), box((8.8, 12.6, 11.2), (11.4, 13.4, 12.2), shv),
+                  box((4.0, 9.7, 12.4), (12.0, 11.0, 13.4), shv),
+                  box((1.2, 9.7, 13.2), (14.8, 11.0, 14.6), mBl),                                    # blanket folded at the foot
+                  box((1.0, 6.2, 0.0), (1.4, 11.2, 13.2), shv, faces=('west', 'east', 'down', 'south')),
+                  box((14.6, 6.2, 0.0), (15.0, 11.2, 13.2), shv, faces=('west', 'east', 'down', 'south'))]
     else:  # deshecha: sheet rumpled, blanket dragged to the floor
         P.append(box((1.4, 9.4, z0), (14.6, 9.7, z1), sh))
         if head:

@@ -33,12 +33,20 @@ public final class Director {
 				Run r = of(sp);
 				if (r != null) {
 					BlockPos pos = hit.getBlockPos();
+					var st = world.getBlockState(pos);
+					if (st.getBlock() instanceof net.minecraft.world.level.block.DoorBlock
+							|| st.getBlock() instanceof net.minecraft.world.level.block.TrapDoorBlock) {
+						com.deadline.voice.NoiseMeter.add(sp, 10F);
+					}
 					String m = r.markerAt(pos);
 					if (m == null) {
 						m = r.markerAt(pos.above());
 					}
 					if (m != null) {
 						r.post("use:" + m);
+						if (!r.def.doors.containsKey(m)) {
+							return InteractionResult.SUCCESS; // props are story objects, not containers or lecterns
+						}
 					}
 				}
 			}

@@ -1,0 +1,12 @@
+{
+ "variants": {
+  "": [
+   {
+    "model": "deadline:block/colegio_muro_ladrillo_grieta_0"
+   },
+   {
+    "model": "deadline:block/colegio_muro_ladrillo_grieta_1"
+   }
+  ]
+ }
+}

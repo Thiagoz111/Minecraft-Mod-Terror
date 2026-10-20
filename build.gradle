@@ -10,6 +10,8 @@ base {
 }
 
 repositories {
+	// Simple Voice Chat API (optional integration: compileOnly, only loaded when the mod is installed)
+	maven { url = "https://maven.maxhenkel.de/repository/public" }
 }
 
 loom {
@@ -44,6 +46,7 @@ dependencies {
 	mappings loom.officialMojangMappings()
 	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+	compileOnly "de.maxhenkel.voicechat:voicechat-api:2.+"
 }
 
 processResources {

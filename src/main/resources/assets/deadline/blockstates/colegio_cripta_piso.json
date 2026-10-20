@@ -1,0 +1,15 @@
+{
+ "variants": {
+  "": [
+   {
+    "model": "deadline:block/colegio_cripta_piso_0"
+   },
+   {
+    "model": "deadline:block/colegio_cripta_piso_1"
+   },
+   {
+    "model": "deadline:block/colegio_cripta_piso_2"
+   }
+  ]
+ }
+}

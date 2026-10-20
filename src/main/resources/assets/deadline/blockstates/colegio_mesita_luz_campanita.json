@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "deadline:block/colegio_mesita_luz_campanita"
+  },
+  "facing=east": {
+   "model": "deadline:block/colegio_mesita_luz_campanita",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "deadline:block/colegio_mesita_luz_campanita",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "deadline:block/colegio_mesita_luz_campanita",
+   "y": 270
+  }
+ }
+}

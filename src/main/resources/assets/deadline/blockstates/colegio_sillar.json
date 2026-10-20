@@ -1,0 +1,18 @@
+{
+ "variants": {
+  "": [
+   {
+    "model": "deadline:block/colegio_sillar_0"
+   },
+   {
+    "model": "deadline:block/colegio_sillar_1"
+   },
+   {
+    "model": "deadline:block/colegio_sillar_2"
+   },
+   {
+    "model": "deadline:block/colegio_sillar_3"
+   }
+  ]
+ }
+}

@@ -94,8 +94,14 @@ public class ColegioScript extends CaseScript {
 				delay(50),
 				say("colegio.madre.ausente", "aula_frente"),
 				delay(20),
+				// answer with your voice (Simple Voice Chat) within 4 s, or be marked absent; the answer is kept
+				run(e -> {
+					ServerPlayer p = e.target();
+					if (p != null) {
+						com.deadline.voice.Voice.tagNext(p, "presente", 6000);
+					}
+				}),
 				say("colegio.madre.usted", "aula_frente"),
-				// answer with your voice (Simple Voice Chat) within 4 s, or be marked absent
 				run(e -> e.run.counters.remove("voice_seen")),
 				loop(e -> {
 					if (e.run.event("voice")) {
@@ -365,7 +371,20 @@ public class ColegioScript extends CaseScript {
 				}),
 				sound(ModSounds.TELEFONO_LINEA, null, 1.0F),
 				delay(30),
-				// TODO(voice): your own "presente" from the roll call, then reversed (Simple Voice Chat capture)
+				// your own answer to the roll call comes back down the line... then backwards (voice use #1)
+				run(e -> {
+					ServerPlayer p = e.target();
+					e.run.vars.put("echo", p != null && com.deadline.voice.Voice.play(p, p, "presente",
+							com.deadline.voice.VoiceBackend.Effect.PHONE, null) ? 1 : 0);
+				}),
+				delay(40),
+				run(e -> {
+					ServerPlayer p = e.target();
+					if (p != null && Integer.valueOf(1).equals(e.run.vars.get("echo"))) {
+						com.deadline.voice.Voice.play(p, p, "presente", com.deadline.voice.VoiceBackend.Effect.PHONE_REVERSED, null);
+					}
+				}),
+				delay(40),
 				say("colegio.clara.1984", null),
 				delay(15),
 				say("colegio.clara.ya_sabe", null),
@@ -439,6 +458,15 @@ public class ColegioScript extends CaseScript {
 
 	// ================================================================== the corridor rule (all chapters)
 	private void corridorRule(Script s) {
+		s.beat("grito").from(2).repeat(20 * 20).when(event("shout")).then(
+				run(e -> {
+					ServerPlayer p = e.target();
+					if (p != null) {
+						Props.reprimand(e.run, p, "gritar", 1);
+						com.deadline.voice.NoiseMeter.heard(p);
+					}
+				}),
+				sound(ModSounds.MONJA_SHH, null, 0.9F));
 		s.beat("no_se_corre").from(3).repeat(20 * 90).when((r, p) -> p.isSprinting() && r.inside(p, "edificio")).then(
 				run(e -> {
 					ServerPlayer p = e.target();
