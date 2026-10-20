@@ -4,19 +4,20 @@ Authored at 2x texel density (model.scale = 0.5).  +Y down, ground y = 24, faces
 
 Design
 ------
-Silhouette: a wrong hourglass that floats.  A tapered, slightly peaked hood (narrower than the shoulders,
-with a neck notch under it), a hunched hump the black veil lies on (three vertebrae tear through it), sloped
-shoulders framed by the veil's side panels, a 13-texel wasp waist cinched by a leather cincture, then a heavy
-bell robe of eight flared, torn panels whose shredded hem stops ~2 texels above the ground (no feet: she
-glides).  Long bell sleeves that flare from a thin upper arm into a dark open cuff with ragged drapes;
-grey spider hands with two-segment hooked black claws hanging to the knees.  Inverted wooden cross on a
-chain, bone rosary on the cincture, three iron nails driven through the coif band.
+Silhouette: a wrong hourglass that floats.  A hood tapered in three steps to a low dome (narrower than the shoulders),
+a hunched hump the black veil lies on (three vertebrae tear through a slit in it), sloped shoulders framed by
+the veil's side panels, a 13-texel wasp waist cinched by a leather cincture, then a heavy bell robe of eight
+flared, torn panels whose shredded hem stops ~2 texels above the ground (no feet: she glides).  Too-long arms
+hang splayed away from the body (light between the bell cuffs and the waist): thin upper sleeve flaring
+7 -> 10 -> 13 into a dark open cuff with ragged drapes, grey spider hands with two-segment hooked black claws
+dangling to the knees.  Inverted wooden cross on an iron chain, bone rosary on the cincture, three iron
+nails driven through the coif band.
 
 Face (one coherent pixel-art mask projected onto layered cubes, see FACE): the corpse-white face is the
 brightest value of the whole model and is shaped like a skull/diamond inside the yellowed coif -- linen
 wedges narrow the forehead, cheekbones push out past the wimple, a long pointed chin hangs below it.
-Furrowed brow ridge overhanging two deep 6x6 sockets with burning ember irises at different heights,
-no nose (two black slits), a protruding muzzle with black lips torn into a grin that runs past the face
+Furrowed V brow ridge overhanging two deep 5x6 sockets with burning ember irises at different heights,
+no nose (two black slits in a skull-like V), a protruding muzzle with black lips torn into a grin that runs past the face
 onto the cheeks, double rows of needle teeth with corner fangs, a separate dropping jaw, ember glow in the
 throat, hand-placed cracks / veins / blood from the nails.
 """
@@ -426,10 +427,6 @@ def drape_mat(ctx):
     return pick(WOOL, v)
 
 
-def clear_mat(ctx):
-    return None
-
-
 # ------------------------------------------------------------------ the face mask
 # One pixel-art image of the whole face as seen from the front (rest pose, head frame), projected onto
 # every layered face cube by its x/y extent.  col c <-> x = GX0 + c, row r <-> y = GY0 + r.
@@ -446,12 +443,12 @@ FACE = [
     ".....b67754457b.....",   # r6  y-54  brow ridge (frown: inner ends dark)
     "....v6764qq4676v....",   # r7  y-53  brow underside
     "...qkKKKqkkqKKkkq...",   # r8  y-52  sockets: right 3-7, bridge 8-11, left 12-16
-    "...keoeKq34qkKKKk...",   # r9  y-51
-    "...KyWyKq44qKeoeK...",   # r10 y-50
-    "...KeoeK3443KyWyK...",   # r11 y-49
-    "...kKeKk3443KeoeK...",   # r12 y-48
+    "...krorKq34qkKKKk...",   # r9  y-51
+    "...KyWyKq44qKrorK...",   # r10 y-50
+    "...KrorK3443KyWyK...",   # r11 y-49
+    "...kKeKk3443KrorK...",   # r12 y-48
     ".6787KkQ3443kKe7876.",   # r13 y-47  cheekbones (1-4 / 15-18)
-    ".L433456n77n654334L.",   # r14 y-46  muzzle 4-15, nasal slits 8 / 11, torn grin rising onto the cheeks
+    ".L4334566nn6654334L.",   # r14 y-46  muzzle 4-15, nasal slits 8 / 11, torn grin rising onto the cheeks
     ".3L32345n66n54323L3.",   # r15 y-45
     ".23Ll234q55q432lL32.",   # r16 y-44
     "....LLlLLLLLLLlL....",   # r17 y-43  upper lip
@@ -646,10 +643,10 @@ def build():
 
     # ---------------- inverted wooden cross on a chain from the neck, resting on the chest above the cincture
     bone('cross', (0, -37, -6.0), parent='chest', rot=(-3, 0, 3), mat=wood_mat)
-    for i, yy in enumerate((-37, -35.5, -34, -32.5)):
+    for i, yy in enumerate((-37.5, -36, -34.5)):
         box('cross', (-0.5, yy, -6.9 - (i % 2) * 0.3), (1, 2, 1), mat=iron_mat, inflate=0.12 if i % 2 else 0.0)
-    box('cross', (-1.5, -31, -7.8), (3, 16, 2), decals={'front': art(CROSS_BLOOD, BAND_PAL)})
-    box('cross', (-5, -19, -8.2), (10, 2, 2))
+    box('cross', (-1.5, -33, -7.8), (3, 16, 2), decals={'front': art(CROSS_BLOOD, BAND_PAL)})
+    box('cross', (-5, -21, -8.2), (10, 2, 2))
 
     # ---------------- neck: grey stretched sinew with a dislocated vertebra
     bone('neck', (0, -36, -0.5), parent='chest', rot=(-18, 0, 0), mat=skin_mat)
@@ -688,8 +685,8 @@ def build():
     box('head', (-4, -64, -6), (8, 1, 13), mat=veil_mat, name='hood')
     box('head', (-10.5, -59, -8), (2, 9, 17), mat=veil_mat, name='hood_side')
     box('head', (8.5, -59, -8), (2, 9, 17), mat=veil_mat, name='hood_side')
-    box('head', (-11, -50, -7.5), (2, 8, 16), mat=veil_mat, name='hood_side')
-    box('head', (9, -50, -7.5), (2, 8, 16), mat=veil_mat, name='hood_side')
+    box('head', (-10.5, -50, -7.5), (2, 8, 16), mat=veil_mat, name='hood_side')
+    box('head', (8.5, -50, -7.5), (2, 8, 16), mat=veil_mat, name='hood_side')
     box('head', (-9, -59, 7), (18, 17, 2), mat=veil_mat, name='hood')
     # iron nails driven through the band (different lengths, 2x2 heads)
     for nx, ny, ln in ((-5, -59, 5), (0, -58, 4), (4, -59, 6)):
@@ -708,25 +705,26 @@ def build():
     bone('veil', (0, -57, 8.5), parent='head', rot=(6, 0, 0), mat=veil_mat)
     box('veil', (-8.5, -57, 8.5), (17, 18, 3), name='veil_hi')
     bone('veil_lower', (0, -41, 8.5), parent='chest', rot=(-8, 0, 0), mat=veil_mat)
-    box('veil_lower', (-11, -41, 8.5), (22, 38, 1), name='veil_lo')
+    box('veil_lower', (-7.5, -41, 8.5), (15, 38, 1), name='veil_lo')
     for side, sx in (('right', -1), ('left', 1)):
         vb = f'veil_{side}'
-        bone(vb, (8.5 * sx, -39, 5), parent='chest', rot=(-9, 0, -16 * sx), mat=veil_mat)
-        box(vb, (8.5 * sx - (7 if sx < 0 else 0), -39, 5), (7, 26, 1), name='veil_side')
+        bone(vb, (8 * sx, -39, 5.5), parent='chest', rot=(-9, 0, -11 * sx), mat=veil_mat)
+        box(vb, (8 * sx - (5 if sx < 0 else 0), -39, 5.5), (5, 24, 1), name='veil_side')
 
-    # ---------------- arms: thin upper arm, bell sleeve flaring 7 -> 10 -> 13, ragged drapes, spider hands
+    # ---------------- arms: long, hanging splayed OUT from the body (air between the bell cuffs and the wasp
+    # waist), thin upper arm, bell sleeve flaring 7 -> 10 -> 13 into a dark open cuff, ragged drapes, spider hands
     for side, sx in (('right', -1), ('left', 1)):
         ax = 9.5 * sx
-        ay = -33 if side == 'right' else -36       # right shoulder dropped
-        az = 2.5
+        ay = -34 if side == 'right' else -36       # right shoulder dropped
+        az = 3.0
         arm, fa = f'{side}_arm', f'{side}_forearm'
-        bone(arm, (ax, ay, az), parent='chest', rot=(-4, 0, -10 * sx), mat=wool_mat)
+        bone(arm, (ax, ay, az), parent='chest', rot=(-6, 0, (-15 if sx < 0 else -12) * sx), mat=wool_mat)
         box(arm, (ax - 3.5, ay - 3, az - 3.5), (7, 6, 7), name='shoulder')
-        box(arm, (ax - 2.5, ay + 2, az - 2.5), (5, 13, 5))
-        ey = ay + 15
-        bone(fa, (ax, ey, az), parent=arm, rot=(-60 if sx < 0 else -72, 0, 6 * sx), mat=wool_mat)
-        box(fa, (ax - 3.5, ey - 1, az - 3.5), (7, 7, 7))
-        box(fa, (ax - 5, ey + 5, az - 5), (10, 6, 10))
+        box(arm, (ax - 2.5, ay + 2, az - 2.5), (5, 11, 5))
+        ey = ay + 12
+        bone(fa, (ax, ey, az), parent=arm, rot=(-14 if sx < 0 else -20, 0, 5 * sx), mat=wool_mat)
+        box(fa, (ax - 3.5, ey - 1, az - 3.5), (7, 6, 7))
+        box(fa, (ax - 5, ey + 5, az - 5), (10, 5, 10))
         box(fa, (ax - 6.5, ey + 10, az - 6.5), (13, 6, 13), name='cuff')
         sl = f'{side}_sleeve'
         bone(sl, (ax, ey + 10, az), parent=fa, rot=(6, 0, 0), mat=drape_mat)
@@ -734,9 +732,9 @@ def build():
         box(sl, (ax + 6.7 * sx, ey + 10, az - 6.5), (0, 15, 13))                  # outer side drape
         box(sl, (ax + (3.5 if sx > 0 else -6.5), ey + 10, az - 6.7), (3, 11, 0))  # front-outer tatter
         # hand emerges from the dark cuff
-        hy = ey + 14
+        hy = ey + 13
         hand = f'{side}_hand'
-        hrot = (52, 16, 6) if sx < 0 else (64, -22, -8)
+        hrot = (12, 16, 6) if sx < 0 else (8, -22, -8)
         bone(hand, (ax, hy, az), parent=fa, rot=hrot, mat=hand_mat)
         box(hand, (ax - 3, hy - 2, az - 1.5), (6, 9, 3), name='palm')
         box(hand, (ax - 3.5, hy + 6, az - 1.5), (7, 2, 3), name='knuckles')
@@ -792,12 +790,12 @@ POSES = {
         'jaw': (0.75, 0, 0, 0, 3.0, -1.5),
         'veil': (0.25, 0, 0, 0, 0, 0),
         'veil_lower': (0.2, 0, 0, 0, 0, 0),
-        'right_arm': (-2.8, 0, -0.45, 0, 0, 0),
-        'left_arm': (-2.4, 0, 0.75, 0, 0, 0),
-        'right_forearm': (0.9, 0, 0, 0, 0, 0),
-        'left_forearm': (0.3, 0, 0, 0, 0, 0),
-        'right_hand': (-0.25, 0, 0, 0, 0, 0),
-        'left_hand': (-0.3, 0, 0, 0, 0, 0),
+        'right_arm': (-2.9, 0, -0.55, 0, 0, 0),
+        'left_arm': (-2.5, 0, 0.85, 0, 0, 0),
+        'right_forearm': (0.1, 0, 0, 0, 0, 0),
+        'left_forearm': (-0.5, 0, 0, 0, 0, 0),
+        'right_hand': (0.6, 0, 0, 0, 0, 0),
+        'left_hand': (0.6, 0, 0, 0, 0, 0),
         'right_sleeve': (0.5, 0, 0, 0, 0, 0),
         'left_sleeve': (0.5, 0, 0, 0, 0, 0),
         **_hands(0.25, 0.5, 0.3, 0.3),
@@ -812,10 +810,10 @@ POSES = {
         'veil_lower': (0.25, 0, 0, 0, 0, 0),
         'veil_right': (0, 0, 0.2, 0, 0, 0),
         'veil_left': (0, 0, -0.2, 0, 0, 0),
-        'right_arm': (0.3, 0, 0.5, 0, 0, 0),
-        'left_arm': (0.3, 0, -0.5, 0, 0, 0),
-        'right_forearm': (0.5, 0, 0, 0, 0, 0),
-        'left_forearm': (0.6, 0, 0, 0, 0, 0),
+        'right_arm': (0.3, 0, 0.15, 0, 0, 0),
+        'left_arm': (0.3, 0, -0.15, 0, 0, 0),
+        'right_forearm': (0.15, 0, 0, 0, 0, 0),
+        'left_forearm': (0.3, 0, 0, 0, 0, 0),
         'right_hand': (-0.6, 0, 0, 0, 0, 0),
         'left_hand': (-0.7, 0, 0, 0, 0, 0),
         **_hands(0.35, -0.2, 0.0, 0.4),
@@ -827,12 +825,12 @@ POSES = {
         'head': (0.4, 0.35, 0, 0, 0, 0),
         'jaw': (0.5, 0, 0, 0, 0, 0),
         'veil': (-0.2, 0, 0, 0, 0, 0),
-        'right_arm': (-2.1, -0.3, 0, 0, 0, 0),
-        'left_arm': (-2.1, 0.6, 0, 0, 0, 0),
-        'right_forearm': (0.5, 0, 0, 0, 0, 0),
-        'left_forearm': (1.0, 0, 0, 0, 0, 0),
-        'right_hand': (-0.5, 0, 0, 0, 0, 0),
-        'left_hand': (-0.6, 0, 0, 0, 0, 0),
+        'right_arm': (-2.4, -0.2, 0, 0, 0, 0),
+        'left_arm': (-2.2, 0.6, 0, 0, 0, 0),
+        'right_forearm': (0.4, 0, 0, 0, 0, 0),
+        'left_forearm': (0.4, 0, 0, 0, 0, 0),
+        'right_hand': (-0.3, 0, 0, 0, 0, 0),
+        'left_hand': (-0.4, 0, 0, 0, 0, 0),
         'right_sleeve': (-0.3, 0, 0, 0, 0, 0),
         'left_sleeve': (-0.3, 0, 0, 0, 0, 0),
         **_hands(0.1, 0.7, 0.4, -0.2),
@@ -894,21 +892,22 @@ VEIL
 * veil_right / veil_left -- side panels behind the shoulders that frame them from the front.  Flutter out of
   phase: zRot += sin(t*0.07 + side)*0.06; chase xRot +0.3*s (trail); scream opens them out (+0.2 / -0.2).
 
-ARMS -- right_* is -X (viewer's left).  Rest = 'ghost hands': forearms raised forward 60/72 deg, hands
-drooping limp from the wrists, fingers dangling.
+ARMS -- right_* is -X (viewer's left).  Rest: too-long arms hanging splayed OUT from the body (air between
+the bell cuffs and the wasp waist), right shoulder dropped, spider hands dangling beside the robe to the knees.
 * right_arm / left_arm -- shoulder cap + thin upper sleeve; pivots at the shoulders (right one lower).  Idle
-  sway xRot sin(t*0.05 + side)*0.04.  Glide: drift back +0.15*s (no walking swing).  Chase: reach forward
-  -0.6*s.  Attack right (-2.8, 0, -0.45) / left (-2.4, 0, 0.75): flung UP and OUT so the claws frame the face,
-  never crossing it.  Scream (0.3, 0, +-0.5) out and back.  Burn right (-2.1, -0.3, 0) / left (-2.1, 0.6, 0).
-* right_forearm / left_forearm -- bell sleeve flaring 7 -> 10 -> 13 with the dark open cuff.  Idle bob
-  sin(t*0.06 + side)*0.05.  Attack +0.9 / +0.3 (unfold), scream +0.5 / +0.6, burn +0.5 / +1.0 (wrists cross
-  in front of the eyes).
+  sway xRot sin(t*0.05 + side)*0.04 and zRot breathing +-0.02.  Glide: drift back +0.15*s (no walking swing,
+  she is a ghost).  Chase: reach forward -0.9*s with the hands lifted (forearm -0.4*s).  Attack right
+  (-2.9, 0, -0.55) / left (-2.5, 0, 0.85): flung UP and OUT so the claws frame the face, never crossing it.
+  Scream (0.3, 0, +-0.15) out and back.  Burn right (-2.4, -0.2, 0) / left (-2.2, 0.6, 0).
+* right_forearm / left_forearm -- bell sleeve flaring 7 -> 10 -> 13 into the dark open cuff (elbow pivot).
+  Idle bob sin(t*0.06 + side)*0.05.  Attack +0.1 / -0.5, scream +0.15 / +0.3, burn +0.4 / +0.4 (the wrists
+  cross ~5 texels in front of the eyes).
 * right_sleeve / left_sleeve -- ragged drapes hanging from the cuff (long back drape, outer side drape, front
   tatter).  Pure secondary motion: xRot lags its forearm ~6 ticks + flutter sin(t*0.2 + side)*0.08; chase
   +0.35*s (trails back).  Attack +0.5, burn -0.3.
-* right_hand / left_hand -- long grey bony hand (palm + knuckles), droops limp at rest.  Idle slow curl
-  sin(t*0.04)*0.06.  Attack -0.25 / -0.3 (wrist lifts so the hooked claws face the victim), scream -0.6 /
-  -0.7, burn -0.5 / -0.6.
+* right_hand / left_hand -- long grey bony hand (palm + knuckles) emerging from the cuff.  Idle: limp, slow
+  curl sin(t*0.04)*0.06.  Attack +0.6 (wrists bend forward so the hooked claws rake toward the victim),
+  scream -0.6 / -0.7 (bent back, fingers fanned), burn -0.3 / -0.4 (palms over the face).
 * {side}_finger_1..4 (1 = outer, 4 = inner) -- first phalanx, splayed on z.  Idle: ONE finger at a time
   twitches (every 25-40 ticks pick one, xRot +0.35 for 2 ticks, ease back -- spider tapping).  Attack splay
   zRot +-0.25 outward, scream +-0.35, burn +-0.1.

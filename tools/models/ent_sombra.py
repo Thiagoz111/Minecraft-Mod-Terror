@@ -6,7 +6,7 @@ Every cube is authored in its bone's *unrotated* frame; bone rotations fold the 
 head-tilted stance. The head sits over the body (centre z ~ -7) so it stays inside the 0.8 x 3.4 hitbox.
 
 Design: a pure black silhouette -- a wide, flat snap-brim fedora (one continuous oval brim built from a centre
-slab and four angled brim bones, a low crown of inward-leaning side plates with front pinches and a teardrop
+slab and four angled brim bones, a low crown whose narrower front dips into a pinch, and a teardrop
 crease), a humped back with a popped collar hugging the skull, broad bevelled shoulders, a deep belted trench
 coat whose eight panels flare out to the shins and dissolve into soft drifting smoke, and impossibly long
 sleeved arms ending in spider fingers.
@@ -14,7 +14,7 @@ Only deliberate dark blue / violet rim tones describe the volumes. Under the bri
 tiny burning ember eyes and the faint suggestion of a grin that runs ear to ear; the jaw unhinges to show rows
 of needle teeth, torn cheek strands and a single ember smouldering deep in the throat.
 
-Some long, flat slabs (side coat panels, side brims, shoulder capes, crown plates) are authored broad-side-on
+Some long, flat slabs (side coat panels, side brims, shoulder capes) are authored broad-side-on
 and turned 90 degrees about Y by their bone: the box-UV layout wastes 2*depth^2 texels, so this keeps the
 whole creature inside one 256x256 sheet.
 """
@@ -223,6 +223,10 @@ def fold_value(ctx, v):
 def coat_mat(ctx):
     """Heavy black gabardine: violet rims, drape folds, dissolving into smoke toward the shins."""
     v = fold_value(ctx, form(ctx, 0.30))
+    if getattr(ctx.bone, 'hump', False):
+        v = 0.28 + face_light(ctx) * 0.6 + 0.07 * (1 - ctx.t if is_side(ctx) else 0)
+        if ctx.face == 'top':
+            v -= 0.06
     c = pick(CLOTH, v)
     fl = getattr(ctx.bone, 'flen', None)
     start = getattr(ctx.bone, 'smoke', None)
@@ -303,9 +307,8 @@ def lapel_mat(ctx):
     """Lapels / collar / flaps / cuffs: crisp pressed edges, stitched border, lit upper side."""
     v = form(ctx, 0.35, rim=0.1)
     if is_side(ctx) and not flat(ctx) and ctx.w >= 4 and ctx.h >= 4:
-        e = edge(ctx)
-        if e == 1 and (ctx.i + ctx.j) % 2 == 0:
-            v -= 0.07  # stitch line one texel in from the edge
+        if ctx.j in (1, ctx.h - 2) and 0 < ctx.i < ctx.w - 1 and ctx.i % 3 != 2:
+            v -= 0.07  # dashed top-stitch one texel in from the upper and lower edges
     return pick(CLOTH, v)
 
 
@@ -377,7 +380,7 @@ def crown_mat(ctx):
     lx, ly, lz = local(ctx)
     if is_side(ctx) and not flat(ctx):
         v -= ctx.t * 0.08  # darker toward the band
-        if ctx.face == 'front' and ctx.bone.name == 'hat':
+        if ctx.face == 'front' and ctx.bone.name == 'hat' and ctx.cube.size[2] <= 6:
             # front pinches: two dents either side of the centre
             for px_ in (-4.0, 4.0):
                 d = abs(lx - px_)
@@ -386,15 +389,14 @@ def crown_mat(ctx):
                 elif d < 1.6 and (lx - px_) * px_ < 0:
                     v += 0.06
     if ctx.face == 'top':
-        if ctx.bone.name == 'hat':
-            # teardrop crease along the centre: shaded channel, narrowing toward the back
-            wid = 2.4 - (lz + 9) * 0.07
-            if abs(lx) < wid:
-                v -= 0.16
-            elif abs(lx) < wid + 1.2:
-                v -= 0.06
-        else:
-            v += 0.05  # rounded shoulders of the crown either side of the crease
+        # teardrop crease along the centre: shaded channel, narrowing toward the back; lit shoulders beside it
+        wid = 2.4 - (lz + 9) * 0.07
+        if abs(lx) < wid:
+            v -= 0.16
+        elif abs(lx) < wid + 1.2:
+            v -= 0.06
+        elif abs(lx) > ctx.cube.size[0] / 2 - 2.5:
+            v += 0.05
     return pick(FELT, v)
 
 
@@ -448,7 +450,7 @@ def palate_mat(ctx):
     k = clamp((lz - zf - 1.0) / 13.0)
     if lz - zf < 1.0:
         return VOID
-    v = 0.08 + 0.55 * k - 0.25 * clamp((abs(lx) - 5.0) / 3.0)
+    v = 0.05 + 0.32 * k ** 1.4 - 0.2 * clamp((abs(lx) - 5.0) / 3.0)
     return pick(MAW, v)
 
 
@@ -458,7 +460,7 @@ def throat_mat(ctx):
         lx, ly, lz = local(ctx)
         c = ctx.cube
         r = math.sqrt((lx / 6.0) ** 2 + ((ly - c.origin[1] - 3.5) / 4.5) ** 2)
-        return pick(MAW, 0.62 - r * 0.7)
+        return pick(MAW, 0.5 - r * 0.6)
     return pick(SHADE, form(ctx, 0.18))
 
 
@@ -471,7 +473,7 @@ def jaw_mat(ctx):
         if lz - zf < 1.0:
             return VOID
         k = clamp((lz - zf - 1.0) / 12.0)
-        vv = 0.06 + 0.42 * k ** 1.5 - 0.3 * clamp((abs(lx) - 4.5) / 3.0)
+        vv = 0.04 + 0.26 * k ** 1.6 - 0.2 * clamp((abs(lx) - 4.5) / 3.0)
         if abs(lx) < 0.6:
             vv -= 0.12
         return pick(MAW, vv)
@@ -568,7 +570,7 @@ def cheek_skin_mat(seed):
         if tear and d < 0.55 * math.sin(clamp((t - 0.2) / 0.7) * math.pi) + 0.1:
             return None
         if tear and d < 1.1:
-            return pick(MAW, 0.35)
+            return MAW[1]  # raw edge: barely red, only the eyes may read red at rest
         v = 0.18 + face_light(ctx) * 0.6 + (0.05 if (u + t * 3) % 3 < 0.6 else 0)
         return pick(SHADE, v)
     return f
@@ -687,14 +689,14 @@ def throat_glow_decal(img, u0, v0, w, h):
     px = img.load()
     for j in range(h):
         for i in range(w):
-            r = math.sqrt(((i + 0.5 - w / 2) / 3.2) ** 2 + ((j + 0.5 - 4.0) / 2.2) ** 2)
-            if r < 0.35:
+            r = math.sqrt(((i + 0.5 - w / 2) / 2.4) ** 2 + ((j + 0.5 - 4.0) / 1.7) ** 2)
+            if r < 0.45:
                 c = GLOW[3]
-            elif r < 0.65:
+            elif r < 0.8:
                 c = GLOW[2]
-            elif r < 0.95:
+            elif r < 1.15:
                 c = GLOW[1]
-            elif r < 1.3:
+            elif r < 1.5:
                 c = GLOW[0]
             else:
                 continue
@@ -835,10 +837,11 @@ def build():
         for sx in (-1, 1):
             box('chest', (6.5 * sx - 1, yy, -10.2), (2, 2, 1), mat=button_mat)
     # hump: rounded slabs that roll the shoulders forward and taper into the neck
-    hp = bone('hump', at('chest', 0, -12, 8.5), 'chest', rot=(-14, 0, 0), mat=coat_mat)
-    box(hp.name, (-12, -6, -4), (24, 12, 6))
-    box(hp.name, (-11, -11, -5), (22, 7, 6))
-    box(hp.name, (-9, -14.5, -6), (18, 5, 5))
+    # one broad slab tilted toward the neck (no stair-step ledges) with a raised spine panel on its back
+    hp = bone('hump', at('chest', 0, -8, 8.0), 'chest', rot=(26, 0, 0), mat=coat_mat, hump=True)
+    box(hp.name, (-12, -15, -3.5), (24, 17, 6))
+    box(hp.name, (-8, -13, 2.0), (16, 12, 2))
+    box(hp.name, (-1.5, -12, 3.6), (3, 10, 1))
     # bevelled shoulder capes with epaulettes (turned 90 deg: local z runs along world x)
     for side, sx in (('right', -1), ('left', 1)):
         sh = bone(f'{side}_shoulder', at('chest', 10.0 * sx, -18.5, 0), 'chest', rot=(0, 90, 17 * sx), mat=coat_mat)
@@ -904,13 +907,10 @@ def build():
     bone('hat', (0, -74, -5.5 + Z0), 'head', rot=(2, 0, -6), mat=felt_mat)
     box('hat', (-20, 0, -14), (40, 2, 14))
     box('hat', (-20, 0, 0), (40, 2, 14))
-    box('hat', (-11, -3, -10), (22, 3, 20), mat=band_mat)
-    box('hat', (-8, -8, -9), (16, 8, 18), mat=crown_mat)
-    for side, sx in (('right', -1), ('left', 1)):
-        # crown side plates lean inward (turned 90 deg: local z runs along world x)
-        nm = f'hat_crown_{side}'
-        bone(nm, at('hat', 9.5 * sx, 0, 0), 'hat', rot=(0, 90, -8 * sx), mat=crown_mat)
-        box(nm, (-9, -9, -1.5 if sx < 0 else -0.5), (18, 9, 2))
+    box('hat', (-10.5, -3, -10.5), (21, 3, 21), mat=band_mat)
+    # crown: a taller, wider back and a narrower, lower front -> the pinched-front fedora outline from any side
+    box('hat', (-9.5, -10, -3.5), (19, 10, 13), mat=crown_mat)
+    box('hat', (-8.5, -8.6, -9.5), (17, 9, 6), mat=crown_mat)
     bone('hat_brim_front', at('hat', 0, 0, -13.5), 'hat', rot=(12, 0, 0), mat=felt_mat)
     box('hat_brim_front', (-18, 0, -3.5), (36, 2, 4))
     box('hat_brim_front', (-13, 0, -6.5), (26, 2, 3))
@@ -1070,7 +1070,6 @@ BONES
 - jaw: closed at rest (the grin is painted). Opens in attack (1.05) and scream (1.25); while idle, a slow
   'tasting' twitch 0.05 every few seconds. Jaw xRot is the only thing that reveals the throat ember.
 - hat: locked to the head with a tiny lag (1-2 ticks, +-0.05 rad) so the brim settles after head-cocks.
-- hat_crown_right / hat_crown_left: crown side plates (turned 90 deg about Y). Static.
 - hat_brim_front / hat_brim_back / hat_brim_left / hat_brim_right: brim edge; static, optional +-0.03 flutter
   when he glides fast (front/back opposite phase).
 - right_arm / left_arm: impossibly long sleeves. Idle: dangle and swing past the knees like pendulums (xRot +-0.12,
@@ -1078,10 +1077,12 @@ BONES
 - right_forearm / left_forearm: secondary swing lagging the upper arm by ~4 ticks (xRot +-0.1).
 - right_hand / left_hand: wrist flop following the forearm (lag ~3 ticks). The left wrist is twisted at rest
   (yRot 26 deg) - keep it for asymmetry.
-- right_finger0..3 / left_finger0..3 (index -> pinky): idle drumming - each finger dips xRot +0.25 in turn,
-  0.12 s apart, every 2-4 s; fan (zRot) opens +-0.3 when the hand reaches.
-- right_finger0_tip..3_tip / left_finger0_tip..3_tip: curl xRot follows the finger (0.6x), extra slow curling
-  +-0.15 so the fingers never look still.
+- right_finger0, right_finger1, right_finger2, right_finger3, left_finger0, left_finger1, left_finger2,
+  left_finger3 (index -> pinky): idle drumming - each finger dips xRot +0.25 in turn, 0.12 s apart, every
+  2-4 s; fan (zRot) opens +-0.3 when the hand reaches.
+- right_finger0_tip, right_finger1_tip, right_finger2_tip, right_finger3_tip, left_finger0_tip,
+  left_finger1_tip, left_finger2_tip, left_finger3_tip: claw segments with the nails; curl xRot follows the
+  finger (0.6x), extra slow curling +-0.15 so the fingers never look still.
 - right_thumb / left_thumb: curls in with the fingers (zRot toward the palm +-0.2).
 
 POSES (added to the rest pose; ease in over 4-6 ticks, hold, ease out)
