@@ -1,0 +1,12 @@
+{
+ "variants": {
+  "": [
+   {
+    "model": "deadline:block/zz_wallpaper_0"
+   },
+   {
+    "model": "deadline:block/zz_wallpaper_1"
+   }
+  ]
+ }
+}

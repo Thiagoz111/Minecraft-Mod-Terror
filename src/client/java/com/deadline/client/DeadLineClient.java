@@ -23,6 +23,8 @@ public class DeadLineClient implements ClientModInitializer {
 		DeadParticle.registerAll();
 		ModRenderers.init();
 		BlockRenderLayerMap.putBlocks(ChunkSectionLayer.CUTOUT, ModBlocks.SALT_LINE, ModBlocks.BLOOD_STAIN, ModBlocks.RITUAL_CANDLE);
+		com.deadline.registry.gen.ModBlocksGen.CUTOUT.forEach(b -> BlockRenderLayerMap.putBlock(b, ChunkSectionLayer.CUTOUT));
+		com.deadline.registry.gen.ModBlocksGen.TRANSLUCENT.forEach(b -> BlockRenderLayerMap.putBlock(b, ChunkSectionLayer.TRANSLUCENT));
 		ClientSmoke.register();
 
 		ClientPlayNetworking.registerGlobalReceiver(FxPayload.TYPE, (payload, ctx) -> ClientFx.onFx(payload));

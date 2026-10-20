@@ -1,0 +1,12 @@
+{
+ "parent": "minecraft:block/cube",
+ "textures": {
+  "particle": "deadline:block/zz_wallpaper_1",
+  "north": "deadline:block/zz_wallpaper_1",
+  "south": "deadline:block/zz_wallpaper_1",
+  "east": "deadline:block/zz_wallpaper_1",
+  "west": "deadline:block/zz_wallpaper_1",
+  "up": "deadline:block/zz_wallpaper_1",
+  "down": "deadline:block/zz_wallpaper_1"
+ }
+}

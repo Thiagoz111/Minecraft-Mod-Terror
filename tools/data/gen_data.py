@@ -250,6 +250,10 @@ def lang():
     for name, (_, sub_es, sub_en, _) in SOUNDS.items():
         es[f'subtitles.{NS}.{name}'] = sub_es
         en[f'subtitles.{NS}.{name}'] = sub_en
+    extra = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'blocks', 'out', 'lang_blocks.json')
+    if os.path.exists(extra):
+        for k, (e_es, e_en) in json.load(open(extra)).items():
+            es[k], en[k] = e_es, e_en
     write(f'{A}/lang/en_us.json', dict(sorted(en.items())))
     for loc in ('es_es', 'es_ar', 'es_mx', 'es_cl', 'es_uy', 'es_ve', 'es_ec'):
         write(f'{A}/lang/{loc}.json', dict(sorted(es.items())))

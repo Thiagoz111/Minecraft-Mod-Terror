@@ -33,6 +33,7 @@ public class DeadLine implements ModInitializer {
 		ModSounds.init();
 		ModParticles.init();
 		ModBlocks.init();
+		com.deadline.registry.gen.ModBlocksGen.init();
 		ModItems.init();
 		ModEntities.init();
 		ModAttachments.init();
