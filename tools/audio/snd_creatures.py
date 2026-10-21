@@ -36,8 +36,9 @@ Run from the repo root:  python3 tools/audio/snd_creatures.py [substring ...]
                       bowed metal, sul ponticello cluster, endless Shepard rise, CUT at bar 24, aftermath.
 
 Positional sounds are mono; music.case is the only stereo stream. Loudness: screams -0.5 dBFS, voices -1 dBFS,
-foley -3 dBFS, stream -4 dBFS (dsp.master); every OGG is decoded back and re-mastered lower if Vorbis overshoot
-would clip it. Demonic lines report a STOI intelligibility proxy against the clean (time-aligned) TTS. Self-contained: the voice tools (YIN, TD-PSOLA, DTW, whisper,
+foley -3 dBFS, stream -4 dBFS (dsp.master; the loop goes through master_loop so master's edge fades never land on
+the loop point; the bone cracks get 6 dB of transient limiting first so they sit with the project's other impacts);
+every OGG is decoded back and re-mastered lower if Vorbis overshoot would clip it. Demonic lines report a STOI intelligibility proxy against the clean (time-aligned) TTS. Self-contained: the voice tools (YIN, TD-PSOLA, DTW, whisper,
 source-filter synth) are local so this build never depends on another group's module.
 """
 import json
@@ -963,10 +964,17 @@ def poseida_scream():
     y = dsp.drive(norm(y) * 1.8, 1.7)
     y = dsp.peak(y, 3100, 2.0, 1.2)
     y = verb(y, 'dormitorio', 0.15, seed=3106)
-    # sucked-in start: reversed reverb of the onset swelling into the attack
+    # sucked-in start: reversed reverb of the onset swelling into the attack. The reversed IR ends in its predelay
+    # and onset ramp (~85 ms of near-silence), which left a dead gap before the scream: cut the swell where it is
+    # still loud and overlap it 12 ms into the attack so it flows straight in.
     on = verb(y[:N(0.5)], 'capilla', 1.0, 0.0, seed=3107)
-    pre = dsp.reverse(on)[-N(0.45):] * np.linspace(0, 1, N(0.45)) ** 2
-    return stack((norm(pre), 0.0, 0.45), (y, 0.45, 1.0))
+    rv = dsp.reverse(on)
+    e = rms_env(rv, 0.01)
+    k = len(rv) - N(0.15) + int(np.argmax(e[-N(0.15):]))
+    rv = rv[:k + N(0.004)]
+    pre = rv[-N(0.45):] * np.linspace(0, 1, N(0.45)) ** 2
+    pre[-N(0.004):] *= np.linspace(1, 0, N(0.004))
+    return stack((norm(pre), 0.0, 0.45), (y, len(pre) / SR - 0.012, 1.0))
 
 
 def poseida_hurt():
@@ -1188,7 +1196,9 @@ def sombra_appear():
     aud = dsp.drive(norm(aud) * 2.5, 2.5)
     rumble = dsp.lowpass(dsp.noise(dur, 'brown', 5101), 140, 4)
     press = tv_bandpass(dsp.noise(dur, 'pink', 5102), 110 + 450 * np.clip(t / pk, 0, 1) ** 2, 48, 1.6)
-    low = norm(inf) * 0.45 + norm(aud) * 0.35 + norm(rumble) * 0.55 + norm(press) * 0.5
+    # (QA: the pure 29/33 Hz sines are inaudible on phones/laptops yet ate the headroom; trimmed 0.45 -> 0.3 and the
+    #  breath/whispers raised so the audible band gains ~2.4 dB. The whomp stays the climax.)
+    low = norm(inf) * 0.3 + norm(aud) * 0.35 + norm(rumble) * 0.55 + norm(press) * 0.5
     low = low * swell
     # a long dark breath right behind you (huge chest, closed throat), and a faint inhale first
     br = hiss(1.9, 5103, 0.72, vow='a', shape=[(0, 0), (0.9, 0.7), (1.6, 1.0), (1.9, 0)])
@@ -1205,8 +1215,8 @@ def sombra_appear():
     whomp = np.sin(TWO_PI * np.cumsum(30 + 40 * np.exp(-tm / 0.07)) / SR) * np.exp(-tm / 0.35)
     whomp += 0.6 * dsp.lowpass(white(m, 5107), 160, 2) * np.exp(-tm / 0.12)
     whomp = dsp.drive(norm(whomp) * 1.8, 1.8) * env_pts(m, [(0, 1), (1.2, 1), (1.6, 0)])
-    out = stack((low, 0.0, 1.0), (inh, 0.15, 0.08), (br, 0.5, 0.32), (w, 0.7, 0.1), (tone, 0.0, 0.004),
-                (whomp, pk - 0.02, 0.85), length=dur)
+    out = stack((low, 0.0, 1.0), (inh, 0.15, 0.08), (br, 0.5, 0.42), (w, 0.7, 0.14), (tone, 0.0, 0.004),
+                (whomp, pk - 0.02, 0.7), length=dur)
     return verb(out, 'pasillo', 0.18, seed=5108)
 
 
@@ -1846,7 +1856,7 @@ def music_case():
     x = sc.mix()
     x = sfilt(x, hp=28, order=2)
     x = circ_limit(x, 14.0)
-    # rotate so the file starts in the quietest 60 ms near bar 1 (master's edge fades are inaudible there)
+    # rotate so the file starts in the quietest 60 ms near bar 1 (master_loop keeps the seam itself fade-free)
     m = np.abs(x).mean(axis=1)
     e = uniform_filter1d(m, N(0.06), mode='wrap')
     cand = np.r_[np.arange(0, N(1.5)), np.arange(L - N(1.5), L)]
@@ -1881,6 +1891,21 @@ def finish_sfx(y, peak_db, trim_db=-58.0, tail=0.05):
     return dsp.master(y, peak_db=peak_db)
 
 
+def finish_impact(y, peak_db, reduce_db=6.0):
+    """Percussive foley whose single-sample snaps set the peak: a short look-ahead limiter takes `reduce_db` off the
+    clicks (their attacks stay sharp) so the body reads as loud as the project's other impacts, then finish_sfx."""
+    y = np.asarray(y, np.float32)
+    return finish_sfx(vlimit(y, np.max(np.abs(y)) * 10 ** (-reduce_db / 20), 0.0015), peak_db)
+
+
+def master_loop(x, peak_db, pad=2.0):
+    """dsp.master for a seamless loop: master a wrap-padded copy and keep one period, so master's edge fades land in
+    the discarded padding and its high-pass runs with the loop's own history (no dip at the loop point)."""
+    p = N(pad)
+    y = dsp.master(np.concatenate([x[-p:], x, x[:p]], axis=0), peak_db=peak_db)
+    return y[p:p + len(x)]
+
+
 def seam_report(x):
     m = x.mean(axis=1) if x.ndim == 2 else x
     d = np.abs(np.diff(m))
@@ -1901,8 +1926,8 @@ JOBS = [   # (event, file, renderer -> (array, reference or None))
     ('poseida.demon', 'poseida/demon_3', lambda: _demon(3)),
     ('poseida.demon', 'poseida/demon_4', lambda: _demon(4)),
     ('poseida.demon', 'poseida/demon_5', lambda: _demon(5)),
-    ('poseida.crack', 'poseida/crack_1', lambda: (finish_sfx(poseida_crack(1), -3.0), None)),
-    ('poseida.crack', 'poseida/crack_2', lambda: (finish_sfx(poseida_crack(2), -3.0), None)),
+    ('poseida.crack', 'poseida/crack_1', lambda: (finish_impact(poseida_crack(1), -3.0), None)),
+    ('poseida.crack', 'poseida/crack_2', lambda: (finish_impact(poseida_crack(2), -3.0), None)),
     ('poseida.scream', 'poseida/scream', lambda: (finish_voice(poseida_scream(), -0.5, 13.0, -55.0, 0.1), None)),
     ('poseida.hurt', 'poseida/hurt', lambda: (finish_voice(poseida_hurt(), -0.5, 13.0, -55.0, 0.08), None)),
     ('poseida.death', 'poseida/death', lambda: (finish_sfx(poseida_death(), -0.5, -60.0, 0.1), None)),
@@ -1917,7 +1942,7 @@ JOBS = [   # (event, file, renderer -> (array, reference or None))
     ('ambient.whispers', 'ambient/whispers_2', lambda: (finish_voice(ambient_whispers(2), -1.0, 16.0, -55.0, 0.1), None)),
     ('ambient.whispers', 'ambient/whispers_3', lambda: (finish_voice(ambient_whispers(3), -1.0, 16.0, -55.0, 0.1), None)),
     ('ambient.whispers', 'ambient/whispers_4', lambda: (finish_voice(ambient_whispers(4), -1.0, 16.0, -55.0, 0.1), None)),
-    ('music.case', 'music/case', lambda: (dsp.master(music_case(), peak_db=-4.0), None)),
+    ('music.case', 'music/case', lambda: (master_loop(music_case(), -4.0), None)),
 ]
 
 
@@ -1946,7 +1971,7 @@ def build(only=None):
         target = 20 * np.log10(np.max(np.abs(x)) + 1e-12)
         dec = 20 * np.log10(np.max(np.abs(sf.read(os.path.join(dsp.OUT, rel + '.ogg'))[0])) + 1e-12)
         if dec > -0.1:
-            x = dsp.master(x, peak_db=target - (dec - target) - 0.15)
+            x = (master_loop if event == 'music.case' else dsp.master)(x, peak_db=target - (dec - target) - 0.15)
             dsp.save_ogg(x, rel, quality=q)
             print(f'  {rel}: decoded peak {dec:+.2f} dBFS -> re-mastered at {target - (dec - target) - 0.15:.2f}')
         st = dsp.analyse(x)

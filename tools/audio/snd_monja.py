@@ -36,6 +36,7 @@ import sys
 import time
 
 import numpy as np
+import soundfile as sf
 from scipy import signal
 from scipy.ndimage import uniform_filter1d
 
@@ -1388,10 +1389,16 @@ def build(only=None):
             if only and not any(o in rel or o in name for o in only):
                 continue
             t0 = time.time()
-            x = fn()
-            assert x.ndim == 1 or stream, rel + ' is positional: must be mono'
-            x = finish(x, pk, loop)
-            dsp.save_ogg(x, rel)
+            raw = fn()
+            assert raw.ndim == 1 or stream, rel + ' is positional: must be mono'
+            x = finish(raw, pk, loop)
+            path = dsp.save_ogg(x, rel)
+            # QA: Vorbis can overshoot dense, driven material by ~1 dB (death decoded at +0.3 dBFS = clipping).
+            # If the decoded peak lands more than 0.3 dB over target, master again with the target lowered.
+            over = 20 * np.log10(np.max(np.abs(sf.read(path, dtype='float32')[0])) + 1e-12) - pk
+            if over > 0.3:
+                x = finish(raw, pk - (over - 0.1), loop)
+                dsp.save_ogg(x, rel)
             st = dsp.analyse(x)
             if loop:
                 st['seam'] = round(seam_report(x), 2)

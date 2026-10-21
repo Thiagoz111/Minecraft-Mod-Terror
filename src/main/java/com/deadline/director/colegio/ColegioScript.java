@@ -450,9 +450,14 @@ public class ColegioScript extends CaseScript {
 					}
 					girls(e.run, "atril_", ApparitionEntity.POSE_SING);
 				}),
-				sound(ModSounds.CORO_AVE_REVES, "coro_alto", 2.2F),
-				waitUntil(e -> e.target() != null && (Props.beamOn(e.target(), e.run.actor(NUN))
-						|| e.run.looking(e.target(), e.run.at("coro_monja"), 12, 30) && e.t > 100), 20 * 40),
+				// the backwards Ave Maria (a 20 s loop) keeps going until they are caught in the light
+				loop(e -> {
+					if (e.t % 400 == 0 && e.t < 20 * 40) {
+						e.run.sound(ModSounds.CORO_AVE_REVES, e.run.at("coro_alto"), 2.2F, 1.0F);
+					}
+					return e.t >= 20 * 40 || e.target() != null && (Props.beamOn(e.target(), e.run.actor(NUN))
+							|| e.run.looking(e.target(), e.run.at("coro_monja"), 12, 30) && e.t > 100);
+				}),
 				run(e -> {
 					for (ServerPlayer p : e.run.hunters()) {
 						p.connection.send(new net.minecraft.network.protocol.game.ClientboundStopSoundPacket(

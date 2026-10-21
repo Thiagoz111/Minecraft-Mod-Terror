@@ -155,6 +155,17 @@ public final class ModSounds {
 		LINES.put("colegio.alumnas.shhh", register("line.colegio.alumnas.shhh"));
 	}
 
+	/** Single-file events of multi-take sounds, so a take can be chosen (e.g. the spirit box answer matching its subtitle). */
+	private static final java.util.Map<String, SoundEvent[]> VARIANTS = new java.util.HashMap<>();
+	static {
+		VARIANTS.put("spirit_box.voice", new SoundEvent[] {register("spirit_box.voice_1"), register("spirit_box.voice_2"), register("spirit_box.voice_3"), register("spirit_box.voice_4"), register("spirit_box.voice_5"), register("spirit_box.voice_6"), register("spirit_box.voice_7"), register("spirit_box.voice_8")});
+	}
+
+	public static SoundEvent variant(String name, int index) {
+		SoundEvent[] v = VARIANTS.get(name);
+		return v == null || v.length == 0 ? null : v[Math.floorMod(index, v.length)];
+	}
+
 	public static SoundEvent line(String id) {
 		return LINES.get(id);
 	}

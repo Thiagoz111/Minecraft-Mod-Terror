@@ -631,6 +631,54 @@
    "deadline:coro/acorde_final"
   ]
  },
+ "spirit_box.voice_1": {
+  "subtitle": "subtitles.deadline.spirit_box.voice",
+  "sounds": [
+   "deadline:spirit_box/voice_1"
+  ]
+ },
+ "spirit_box.voice_2": {
+  "subtitle": "subtitles.deadline.spirit_box.voice",
+  "sounds": [
+   "deadline:spirit_box/voice_2"
+  ]
+ },
+ "spirit_box.voice_3": {
+  "subtitle": "subtitles.deadline.spirit_box.voice",
+  "sounds": [
+   "deadline:spirit_box/voice_3"
+  ]
+ },
+ "spirit_box.voice_4": {
+  "subtitle": "subtitles.deadline.spirit_box.voice",
+  "sounds": [
+   "deadline:spirit_box/voice_4"
+  ]
+ },
+ "spirit_box.voice_5": {
+  "subtitle": "subtitles.deadline.spirit_box.voice",
+  "sounds": [
+   "deadline:spirit_box/voice_5"
+  ]
+ },
+ "spirit_box.voice_6": {
+  "subtitle": "subtitles.deadline.spirit_box.voice",
+  "sounds": [
+   "deadline:spirit_box/voice_6"
+  ]
+ },
+ "spirit_box.voice_7": {
+  "subtitle": "subtitles.deadline.spirit_box.voice",
+  "sounds": [
+   "deadline:spirit_box/voice_7"
+  ]
+ },
+ "spirit_box.voice_8": {
+  "subtitle": "subtitles.deadline.spirit_box.voice",
+  "sounds": [
+   "deadline:spirit_box/voice_8"
+  ]
+ },
  "line.colegio.clara.llamada": {
   "sounds": [
    "deadline:line/colegio/clara/llamada"

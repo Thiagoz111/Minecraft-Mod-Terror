@@ -1381,7 +1381,8 @@ STREAMS = {'casa': build_casa, 'rio': build_rio, 'bosque': build_bosque, 'parque
 
 def build(only=None):
     t_all = time.time()
-    want = set(only or ['casa', 'rio', 'bosque', 'parque', 'convento', 'whispers', 'music'])
+    # ambient/whispers_* and music/case now come from snd_creatures.py; build them here only when asked by name
+    want = set(only or ['casa'])
     for key, fn in STREAMS.items():
         if key in want:
             t0 = time.time()

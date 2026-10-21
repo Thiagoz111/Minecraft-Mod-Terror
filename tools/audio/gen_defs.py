@@ -9,6 +9,11 @@ for name, (n, es, en, stream) in SOUNDS.items():
     for f in files:
         entry['sounds'].append({'name': f, 'stream': True} if stream else f)
     sj[name] = entry
+VARIANT_EVENTS = ('spirit_box.voice',)  # also one event per file, so the code can pick the exact take
+for name in VARIANT_EVENTS:
+    n, es_, en_, stream = SOUNDS[name]
+    for i in range(n):
+        sj[f'{name}_{i + 1}'] = {'subtitle': f'subtitles.deadline.{name}', 'sounds': [f"deadline:{name.replace('.', '/')}_{i + 1}"]}
 for name in LINE_EVENTS:  # spoken lines: subtitles are drawn by the mod's own subtitle bar, not vanilla's
     sj[name] = {'sounds': [f"deadline:{name.replace('.', '/')}"]}
 p = os.path.join(ROOT, 'src/main/resources/assets/deadline/sounds.json')
@@ -25,6 +30,19 @@ lines.append('\tprivate static final java.util.Map<String, SoundEvent> LINES = n
 lines.append('\tstatic {')
 for name in LINE_EVENTS:
     lines.append(f'\t\tLINES.put("{name[5:]}", register("{name}"));')
+lines.append('\t}')
+lines.append('')
+lines.append('\t/** Single-file events of multi-take sounds, so a take can be chosen (e.g. the spirit box answer matching its subtitle). */')
+lines.append('\tprivate static final java.util.Map<String, SoundEvent[]> VARIANTS = new java.util.HashMap<>();')
+lines.append('\tstatic {')
+for name in VARIANT_EVENTS:
+    n = SOUNDS[name][0]
+    lines.append(f'\t\tVARIANTS.put("{name}", new SoundEvent[] {{' + ', '.join(f'register("{name}_{i + 1}")' for i in range(n)) + '});')
+lines.append('\t}')
+lines.append('')
+lines.append('\tpublic static SoundEvent variant(String name, int index) {')
+lines.append('\t\tSoundEvent[] v = VARIANTS.get(name);')
+lines.append('\t\treturn v == null || v.length == 0 ? null : v[Math.floorMod(index, v.length)];')
 lines.append('\t}')
 lines.append('')
 lines.append('\tpublic static SoundEvent line(String id) {')

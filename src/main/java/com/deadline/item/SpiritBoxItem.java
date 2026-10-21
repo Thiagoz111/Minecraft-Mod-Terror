@@ -19,7 +19,8 @@ import net.minecraft.world.level.Level;
 
 /** Sweeps radio frequencies. Hold it near an entity and something answers. */
 public class SpiritBoxItem extends Item {
-	public static final int PHRASES = 12;
+	/** Answers, one per recorded take (spirit_box/voice_N): the subtitle always matches what is heard. */
+	public static final int PHRASES = 8;
 
 	public SpiritBoxItem(Properties props) {
 		super(props);
@@ -51,23 +52,24 @@ public class SpiritBoxItem extends Item {
 			return;
 		}
 		int used = getUseDuration(stack, user) - remaining;
-		if (used % 25 == 0) {
-			server.playSound(null, p.getX(), p.getY(), p.getZ(), ModSounds.SPIRIT_BOX_STATIC, SoundSource.PLAYERS, 0.8F, 0.9F + server.getRandom().nextFloat() * 0.2F);
-		}
-		if (used == 50) {
-			HauntEntity near = null;
+		HauntEntity near = null;
+		if (used == 50 || used == 75) {
 			for (HauntEntity e : server.getEntitiesOfClass(HauntEntity.class, p.getBoundingBox().inflate(18))) {
 				near = e;
 				break;
 			}
-			if (near != null) {
-				int phrase = server.getRandom().nextInt(PHRASES);
-				server.playSound(null, p.getX(), p.getY(), p.getZ(), ModSounds.SPIRIT_BOX_VOICE, SoundSource.PLAYERS, 1.2F, 1.0F);
-				Fx.title(p, "deadline.spiritbox." + phrase, 70);
-				Fx.staticNoise(p, 0.5F, 25);
-				SanityManager.add(p, -4.0F);
-				CaseManager.evidence(p, 2);
-			}
+		}
+		// the sweep drops out while the answer comes through
+		if (used % 25 == 0 && near == null) {
+			server.playSound(null, p.getX(), p.getY(), p.getZ(), ModSounds.SPIRIT_BOX_STATIC, SoundSource.PLAYERS, 0.8F, 0.9F + server.getRandom().nextFloat() * 0.2F);
+		}
+		if (used == 50 && near != null) {
+			int phrase = server.getRandom().nextInt(PHRASES);
+			server.playSound(null, p.getX(), p.getY(), p.getZ(), ModSounds.variant("spirit_box.voice", phrase), SoundSource.PLAYERS, 1.2F, 1.0F);
+			Fx.title(p, "deadline.spiritbox." + phrase, 70);
+			Fx.staticNoise(p, 0.5F, 25);
+			SanityManager.add(p, -4.0F);
+			CaseManager.evidence(p, 2);
 		}
 	}
 

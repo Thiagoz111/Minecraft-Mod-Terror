@@ -87,11 +87,10 @@ BESTIARY = {
               'Lost souls. Invisible except to the camera or UV light. They leave an unmistakable chill.'),
 }
 
-SPIRIT_BOX = [
-    ('...detrás de vos...', '...behind you...'), ('...andate...', '...leave...'), ('...muerte...', '...death...'),
-    ('...no estás solo...', '...you are not alone...'), ('...te veo...', '...I see you...'), ('...ayuda...', '...help...'),
-    ('...frío...', '...cold...'), ('...mamá...', '...mommy...'), ('...abajo...', '...below...'),
-    ('...ya viene...', '...it is coming...'), ('...corré...', '...run...'), ('...quedate...', '...stay...'),
+SPIRIT_BOX = [  # one per spirit_box/voice_N.ogg, in file order (tools/audio/snd_tools.py SPIRIT_LINES)
+    ('...Clara... Clara...', '...Clara... Clara...'), ('...ocho...', '...eight...'), ('...shhh...', '...shhh...'),
+    ('...mirá...', '...look...'), ('...vacío...', '...empty...'), ('...te veo...', '...I see you...'),
+    ('...ayuda...', '...help...'), ('...frío...', '...cold...'),
 ]
 
 MISC = {
