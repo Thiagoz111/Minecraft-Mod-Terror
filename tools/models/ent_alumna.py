@@ -1043,8 +1043,8 @@ def shell_mat(ctx):
     if f == 'back':
         if pulled(st) and abs(x) < 3.2 and y > nape_top(x) + 0.5:
             return None                                 # bare nape patch (the skull's skin shows 1 texel deeper)
-        if st in TIPS and y > bottom - 1.0:
-            return None                                 # the ragged tips plane carries the last row and the ends
+        # (TIPS styles keep their last row painted: it sits 0.12 behind the tips plane and closes the gap, so the
+        #  nape skin never glints through between them)
         if st not in TIPS and y > bottom - 1.0 and hash3(int(math.floor(x)), 5, HAIRS.index(st), 19) > 0.5:
             return None                                 # ragged hair tips along the lower edge
     if f in ('west', 'east') and y > bottom - 1.0 and hash3(int(math.floor(z)), 6, HAIRS.index(st), 29) > 0.6 \
@@ -1687,7 +1687,7 @@ POSES = {
     # the right arm straight at the player, index out, the other fingers curled
     'point': {'head': (0.05, 0, 0.3, 0, 0, 0), 'right_arm': (-1.5, 0.05, -0.26, 0, 0, 0),
               'right_forearm': (0.1, 0, 0.07, 0, 0, 0), 'right_hand': (0, 0.611, 0, 0, 0, 0),
-              'right_fingers': (0, 0, -1.4, 0, 0, 0)},
+              'right_fingers': (0, 0, -1.4, 0, 0, 0), 'paloma_braid_right': (0.3, 0, -0.12, 0, 0, 0)},
     # crouched and cowering, shoulders hunched up 1.6, elbows forward and down, both palms pressed flat on the OUTSIDE
     # of the hair over the ears (16-wide styles: palms at x = +-9..10), the long fingers wrapping back over the sides of
     # the head (never above the crown).  Wider hair: use 'cover_ears_mecha' / '_ofelia' / '_chela' (same body).
@@ -1861,7 +1861,8 @@ Poses
 * face_wall: punished pupil: forehead on the wall, neck and head bowed, shoulders dropped 1 texel, arms hanging
   dead.  Place her 0.25 blocks from the wall.  Cripta at the Hora Muerta (before the 180 + "CORRE").
 * point: the right arm straight at the player, index out, other fingers curled, head tilted.  Ronda beat ("...con
-  esta SI") - all girls SNAP into it on the same tick.
+  esta SI") - all girls SNAP into it on the same tick.  (Paloma's right braid swings back 0.3 so the raised sleeve
+  does not cut through it.)
 * cover_ears: crouched (soles flat on the floor: shoes -0.75 cancel body + leg + shin pitch, body dy +2.09), head
   bowed (neck 0.12, head 0.3), shoulders hunched up 1.6 (arm dy -1.6, dx 0.3 inward), elbows forward and down in front
   of the chest, both palms pressed flat on the OUTSIDE of the hair over the ears (16-wide styles: palm centres at

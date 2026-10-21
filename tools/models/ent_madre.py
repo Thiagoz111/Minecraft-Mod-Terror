@@ -2,18 +2,19 @@
 
 Authored at 2x texel density (model.scale = 0.5).  +Y down, ground y = 24, faces -Z, right_* on -X.  Centred on
 x = 0, z = 0 (only the ledger, the arms and the back veil leave the column).  Height 2.3 blocks: veil crest
-y = -50 -> hem y = 24 (74 texels).  Cube / bone counts and texture size: see build().
+y = -50 -> hem y = 24 (74 texels).  70 cubes, 24 bones, 256 x 192 texture.
 
 Design (round 3)
 ----------------
 Silhouette: a rigid BLACK COLUMN read like a chess piece -- a HEAD, SHOULDERS and a BASE.  The starched veil has a
-rounded two-step crown (25 -> 21 -> 13 wide); its wings drop straight down beside the white coif, so the head stays
-a narrow 25-wide column that lands on dead-square 35-wide shoulders with a clear notch on each side.  The capelet
-squares the shoulders, the skirt (four stiff panels) drops with almost no waist onto a bell step: the hem of the
-habit pooled on the floor, fading out (alpha 210 -> 110 over the last 8 texels) so she rises out of the floor
-instead of standing on it.  At rest the open ledger's brass corner and the raised pen hand break the front
-outline.  From behind: the crown steps, the black back veil (narrower than the shoulders) hangs to the hip in a
-pointed V with a pale rim and a centre seam, standing proud of the skirt.
+rounded crown stepping in 25 -> 23 -> 19 -> 11 (wings, crown, roof, crest); its wings drop straight down beside
+the white coif, so the head stays a narrow 25-wide column that lands on dead-square 35-wide shoulders with a clear
+notch on each side.  The capelet squares the shoulders, the skirt (four stiff panels) drops with almost no waist
+onto a bell step: the hem of the habit pooled on the floor, fading out (alpha 210 -> 110 over the last 8 texels)
+so she rises out of the floor instead of standing on it.  At rest the open ledger, rolled 10 deg out past the left
+hip, breaks the front outline with its brass corner, and the pen fist is raised to the chest.  From behind: the
+crown steps, the black back veil (narrower than the shoulders) hanging to the hip in a pointed V with a pale rim
+and a centre seam, standing proud of the skirt.
 On the black: a graphic WHITE FRAME -- the starched forehead band and coif plates box the face in a hard
 rectangle, a starched fold rolls under the chin onto the big flat bib with its black pectoral cross.
 
@@ -25,8 +26,8 @@ OPAQUE GLOWING lenses (emissive 'eyes' layer): a hot white core inside a slightl
 eyes.  Her right brow is a separate tapered block (`right_brow`: thick inner head, thin tail, a flesh ridge under
 the hairs) pressing diagonally over the right lens, which glows as a narrow angry crescent; the left brow is a thin
 grey arch raised high over a wide-open lens ("Aja.").  Long aquiline nose, nasolabial folds as two clean diagonals
-from the nose wings to past the mouth corners, ONE thin pressed line for the lips with the corners pulled down, a
-pale lower lip and a hard lit chin.
+from the nose wings to past the mouth corners, ONE thin pressed line for the lips with soft shadows under its
+corners, a thin pale lower lip and a hard lit chin.
 
 Props: an open LEDGER (libro de actas, 21 x 17 x 3 open) in oxblood leather with brass corner caps, a gilt title
 plate, a blind-stamped cross, banded spine, red-sprinkled page edges, ruled pages full of names and bold red
@@ -38,8 +39,9 @@ the left hip.
 
 Palette: cold blue-black wool (crisp organ pleats with one lit ridge texel, a pale rim on every outer veil edge,
 step and hem so the shapes survive fog), cold blue-grey shadowed starched linen, waxy ivory skin, oxblood + brass +
-red ink as the only warm accents.  Translucent: habit 210 (sleeves 228) fading to 110 at the floor, veil 246 with
-its pointed hem fading to ~190, linen 238, skin 252; lenses opaque and full-bright.
+red ink as the only warm accents.  Translucent: habit 210 fading to 110 at the floor (capelet 238, sleeves 250 so
+overlapping arm boxes never read as smoked glass), veil 246 with its pointed hem fading to ~190, linen 238, skin
+252; lenses opaque and full-bright.
 """
 import math
 
@@ -51,12 +53,13 @@ from paint import hx, mix, pixelart
 
 # ------------------------------------------------------------------ translucency
 A_HABIT = 210
-A_SLEEVE = 228
+A_SLEEVE = 250        # the arms stay almost opaque: overlapping sleeves never read as smoked glass
 A_LINEN = 238
 A_SKIN = 252
 A_BOOK = 238
 A_METAL = 232
 A_VEIL = 246
+A_CAPE = 238          # the starched capelet: thick enough that its far edges never ghost through
 A_FLOOR = 110          # the habit fades to this where it meets the floor
 FADE_Y0 = 16.0         # ... starting 8 texels above the floor
 
@@ -100,7 +103,7 @@ BELT = [hx(c) for c in ('#050507', '#0b0b0f', '#141419', '#1e1e25', '#2a2a33', '
 STEEL = hx('#56606f')
 STEEL_HI = hx('#e4ebf3')
 LENS = hx('#ffffff')
-LENS_RIM = hx('#c4dcf2')
+LENS_RIM = hx('#b4d0ee')
 DUST = hx('#5b5a63')
 MOUTH = [hx('#070506'), hx('#140b0d'), hx('#24141a'), hx('#3a2228')]
 TEETH = [hx('#6a6450'), hx('#958d70'), hx('#bab194')]
@@ -168,13 +171,13 @@ def pleat(u, seed, period=5):
 # ------------------------------------------------------------------ cloth
 HIDDEN = {
     # tag -> faces never seen (cut out so nothing ghosts through the translucency)
-    'core': ('top', 'bottom'), 'chest': ('top', 'bottom', 'front'), 'sleeve_up': ('top', 'bottom'),
-    'sleeve_lo': ('top', 'bottom'), 'cuff': ('top',), 'veil_back': ('front', 'top'), 'scap': ('back', 'top'),
-    'panel': ('top', 'bottom'), 'veil_side': ('top', 'bottom'), 'cape': (),
+    'core': ('top', 'bottom'), 'chest': ('top', 'bottom', 'front'), 'veil_back': ('front', 'top'),
+    'scap': ('back', 'top'),
+    'panel': ('top', 'bottom'), 'veil_side': ('bottom',), 'cape': (),
     'veil_nape': ('front', 'top', 'bottom'), 'roof': ('bottom',), 'crest': ('bottom',), 'hem': ('bottom',),
 }
 VEILS = ('crown', 'roof', 'crest', 'veil_side', 'veil_back', 'veil_nape')
-V_DEPTH = 9.0          # the back veil's pointed hem rises this much at its sides
+V_DEPTH = 7.0          # the back veil's pointed hem rises this much at its sides
 FADED = ('core', 'panel', 'scap', 'hem')
 
 
@@ -190,6 +193,8 @@ def habit_mat(ctx):
     w, h, d = ctx.cube.size
     k = cseed(ctx)
     a = A_VEIL if t in VEILS else (A_SLEEVE if t in ('sleeve_up', 'sleeve_lo', 'cuff') else A_HABIT)
+    if t == 'cape':
+        a = A_CAPE
     side = f in ('front', 'back', 'west', 'east')
     v = 0.42 + face_light(ctx) * 1.15
     rim = False                                             # pale outer edge that keeps the shape in fog
@@ -240,7 +245,7 @@ def habit_mat(ctx):
             v -= 0.1
     elif t == 'veil_back':                                  # long back veil with a pointed hem
         cx = abs(lx - w / 2) / (w / 2) if f in ('front', 'back', 'bottom') else 1.0
-        hem = h - V_DEPTH * cx ** 1.25
+        hem = h - V_DEPTH * cx ** 1.4
         if ly > hem + 1e-6:
             return None
         to_hem = hem - ly
@@ -270,13 +275,19 @@ def habit_mat(ctx):
                 rim = True
         elif f == 'back' and ctx.i in (0, ctx.w - 1):
             rim = True
+    elif t in ('sleeve_up', 'sleeve_lo') and f in ('top', 'bottom'):
+        return A(HABIT[1], a)                               # sleeve ends: dark wool interior, never a hole
     elif t in ('sleeve_up', 'sleeve_lo', 'cuff') and side:
         v += pleat(around(ctx), k % 4, 7) * 0.5
         if t == 'sleeve_up' and ly > h - 3:
             v -= 0.05                                       # elbow creases
             if (ctx.i + int(ly)) % 4 == 0:
                 v -= 0.08
-    if t in ('crown', 'roof', 'crest'):                     # the two-step starched crown
+    if t == 'veil_side' and f == 'top':
+        v += 0.1                                            # the veil's shoulder under the crown step
+        if ctx.i in (0, ctx.w - 1):
+            rim = True
+    if t in ('crown', 'roof', 'crest'):                     # the stepped starched crown
         if f == 'top':
             v -= 0.02
             if t == 'crest':
@@ -404,13 +415,14 @@ def linen_mat(ctx):
 
 # ------------------------------------------------------------------ flesh
 # the furrowed right brow block, front face: i = 0 the thin tail (outer, up high) .. 7 the thick head (by the nose).
-# s forehead skin, h / g grey hairs, H / K the dark knot of the scowl, r / q the flesh ridge pressing on the lens
+# '.' is cut out (the forehead shows through), so the block reads as a tapered brow, not as a plank: grey hairs that
+# thicken into a dark knot by the nose, over a flesh ridge whose straight lower edge cuts the right lens.
 BROWART = [
-    "sssssgHH",
-    "hhhghHHK",
+    ".....gHH",
+    ".hhhghHK",
     "rrrrrrqq",
 ]
-BROWPAL = {'s': SKIN[6], 'h': BROW[1], 'g': BROW[2], 'H': BROW[0], 'K': hx('#1d1d21'), 'r': SKIN[5], 'q': SKIN[4]}
+BROWPAL = {'h': BROW[2], 'g': BROW[3], 'H': BROW[1], 'K': BROW[0], 'r': SKIN[5], 'q': SKIN[4]}
 
 
 def skin_mat(ctx):
@@ -444,7 +456,7 @@ def skin_mat(ctx):
             return None
     if t == 'cheek':
         if f == 'bottom':
-            return A(pick(SKIN, 0.42), A_SKIN)
+            return A(SKIN[5], A_SKIN)                       # no dark strip under the cheekbone
         if f == 'top':
             return A(pick(SKIN, 0.7), A_SKIN)
         inner = (f == 'east' and ctx.x < 0) or (f == 'west' and ctx.x > 0)
@@ -466,18 +478,17 @@ def skin_mat(ctx):
         if f == 'top':
             return A(pick(SKIN, 0.72), A_SKIN)
     if t == 'brow_r':
-        if f == 'back':
-            return None
+        if f in ('back', 'top'):
+            return None                                     # only the painted shape shows
         if f == 'front':
             ch = BROWART[min(ctx.j, 2)][min(ctx.i, 7)]
-            return A(BROWPAL[ch], A_SKIN)
-        if f == 'top':
-            return A(SKIN[6], A_SKIN)                       # forehead skin, not a lit bar
+            return A(BROWPAL[ch], A_SKIN) if ch != '.' else None
         if f == 'bottom':
             return A(SKIN[3], A_SKIN)
-        if f == 'east' and ctx.j < 2:
-            return A(BROW[0], A_SKIN)                       # end of the thick head
-        return A(SKIN[5], A_SKIN)
+        if f == 'east':
+            return A(BROW[0] if ctx.j < 2 else SKIN[4], A_SKIN)     # end of the thick head
+        return A(SKIN[4], A_SKIN) if ctx.j >= 1 else None   # the thin tail
+
     v = 0.66 + face_light(ctx) * 0.9
     if f in ('west', 'east'):
         v -= 0.12
@@ -544,10 +555,10 @@ FACE = [
     "333333474333333",   # r9
     "333333585333333",   # r10
     "67787k585k78776",   # r11 y-33 cheekbones lit (own cubes) | the folds start at the nose wings
-    "6677k54445k7766",   # r12 y-32 folds run down and out, shadow under the nose
+    "5566k54445k6655",   # r12 y-32 folds run down and out, shadow under the nose, cheeks fall away
     "556k5KKKKK5k655",   # r13 y-31 ONE thin pressed line (jaw top row), folds clear of the mouth
-    "55k5K66666K5k55",   # r14 y-30 corners pulled down, pale lower lip, folds pass the corners
-    "55k555666555k55",   # r15 y-29 folds end past the mouth corners | chin
+    "55k545666545k55",   # r14 y-30 soft shadows under the corners, thin pale lower lip, folds pass the corners
+    "55k555555555k55",   # r15 y-29 folds end past the mouth corners | chin
     "444557888755444",   # r16 y-28 hard lit chin, flat jowls
 ]
 assert all(len(r) == 15 for r in FACE), [len(r) for r in FACE]
@@ -602,7 +613,7 @@ def _glasses():
 GLASSES = _glasses()
 assert all(len(r) == 17 for r in GLASSES)
 GPAL = {'S': STEEL, 'g': STEEL_HI, 'W': LENS, 'V': LENS_RIM}
-GLOWPAL = {'W': (255, 255, 255, 255), 'V': (176, 206, 238, 255)}
+GLOWPAL = {'W': (255, 255, 255, 255), 'V': (158, 194, 234, 255)}
 
 
 def glasses_mat(ctx):
@@ -691,14 +702,7 @@ def leather_mat(ctx):
     return A(pick(OX, v), A_BOOK)
 
 
-# red demerit check mark (2 texels thick) and the big X of the loose leaf
-CHECK = [
-    "....rr",
-    "...rr.",
-    "rr.rr.",
-    ".rrr..",
-    "..r...",
-]
+# the big red X of the loose leaf
 BIGX = [
     "R.....R",
     "RR...RR",
@@ -863,23 +867,23 @@ def keys_mat(ctx):
 KEYS = [
     "...........",
     "...........",
-    "....GBB....",
-    ".GAAB.BCCg.",
-    ".A.ABBBC.C.",
-    ".AAA.b.CCC.",
-    "..a..b..c..",
-    "..a..b..c..",
+    "...oGBBo...",
+    "GAA.B.B.CCg",
+    "A.A.BBB.C.C",
+    "AAA..b..CCC",
     ".a...b...c.",
-    ".a...bb..c.",
-    "a....b...cc",
-    "aa...bb...c",
+    ".a...b...c.",
+    ".a...b...c.",
+    "a....bb...c",
+    "a....b....c",
+    "aa...bb..cc",
     "a....b.....",
     ".....b.....",
 ]
 assert all(len(r) == 11 for r in KEYS)
-KPAL = {'A': A(IRON[4], A_METAL), 'B': A(IRON[4], A_METAL), 'C': A(IRON[4], A_METAL),
-        'a': A(IRON[3], A_METAL), 'b': A(IRON[3], A_METAL), 'c': A(IRON[3], A_METAL),
-        'G': A(IRON[6], A_METAL), 'g': A(IRON[5], A_METAL)}
+KPAL = {'A': A(IRON[4], A_METAL), 'B': A(IRON[5], A_METAL), 'C': A(IRON[4], A_METAL),
+        'a': A(IRON[3], A_METAL), 'b': A(IRON[4], A_METAL), 'c': A(IRON[3], A_METAL),
+        'G': A(IRON[6], A_METAL), 'g': A(IRON[5], A_METAL), 'o': A(IRON[3], A_METAL)}
 RING_ART = [".OO.", "O..O", "O..O", ".OO."]
 
 
@@ -965,8 +969,8 @@ PEN_TILT = 30
 # rest rotations (deg) of arm / forearm / hand.  Right: elbow at the side, forearm raised, the pen poised over the
 # right-hand page (solved numerically).  Left: cradles the ledger (solved so the cuff stays under the boards).
 ARM_REST = {
-    'right': ((8.95, 13.24, -5.55), (-114.53, -29.61, 0), (49.5, -22.69, -41.54)),
-    'left': ((-3, 0, 2), (-64, 6, 0), (0, 0, 0)),
+    'right': ((-28.77, 13.12, -2.49), (-109.52, -37.49, 0), (75.71, 30.76, -14.18)),
+    'left': ((-11.8, 12.58, -12.63), (-32.81, 3.72, 0), (-48.71, -34.55, -17.93)),
 }
 
 
@@ -1030,9 +1034,9 @@ def build():
     box('head', (-10.5, -44, -7), (3, 18, 13), mat=linen_mat, name='coif_side')
     box('head', (7.5, -44, -7), (3, 18, 13), mat=linen_mat, name='coif_side')
     box('head', (-8.5, -26, -9.5), (17, 2, 3), mat=linen_mat, name='chinfold')
-    box('head', (-12.5, -48, -8.5), (25, 2, 20), mat=habit_mat, name='crown')
-    box('head', (-10.5, -49, -7.5), (21, 1, 18), mat=habit_mat, name='roof')
-    box('head', (-6.5, -50, -5.5), (13, 1, 14), mat=habit_mat, name='crest')
+    box('head', (-11.5, -48, -8.5), (23, 2, 20), mat=habit_mat, name='crown')
+    box('head', (-9.5, -49, -7.5), (19, 1, 18), mat=habit_mat, name='roof')
+    box('head', (-5.5, -50, -5.5), (11, 1, 14), mat=habit_mat, name='crest')
     box('head', (-12.5, -47, 9.5), (25, 20, 2), mat=habit_mat, name='veil_nape', inflate=0.12)
 
     # the furrowed right brow: a tapered block pressing diagonally over the right lens
@@ -1104,28 +1108,171 @@ def build():
 
 
 POSES = {
+    # 'Aja.' -- leans over the ledger, head bowed, book tipped back towards her, nib ON the right-hand page
     'write': {
         'chest': (0.06, 0, 0, 0, 0, 0),
         'head': (0.24, -0.1, 0.03, 0, 0, 0),
-        'veil': (0.09, 0, 0, 0, 0, 0),
-        'veil_right': (-0.1, 0, 0, 0, 0, 0),
-        'veil_left': (-0.1, 0, 0, 0, 0, 0),
+        'veil': (0.036, 0, 0, 0, 0, 0),
+        'veil_right': (-0.12, 0, 0, 0, 0, 0),
+        'veil_left': (-0.12, 0, 0, 0, 0, 0),
         'left_forearm': (-0.1, 0, 0, 0, 0, 0),
         'book': (-0.36, 0, 0, 0, 0, 0),
+        'right_arm': (0.169, 0.066, -0.063, 0, 0, 0),
+        'right_forearm': (0.025, 0.067, 0, 0, 0, 0),
+        'right_hand': (0.003, 0.138, 0.030, 0, 0, 0),
     },
+    # chin up, looking down her nose at you; the rigid column leans back from the hem; the right index finger comes
+    # up from under the chin and pushes the spectacles up the nose (the pen stays in the fist, turned back)
     'stare': {
-        'body': (-0.04, 0, 0, 0, 0, 0),
+        'body': (-0.04, 0, 0, 0, -0.42, 0),
         'chest': (-0.06, 0, 0, 0, 0, 0),
         'head': (-0.2, 0, 0.05, 0, 0, 0),
+        'veil': (-0.03, 0, 0, 0, 0, 0),
+        'veil_right': (0.1, 0, 0, 0, 0, 0),
+        'veil_left': (0.1, 0, 0, 0, 0, 0),
         'glasses': (0, 0, 0, 0, -0.6, 0),
         'right_brow': (0, 0, 0.06, 0, 0, 0),
+        'right_arm': (-0.520, -0.182, -0.005, 0, 0, 0),
+        'right_forearm': (0.018, -0.213, 0, 0, 0, 0),
+        'right_hand': (0.708, -2.753, -1.410, 0, 0, 0),
+        'right_index': (-0.5236, 0, 0, 0, 0, 0),
+        'pen': (2.333, -0.207, -0.613, -1.00, -3.26, 1.37),
     },
+    # 'Usted.' -- right shoulder forward, arm raised to shoulder height, elbow almost straight, the long index finger
+    # aimed straight at the player's eyes (world dir ~ (0.10, -0.10, -0.99)); the pen turned back along the inside
+    # of the wrist so the finger is the only spike; she leans into it with the mouth open on the word
     'point': {
         'chest': (0, -0.12, 0, 0, 0, 0),
         'head': (0.05, 0.12, 0, 0, 0, 0),
+        'veil': (0.008, 0, 0, 0, 0, 0),
+        'veil_right': (-0.025, 0, 0, 0, 0, 0),
+        'veil_left': (-0.025, 0, 0, 0, 0, 0),
         'jaw': (0.14, 0, 0, 0, 0, 0),
         'right_brow': (0, 0, 0.06, 0, 0, 0),
+        'left_arm': (-0.08, 0, 0, 0, 0, 0),
+        'right_arm': (-0.833, -0.199, 0.045, 0, 0, 0),
+        'right_forearm': (1.695, 0.641, 0, 0, 0, 0),
+        'right_hand': (-1.440, -0.522, 0.240, 0, 0, 0),
+        'right_index': (-0.5236, 0, 0, 0, 0, 0),
+        'pen': (2.736, -0.001, 0.007, 2.04, -4.47, -0.59),
     },
 }
 
-ANIM_NOTES = """(placeholder)"""
+ANIM_NOTES = """
+La Madre Remedios -- animation contract.  Angles in radians, ADDED to the rest pose; offsets (dx, dy, dz) in model
+texels at 2x density (inside scale_root: 2 texels = 1 vanilla pixel), in the PARENT bone's space.  t = ageInTicks.
+Poses (exported as POSE_WRITE / POSE_STARE / POSE_POINT): write, stare, point -- every value quoted below is the one
+in the POSES table.
+
+CHARACTER: a static apparition.  She NEVER walks, bobs or floats: the hem stays on the floor and the column stays
+rigid.  All motion is small, slow and deliberate (max ~0.05 rad/tick) -- EXCEPT that she is always already facing
+you: while the player is not looking at her, snap body yRot to face the player in one tick (statue logic).
+
+RENDER: entityTranslucent; alpha is baked into the texture (habit 210, capelet 238, sleeves 250, veil 246, linen 238,
+skin 252, ledger 238, metal 232, pen / lenses / mouth 255).  The habit FADES to alpha 110 over the last 8 texels above the
+floor (core, skirt panels, scapular, hem step) and the back veil thins to ~190 at its pointed hem: she rises out of
+the floor instead of standing on it -- do not add a shadow under her.  Multiply a cold tint (0.86, 0.93, 1.0).  The
+'eyes' layer (the two lenses: hot white core, slightly dimmer cold ring) renders full-bright on top; pulse its
+alpha 0.85..1.0 with sin(t*0.05) and spike to 1.0 on every "Aja.".  The right_brow block sits in front of the
+right lens, so that lens always glows as an angry crescent.
+APPEAR: global alpha 0 -> 1 over 8 ticks with a 2-tick flicker at 50 %; the skirt panels and veil wings flare out
+(+0.06) and settle over 10 ticks as if a door had opened.  VANISH: alpha 1 -> 0 over 6 ticks, eyes layer last.
+
+VEIL RULE (applies to every head pitch, posed or tracked).  h = the head's own xRot offset (pose + tracking; the
+chest's pitch does not count, the back veil and the head are both chest children).  Add
+    veil xRot = +0.15 * h          veil_right xRot = veil_left xRot = -0.5 * h
+The pose tables follow this rule.  Worked example: h = +0.30 (looking down) -> veil +0.045, wings -0.15; write
+(h = 0.24) -> veil +0.036, wings -0.12; stare (h = -0.2) -> veil -0.03, wings +0.10; point (h = 0.05) -> veil +0.008,
+wings -0.025.  Why these values (measured on the model over h = -0.3..+0.35): the back veil's top is tucked 4 texels
+up inside the head veil's nape at the height of the head pivot, so it only needs a small follow -- with +0.15*h it
+never sticks out behind the nape (0.0 texels) and never opens a gap; the old -0.35*h left a 0.8 gap at h = +0.35 and
++0.3*h pokes 1.1 texels out at h = -0.3.  The wings counter-rotate -0.5*h so their lower edge stays on the capelet
+(at most 0.7 texels of daylight instead of 3).
+
+ROOT
+* body -- root ON THE FLOOR (pivot 0, 24, 0): black core of the column, belt, the hem step (the hem pooled on the
+  floor, 29 x 2 x 21, fading out), the iron key ring and the three fanned iron keys at the left hip.  Rest never
+  moves.  Stare (-0.04 xRot, dy -0.42): the whole rigid column tips back like a statue rocking on the back
+  edge of its hem (the dy keeps that edge on the floor).  Statue snap: yRot jumps
+  to face the player while unobserved.  Keys: when the column snaps, no sound; when it appears, a single clink.
+* skirt_front / skirt_back / skirt_right / skirt_left -- the four stiff starched skirt panels standing on the hem
+  step (rest flare 2.5-3 deg; the front one carries the scapular).  Static; draught flutter xRot/zRot +=
+  sin(t*0.03 + k)*0.01 (k = 0..3); appear/vanish gust +0.06 outward (front: -x, back: +x, right: +z, left: -z),
+  ease back over 10 ticks.
+* rosary -- link into the belt, pewter beads to the knee, silver crucifix.  Pendulum lagging the body:
+  zRot = sin(t*0.06)*0.04; when the right arm snaps into 'point' give it an impulse zRot -0.15 decaying over 20
+  ticks (bead clicks on the impulse).
+
+TORSO
+* chest -- square block under the 35-wide rigid capelet, the big white bib and the black pectoral cross; carries
+  arms, head and the back veil.  Breathing xRot sin(t*0.05)*0.012 (barely).  Write +0.06 (leans over the ledger),
+  stare -0.06 (leans back), point yRot -0.12 (brings the right shoulder into the gesture).
+* veil -- the long starched back veil (21 wide, narrower than the shoulders) from under the nape to the hip, cut
+  in a pointed V with a pale rim; pivot at the point of the hem (0, 2, 9.1) so its top follows the head veil.  Idle
+  sway xRot sin(t*0.04)*0.01.  VEIL RULE: write +0.036, stare -0.03, point +0.008; appear/vanish +0.05 then settle.
+
+HEAD
+* head -- FOCUS bone: skull + face cubes (nose, cheekbones, jowls), white coif (forehead band, cheek plates, the
+  starched fold under the chin), black veil crown in two rounded steps (crown, roof, crest) + nape.  Tracks the
+  player: yaw clamp +-0.6, pitch clamp -0.3..0.35, slow (0.04 rad/tick), always with the VEIL RULE.  "Aja." beat:
+  dip xRot +0.1 and back over 6 ticks while the pen ticks the ledger.  Write (0.24, -0.1, 0.03) looks down into the
+  ledger; stare (-0.2, 0, 0.05) chin up with a disdainful tilt; point (0.05, 0.12, 0) leans into the accusation and
+  cancels the chest's yaw so the face stays on the player.  Roll call: between names turn yaw towards each empty
+  desk.
+* right_brow -- the furrowed right brow (tapered, cut-out block: grey hairs thickening to a knot by the nose over a
+  flesh ridge) in front of the right lens, rest zRot 27 deg.  Idle: nothing.  On every "Aja." and in stare / point:
+  zRot +0.06 (deeper scowl, the lens crescent narrows).  Surprise (player answers "presente"): zRot -0.15 for 10
+  ticks.
+* glasses -- round steel spectacles: 1-texel steel rims with one glint, bridge, short temples tucking under the
+  coif, opaque glowing lenses (emissive 'eyes' layer).  Static; signature gesture in stare: pushed up the nose,
+  dy -0.6 (table value) -- animate it 8 ticks up in sync with right_index touching the bridge, hold, back over 4.
+* jaw -- the narrow hinge jaw between the jowls: lower lip + chin (hinge 0, -31, 2).  Rest closed (one thin pressed
+  line).  Voice-driven: xRot = amp*0.18 (max 0.2).  "Aja." = two short opens (0.1, then 0.06).  "Usted." = one 0.14
+  open; point holds 0.14.  "Silencio." = three.
+* veil_right / veil_left -- the black veil wings dropping straight down beside the coif onto the capelet (pivots at
+  the crown, rest 0) -- they keep the head narrower than the shoulders.  VEIL RULE (write -0.12, stare +0.10, point
+  -0.025); appear/vanish flare zRot -+0.08 and settle.
+
+ARMS -- right_* is -X (viewer's left).  Rest: the right elbow out at the side, the fist raised to the chest holding
+the pen upright, nib 4 texels over the right-hand page; the left forearm cradles the ledger, the left hand grips its
+outer edge.
+* right_arm -- pen arm, upper sleeve under the capelet (pivot at the shoulder).  Idle static.  Write (0.169, 0.066,
+  -0.063); stare (-0.52, -0.182, -0.005) brings the elbow forward under the bib; point (-0.833, -0.199, 0.045)
+  raises it to shoulder height, aimed at the player.
+* right_forearm -- forearm + bell cuff + white undercuff.  Write (0.025, 0.067) brings the nib down; stare (0.018,
+  -0.213) up to the chin; point (1.695, 0.641) straightens the elbow (the forearm lines up with the upper arm).
+* right_hand -- fist holding the pen.  Idle: taps the nib towards the ledger every 80-140 ticks (xRot +0.12 for 3
+  ticks).  Write (0.003, 0.138, 0.03): the nib's lowest edge rests ON the right-hand page (checked numerically, <
+  0.05 texel); stare (0.708, -2.753, -1.41) turns the fist under the chin so the index finger rises along the nose
+  to the bridge; point (-1.44, -0.522, 0.24): knuckles up, thumb in, the finger dead ahead -- world direction
+  (0.10, -0.10, -0.99), 6 deg up towards the player's eyes and 6 deg in, tip 39 texels in front of her at
+  shoulder height.  Blend these in body-relative order (arm, forearm, hand) over the pose's blend time.
+* right_index -- long index finger (2 x 8) lying along the top of the pen at rest (xRot PEN_TILT 30 deg).  Stare
+  and point -0.5236 (dead straight).  Running player ("En el colegio se camina."): finger wag zRot sin(t*0.9)*0.25
+  for 20 ticks on top of point.
+* pen -- big black-lacquer fountain pen, gold bands and clip, gold nib with a red tip.  Write: scribble on top of
+  the pose -- xRot += sin(t*1.2)*0.05, zRot += cos(t*1.2)*0.04 (2-3 strokes, then a firm tick: xRot +0.08 for 2
+  ticks).  Stare (2.333, -0.207, -0.613, -1.0, -3.26, 1.37) and point (2.736, -0.001, 0.007, 2.04, -4.47, -0.59):
+  flipped back along the inside of the wrist and laid down the forearm, cap in the fist, nib hidden in the sleeve --
+  so the finger is the only spike.  When snapping into point, flip the pen in the first 2 ticks (a pen twirl).
+* left_arm -- book arm, upper sleeve under the capelet.  Static.  Point -0.08 (keeps the ledger off the belt while
+  the chest turns).
+* left_forearm -- forearm + cuff under the ledger (the cuff stays under the boards).  Write -0.1 lifts the book
+  towards her; roll call: same.
+* left_hand -- hand gripping the outer edge of the ledger (palm, curled fingers, thumb).  Static.
+
+LEDGER
+* book -- the open libro de actas (oxblood boards with hand-placed scuffs and dark worn edges, brass corner caps,
+  gilt title plate, banded spine, ruled pages of names with bold red checks, red ribbon).  Rest tipped ~24 deg
+  TOWARDS the viewer and rolled 10 deg out past the left hip (its brass corner breaks the front outline), so both
+  pages read from 3-5 blocks.  Write -0.36 (tipped back flat for writing).  On "Aja." a tiny settle +0.03 after the
+  tick.
+* book_page -- a loose leaf with a big red X lying on the left-hand pages; pivot on the spine.  PAGE TURN: zRot
+  0 -> -3.03 over 10 ticks (ease in-out), then snap back to 0 out of sight (or on the next turn).  Turn one page per
+  "Aja." and between roll-call names.
+
+LAYERING
+idle = (almost nothing) breathing + eyes pulse + occasional pen tap + statue snap.  'write' blends in over 6 ticks
+and loops the pen scribble with head dips on every "Aja.".  'stare' over 10 ticks (glasses push with the finger).
+'point' snaps in over 3 ticks (fast, it is the scare) and holds while she says "Usted.", then eases out over 12.
+"""
