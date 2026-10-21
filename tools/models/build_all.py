@@ -47,6 +47,12 @@ def build_one(key):
         li = m.paint(mat, layer=lay)
         li.save(os.path.join(TEX, f'{key}_{lay}.png'))
         li.save(os.path.join(PREV_TEX, f'{key}_{lay}.png'))
+    # extra looks (normal / possessed ...): <key>_<name>.png (+ _<layer>), picked in Java by variant index
+    variants = list(getattr(mod, 'VARIANT_MATS', {}).items())
+    for vname, vmat in variants[1:]:
+        m.paint(vmat).save(os.path.join(TEX, f'{key}_{vname}.png'))
+        for lay in layers:
+            m.paint(vmat, layer=lay).save(os.path.join(TEX, f'{key}_{vname}_{lay}.png'))
     m.haunt = True
     m.poses = getattr(mod, 'POSES', {}) or {}
     m.render_state = 'HauntRenderState'
@@ -59,7 +65,7 @@ def build_one(key):
     json.dump(data, open(os.path.join(PREV, key + '.json'), 'w'))
     top = min(c.origin[1] - c.inflate for b in m.bones() for c in b.cubes) if cubes else 24
     return {'key': key, 'class': m.java_class, 'bones': bones, 'cubes': cubes, 'tex': f'{m.tex_w}x{m.tex_h}',
-            'layers': layers, 'render_type': m.render_type, 'scale': m.scale, 'poses': list(m.poses),
+            'layers': layers, 'variants': [v for v, _ in variants], 'render_type': m.render_type, 'scale': m.scale, 'poses': list(m.poses),
             'bone_names': [b.name for b in m.bones()]}
 
 

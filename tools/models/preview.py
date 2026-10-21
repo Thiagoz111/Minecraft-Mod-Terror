@@ -2,7 +2,8 @@
 
     python3 tools/models/preview.py <key> [--pose spider]
 
-Expects tools/models/ent_<key>.py exposing build() -> Model and DEFAULT_MAT (fallback material),
+Expects tools/models/ent_<key>.py exposing build() -> Model and DEFAULT_MAT (fallback material); --variant <name> paints a
+look from VARIANT_MATS (calling build(variant=name) when the module accepts it),
 optionally POSES = {name: {bone: (xRot, yRot, zRot, dx, dy, dz)}} (radians / model units) and FOCUS = 'head'.
 Writes to <scratchpad>/models/<key>/: views.png, texture.png (8x, with face grid), texture_raw.png, layers.
 Prints cube count, texture size and output paths.
@@ -39,18 +40,28 @@ def texture_sheet(model, img, k=6):
 def main():
     key = sys.argv[1]
     pose_name = sys.argv[sys.argv.index('--pose') + 1] if '--pose' in sys.argv else None
+    variant = sys.argv[sys.argv.index('--variant') + 1] if '--variant' in sys.argv else None
     mod = importlib.import_module('ent_' + key)
-    model = mod.build().pack()
-    img = model.paint(getattr(mod, 'DEFAULT_MAT', None))
+    mat = getattr(mod, 'DEFAULT_MAT', None)
+    if variant:
+        # a look from VARIANT_MATS; build(variant=...) may show that look's toggle bones
+        mat = getattr(mod, 'VARIANT_MATS', {})[variant]
+        try:
+            model = mod.build(variant=variant).pack()
+        except TypeError:
+            model = mod.build().pack()
+    else:
+        model = mod.build().pack()
+    img = model.paint(mat)
     out = os.path.join(render.SP, 'models', key)
     os.makedirs(out, exist_ok=True)
     img.save(os.path.join(out, 'texture_raw.png'))
     texture_sheet(model, img).save(os.path.join(out, 'texture.png'))
     for lay in model.layers():
-        model.paint(getattr(mod, 'DEFAULT_MAT', None), layer=lay).save(os.path.join(out, f'layer_{lay}.png'))
+        model.paint(mat, layer=lay).save(os.path.join(out, f'layer_{lay}.png'))
     pose = getattr(mod, 'POSES', {}).get(pose_name) if pose_name else None
     focus = getattr(mod, 'FOCUS', 'head')
-    name = f'views_{pose_name}.png' if pose_name else 'views.png'
+    name = 'views' + (f'_{variant}' if variant else '') + (f'_{pose_name}' if pose_name else '') + '.png'
     render.render_views(model, img, os.path.join(out, name), focus_bone=focus, pose=pose)
     cubes = sum(len(b.cubes) for b in model.bones())
     print(f'{key}: {cubes} cubes, {sum(1 for _ in model.bones())} bones, texture {model.tex_w}x{model.tex_h}, scale {model.scale}')
