@@ -397,7 +397,7 @@ def smock_mat(ctx):
         if f == 'bottom' or (f != 'top' and y > WAIST + 0.05):
             return None                                 # buried in the waist band
         if f in ('west', 'east'):
-            rim_edge(ctx, 0.16)
+            rim_edge(ctx, 0.26)
         if f == 'top':
             r = max(abs(x) / 3.0, abs(z) / 3.0)
             if r < 1.0:
@@ -437,7 +437,7 @@ def smock_mat(ctx):
             c = pick(SMOCK, v)
             return mix(c, GRIME[1], 0.55) if f == 'bottom' else c
         u, j = ctx.i, ctx.j
-        rim_edge(ctx, 0.22)
+        rim_edge(ctx, 0.34)
         rows = PANEL_FRONT if which == 'front' else PANEL_BACK if which == 'back' else PANEL_SIDE
         ch = rows[j][u if which != 'left' else ctx.w - 1 - u]
         v = PANEL_V[ch] + face_light(ctx) * 0.8
@@ -454,7 +454,7 @@ def smock_mat(ctx):
             c = mix(c, GRIME[3] if j < h - 1 else GRIME[1], 0.25 + g * 0.45)
         return c
     elif t == 'sleeve':
-        rim_edge(ctx, 0.14)
+        rim_edge(ctx, 0.26)
         if ly < 1.0 and f != 'top':
             v -= 0.04
         if f in ('west', 'east'):
@@ -823,14 +823,18 @@ def strands(u, along, ctx, seed, clump=2.5, sheen=None, light=0.9, soft=1.0):
     return v
 
 
-def curls(ctx, a, b, seed=0):
-    """Corkscrew ringlets, hand-drawn: each ringlet is a 3-texel column of diagonal turns (bright crest, mid body,
-    dark underside) with a 1-px dark gap beside it; neighbouring ringlets twist the other way (mirrored glyph) and
-    start half a turn lower (fixed phase per column pair), so the cloud reads as springy S/Z spirals - not noise,
-    not brickwork.  Four clear values.  Returns a ramp value."""
+def curls(ctx, a, b, top=False):
+    """Corkscrew ringlets, hand-drawn: each ringlet is a 4-texel column of diagonal turns (bright crest, mid body,
+    dark underside) with a broken 1-px dark gap beside it; neighbouring ringlets twist the other way (mirrored glyph)
+    and start half a turn lower (fixed phase per column pair), so the cloud reads as springy S/Z spirals - not noise,
+    not brickwork.  Seen from above (top=True) the same ringlets are round coil heads on a staggered grid.  Four clear
+    values.  Returns a ramp value."""
     ai = int(math.floor(a + 1000.0)) - 1000
     col = ai // 5
     i = ai - col * 5
+    if top:
+        bi = int(math.floor(b + (col % 2) * 2 + 1000.0)) - 1000
+        return CURL_V[CURL_TOP[bi % 4][i]] + face_light(ctx) * 0.7
     if col % 2 and i < 4:
         i = 3 - i                                       # mirrored neighbour: S next to Z
     bi = int(math.floor(b + (col % 2) * 2 + 1000.0)) - 1000
@@ -840,9 +844,15 @@ def curls(ctx, a, b, seed=0):
 
 CURL_G = [
     "HMmdk",
-    "mHMmk",
+    "mHMmd",
     "dmHMk",
-    "kdmHk",
+    "kdmHd",
+]
+CURL_TOP = [
+    "mHHmd",
+    "HMMmk",
+    "mMmdk",
+    "kddkd",
 ]
 CURL_V = {'k': 0.2, 'd': 0.31, 'm': 0.42, 'M': 0.52, 'H': 0.66}
 
@@ -911,6 +921,14 @@ def shell_mat(ctx):
     w, h, d = c.size
     bottom = c.a0[1] + h                                # lowest y of this shell
     if f == 'front':
+        # behind the fringe plane: only the top row and the hair-covered outer columns are painted, so no light
+        # sliver can show between the plane and the shell when the head bows (the face stays open)
+        if getattr(c, 'part', '') != 'front':
+            return None
+        prof = FRONT_PROFILE[st]
+        jr = int(math.floor(y - c.a0[1]))
+        if jr == 0 or (ctx.i in (0, w - 1) and jr < prof[ctx.i] - 1):
+            return pick(P, 0.22)
         return None
     if f == 'bottom':
         if z < -7.0 or (-7.0 < x < 7.0 and z < 6.0):
@@ -935,14 +953,14 @@ def shell_mat(ctx):
             return None                                 # ragged hair tips along the lower edge
     seed = HAIRS.index(st) * 7 + {'top': 0, 'west': 1, 'east': 2, 'back': 3}[f]
     if f != 'top':
-        rim_edge(ctx, 0.07)
+        rim_edge(ctx, 0.12)
     if st == 'ofelia' and f in ('west', 'east') and -7.0 <= z < -5.0 and y < -12.0:
         return band_px(ctx, -0.1 if y > -13.0 else 0.0)  # the Alice band runs down behind the ears
     if st == 'ofelia' and f in ('west', 'east') and -7.0 <= z < -5.0 and y < -11.0:
         return pick(P, 0.12)                            # shadow under the band end
     if st == 'chela':
         if f == 'top':
-            v = curls(ctx, x, z)
+            v = curls(ctx, x, z, top=True)
         elif f in ('west', 'east'):
             v = curls(ctx, z + (37 if f == 'east' else 0), y)
         else:
@@ -1057,9 +1075,9 @@ def front_mat(ctx):
         return pick(P, v)
     if st == 'ofelia':
         if j == 0:
-            return band_px(ctx, 0.04)                   # the Alice band: one row on the front
+            return pick(P, 0.12)                        # behind the band cube
         if j == 1:
-            return pick(P, 0.1)                         # its shadow on the hair
+            return pick(P, 0.1)                         # the band's shadow on the hair
         if abs(k - mid) < 0.6 and j < 4:
             return mix(pick(P, 0.6), SCALP, 0.4)
         u = k + (j * 0.6 if k < mid else -j * 0.6)
@@ -1132,7 +1150,7 @@ def hairbit_mat(ctx):
             a, b = z + (37 if f == 'east' else 0), y
         if t == 'tube':
             a, b = (lx if f in ('front', 'back', 'top') else lz) + cseed(ctx) % 4, ly + (lz if f == 'top' else 0)
-        v = curls(ctx, a, b) - clamp((y + 8.0) / 6.0) * 0.12
+        v = curls(ctx, a, b, top=(f == 'top' and t == 'clump')) - clamp((y + 8.0) / 6.0) * 0.12
         rim_edge(ctx, 0.1)
         return pick(P, v)
     if t == 'lobe':
@@ -1262,8 +1280,13 @@ def ribbon_mat(ctx):
         if f in ('west', 'east'):
             return pick(P, 0.5)
         if f == 'bottom':
-            return None
-        return pick(P, 0.42)                            # front / back edge
+            return pick(P, 0.14)
+        if f == 'front':
+            v = 0.62 + face_light(ctx) * 0.6
+            if (ctx.i * 3) % 11 == 0:
+                v += 0.08                               # satin sheen flecks
+            return pick(P, v)
+        return pick(P, 0.42)                            # back edge
     return pick(P, v)
 
 
@@ -1455,10 +1478,10 @@ def build(show=None):
     lobe('rocio', P, 7)
     box('hair_rocio', (-2, -22.2, 3.2), (4, 3, 3), mat=ribbon_mat, name='scrunchie', inflate=0.3, style='rocio',
         pal=MAROON)
-    bone('rocio_tail', (0, -21.0, 5.5), parent='hair_rocio', rot=(108, 0, 0), mat=hairbit_mat)
-    box('rocio_tail', (-2, -21.0, 4.0), (4, 7, 3), name='tail', style='rocio', pal=P)
-    bone('rocio_tail_tip', (0, -14.6, 5.5), parent='rocio_tail', rot=(-92, 0, 0), mat=hairbit_mat)
-    box('rocio_tail_tip', (-1.5, -14.9, 4.3), (3, 10, 3), name='tail_tip', style='rocio', pal=P)
+    bone('rocio_tail', (0, -21.0, 5.5), parent='hair_rocio', rot=(96, 0, 0), mat=hairbit_mat)
+    box('rocio_tail', (-2, -21.0, 4.0), (4, 6, 3), name='tail', style='rocio', pal=P)
+    bone('rocio_tail_tip', (0, -15.6, 5.5), parent='rocio_tail', rot=(-84, 0, 0), mat=hairbit_mat)
+    box('rocio_tail_tip', (-1.5, -15.9, 4.3), (3, 11, 3), name='tail_tip', style='rocio', pal=P)
 
     # Chela: a big cloud of tight ringlets
     P = CHESTNUT
@@ -1488,7 +1511,7 @@ def build(show=None):
     shell('ofelia', P, (-8.5, -20, -8), (17, 17, 15))
     front('ofelia', P, (-8.5, -20, -8.05), (17, 17, 0))
     lobe('ofelia', P, 7)
-    box('hair_ofelia', (-8.5, -20, -7), (17, 1, 2), mat=ribbon_mat, name='band', inflate=0.3, style='ofelia',
+    box('hair_ofelia', (-8.5, -20, -8.2), (17, 1, 3), mat=ribbon_mat, name='band', inflate=0.18, style='ofelia',
         pal=BAND)
     box('hair_ofelia', (-8.5, -6, -6.5), (3, 13, 2), mat=hairbit_mat, name='lock', style='ofelia', pal=P)
     box('hair_ofelia', (5.5, -6, -6.5), (3, 13, 2), mat=hairbit_mat, name='lock', style='ofelia', pal=P)
@@ -1549,9 +1572,9 @@ POSES = {
     # at the desk: knees at 90 degrees, skirt draped on the lap, hands folded on the desk top, head tilted
     'sit_desk': {'body': (0, 0, 0, 0, 6, 0), 'right_leg': (-1.57, 0.08, 0, 0, 0, 0),
                 'right_shin': (1.57, 0, 0, 0, 0, 0), 'left_leg': (-1.57, -0.08, 0, 0, 0, 0),
-                'left_shin': (1.57, 0, 0, 0, 0, 0), 'skirt_front': (-1.2, 0, 0, 0, 0.2, 3.0),
-                'skirt_back': (-1.274, 0, 0, 0, 0, 0), 'skirt_right': (0, 0, 0.73, 0, 0, 0),
-                'skirt_left': (0, 0, -0.73, 0, 0, 0), 'right_arm': (-0.363, 0.32, -0.311, 0, 0, 0),
+                'left_shin': (1.57, 0, 0, 0, 0, 0), 'skirt_front': (-1.22, 0, 0, 0, 0.0, 4.5),
+                'skirt_back': (-1.274, 0, 0, 0, 0, 0), 'skirt_right': (0, 0, 0.2, 0, 0, 0),
+                'skirt_left': (0, 0, -0.2, 0, 0, 0), 'right_arm': (-0.363, 0.32, -0.311, 0, 0, 0),
                 'right_forearm': (-0.531, 0, -1.156, 0, 0, 0), 'right_hand': (0.563, 0.412, -0.257, 0, 0, 0),
                 'left_arm': (-0.351, -0.228, 0.268, 0, 0, 0), 'left_forearm': (-0.626, 0, 1.128, 0, 0, 0),
                 'left_hand': (0.552, -0.456, 0.254, 0, 0, 0), 'head': (0.05, 0, 0.18, 0, 0, 0)},

@@ -2,7 +2,7 @@
 
 Authored at 2x texel density (model.scale = 0.5).  +Y down, ground y = 24, faces -Z, right_* on -X.  Centred on
 x = 0, z = 0 (only the ledger and the pen arm project forward).  Height 2.3 blocks: veil roof y = -50 -> hem y = 24
-(74 texels).  71 cubes, 24 bones, 256 x 192 texture.
+(74 texels).  68 cubes, 24 bones, 256 x 192 texture.
 
 Design
 ------
@@ -263,7 +263,7 @@ def habit_mat(ctx):
     if side and t in ('panel', 'scap') and ly < 2.5:
         v -= 0.1 - ly * 0.03                                # occlusion under the belt
     if rim:
-        v = max(v, 0.62) + 0.14
+        v = max(v, 0.62) + 0.2
     c = pick(HABIT, v)
     if side and v > 0.6:
         c = mix(c, hx('#5d6b8a'), 0.2)                      # cold sheen on the lit ridges and rims
@@ -435,7 +435,7 @@ def skin_mat(ctx):
                 return A(BROW[2] if ctx.i < 2 else BROW[1], A_SKIN)     # grey hairs, the tail catches light
             return A(BROW[0], A_SKIN)
         if f == 'top':
-            return A(pick(SKIN, 0.8 if lz < 1 else 0.7), A_SKIN)
+            return A(BROW[2] if lz < 1 else (BROW[1] if lz < 2 else pick(SKIN, 0.72)), A_SKIN)   # bushy brow
         if f == 'bottom':
             return A(pick(SKIN, 0.22), A_SKIN)
         return A(pick(SKIN, 0.5), A_SKIN)
@@ -978,7 +978,7 @@ def build():
 
     # the furrowed right brow: a block cutting diagonally across the top of the right lens
     B.bone('right_brow', (-1.5, -36.8, -7.6), parent='head', rot=(0, 0, 27), mat=skin_mat)
-    lbox('right_brow', (-7.5, -1, -1.6), (8, 2, 3), name='brow_r')
+    lbox('right_brow', (-7.5, -1, -1.1), (8, 2, 3), name='brow_r')
 
     B.bone('glasses', (0, -36.5, -8.25), parent='head', mat=glasses_mat)
     box('glasses', (-8.5, -40, -8.25), (17, 7, 0), name='glasses',
@@ -1072,8 +1072,11 @@ POSES = {
     # of the bottom of the fist like a dagger; mouth open on the word
     'point': {
         'chest': (0, -0.12, 0, 0, 0, 0),
-        'left_arm': (0, 0.12, 0, 0, 0, 0),
+        'left_arm': (-0.08, 0, 0, 0, 0, 0),
         'head': (-0.12, -0.08, 0, 0, 0, 0),
+        'veil': (-0.04, 0, 0, 0, 0, 0),
+        'veil_right': (0.04, 0, 0, 0, 0, 0),
+        'veil_left': (0.04, 0, 0, 0, 0, 0),
         'jaw': (0.12, 0, 0, 0, 0, 0),
         'right_brow': (0, 0, 0.06, 0, 0, 0),
         'right_arm': (-1.291, 0.013, 0.097, 0, 0, 0),
@@ -1084,4 +1087,96 @@ POSES = {
     },
 }
 
-ANIM_NOTES = ""
+ANIM_NOTES = """
+La Madre Remedios -- animation contract.  Angles in radians, ADDED to the rest pose; offsets (dx, dy, dz) in model
+texels at 2x density (inside scale_root: 2 texels = 1 vanilla pixel), in the PARENT bone's space.  t = ageInTicks.
+Poses (exported as POSE_WRITE / POSE_STARE / POSE_POINT): write, stare, point -- every value quoted below is the one
+in the POSES table.
+
+CHARACTER: a static apparition.  She NEVER walks, bobs or floats: the hem stays on the floor and the column stays
+rigid.  All motion is small, slow and deliberate (max ~0.05 rad/tick) -- EXCEPT that she is always already facing
+you: while the player is not looking at her, snap body yRot to face the player in one tick (statue logic).
+
+RENDER: entityTranslucent; alpha is baked into the texture (habit 210, veil 246, linen 238, skin 252, ledger 238,
+metal 232, pen / lenses / mouth 255).  Multiply a cold tint (0.86, 0.93, 1.0).  The 'eyes' layer (the two lenses)
+renders full-bright on top; pulse its alpha 0.85..1.0 with sin(t*0.05) and spike to 1.0 on every "Aja.".  The
+right_brow block sits in front of the right lens, so that lens always glows as an angry crescent.
+APPEAR: global alpha 0 -> 1 over 8 ticks with a 2-tick flicker at 50 %; the skirt panels and veil wings flare out
+(+0.06) and settle over 10 ticks as if a door had opened.  VANISH: alpha 1 -> 0 over 6 ticks, eyes layer last.
+
+VEIL RULE (applies to every head pitch, posed or tracked): the head veil (crown, roof, nape, wings) is head-owned
+and the long back veil is chest-owned, pivoted at its hem.  Whenever head xRot changes by h (total, incl. chest
+pitch), add  veil xRot = -0.35*h  and  veil_right / veil_left xRot = -0.35*h  so the back veil follows the nape and the
+wings stay on the capelet (no daylight between head veil and back veil).  The pose tables already contain this.
+
+ROOT
+* body -- root ON THE FLOOR (pivot 0, 24, 0): black core of the column, belt, ring of three iron keys on the left
+  hip.  Rest never moves.  Stare -0.04 xRot: the whole rigid column tips back from the hem like a statue.  Statue
+  snap: yRot jumps to face the player while unobserved.
+* skirt_front / skirt_back / skirt_right / skirt_left -- the four stiff starched skirt panels (rest flare 2.5-3
+  deg; the front one carries the scapular).  Static; draught flutter xRot/zRot += sin(t*0.03 + k)*0.01 (k = 0..3);
+  appear/vanish gust +0.06 outward (front: -x, back: +x, right: +z, left: -z), ease back over 10 ticks.
+* rosary -- link into the belt, pewter beads to the knee, silver crucifix.  Pendulum lagging the body:
+  zRot = sin(t*0.06)*0.04; when the right arm snaps into 'point' give it an impulse zRot -0.15 decaying over 20
+  ticks (bead clicks on the impulse).
+
+TORSO
+* chest -- square block under the rigid capelet, the big white bib and the black pectoral cross; carries arms,
+  head and the back veil.  Breathing xRot sin(t*0.05)*0.012 (barely).  Write +0.06 (leans over the ledger), stare
+  -0.06 (leans back), point yRot -0.12 (brings the right shoulder into the gesture).
+* veil -- the long starched back veil lying on the capelet and the back, pivot at its hem (0, -5, 5.8) so its top
+  follows the head veil.  Idle sway xRot sin(t*0.04)*0.01.  Write +0.09 (top forward with the bowed head), stare
+  -0.07, point -0.04 (VEIL RULE); appear/vanish +0.05 then settle.
+
+HEAD
+* head -- FOCUS bone: skull + face cubes (nose, raised left brow, cheekbones, jowls), white coif (band, cheek
+  plates, chin wrap), black veil crown + roof + nape.  Tracks the player: yaw clamp +-0.6, pitch clamp -0.3..0.35,
+  slow (0.04 rad/tick), always with the VEIL RULE.  "Aja." beat: dip xRot +0.1 and back over 6 ticks while the pen
+  ticks the ledger.  Write (0.24, -0.1, 0.03) looks down into the ledger; stare (-0.2, 0, 0.05) chin up with a
+  disdainful tilt; point (-0.12, -0.08, 0).  Roll call: between names turn yaw towards each empty desk.
+* right_brow -- the furrowed right brow block in front of the right lens (rest zRot 27 deg).  Idle: nothing.  On
+  every "Aja." and in stare / point: zRot +0.06 (deeper scowl, the lens crescent narrows).  Surprise (player
+  answers "presente"): zRot -0.15 for 10 ticks.
+* glasses -- round steel spectacles with temples and the opaque glowing lenses (emissive 'eyes' layer).  Static;
+  signature gesture in stare: pushed up the nose, dy -0.6 (table value) -- animate it 8 ticks up, hold, back over 4
+  (sync a small right_hand lift).
+* jaw -- the narrow hinge jaw between the jowls: lower lip + chin (hinge 0, -31, 2).  Rest closed (one thin pressed
+  line).  Voice-driven: xRot = amp*0.18 (max 0.2).  "Aja." = two short opens (0.1, then 0.06).  "Usted." = one 0.14
+  open; point holds 0.12.  "Silencio." = three.
+* veil_right / veil_left -- the black veil wings falling over the coif onto the capelet (rest zRot -+6 deg
+  outwards, pivots at the crown).  Follow the head with the VEIL RULE (write -0.1, stare +0.08, point +0.04);
+  appear/vanish flare zRot -+0.08 and settle.
+
+ARMS -- right_* is -X (viewer's left).  Rest: the right forearm is raised with the pen poised 1.5 texels over the
+right-hand page; the left forearm cradles the ledger.
+* right_arm -- pen arm, upper sleeve under the capelet (pivot at the shoulder).  Idle static.  Write (0.05, 0.046,
+  -0.01); point (-1.291, 0.013, 0.097) raises it out towards the player.
+* right_forearm -- forearm + bell cuff + white undercuff.  Write (-0.199, 0.122) brings the nib down onto the page;
+  point (1.859, 0.517) straightens the elbow; stare +0.12 lowers the pen a little.
+* right_hand -- fist holding the pen.  Idle: taps the nib on the ledger every 80-140 ticks (xRot +0.12 for 3 ticks).
+  Write (-0.03, 0.437, -0.114): the nib's lowest edge rests ON the right-hand page (checked numerically, < 0.1
+  texel); point (-0.602, 0.396, 1.039) bends the wrist so the finger shows from the front.
+* right_index -- chunky index finger lying along the top of the pen.  Point -0.524 (dead straight, out of the fist).
+  Running player ("En el colegio se camina."): finger wag zRot sin(t*0.9)*0.25 for 20 ticks on top of point.
+* pen -- big black-lacquer fountain pen, gold bands and clip, gold nib with a red tip.  Write: scribble on top of
+  the pose -- xRot += sin(t*1.2)*0.05, zRot += cos(t*1.2)*0.04 (2-3 strokes, then a firm tick: xRot +0.08 for 2
+  ticks).  Point +1.222: swung down out of the bottom of the fist like a dagger so the finger is the longest thing.
+* left_arm -- book arm, upper sleeve under the capelet.  Static.  Point -0.08 (keeps the ledger off the belt while
+  the chest turns).
+* left_forearm -- forearm + cuff carrying the ledger at the waist.  Write -0.1 lifts the book towards her; roll
+  call: same.
+* left_hand -- hand clasped round the outer board of the ledger (palm, curled fingers, thumb).  Static.
+
+LEDGER
+* book -- the open libro de actas (oxblood boards, brass corner caps, gilt title plate, banded spine, ruled pages
+  of names with bold red checks, red ribbon).  Rest tipped ~24 deg TOWARDS the viewer so both pages read from 3-5
+  blocks.  Write -0.36 (tipped back flat for writing).  On "Aja." a tiny settle +0.03 after the tick.
+* book_page -- a loose leaf with a big red X lying on the left-hand pages; pivot on the spine.  PAGE TURN: zRot
+  0 -> -3.03 over 10 ticks (ease in-out), then snap back to 0 out of sight (or on the next turn).  Turn one page per
+  "Aja." and between roll-call names.
+
+LAYERING
+idle = (almost nothing) breathing + eyes pulse + occasional pen tap + statue snap.  'write' blends in over 6 ticks
+and loops the pen scribble with head dips on every "Aja.".  'stare' over 10 ticks (glasses push).  'point' snaps in
+over 3 ticks (fast, it is the scare) and holds while she says "Usted.", then eases out over 12.
+"""

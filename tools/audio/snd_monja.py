@@ -417,7 +417,9 @@ def whisperize(x, seed, smooth_bins=10, hf_db=4.0):
 def small_bell_ir(prime, dur, seed):
     """Small brass hand-bell: church-bell partial ratios (minor-third tierce), every mode a beating doublet."""
     r = dsp.rng(seed)
-    parts = [(0.5, 3.2, 0.07), (1.0, 4.5, 0.55), (1.19, 5.5, 0.38), (1.5, 6.5, 0.22), (2.0, 6.0, 1.0),
+    # QA: hum (0.5) lowered and damped faster: at 0.07 / 3.2 s^-1 it was the loudest line in the ring (the clapper's
+    # soft contact favours low modes), which made the "campanita" read as a much bigger, lower bell.
+    parts = [(0.5, 6.0, 0.025), (1.0, 4.5, 0.55), (1.19, 5.5, 0.38), (1.5, 6.5, 0.22), (2.0, 6.0, 1.0),
              (2.52, 9.0, 0.42), (2.67, 10.0, 0.3), (3.02, 12.0, 0.3), (4.08, 17.0, 0.18), (5.32, 24.0, 0.1),
              (6.7, 32.0, 0.05)]
     modes = []
@@ -432,7 +434,9 @@ def campanita():
     n = N(1.05)
     prime = 1290.0
     out = np.zeros(n, np.float32)
-    strikes = [(0.0, 0.5, 0.0007), (0.085, 1.0, 0.00028), (0.43, 0.45, 0.0007), (0.512, 0.92, 0.0003)]
+    # QA: the soft "ti" strikes used a 0.7 ms contact, whose spectral null sat on the 2.6 kHz nominal, so they came
+    # out ~20 dB under the "LIN" and the bell read as two plain dings. A short contact for every strike, softer "ti".
+    strikes = [(0.0, 0.42, 0.00034), (0.085, 1.0, 0.00028), (0.43, 0.38, 0.00036), (0.512, 0.92, 0.0003)]
     exc = np.zeros(n, np.float32)
     clk = np.zeros(n, np.float32)
     for i, (t, a, contact) in enumerate(strikes):
@@ -456,11 +460,15 @@ def palm_tap(seed, amp=1.0, bright=1.0):
     slap = bp(white(n, seed), 500, 4500) * np.exp(-t / 0.006) * np.minimum(1, t / 0.0006)
     exc = np.zeros(n, np.float32)
     exc[:N(0.0012)] = half_sine(0.0012)
-    wood = excite(exc, detune([(980, 55, 1.0), (2380, 85, 0.6), (3900, 120, 0.4), (5700, 170, 0.25)], r, 0.04),
+    # QA: hard quebracho is heavily damped; the old 55/s first mode left a pitched 1 kHz "tink" ringing through the
+    # whole hallway tail. Faster modes, plus a mid-band palm "thwack" so the tac has body at a distance.
+    wood = excite(exc, detune([(980, 110, 1.0), (2380, 150, 0.6), (3900, 200, 0.4), (5700, 260, 0.25)], r, 0.04),
                   0.2)[:n]
     thud = dsp.lowpass(white(n, seed + 1), 380, 2) * np.exp(-t / 0.018) * np.minimum(1, t / 0.0015)
-    y += 0.9 * norm(slap) + 0.6 * bright * norm(wood) + 0.32 * norm(thud)
+    thwack = bp(white(n, seed + 3), 250, 1100) * np.exp(-t / 0.012) * np.minimum(1, t / 0.0008)
+    y += 0.9 * norm(slap) + 0.6 * bright * norm(wood) + 0.32 * norm(thud) + 0.3 * norm(thwack)
     y = dsp.highpass(y, 110, 2)
+    y = dsp.drive(norm(y) * 1.7, 1.7)       # QA: tame the 1 ms spike so the tac carries at -4 dBFS peak
     swish = bp(white(N(0.14), seed + 2), 900, 3800) * np.linspace(0, 1, N(0.14)) ** 2
     out = np.zeros(N(0.14) + n, np.float32)
     out[:len(swish)] += 0.05 * norm(swish)
@@ -476,42 +484,49 @@ def regla_tap():
         add(out, x, t - pre)
     loop = out[:L].copy()
     loop[:len(out) - L] += out[L:]          # wrap the tail (loop-safe)
-    return verb(loop, 'pasillo', wet=0.22, seed=5, circular=True)
+    return verb(loop, 'pasillo', wet=0.17, seed=5, circular=True)
 
 
 # ====================================================================== 3. reglazo
 def reglazo():
-    n = N(1.25)
+    # QA: the game plays this on the same tick as the damage, red flash and camera shake (ColegioScript.reglazo),
+    # so the slap must land almost at once. The old 0.27 s wind-up put it ~0.2 s late; a quebracho ruler swung
+    # by a 2.7 m nun is a fast, short swish anyway.
+    n = N(1.05)
     out = np.zeros(n, np.float32)
-    ti = 0.27
-    # whoosh: the ruler swung through the air, rising band + thin edge whistle
-    nw = N(ti + 0.02)
+    ti = 0.085
+    # whoosh: the ruler swung through the air, rising band + thin edge whistle (Doppler-ish rise into the hit)
+    nw = N(ti + 0.012)
     tw = taxis(nw)
-    wenv = (tw / ti) ** 3
-    w = tv_filter(white(nw, 51), 'bp', 500 + 2600 * (tw / ti) ** 2, 48, 1.2) * wenv
-    whistle = np.sin(TWO_PI * np.cumsum(700 + 1500 * (tw / ti) ** 2) / SR) * wenv * (0.5 + 0.5 * grain(nw, 40, 52, 1))
-    add(out, norm(w) * 0.6 + norm(whistle) * 0.07, 0.0)
-    # impact: skin slap (broadband), wood crack, flesh/body thud
+    wenv = np.clip(tw / ti, 0, 1) ** 2.2
+    w = tv_filter(white(nw, 51), 'bp', 700 + 3200 * np.clip(tw / ti, 0, 1) ** 2, 24, 1.2) * wenv
+    whistle = np.sin(TWO_PI * np.cumsum(900 + 1700 * np.clip(tw / ti, 0, 1) ** 2) / SR) * wenv \
+        * (0.5 + 0.5 * grain(nw, 40, 52, 1))
+    add(out, norm(w) * 0.42 + norm(whistle) * 0.05, 0.0)
+    # impact: skin slap (broadband), meaty mid smack, wood crack (damped hardwood), flesh/body thud
     m = N(0.6)
     t = taxis(m)
     slap = bp(white(m, 53), 700, 9000, 2) * np.exp(-t / 0.009) * np.minimum(1, t / 0.0004)
     smack = bp(white(m, 54), 1600, 5000, 2) * np.exp(-t / 0.025)
+    meat = bp(white(m, 57), 260, 1200, 2) * np.exp(-t / 0.03) * np.minimum(1, t / 0.0008)
     exc = np.zeros(m, np.float32)
     exc[:N(0.0005)] = half_sine(0.0005)
     r = dsp.rng(55)
-    crack = excite(exc, detune([(1150, 40, 1.0), (2650, 60, 0.7), (4300, 90, 0.5), (6800, 140, 0.3)], r), 0.3)[:m]
-    thud = dsp.lowpass(white(m, 56), 320, 2) * np.exp(-t / 0.025) * np.minimum(1, t / 0.002)
-    body = np.sin(TWO_PI * 105 * t) * np.exp(-t / 0.022) * np.minimum(1, t / 0.002)
-    hit = norm(slap) * 1.0 + norm(smack) * 0.45 + norm(crack) * 0.5 + norm(thud) * 0.35 + norm(body) * 0.18
-    hit = dsp.drive(norm(hit) * 1.6, 1.8)
+    crack = excite(exc, detune([(1150, 120, 1.0), (2650, 160, 0.7), (4300, 220, 0.5), (6800, 300, 0.3)], r),
+                   0.3)[:m]
+    thud = dsp.lowpass(white(m, 56), 320, 2) * np.exp(-t / 0.03) * np.minimum(1, t / 0.002)
+    body = np.sin(TWO_PI * 105 * t) * np.exp(-t / 0.028) * np.minimum(1, t / 0.002)
+    hit = (norm(slap) * 1.0 + norm(smack) * 0.45 + norm(meat) * 0.5 + norm(crack) * 0.42 + norm(thud) * 0.45
+           + norm(body) * 0.25)
+    hit = dsp.drive(norm(hit) * 2.0, 2.0)
     add(out, hit, ti)
-    # the sting: a faint tinnitus ring + cloth
-    ring_n = N(0.95)
+    # the sting: a faint tinnitus ring in the struck ear
+    ring_n = N(0.8)
     tr = taxis(ring_n)
-    ring = np.sin(TWO_PI * 5600 * tr) * np.exp(-tr / 0.35) * np.minimum(1, tr / 0.05)
-    add(out, ring * 0.035, ti + 0.02)
+    ring = np.sin(TWO_PI * 5600 * tr) * np.exp(-tr / 0.25) * np.minimum(1, tr / 0.05)
+    add(out, ring * 0.03, ti + 0.02)
     out = verb(out, 'aula', wet=0.2, seed=9)
-    return out
+    return out[:N(1.05)] * env_pts(N(1.05), [(0, 1), (0.8, 1), (1.05, 0)])
 
 
 # ====================================================================== 4. shh
@@ -520,7 +535,9 @@ def shush_layer(n, seed, fc, env, flutter=0.25):
     y = dsp.highpass(y, fc * 0.6, 4)
     y = dsp.peak(y, fc, 10.0, 1.3)
     y = dsp.peak(y, fc * 1.9, 4.0, 1.5)
-    y = dsp.lowpass(y, 9500, 2)
+    # QA: /ʃ/ (not /s/): energy falls away above ~5 kHz. At 9.5 kHz the 6-10 kHz band sat only 3-6 dB under the
+    # 2.5 kHz peak, which reads as hiss or static rather than a mouth going SHHH.
+    y = dsp.lowpass(y, 5200, 2)
     turb = grain(n, 90, seed + 1, 1.0) ** 0.4
     sway = 1 + flutter * snoise(n, 1.3, seed + 2)
     return norm(y) * turb * sway * env
@@ -742,11 +759,21 @@ def mojada():
 def scream_core(n, f0_pts, amp, seed, choir=((7, 0.3), (-12, 0.32), (-5, 0.24), (1, 0.16)), demon=0.42,
                 demon_pts=((0, 95), (1.6, 78)), bright=0.45, rough=0.55):
     """Shriek: rough bright female scream + choir-like parallel voices + demonic undertone."""
+    # QA: with a smooth contour the fundamental drew one clean, steady line (a siren / synth "aah", not a throat
+    # tearing). Real screams wobble by several percent, and break into bursts of vocal-fold chaos (sub-harmonics,
+    # noise). The parallel choir voices ride on the same unstable f0.
     f0 = contour(n, f0_pts)
-    fr = ftrack(n, [(0, vowel('a', 1.18))])
+    f0 = f0 * (1 + 0.035 * snoise(n, 7, seed + 50) + 0.015 * snoise(n, 28, seed + 51))
+    chaos = np.clip(snoise(n, 4, seed + 52), 0, None) ** 2
+    f0 = f0 * (1 + 0.07 * chaos * snoise(n, 150, seed + 53))
+    fr = ftrack(n, [(0, vowel('a', 1.18)), (0.35, vowel('a', 1.18, mixwith='e', mix=0.35)),
+                    (0.8, vowel('a', 1.18)), (1.3, vowel('a', 1.18, mixwith='o', mix=0.25))], glide=0.25)
     main = vsynth(f0, fr, amp, tilt=bright, jitter=0.012, shimmer=0.12, rough=rough, rough_hz=95, sub=0.28,
                   breath=0.18, breath_hf=0.6, fmax=11000, seed=seed, f1_track=True)
-    y = norm(main)
+    torn = vsynth(f0, fr, amp, tilt=bright, jitter=0.03, shimmer=0.25, rough=rough * 2.6, rough_hz=110, sub=0.95,
+                  breath=0.4, breath_hf=0.8, fmax=11000, seed=seed + 60, f1_track=True)
+    ep = np.clip(0.2 + 1.4 * chaos, 0, 0.85)
+    y = (1 - ep) * norm(main) + ep * norm(torn)
     for k, (semi, g) in enumerate(choir):
         fk = f0 * 2 ** (semi / 12) * (1 + 0.006 * np.sin(TWO_PI * 5.8 * taxis(n) + k))
         vk = vsynth(fk, ftrack(n, [(0, vowel('a' if semi < 0 else 'o', 1.12))]), amp, tilt=0.95, jitter=0.006,
@@ -814,9 +841,12 @@ def death():
     whistle = np.sin(TWO_PI * np.cumsum(260 + 1700 * rise ** 3) / SR) * rise ** 4
     swell = norm(sw) * rise ** 1.2 + 0.6 * norm(vac) + 0.1 * whistle
     swell = dsp.drive(norm(swell) * 1.3, 1.4)
+    # QA: the swell used to end no louder than the scream (both ~-10 dB short-term) and the hand-over only dipped to
+    # -18 dB, so the "sucking" climax never arrived. Now the scream sits ~3 dB under, the hand-over drops to about
+    # -25 dB, and the reverse swell climbs ~20 dB to the loudest moment of the file, right at the cut.
     out = np.zeros(n, np.float32)
-    add(out, a * env_pts(na, [(0, 1), (1.45, 1), (1.9, 0)]), 0.0)
-    add(out, norm(swell) * 1.25 * env_pts(nb, [(0, 0), (1.2, 0.0), (1.6, 0.45), (2.4, 0.8), (cut, 1)]) ** 1.0,
+    add(out, 0.47 * a * env_pts(na, [(0, 1), (1.4, 1), (1.9, 0)]), 0.0)
+    add(out, norm(swell) * env_pts(nb, [(0, 0), (1.35, 0.0), (1.8, 0.14), (2.35, 0.36), (2.7, 0.75), (cut, 1)]),
         0.0)
     out[N(cut) - N(0.006):N(cut)] *= np.linspace(1, 0, N(0.006))
     out[N(cut):] = 0
@@ -831,24 +861,37 @@ def death():
 
 # ====================================================================== 10. hiss
 def hiss():
+    # QA: the first version was a flat 1.3 s band of noise (no visible spit, no articulation), which reads as
+    # static. Now: an explosive spit "KKH!", the hiss bursting out of it and decaying, a throat flutter you can
+    # see in the envelope, a second shorter push ("...hhKKHH") and the low growl.
     n = N(1.3)
-    env = env_pts(n, [(0, 0), (0.018, 1.0), (0.28, 0.9), (0.6, 0.6), (0.66, 0.85), (0.8, 0.45), (1.15, 0.05),
-                      (1.3, 0)])
+    env = env_pts(n, [(0, 0), (0.004, 0.0), (0.03, 1.0), (0.12, 0.8), (0.42, 0.55), (0.56, 0.3), (0.6, 0.28),
+                      (0.64, 0.85), (0.72, 0.6), (0.95, 0.25), (1.2, 0.0), (1.3, 0)])
     y = white(n, 251)
     y = dsp.highpass(y, 600, 2)
     y = dsp.peak(y, 1750, 12.0, 2.2)
     y = dsp.peak(y, 3400, 9.0, 2.5)
     y = dsp.peak(y, 5200, 4.0, 2.0)
     y = dsp.lowpass(y, 7000, 2)
-    rattle = np.clip(1 + 0.75 * snoise(n, 38, 252), 0.1, None)
-    h = norm(y) * env * rattle * (0.85 + 0.15 * grain(n, 300, 253, 1))
+    # big throat: a husky lower fricative band that a house cat does not have
+    husk = bp(white(n, 257), 500, 1600, 2)
+    # throat flutter: irregular ~30 Hz pulsing of the airflow (the rattle a big cat's hiss has)
+    rate = 28 + 6 * snoise(n, 2, 252)
+    flut = 0.5 + 0.5 * np.sin(TWO_PI * np.cumsum(rate) / SR)
+    rattle = 0.55 + 0.45 * flut ** 2 * np.clip(1 + 0.5 * snoise(n, 60, 258), 0, None)
+    h = (norm(y) + 0.35 * norm(husk)) * env * rattle * (0.85 + 0.15 * grain(n, 300, 253, 1))
+    # spits: a hard plosive burst (lips/teeth) with a click at the front, then the second, smaller one
     spit = np.zeros(n, np.float32)
-    add(spit, bp(burst(0.012, 254, 1.0), 500, 8000), 0.0, 1.0)
-    add(spit, bp(burst(0.01, 255, 1.0), 700, 8000), 0.62, 0.5)
-    ge = env_pts(n, [(0, 0), (0.03, 0.8), (0.5, 0.6), (0.9, 0.3), (1.2, 0)])
+    for t_s, g, sd, dur in ((0.004, 1.0, 254, 0.045), (0.6, 0.55, 255, 0.03)):
+        m = N(dur)
+        tm = taxis(m)
+        b = bp(white(m, sd), 600, 9000) * np.exp(-tm / (dur / 3.5)) * np.minimum(1, tm / 0.0008)
+        clk = dsp.highpass(burst(0.0015, sd + 7, 2.0), 2500, 2)
+        add(spit, norm(b) + 0.5 * fit(norm(clk), m), t_s, g)
+    ge = env_pts(n, [(0, 0), (0.05, 0.15), (0.16, 0.8), (0.5, 0.55), (0.62, 0.75), (0.9, 0.3), (1.2, 0)])
     growl = demon_layer(n, [(0, 66), (0.6, 58), (1.3, 52)], 256, scale=0.75, sub=0.7, rough=1.0, amp=ge)
     growl = bp(growl * ge, 70, 2200)
-    out = h + 0.9 * norm(spit) + 0.5 * norm(growl)
+    out = 0.62 * norm(h) + 1.0 * norm(spit) + 0.32 * norm(growl)
     out = verb(out, 'cocina', wet=0.14, seed=41)
     return out[:N(1.45)] * env_pts(N(1.45), [(0, 1), (1.25, 1), (1.45, 0)])
 
