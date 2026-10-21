@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "deadline:block/casa_maceta_malvones"
+  },
+  "facing=east": {
+   "model": "deadline:block/casa_maceta_malvones",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "deadline:block/casa_maceta_malvones",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "deadline:block/casa_maceta_malvones",
+   "y": 270
+  }
+ }
+}

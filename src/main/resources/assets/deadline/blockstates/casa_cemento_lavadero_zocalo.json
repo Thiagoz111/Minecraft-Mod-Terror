@@ -1,0 +1,18 @@
+{
+ "variants": {
+  "": [
+   {
+    "model": "deadline:block/casa_cemento_lavadero_zocalo_0"
+   },
+   {
+    "model": "deadline:block/casa_cemento_lavadero_zocalo_1"
+   },
+   {
+    "model": "deadline:block/casa_cemento_lavadero_zocalo_2"
+   },
+   {
+    "model": "deadline:block/casa_cemento_lavadero_zocalo_3"
+   }
+  ]
+ }
+}

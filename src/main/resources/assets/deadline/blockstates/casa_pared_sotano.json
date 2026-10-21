@@ -1,0 +1,36 @@
+{
+ "variants": {
+  "": [
+   {
+    "model": "deadline:block/casa_pared_sotano_0"
+   },
+   {
+    "model": "deadline:block/casa_pared_sotano_1"
+   },
+   {
+    "model": "deadline:block/casa_pared_sotano_2"
+   },
+   {
+    "model": "deadline:block/casa_pared_sotano_3"
+   },
+   {
+    "model": "deadline:block/casa_pared_sotano_4"
+   },
+   {
+    "model": "deadline:block/casa_pared_sotano_5"
+   },
+   {
+    "model": "deadline:block/casa_pared_sotano_6"
+   },
+   {
+    "model": "deadline:block/casa_pared_sotano_7"
+   },
+   {
+    "model": "deadline:block/casa_pared_sotano_8"
+   },
+   {
+    "model": "deadline:block/casa_pared_sotano_9"
+   }
+  ]
+ }
+}

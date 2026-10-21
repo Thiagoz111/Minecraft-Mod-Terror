@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "deadline:block/casa_tope"
+  },
+  "facing=east": {
+   "model": "deadline:block/casa_tope",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "deadline:block/casa_tope",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "deadline:block/casa_tope",
+   "y": 270
+  }
+ }
+}

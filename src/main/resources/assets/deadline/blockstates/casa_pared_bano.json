@@ -12,6 +12,24 @@
    },
    {
     "model": "deadline:block/casa_pared_bano_3"
+   },
+   {
+    "model": "deadline:block/casa_pared_bano_4"
+   },
+   {
+    "model": "deadline:block/casa_pared_bano_5"
+   },
+   {
+    "model": "deadline:block/casa_pared_bano_6"
+   },
+   {
+    "model": "deadline:block/casa_pared_bano_7"
+   },
+   {
+    "model": "deadline:block/casa_pared_bano_8"
+   },
+   {
+    "model": "deadline:block/casa_pared_bano_9"
    }
   ]
  }

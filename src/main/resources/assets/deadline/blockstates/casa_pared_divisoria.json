@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "deadline:block/casa_pared_divisoria"
+  },
+  "facing=east": {
+   "model": "deadline:block/casa_pared_divisoria",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "deadline:block/casa_pared_divisoria",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "deadline:block/casa_pared_divisoria",
+   "y": 270
+  }
+ }
+}

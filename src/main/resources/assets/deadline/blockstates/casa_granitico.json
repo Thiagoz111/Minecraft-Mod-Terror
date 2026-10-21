@@ -9,6 +9,15 @@
    },
    {
     "model": "deadline:block/casa_granitico_2"
+   },
+   {
+    "model": "deadline:block/casa_granitico_3"
+   },
+   {
+    "model": "deadline:block/casa_granitico_4"
+   },
+   {
+    "model": "deadline:block/casa_granitico_5"
    }
   ]
  }

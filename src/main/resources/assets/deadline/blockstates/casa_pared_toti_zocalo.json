@@ -6,6 +6,12 @@
    },
    {
     "model": "deadline:block/casa_pared_toti_zocalo_1"
+   },
+   {
+    "model": "deadline:block/casa_pared_toti_zocalo_2"
+   },
+   {
+    "model": "deadline:block/casa_pared_toti_zocalo_3"
    }
   ]
  }

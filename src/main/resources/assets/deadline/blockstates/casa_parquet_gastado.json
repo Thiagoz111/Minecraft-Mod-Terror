@@ -9,6 +9,27 @@
    },
    {
     "model": "deadline:block/casa_parquet_gastado_2"
+   },
+   {
+    "model": "deadline:block/casa_parquet_gastado_3"
+   },
+   {
+    "model": "deadline:block/casa_parquet_gastado_4"
+   },
+   {
+    "model": "deadline:block/casa_parquet_gastado_5"
+   },
+   {
+    "model": "deadline:block/casa_parquet_gastado_6"
+   },
+   {
+    "model": "deadline:block/casa_parquet_gastado_7"
+   },
+   {
+    "model": "deadline:block/casa_parquet_gastado_8"
+   },
+   {
+    "model": "deadline:block/casa_parquet_gastado_9"
    }
   ]
  }

@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "deadline:block/casa_almanaque"
+  },
+  "facing=east": {
+   "model": "deadline:block/casa_almanaque",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "deadline:block/casa_almanaque",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "deadline:block/casa_almanaque",
+   "y": 270
+  }
+ }
+}

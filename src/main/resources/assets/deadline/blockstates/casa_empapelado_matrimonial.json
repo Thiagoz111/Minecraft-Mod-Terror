@@ -9,6 +9,27 @@
    },
    {
     "model": "deadline:block/casa_empapelado_matrimonial_2"
+   },
+   {
+    "model": "deadline:block/casa_empapelado_matrimonial_3"
+   },
+   {
+    "model": "deadline:block/casa_empapelado_matrimonial_4"
+   },
+   {
+    "model": "deadline:block/casa_empapelado_matrimonial_5"
+   },
+   {
+    "model": "deadline:block/casa_empapelado_matrimonial_6"
+   },
+   {
+    "model": "deadline:block/casa_empapelado_matrimonial_7"
+   },
+   {
+    "model": "deadline:block/casa_empapelado_matrimonial_8"
+   },
+   {
+    "model": "deadline:block/casa_empapelado_matrimonial_9"
    }
   ]
  }

@@ -6,6 +6,24 @@
    },
    {
     "model": "deadline:block/casa_machimbre_1"
+   },
+   {
+    "model": "deadline:block/casa_machimbre_2"
+   },
+   {
+    "model": "deadline:block/casa_machimbre_3"
+   },
+   {
+    "model": "deadline:block/casa_machimbre_4"
+   },
+   {
+    "model": "deadline:block/casa_machimbre_5"
+   },
+   {
+    "model": "deadline:block/casa_machimbre_6"
+   },
+   {
+    "model": "deadline:block/casa_machimbre_7"
    }
   ]
  }

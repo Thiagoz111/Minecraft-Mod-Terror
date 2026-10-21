@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "deadline:block/casa_parrilla_chimenea"
+  },
+  "facing=east": {
+   "model": "deadline:block/casa_parrilla_chimenea",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "deadline:block/casa_parrilla_chimenea",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "deadline:block/casa_parrilla_chimenea",
+   "y": 270
+  }
+ }
+}

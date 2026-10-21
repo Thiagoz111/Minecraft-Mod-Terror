@@ -12,6 +12,24 @@
    },
    {
     "model": "deadline:block/casa_azulejo_celeste_3"
+   },
+   {
+    "model": "deadline:block/casa_azulejo_celeste_4"
+   },
+   {
+    "model": "deadline:block/casa_azulejo_celeste_5"
+   },
+   {
+    "model": "deadline:block/casa_azulejo_celeste_6"
+   },
+   {
+    "model": "deadline:block/casa_azulejo_celeste_7"
+   },
+   {
+    "model": "deadline:block/casa_azulejo_celeste_8"
+   },
+   {
+    "model": "deadline:block/casa_azulejo_celeste_9"
    }
   ]
  }

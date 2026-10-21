@@ -26,10 +26,14 @@ Face (front of a 1-texel skin plate, 14 x 15, read at 64 px): a big pale doll fo
 ends are raised (worried); upper-lid creases; two 4x4 sockets that are REAL holes in the plate: through them you
 see the skull front one texel deeper, painted from a dark grey ring to black with a 1-px glint that glows pale
 cyan (emissive 'eyes' layer); purple-grey dark circles; a lit nose bridge and a 1-px nose shadow; doll blush 2x1;
-and NO MOUTH: a faint philtrum (two 1-px soft shades) runs down from the nose into nothing, then one 6-px healed-over
-seam (SKIN[4]-ish, its ends dissolving - never dark end points) with a 1-px lit lip of fused skin under it: it reads
-as skin that grew shut, not as lips, from the 64-px full body down to the 512-px portrait.  In profile the skull
-side carries a lit cheekbone, a temple hollow and a mandible edge with shadow under it.  The 'jaw' bone holds the
+a short wide dome highlight on the forehead kept apart from the nose bridge by a soft glabella tone between the
+raised brow ends (no pale stripe pinching the face).  NO MOUTH: smooth skin under the nose (no philtrum), then an
+8-px healed-over seam across it - one flat SKIN[4] row whose ends dissolve over 2 px each side (never dark end
+points, no pinches), a row of taut skin above it and plain skin below: a scar across smooth skin where the lips
+grew together.  In profile the skull side carries a lit cheekbone, a temple hollow, a mandible edge with shadow
+under it and a soft diagonal shadow behind the jaw's back edge (no horizontal bars), and a 3 x 4 ear 1 texel proud
+of the skull: lit helix rim over the top and down the back, a C-shaped concha shadow inside it, a 1-px canal and
+the lobe (the pulled-back styles cut exactly that 3 x 4 window out of the shell side).  The 'jaw' bone holds the
 round singing "O" (a 4x4 zero-thickness plane: lips ring, black mouth); it is parked inside the skull and pose
 'freed' slides it onto the face at z = -7.1 (0.1 in front of the plate: never z-fights) when they get their voices
 back.
@@ -48,20 +52,26 @@ Hair (seven bone groups, exactly one visible per girl; Java toggles ModelPart.vi
                 and two long braids that fall over the shoulders onto the chest, faded sky-blue ribbon bows and brush
                 ends (the leader).
   hair_mecha    black bob with heavy blunt bangs down to the brows, hair curtains framing the cheeks.
-  hair_rocio    brown, combed back (every strand converging on the scrunchie) into a ponytail gathered at the back of
-                the crown by a maroon scrunchie; the tail leaves it at ~36 deg and falls in one tapered lock (4 -> 3 ->
-                2 wide, ragged tip) close behind the head; two loose strands at the temples.
-  hair_chela    chestnut, a big cloud of corkscrew ringlets (6-texel S/Z ringlet glyph: 2-px bright crest, dark core,
-                four values only - reads as spirals, not static, at full-body distance; round coil heads on top),
+  hair_rocio    brown, combed back (every strand converging on the scrunchie) into a HIGH ponytail gathered at the
+                back of the crown by a maroon scrunchie; the 4-wide root leaves it steeply (65 deg) and arcs ~5 texels
+                out behind the skull, then the tail falls (3 -> 2 wide, ragged tip) free behind the neck down to
+                between the shoulder blades, swung a little toward her left: a ponytail silhouette in profile, a lock
+                showing past the head in the front 3/4 view; two loose strands at the temples.
+  hair_chela    chestnut, a big cloud of corkscrew ringlets (7-texel tubes of short stacked coil turns: thin lit crest,
+                mid tone, black shadow under it, dark core, dark tube edges, rounded crest ends - reads as springy
+                spirals, not bark stripes or static, at full-body distance; round coil heads on top),
                 ringlet clumps on the sides/crown/back and four ringlet tubes turned 45 deg on the vertical corners so
                 the outline is bumpy and round; an even curly fringe (no forehead peeking through).
   hair_ofelia   blue-black, long and dead straight: centre parting, curtains beside the face, two locks over the
-                shoulders, a waist-long back curtain, and a deep maroon velvet Alice band across the crown 2 texels
+                shoulders, a waist-long back curtain (two 7-wide strands either side of the parting, ragged ends,
+                lying on her back down to the half-belt), and a deep maroon velvet Alice band across the crown 2 texels
                 behind the hairline (never wider than the head), its ends running down behind the ears.
   hair_anasofia dark brown, centre parting, two high pigtails with red elastics that stick out and droop.
   hair_lola     black pixie cut with a side-swept fringe and a huge crimson satin bow on the top-left of the head
                 (two wings tilted up ~15 deg toward their ends, 1-px lit rim, a dark pinched fold running into a
-                darker knot - reads as a bow at 64 px); its two ribbon tails lie flat along the left side of the head.
+                darker knot - reads as a bow at 64 px); two crimson satin tails fan out from under the knot across the
+                wings' lower halves (lit edge, notched tips that get lighter, poking out under the wings' outer
+                corners over hair / background - fabric, never a streak on the skin).
 The rest pose of the preview / gallery JSON shows one hairstyle (env ALUMNA_HAIR, default 'paloma'); the generated
 Java model contains all seven groups.
 """
@@ -248,6 +258,18 @@ def skin_v(ctx, base=0.76):
     return v
 
 
+# ear outer face, 4 rows x 3 columns (front/tragus .. back): R lit helix rim running over the top and down the back,
+# C the C-shaped shadow inside it (concha), X the 1-px ear canal, k ear root / tragus, r rim turning into shadow,
+# L / l the lobe
+EAR = [
+    "kRR",
+    "kCR",
+    "XCr",
+    "kLl",
+]
+EAR_V = {'R': 0.13, 'r': -0.02, 'C': -0.25, 'k': -0.08, 'L': 0.03, 'l': -0.1}
+
+
 @G
 def skin_mat(ctx):
     t = tag(ctx)
@@ -265,15 +287,21 @@ def skin_mat(ctx):
             v -= 0.05                                   # throat hollow
         return pick(SKIN, v)
     if t == 'ear':
+        x, y, z = A(ctx)
         if f in ('west', 'east'):
-            outer = (f == 'west') == (A(ctx)[0] < 0)
+            outer = (f == 'west') == (x < 0)
             if not outer:
                 return None                             # flat against the skull side (no z-fight)
-            if outer and ctx.i in (0, 1) and 1 <= ctx.j <= 1:
-                return pick(SKIN, v - 0.3)               # ear canal shadow
-            if outer and ctx.j == 0:
-                v += 0.05
-        return pick(SKIN, v - 0.04)
+            col = min(2, max(0, int(math.floor(z + 1.0))))      # 0 front (tragus) .. 2 back (helix)
+            ch = EAR[ctx.j][col]
+            return pick(SKIN, v + EAR_V[ch]) if ch != 'X' else mix(pick(SKIN, v - 0.36), LAVENDER, 0.25)
+        if f == 'top':
+            return pick(SKIN, v + 0.04)                 # the helix rolls over: lit
+        if f == 'bottom':
+            return pick(SKIN, v - 0.2)
+        if f == 'back':
+            return pick(SKIN, v - 0.05)
+        return pick(SKIN, v - 0.12)                     # front edge (in the shadow of the cheek)
     if t == 'thigh':
         if f == 'top':
             return None                                 # flush with the waist band's underside (no z-fight)
@@ -655,29 +683,29 @@ def bow_mat(ctx):
 # ------------------------------------------------------------------ the face
 # Plate front, 14 x 15 (x -7..7, y -19..-4).  Legend:
 #  o skin  O highlight  s soft shade  S deep socket shade  b faint brow  u lid crease  d dark circle
-#  . socket hole (the skull front shows through, one texel deeper)  N nose bridge light  n nose shadow
-#  p blush  f/g philtrum: two 1-px soft shades under the nose that run down into nothing
-#  m the seam: a short (3 + 2 dissolving ends 'e') healed-over line (SKIN[4]-ish) where the lips grew together
-#  X two 1-px pinches across it (skin grown shut, like old stitch scars), x the skin they pull just under it
-#  (no lit lip row: a lit row under the seam read as a lower lip)  L / l / c lip / faint seam / crease (variants)
-#  (No dark line with corners: every variant with a dark core + end dimples read as a closed mouth.)
+#  c soft glabella tone between the raised inner brow ends (keeps the domed-forehead highlight and the lit nose bridge
+#    apart: no pale stripe pinching the face from hairline to nose tip)
+#  . socket hole (the skull front shows through, one texel deeper)  N nose bridge light  n nose shadow  p blush
+#  NO MOUTH: T one row of skin stretched taut over where the lips were; M the healed seam, a single flat SKIN[4] row
+#  (4 px core), E / F its ends dissolving over 2 px each side (8 px in all: a scar across smooth skin, not a mouth -
+#  no philtrum, no pinches, no dark end points, the row under it plain skin)
 FACE = [
     # 0123456789ABCD
     "oooooooooooooo",   # r0  forehead (hairline planes cover the top rows)
     "ooooOOOOOOoooo",   # r1  domed doll forehead
-    "sooooOOOOoooos",   # r2
-    "soooobooboooos",   # r3  inner ends of the brows raised (worried)
-    "sobbboooobbbos",   # r4  faint brows
+    "soooooooooooos",   # r2  (the highlight is one short wide dome row: no vertical stripe)
+    "soooobccboooos",   # r3  inner ends of the brows raised (worried), glabella tone between them
+    "sobbboccobbbos",   # r4  faint brows
     "souuuuoouuuuos",   # r5  upper lid creases
     "ssS..SNoS..Sss",   # r6  sockets (4x4, rounded): real holes in the plate
     "sS....No....Ss",   # r7
     "sS....oo....Ss",   # r8
     "ssS..SooS..Sss",   # r9
     "soddddonddddos",   # r10 dark circles, 1-px nose shadow
-    "sppooofofoopps",   # r11 doll blush 2x1; the philtrum starts under the nose ...
-    "sooooogogoooos",   # r12 ... and runs down into the two pinches
-    "sooooeXmXeooos",   # r13 NO MOUTH: a short healed-over seam, pinched shut at two points (soft ends)
-    "SssoooxoxoossS",   # r14 the pinches pull the plain skin under it (no lip)
+    "sppoooooooopps",   # r11 doll blush 2x1; smooth skin under the nose
+    "soooTTTTTTooos",   # r12 skin stretched taut over the sealed mouth
+    "sooFEMMMMEFoos",   # r13 NO MOUTH: the healed-over seam
+    "SssoooooooossS",   # r14 plain skin under it (no lip, no chin crease)
 ]
 assert all(len(r) == 14 for r in FACE) and len(FACE) == 15
 
@@ -732,6 +760,16 @@ def face_px(ch, fx, fy):
         return mix(base, SKIN[4], 0.42)                 # the pinch pulls the skin just under the seam
     if ch == 'e':
         return mix(base, SKIN[5], 0.3)                  # seam ends dissolve (never dark end points)
+    if ch == 'c':
+        return pick(SKIN, b - 0.12)                     # soft glabella tone: breaks the forehead / nose-bridge stripe
+    if ch == 'M':
+        return mix(SKIN[4], LAVENDER, 0.06)             # the scar seam core: one flat SKIN[4] row
+    if ch == 'E':
+        return mix(base, SKIN[4], 0.55)                 # the seam fading out, 2 px each end
+    if ch == 'F':
+        return mix(base, SKIN[4], 0.25)
+    if ch == 'T':
+        return SKIN[7]                                  # skin stretched taut over where the lips were
     return base
 
 
@@ -811,8 +849,11 @@ def skull_mat(ctx):
             v -= 0.12 + (y - jaw) * 0.02                # under the jaw: the side of the face turns under
         elif y > jaw - 1.0:
             v += 0.03                                   # lit edge of the jaw
-        if z > -1.0 and y > -8:
-            v -= 0.1 + clamp((-6.0 - y) / 2.0) * 0.1   # jaw hinge in the shadow of the hair
+        if y > -10.5:
+            # behind the ramus (the jaw's back edge, rising from the angle of the jaw at z 0, y -7 toward the joint in
+            # front of the ear): a soft diagonal shadow, deepening toward the hairline - never a horizontal bar
+            ramus = (y + 7.1) * 0.5
+            v -= clamp((z - ramus) / 2.5) * 0.11 * clamp((y + 10.5) / 2.0)
         if not side_exposed(y, z):
             v -= 0.1                                    # soft shadow just under the hair edge
         if -9 <= y <= -7 and z < -4:
@@ -888,54 +929,64 @@ def clump_of(ui, seed):
 
 
 def strands(u, along, ctx, seed, clump=2.5, sheen=None, light=0.9, soft=1.0):
-    """Painted hair: clumps of 2-4 texels (lit edge, dark 1-px gap), one broken sheen band."""
+    """Painted hair: clumps of 2-4 texels shaded as tubes - a 1-px dark root line, the lit side just past it, rolling
+    into shadow toward the next clump - with only a +-0.03 value spread between clumps (no mosaic of random blocks),
+    and one continuous sheen band (each clump may sit at most one row off it, so the band reads as a single arc)."""
     ui = int(math.floor(u * 2.5 / clump))
     k, pos, w = clump_of(ui, seed)
     r = hash3(k, seed, 0, 71)
-    v = 0.47 + (r - 0.5) * 0.12 * soft + face_light(ctx) * light
+    v = 0.47 + (r - 0.5) * 0.06 * soft + face_light(ctx) * light
     if pos == 0:
-        v -= (0.13 if w > 2 else 0.08) * soft
-    elif pos == w - 1:
-        v += 0.05 * soft
+        v -= (0.12 if w > 2 else 0.09) * soft           # the dark root line between two clumps
+    elif pos == 1:
+        v += 0.06 * soft                                # lit side of the tube, just past the line
+    else:
+        v -= (pos - 1) / max(1.0, w - 2.0) * 0.05 * soft   # rolling into shadow toward the next clump
     if sheen is not None:
-        b = math.floor(sheen + (r - 0.5) * 2.2)
+        b = math.floor(sheen + (r - 0.5) * 0.9)
         a = math.floor(along)
         if a == b:
-            v += 0.22 if pos != 0 else 0.1
+            v += 0.2 if pos != 0 else 0.1
         elif a == b - 1 or a == b + 1:
-            v += 0.08
+            v += 0.07 if pos != 0 else 0.03
     return v
 
 
 def curls(ctx, a, b, top=False):
-    """Corkscrew ringlets, drawn on an 8-texel period so each coil still reads at a 300-px close-up: every ringlet is
-    a 7-texel tube of diagonal turns (a 3-px bright crest, a 1-px black shadow tucked right under it, a 4-px dark
-    core; the tube's two edge columns stay dark so it reads round) beside a 1-px dark gap.  Each ringlet starts its
-    turns at its own height (random phase, never mirrored into a herringbone), so the cloud reads as separate springy
-    spirals, not orange-brown blotches or knitting.  Seen from above (top=True) the ringlets are round coil heads on a
-    staggered grid.  Three values only (no mid tone).  Returns a ramp value."""
+    """Corkscrew ringlets on an 8-texel period across (a 7-texel tube + a 1-px dark gap): each tube is a stack of short
+    coil turns (see _curl_glyph: thin lit crest, mid tone, black shadow tucked under it, dark core, dark edges), and
+    every ringlet starts its turns at its own height (random phase, never mirrored into a herringbone), so the cloud
+    reads as separate springy spirals - not bark stripes, not blotches.  Seen from above (top=True) the ringlets are
+    round coil heads on a staggered grid.  Returns a ramp value."""
     ai = int(math.floor(a + 1000.0)) - 1000
     col = ai // 8
     i = ai - col * 8
     if top:
         bi = int(math.floor(b + (col % 2) * 4 + 1000.0)) - 1000
         return CURL_V[CURL_TOP[bi % 8][i]] + face_light(ctx) * 0.6
-    bi = int(math.floor(b + hash3(col, 3, 5, 47) * 8.0 + 1000.0)) - 1000
-    return CURL_V[CURL_G[bi % 8][i]] + face_light(ctx) * 0.6
+    n = len(CURL_G)
+    bi = int(math.floor(b + hash3(col, 3, 5, 47) * n + 1000.0)) - 1000
+    return CURL_V[CURL_G[bi % n][i]] + face_light(ctx) * 0.6
 
 
-def _curl_glyph():
+def _curl_glyph(period=5, slope=0.35):
+    """Ringlet glyph, `period` rows per coil turn (short, flat-ish turns read as a stacked spring, not as diagonal
+    bark stripes): H the thin lit crest of each turn, M the crest rolling over / the core rising back into it (mid
+    tone), k the black shadow tucked under the crest, d the dark core; the tube's two edge columns turn away (dark)
+    and the crest is rounded off one column in from them.  Column 7 is the gap between two ringlets."""
     rows = []
-    for j in range(8):
+    for j in range(period):
         r = ''
         for i in range(8):
             if i == 7:
-                r += 'k'                                # the gap between two ringlets
+                r += 'k'
                 continue
-            ph = (j - i * 0.6) % 8.0
-            ch = 'H' if ph < 3.6 else 'k' if ph < 4.6 else 'd'
+            ph = (j - i * slope) % period
+            ch = 'H' if ph < 1.0 else 'M' if ph < 1.7 else 'k' if ph < 2.4 else 'd' if ph < period - 0.6 else 'M'
             if i in (0, 6):
-                ch = 'd' if ch == 'H' else 'k' if ch == 'k' else 'd'   # the tube turns away at its edges
+                ch = 'k' if ch == 'k' else 'd'          # the tube turns away at its edges
+            elif i in (1, 5) and ch == 'H':
+                ch = 'M'                                # rounded crest ends
             r += ch
         rows.append(r)
     return rows
@@ -943,16 +994,18 @@ def _curl_glyph():
 
 CURL_G = _curl_glyph()
 CURL_TOP = [
-    "kddHHddk",
-    "dHHHHHdk",
-    "dHHHHHdk",
-    "HHHHHddk",
-    "dHHHddkk",
-    "kdddddkk",
-    "kkddkkkk",
+    # a ringlet seen end-on from above: a round coil head lit top-left (H), its body in the mid tone (M), one dark
+    # turn of the spiral inside it (d / k) and the shadow side bottom-right, on a staggered grid
+    "kdMMMdkk",
+    "dMHHMMdk",
+    "MHHMdMdk",
+    "MHMdkMdk",
+    "MMdkMMdk",
+    "dMMMMdkk",
+    "kddddkkk",
     "kkkkkkkk",
 ]
-CURL_V = {'k': 0.15, 'd': 0.3, 'M': 0.47, 'H': 0.7}
+CURL_V = {'k': 0.15, 'd': 0.35, 'M': 0.52, 'H': 0.72}
 
 
 def pulled(style):
@@ -976,8 +1029,8 @@ def buried(x, y, z, face, boxes, eps=0.05):
 
 def side_hair(style, y, z):
     """Hair mask on the sides of the shell (x = +-8)."""
-    if -1.0 <= z <= 1.0 and -11.0 <= y <= -8.0 and pulled(style):
-        return False                                     # the ear shows
+    if -1.0 <= z <= 2.0 and -12.0 <= y <= -8.0 and pulled(style):
+        return False                                     # the ear shows (cut-out = the ear's 3 x 4 outer face)
     if not pulled(style):
         return True
     if style == 'lola':
@@ -1012,7 +1065,7 @@ def back_v(st, x, y, ctx, seed, light=0.9):
     else:
         u = x
     # sheen: an arc across the back of the skull (higher in the middle, dropping at the sides) = a round head
-    v = strands(u, y - (x / 8.0) ** 2 * 3.0, ctx, seed, sheen=-15.5, soft=0.7, light=light)
+    v = strands(u, y - (x / 8.0) ** 2 * 3.0, ctx, seed, sheen=-15.5, soft=0.7, light=light) + 0.05
     v -= clamp((y + 10.0) / 8.0) * 0.12
     v -= clamp((abs(x) - 5.0) / 3.0) ** 1.5 * 0.1       # turns away toward the sides (soft, no outline)
     if y < -18.0:
@@ -1152,10 +1205,14 @@ def shell_mat(ctx):
     if f == 'front':
         # behind the fringe plane: only the top row and the hair-covered outer columns are painted, so no light
         # sliver can show between the plane and the shell when the head bows (the face stays open)
-        if getattr(c, 'part', '') != 'front' or st == 'chela':
-            return None                                 # (chela's fringe plane paints every texel it covers itself)
-        prof = FRONT_PROFILE[st]
+        if getattr(c, 'part', '') != 'front':
+            return None
         jr = int(math.floor(y - c.a0[1]))
+        if st == 'chela':
+            # chela's fringe plane paints every texel it covers itself; only the top row is closed here, so the skin
+            # of the forehead never glints through the seam between the plane and the crown seen from above
+            return pick(P, 0.2) if jr == 0 else None
+        prof = FRONT_PROFILE[st]
         if jr == 0 or (ctx.i in (0, w - 1) and jr < prof[ctx.i] - 1):
             return pick(P, 0.22)
         return None
@@ -1170,6 +1227,9 @@ def shell_mat(ctx):
             return pick(P, under_v(st, x, z, c, ctx))   # under the side hair
         if z < -2.5:
             return None                                 # under the face: the skull's chin underside shows
+        if pulled(st) and not side_hair(st, y - 0.5, z):
+            return None                                 # the shell side above is open (bare cheek / jaw): no hair
+            #                                             floor may float there - the skull's own underside closes it
         if abs(x) < 2.1 and abs(z) < 2.1:
             return None                                 # the neck stands here
         if pulled(st) and z > 2.0 and abs(x) < 3.2 and bottom - 0.5 > nape_top(x) + 0.5:
@@ -1497,18 +1557,23 @@ def ribbon_mat(ctx):
             v = 0.26 + face_light(ctx) * 0.6
         return pick(P, v)
     if t == 'big_tail':
-        # ribbon tails lying flat along the side of the head (planes facing +-X)
-        if f not in ('west', 'east'):
-            return None
-        out = (f == 'east') == (A(ctx)[0] > 0)
-        if not out:
-            return None                                 # zero-thickness plane: only the face away from the head
-        if ly > h - 1 and ctx.i == 1:
-            return None                                 # notched ribbon end
-        v = 0.66 - ly / h * 0.22 + face_light(ctx)
-        if ctx.i == 0 or ly < 1.0:
-            v -= 0.2                                    # folded edge in shadow
-        return pick(P, v)
+        # free-hanging ribbon tail (a zero-thickness plane facing front): lit satin edge on the outer side, notched V
+        # end, the lower half catching the light (lighter toward the tips, never darker: fabric, not a drip)
+        if f != 'front':
+            return None                                 # zero-thickness plane: one painted face only (no z-fight)
+        i = ctx.i
+        outer = (i == 0) if c.side == 'r' else (i == w - 1)
+        inner = (i == w - 1) if c.side == 'r' else (i == 0)
+        j = ctx.j
+        if j == h - 1 and i == 1:
+            return None                                 # the notched V end
+        if j == 0:
+            return BOWRED[2]                            # tucked under the knot
+        if outer:
+            return BOWRED[7] if j < h - 1 else BOWRED[8]   # lit satin edge running into a bright tip
+        if inner:
+            return BOWRED[4] if j < h - 2 else BOWRED[5]
+        return BOWRED[5] if j < h - 2 else BOWRED[6]
     if t == 'band':
         # Ofelia's Alice band: deep maroon velvet lying across the crown 2 texels behind the hairline (its side
         # faces are flush with the shell: the shell paints the ends running down behind the ears instead)
@@ -1572,6 +1637,11 @@ class AlumnaModel(Model):
 ARM_OUT = 15.0      # rest: sleeves angled out from the shoulders (deg)
 ARM_FWD = -4.0      # rest: arms hang a little forward of the smock
 HAND_TWIST = 35.0   # rest: palms turned back so the splayed fingers read from the front
+OFELIA_CURTAIN = -6.0   # rest: Ofelia's back curtain tipped forward onto her back
+ROCIO_ROOT = 65.0   # rest: the ponytail root leaves the scrunchie steeply, back and a little down
+ROCIO_FALL = -80.0  # rest: the long fall, relative to the root (net ~19 deg forward of vertical: it swings back
+                    # in under the arc and ends 3 texels behind the upper back)
+ROCIO_SWING = -6.0  # rest: the fall swings toward her left, so its tip shows past the head in the front 3/4 view
 
 
 def build(show=None):
@@ -1642,7 +1712,8 @@ def build(show=None):
         box(fb, (ax - 1.5, 10.6, -1.5), (3, 1, 3), name='cuff', inflate=0.4)
         bone(hb, (ax, 11.5, 0), parent=fb, rot=(0, HAND_TWIST * sx, 0), mat=hand_mat)
         box(hb, (ax - 1, 11.5, -1.5), (2, 3, 3), name='palm')
-        box(hb, (ax - 0.5 - 0.5 * sx, 12.2, -2.4), (1, 2, 1), name='thumb')
+        # the thumb sits 0.1 further in (toward the body) than the palm's inner face: never coplanar with it
+        box(hb, (ax - 0.5 - 0.6 * sx, 12.2, -2.4), (1, 2, 1), name='thumb')
         bone(f'{side}_fingers', (ax, 14.5, 0.5), parent=hb, rot=(7, 0, 0), mat=hand_mat)
         box(f'{side}_fingers', (ax - 0.5, 14.3, -0.5), (1, 5, 1), name='finger')
         box(f'{side}_fingers', (ax - 0.5, 14.1, 1.5), (1, 5, 1), name='finger')
@@ -1655,8 +1726,9 @@ def build(show=None):
     bone('head', (0, -4.0, 0), parent='neck', rot=(4, 0, -6), mat=skull_mat)
     box('head', (-7, -19, -7), (14, 15, 1), mat=plate_mat, name='plate')
     box('head', (-7, -19, -6), (14, 15, 12), mat=skull_mat, name='skull', decals={'eyes:front': at(EYE_GLOW)})
-    box('head', (-8, -11, -1), (1, 3, 2), mat=skin_mat, name='ear')
-    box('head', (7, -11, -1), (1, 3, 2), mat=skin_mat, name='ear')
+    # ears: 3 deep x 4 tall, 1 texel proud of the skull, exactly filling the shell's ear cut-out (see side_hair)
+    box('head', (-8, -12, -1), (1, 4, 3), mat=skin_mat, name='ear')
+    box('head', (7, -12, -1), (1, 4, 3), mat=skin_mat, name='ear')
 
     # the round singing "O": a plane parked inside the skull, slid flush onto the face by pose 'freed'
     bone('jaw', (0, -7.0, -5.5), parent='head', mat=jaw_mat)
@@ -1707,19 +1779,21 @@ def build(show=None):
     shell('mecha', P, (-9, -20, -8), (18, 17, 16))
     front('mecha', P, (-9, -20, -8.05), (18, 15, 0))
 
-    # Rocio: combed back into a ponytail gathered at the back of the crown by a maroon scrunchie; the tail leaves it
-    # at ~35 deg and falls in one tapered lock (4 -> 3 -> 2 wide, ragged tip) close to the back of the head
+    # Rocio: combed back into a high ponytail gathered at the back of the crown by a maroon scrunchie; the root leaves
+    # it steeply (65 deg) and arcs 5 texels out behind the skull, then the tail falls (4 -> 3 -> 2 wide, ragged tip)
+    # in a long lock that hangs free behind the neck down to between the shoulder blades: a ponytail silhouette
     P = BROWN_L
     bone('hair_rocio', HC, parent='head', mat=shell_mat)
     shell('rocio', P, (-8, -20, -8), (16, 17, 15))
     front('rocio', P, (-8, -20, -8.05), (16, 11, 0))
-    box('hair_rocio', (-2, -19.6, 6.0), (4, 3, 2), mat=ribbon_mat, name='scrunchie', inflate=0.35, style='rocio',
+    box('hair_rocio', (-2, -19.0, 6.8), (4, 3, 2), mat=ribbon_mat, name='scrunchie', inflate=0.35, style='rocio',
         pal=MAROON)
-    bone('rocio_tail', (0, -18.6, 7.4), parent='hair_rocio', rot=(36, 0, 0), mat=hairbit_mat)
-    box('rocio_tail', (-2, -18.8, 6.0), (4, 4, 3), name='tail', style='rocio', pal=P)
-    bone('rocio_tail_tip', (0, -14.8, 7.4), parent='rocio_tail', rot=(-36, 0, 0), mat=hairbit_mat)
-    box('rocio_tail_tip', (-1.5, -15.0, 6.12), (3, 8, 3), name='tail', style='rocio', pal=P)
-    box('rocio_tail_tip', (-1.0, -7.2, 6.4), (2, 4, 2), name='tail_tip', style='rocio', pal=P)
+    bone('rocio_tail', (0, -17.5, 8.0), parent='hair_rocio', rot=(ROCIO_ROOT, 0, 0), mat=hairbit_mat)
+    box('rocio_tail', (-2, -18.0, 6.5), (4, 6, 3), name='tail', style='rocio', pal=P)
+    bone('rocio_tail_tip', (0, -12.5, 8.0), parent='rocio_tail', rot=(ROCIO_FALL, 0, ROCIO_SWING),
+         mat=hairbit_mat)
+    box('rocio_tail_tip', (-1.5, -13.6, 6.5), (3, 13, 3), name='tail', style='rocio', pal=P)
+    box('rocio_tail_tip', (-1.0, -0.8, 7.0), (2, 7, 2), name='tail_tip', style='rocio', pal=P)
 
     # Chela: a big cloud of tight ringlets
     P = CHESTNUT
@@ -1755,8 +1829,11 @@ def build(show=None):
     box('hair_ofelia', (-8.5, -20.9, -6.0), (17, 1, 3), mat=ribbon_mat, name='band', style='ofelia', pal=BAND)
     box('hair_ofelia', (-8.6, -6, -6.5), (3, 13, 2), mat=hairbit_mat, name='lock', style='ofelia', pal=P)
     box('hair_ofelia', (5.6, -6, -6.5), (3, 13, 2), mat=hairbit_mat, name='lock', style='ofelia', pal=P)
-    bone('ofelia_curtain', (0, -6.0, 6.0), parent='hair_ofelia', rot=(8, 0, 0), mat=hairbit_mat)
-    box('ofelia_curtain', (-7.5, -6.0, 5.0), (15, 17, 2), name='curtain', style='ofelia', pal=P)
+    # the waist-long back curtain: two 7-wide strands either side of the parting (1-texel gap, ragged ends of different
+    # lengths), tipped forward so it lies on her back and its ends rest on the smock just above the half-belt
+    bone('ofelia_curtain', (0, -6.0, 6.0), parent='hair_ofelia', rot=(OFELIA_CURTAIN, 0, 0), mat=hairbit_mat)
+    box('ofelia_curtain', (-7.5, -6.0, 5.0), (7, 13, 2), name='curtain', style='ofelia', pal=P)
+    box('ofelia_curtain', (0.5, -6.0, 5.05), (7, 12, 2), name='curtain', style='ofelia', pal=P)
 
     # Ana Sofia: centre parting, two high pigtails with red elastics
     P = BROWN
@@ -1782,11 +1859,14 @@ def build(show=None):
     box('lola_bow', (3.0, -22.0, -9.6), (3, 3, 3), name='big_knot', style='lola', pal=BOWRED)
     box('lola_bow', (-3.0, -23.5, -9.0), (6, 6, 2), name='big_loop', side='r', style='lola', pal=BOWRED)
     box('lola_bow', (6.0, -23.5, -9.0), (6, 6, 2), name='big_loop', side='l', style='lola', pal=BOWRED)
-    # the two ribbon tails lie flat along the left side of the head (never over the forehead)
-    box('hair_lola', (8.12, -19.0, -7.2), (0, 7, 2), mat=ribbon_mat, name='big_tail', side='r', style='lola',
-        pal=BOWRED)
-    box('hair_lola', (8.16, -18.5, -4.6), (0, 6, 2), mat=ribbon_mat, name='big_tail', side='l', style='lola',
-        pal=BOWRED)
+    # the two ribbon tails come out from under the knot and fan out steeply (~55-60 deg) in front of the wings' lower
+    # halves, so only their notched, lighter tips poke out past the wings' lower outer corners - over the black fringe
+    # on one side, against the background beside the head on the other: crimson satin, never a streak on the skin
+    for side, sx, zr, ln in (('r', -1, 56.0, 5), ('l', 1, -60.0, 5)):
+        tb = f'lola_tail_{side}'
+        bone(tb, (4.5 + 0.5 * sx, -19.6, -9.35), parent='lola_bow', rot=(0, 0, zr), mat=ribbon_mat)
+        box(tb, (4.5 + 0.5 * sx - 1.5, -20.0, -9.35 - 0.05 * sx), (3, ln, 0), name='big_tail', side=side, style='lola',
+            pal=BOWRED)
 
     m = AlumnaModel('alumna', 256, 256, r.roots)
     m.scale = 0.5
@@ -1807,43 +1887,53 @@ POSES = {
             'right_arm': (-0.386, 0.293, -0.733, 0, 0, 0), 'right_forearm': (-0.482, 0, -1.158, 0, 0, 0),
             'right_hand': (0.343, 1.327, -0.614, 0, 0, 0), 'left_arm': (-0.386, -0.294, 0.733, 0, 0, 0),
             'left_forearm': (-0.481, 0, 1.158, 0, 0, 0), 'left_hand': (0.343, -1.327, 0.614, 0, 0, 0)},
-    # at the desk: knees at 90 degrees, skirt draped on the lap, hands folded on the desk top, head tilted
+    # at the desk: knees at 90 degrees, front panel draped on the lap, side panels folded forward along the outside of
+    # the thighs, back panel tucked flat under her (edge-on from behind), hands folded on the desk top, head tilted
     'sit_desk': {'body': (0, 0, 0, 0, 6, 0), 'right_leg': (-1.57, 0.08, 0, 0, 0, 0),
                 'right_shin': (1.57, 0, 0, 0, 0, 0), 'left_leg': (-1.57, -0.08, 0, 0, 0, 0),
                 'left_shin': (1.57, 0, 0, 0, 0, 0), 'skirt_front': (-1.22, 0, 0, 0, 0.0, 4.5),
-                'skirt_back': (-1.38, 0, 0, 0, 0, 0), 'skirt_right': (0, 0.14, -0.04, 0.35, -5.0, -1.5),
-                'skirt_left': (0, -0.14, 0.04, -0.35, -5.0, -1.5), 'right_arm': (-0.363, 0.32, -0.311, 0, 0, 0),
+                'skirt_back': (-1.7, 0, 0, 0, 0.5, -1.0), 'skirt_right': (-1.45, 0, -0.12, 0, 0, 0),
+                'skirt_left': (-1.45, 0, 0.12, 0, 0, 0), 'right_arm': (-0.363, 0.32, -0.311, 0, 0, 0),
                 'right_forearm': (-0.531, 0, -1.156, 0, 0, 0), 'right_hand': (0.563, 0.412, -0.257, 0, 0, 0),
                 'left_arm': (-0.351, -0.228, 0.268, 0, 0, 0), 'left_forearm': (-0.626, 0, 1.128, 0, 0, 0),
                 'left_hand': (0.552, -0.456, 0.254, 0, 0, 0), 'head': (0.05, 0, 0.18, 0, 0, 0)},
-    # punished: forehead against the wall, shoulders dropped, arms hanging dead
+    # punished: forehead against the wall, shoulders dropped, arms hanging dead (ponytail / back curtain re-hung for
+    # gravity: they drape along the back of the bowed head and the upper back)
     'face_wall': {'body': (0.1, 0, 0, 0, 0, -0.5), 'neck': (0.2, 0, 0, 0, 0, 0), 'head': (0.42, 0, 0.08, 0, 0, 0),
                  'right_leg': (-0.1, 0, 0, 0, 0, 0), 'left_leg': (-0.1, 0, 0, 0, 0, 0),
                  'right_arm': (0.296, 0.183, 0.01, 0, 1, 0), 'left_arm': (0.293, -0.031, 0.026, 0, 1, 0),
                  'right_forearm': (-0.567, 0, -0.531, 0, 0, 0), 'left_forearm': (-0.65, 0, 0.412, 0, 0, 0),
                  'right_hand': (0.307, 0.163, 0.262, 0, 0, 0), 'left_hand': (0.356, -0.334, -0.243, 0, 0, 0),
-                 'rocio_tail_tip': (-0.12, 0, 0, 0, 0, 0), 'ofelia_curtain': (-0.6, 0, 0, 0, 0, 0)},
+                 'rocio_tail': (-0.5, 0, 0, 0, 0, 0), 'rocio_tail_tip': (0.35, 0, 0, 0, 0, 0),
+                 'ofelia_curtain': (-0.4, 0, 0, 0, 0, 0)},
     # the right arm straight at the player, index out, the other fingers curled
     'point': {'head': (0.05, 0, 0.3, 0, 0, 0), 'right_arm': (-1.5, 0.05, -0.26, 0, 0, 0),
               'right_forearm': (0.1, 0, 0.07, 0, 0, 0), 'right_hand': (0, 0.611, 0, 0, 0, 0),
               'right_fingers': (0, 0, -1.4, 0, 0, 0), 'paloma_braid_right': (0.3, 0, -0.12, 0, 0, 0)},
     # crouched and cowering, shoulders hunched up 1.6, elbows forward and down, both palms pressed flat on the OUTSIDE
-    # of the hair over the ears (16-wide styles: palms at x = +-9..10), the long fingers wrapping back over the sides of
-    # the head (never above the crown).  Wider hair: use 'cover_ears_mecha' / '_ofelia' / '_chela' (same body).
+    # of the hair over the ears (16-wide styles: palms at x = +-9..10), hands yawed in so they cup the head, the long
+    # fingers curled 0.6 onto the hair so they hug the sides of the skull (from the front they hide along the head's
+    # outline: no 'bunny ears').  Wider hair: use 'cover_ears_mecha' / '_ofelia' / '_chela' (same body and fingers).
     'cover_ears': {'body': (0.25, 0, 0, 0, 2.09, 0), 'right_leg': (-0.7, 0, 0, 0, 0, 0),
                   'left_leg': (-0.7, 0, 0, 0, 0, 0), 'right_shin': (1.2, 0, 0, 0, 0, 0),
                   'left_shin': (1.2, 0, 0, 0, 0, 0), 'right_shoe': (-0.75, 0, 0, 0, 0, 0),
                   'left_shoe': (-0.75, 0, 0, 0, 0, 0), 'neck': (0.12, 0, 0, 0, 0, 0), 'head': (0.3, 0, 0, 0, 0, 0),
                   'right_arm': (-1.885, 0.322, -0.284, 0.3, -1.6, 0), 'right_forearm': (-1.122, 0.325, -0.218, 0, 0, 0),
-                  'right_hand': (-0.598, 0.594, -0.141, 0, 0, 0), 'left_arm': (-1.885, -0.322, 0.284, -0.3, -1.6, 0),
-                  'left_forearm': (-1.122, -0.325, 0.218, 0, 0, 0), 'left_hand': (-0.598, -0.594, 0.141, 0, 0, 0),
-                  'rocio_tail_tip': (-0.1, 0, 0, 0, 0, 0), 'ofelia_curtain': (-0.45, 0, 0, 0, 0, 0)},
-    # the thumbnail shot: neck + head yaw sum to pi
-    'head_180': {'neck': (0, 0.5, 0, 0, 0, 0), 'head': (0, 2.64, 0.12, 0, 0, 0)},
-    # Hora Muerta: running ahead lighting candles (contact frame)
+                  'right_hand': (-0.598, 0.344, -0.141, 0, 0, 0), 'left_arm': (-1.885, -0.322, 0.284, -0.3, -1.6, 0),
+                  'left_forearm': (-1.122, -0.325, 0.218, 0, 0, 0), 'left_hand': (-0.598, -0.344, 0.141, 0, 0, 0),
+                  'right_fingers': (0, 0, -0.6, 0, 0, 0), 'left_fingers': (0, 0, 0.6, 0, 0, 0),
+                  'right_index': (0, 0, -0.6, 0, 0, 0), 'left_index': (0, 0, 0.6, 0, 0, 0),
+                  'rocio_tail': (-0.45, 0, 0, 0, 0, 0), 'rocio_tail_tip': (0.3, 0, 0, 0, 0, 0),
+                  'ofelia_curtain': (-0.25, 0, 0, 0, 0, 0)},
+    # the thumbnail shot: neck + head yaw sum to pi (Ofelia's back curtain, now over her chest, swung 0.15 clear of the
+    # school bow)
+    'head_180': {'neck': (0, 0.5, 0, 0, 0, 0), 'head': (0, 2.64, 0.12, 0, 0, 0),
+                 'ofelia_curtain': (0.15, 0, 0, 0, 0, 0)},
+    # Hora Muerta: running ahead lighting candles (contact frame; the back foot kicked up just enough that the navy
+    # sock shows under the hem from behind)
     'run': {'body': (0.2, 0, 0, 0, 1.53, 0), 'head': (-0.15, 0, 0, 0, 0, 0), 'right_leg': (-0.9, 0, 0, 0, 0, 0),
-           'right_shin': (0.9, 0, 0, 0, 0, 0), 'right_shoe': (-0.2, 0, 0, 0, 0, 0), 'left_leg': (0.6, 0, 0, 0, 0, 0),
-           'left_shin': (1.2, 0, 0, 0, 0, 0), 'left_shoe': (0.35, 0, 0, 0, 0, 0),
+           'right_shin': (0.9, 0, 0, 0, 0, 0), 'right_shoe': (-0.2, 0, 0, 0, 0, 0), 'left_leg': (0.45, 0, 0, 0, 0, 0),
+           'left_shin': (0.85, 0, 0, 0, 0, 0), 'left_shoe': (0.25, 0, 0, 0, 0, 0),
            'right_arm': (1.109, 0.065, 0.131, 0, 0, 0), 'right_forearm': (-0.948, 0, -0.376, 0, 0, 0),
            'left_arm': (-0.619, -0.095, 0.081, 0, 0, 0), 'left_forearm': (-1.094, 0, 0.376, 0, 0, 0),
            'skirt_back': (0.25, 0, 0, 0, 0, 0), 'skirt_front': (-0.1, 0, 0, 0, 0, 0),
@@ -1883,11 +1973,11 @@ POSES = {
 # falling back to "cover_ears" for paloma / rocio / anasofia / lola.
 COVER_EARS_ARMS = {
     'mecha': {'right_arm': (-1.963, 0.337, -0.456, 0.3, -1.6, 0), 'right_forearm': (-1.023, 0.321, -0.245, 0, 0, 0),
-              'right_hand': (-0.613, 0.566, -0.257, 0, 0, 0)},
+              'right_hand': (-0.613, 0.316, -0.257, 0, 0, 0)},
     'ofelia': {'right_arm': (-1.973, 0.246, -0.554, 0.3, -1.6, 0), 'right_forearm': (-1.041, 0.194, -0.352, 0, 0, 0),
-               'right_hand': (-0.576, 0.441, -0.202, 0, 0, 0)},
+               'right_hand': (-0.576, 0.191, -0.202, 0, 0, 0)},
     'chela': {'right_arm': (-2.298, 0.601, -0.714, 0.3, -1.6, 0), 'right_forearm': (-0.514, 0.727, -0.338, 0, 0, 0),
-              'right_hand': (-0.719, 0.329, -0.488, 0, 0, 0)},
+              'right_hand': (-0.719, 0.079, -0.488, 0, 0, 0)},
 }
 for _hair, _arms in COVER_EARS_ARMS.items():
     _p = dict(POSES['cover_ears'])
@@ -1929,10 +2019,10 @@ Bones
   the waist seam (y 6.5; each panel starts 0.5 above the hinge so 2+ texels of pale knee show under the hem).  Idle:
   ripple("skirt_", t, 0.05, 1.4, 0.015, 0.01, 0).  Walk/run: the panel on the side of the forward leg opens -0.12 * s,
   skirt_back flares +0.25 in 'run'.  skirt_back carries the buttoned half-belt.  sit_desk: front laid on the lap (short
-  overhang past the knees), back tucked under onto the seat (xRot -1.38), and the side panels (a 10 x 10 square cannot
-  fold into the 5 texels between waist and seat) are lifted 5 (dy -5), yawed +-0.14 and slid forward 1.5 so they
-  drape the hips from the waist to the seat line: nothing reaches below the seat, and from behind their back edges
-  hide behind the smock.
+  overhang past the knees); the side panels fold forward with the thighs (xRot -1.45, zRot -+0.12) so they lie along
+  the outside of the thighs from hip to knee (no flaps beside the hips); the back panel is tucked flat under her
+  (xRot -1.7, dy +0.5, dz -1.0) so from behind only its edge shows at the seat line (more tuck makes its 1-texel
+  side edges overlap the front panel's at x +-8: keep it at or below -1.75).
 * collar: the two Peter Pan collar planes (static, rest xRot -12 deg so they stand off the chest).  No animation.
 * bow: the navy school bow at the throat (child of collar).  Secondary: zRot spring-lagged from body/head motion
   (+-0.08), xRot -0.15 in 'run'.
@@ -1945,12 +2035,14 @@ Bones
   hang clear of the skirt).  Idle: hanging dead still; no swing when walking.  Run: +-0.8 counter to the legs.
 * right_forearm / left_forearm: elbows (forearm sleeve + cuff, 5 long).  Follow pose values only.
 * right_hand / left_hand: wrists (cold palm + thumb; rest yRot 35 deg so the palms turn back and the splayed
-  fingers read from the front).  Idle: a 0.04 zRot tremor on one hand every few seconds.
+  fingers read from the front; the thumb sits 0.1 inside the palm's inner face, never coplanar with it).  Idle: a 0.04
+  zRot tremor on one hand every few seconds.
 * right_fingers / left_fingers: the middle and ring fingers (two 1x5 cubes with a 1-texel gap).  zRot curls them
   toward the palm (right -1.4, left +1.4; the palm is the hand's +-X face, so zRot is the curl axis whatever the arm
   does): fist for 'point'; in 'peek' the hand points forward with the finger row stacked vertically, so the same zRot
-  (+1.3 / index +1.1) wraps the fingers horizontally around the vertical frame edge.  Idle: slow 0.1 curl/uncurl,
-  never both hands together.
+  (+1.3 / index +1.1) wraps the fingers horizontally around the vertical frame edge; in 'cover_ears' a half curl
+  (-+0.6, index too) lays them on the hair along the sides of the head.  Idle: slow 0.1 curl/uncurl, never both
+  hands together.
 * right_index / left_index: the 1x5 index finger (splayed 1 texel in front of the others), separate so 'point' can
   keep it straight while the others curl.
   In 'point' add a slow beckoning curl xRot 0..-0.5 on the right index after the pose has held 2 s.
@@ -1969,34 +2061,41 @@ Bones
   Every hair group is built the same way: two stepped shell boxes (the back one 0.5 narrower each side, 1 lower), a
   fringe plane and - except Chela and Ofelia - a zero-thickness 'tips' plane that breaks the lower back edge into
   uneven 1-3 texel strand ends.  All rigid with their group.
-* hair_rocio: combed-back hair + the scrunchie at the back of the crown.  rocio_tail (the root: leaves the scrunchie
-  at 36 deg) and rocio_tail_tip (the tapered fall, 3 then 2 wide with a ragged tip, hanging ~1 texel behind the back
-  of the head): pendulum chain, 'run' +0.45 / +0.36 (streams back in one line), bounce 0.15 on each footfall, side
-  swing zRot +-0.2 when the head snaps.  Gravity: the tail rests ON the back of the head, so when the head bows do
-  NOT counter-rotate the root (that pushes it into the skull); only let the tip hang a little (rocio_tail_tip about
-  -0.15 x the summed body + neck + head pitch: baked into 'face_wall' -0.12 and 'cover_ears' -0.1).
+* hair_rocio: combed-back hair + the maroon scrunchie high on the back of the crown.  rocio_tail: the 4-wide root
+  (rest xRot 65 deg: leaves the scrunchie steeply and arcs ~5 texels out behind the skull); rocio_tail_tip: the long
+  fall (3 then 2 wide, ragged tip; rest -80 deg relative = ~19 deg forward of vertical, zRot -6 deg toward her left)
+  hanging free behind the neck down to between the shoulder blades, ~4 texels off her back.  Pendulum chain: the tip
+  lags the root by 2-3 ticks; 'run' +0.45 / +0.36 (streams back in one long line); bounce 0.15 on each footfall; side
+  swing zRot +-0.2 when the head snaps (tip only, 1-2 ticks later).  Gravity when the head bows (summed body + neck +
+  head pitch P): the root may NOT keep sticking up - drape it along the back of the head with about root -0.65 P,
+  tip +0.45 P (baked: 'face_wall' -0.5 / +0.35, 'cover_ears' -0.45 / +0.3).  Never rotate the tip forward on its own
+  while the head is bowed (it would swing into the back of the skull).
 * hair_chela: the curly cloud (shell, fringe, ringlet clumps).  Rigid; on footfalls a 0.3 texel dy squash is enough.
   chela_curls: the four ringlet tubes on the corners of the cloud (bone yawed 45 deg to round the outline).  Static
   (never animate it on its own; it moves with hair_chela).
 * hair_ofelia: long straight blue-black hair, the maroon velvet Alice band (a thin cube across the crown, 2 texels
   behind the hairline, its ends painted on the shell down behind the ears; no bone of its own) and
-  the two locks over the shoulders (rigid with the head).  ofelia_curtain: the waist-long back curtain; lags the head (xRot spring) and lifts
-  +0.35 in 'run'.  When the head bows it keeps hanging vertical: counter-rotate like rocio_tail ('face_wall' -0.6,
-  'cover_ears' -0.45).
+  the two locks over the shoulders (rigid with the head).  ofelia_curtain: the waist-long back curtain (two 7-wide
+  strands either side of the parting, ragged ends; rest xRot -6 deg so it lies on her back and its ends rest on the
+  smock just above the half-belt); lags the head (xRot spring, +-0.08) and lifts +0.35 in 'run'.  When the head bows
+  its pivot swings forward over the shoulders, so counter-rotate only part of the bow ('face_wall' -0.4, 'cover_ears'
+  -0.25): it then lies on the upper back instead of sinking into the smock.
 * hair_anasofia: centre parting + red elastics.  anasofia_tail_right / anasofia_tail_left: the high pigtails (stick
   out sideways); anasofia_tail_right_tip / anasofia_tail_left_tip: drooping ends.  Bounce zRot +-0.25 on every hop
   in 'hop' and on footfalls, opposite phase left/right.
-* hair_lola: black pixie cut with a side-swept fringe; the two ribbon tails lie flat on the left side of the head
-  (rigid with hair_lola).  lola_bow: the huge crimson satin bow (two up-tilted wings + dark knot); small spring wobble
-  (zRot +-0.06) after head snaps.
+* hair_lola: black pixie cut with a side-swept fringe.  lola_bow: the huge crimson satin bow (two up-tilted wings +
+  dark knot); small spring wobble (zRot +-0.06) after head snaps.  lola_tail_r / lola_tail_l: its two satin tails
+  (zero-thickness planes) fanning out from under the knot across the wings' lower halves (rest zRot +56 / -60 deg);
+  they follow the bow's wobble 1 tick late with +-0.08 extra zRot (never past +-0.15: their tips must stay over the
+  hair / background, never hang onto the forehead).
 
 Poses
 * stand: hands joined in front of the skirt, head a little down.  Default pose in classrooms, refectory, locutorio.
 * sing: chin up, prayer hands at the chest.  Choir (Completas, Maitines).  Combine with 'freed' at Laudes.
 * sit_desk: knees at 90 deg, hands folded on the desk, head tilted.  body dy +6 puts the soles on the floor of the
   same block (seat 0.2 blocks above the floor); raise the entity 0.2 blocks for the classroom benches.  The front
-  skirt panel lies on the thighs (1-2 texels past the knees), the back panel is tucked under her onto the seat, the
-  side panels drape the hips down to the seat line (nothing goes below the seat, front or back view).
+  skirt panel lies on the thighs (1-2 texels past the knees), the side panels lie along the outside of the thighs,
+  the back panel is tucked flat under her (nothing goes below the seat, front or back view).
 * face_wall: punished pupil: forehead on the wall, neck and head bowed, shoulders dropped 1 texel, arms hanging
   dead.  Place her 0.25 blocks from the wall.  Cripta at the Hora Muerta (before the 180 + "CORRE").
 * point: the right arm straight at the player, index out, other fingers curled, head tilted.  Ronda beat ("...con
@@ -2005,16 +2104,20 @@ Poses
 * cover_ears: crouched (soles flat on the floor: shoes -0.75 cancel body + leg + shin pitch, body dy +2.09), head
   bowed (neck 0.12, head 0.3), shoulders hunched up 1.6 (arm dy -1.6, dx 0.3 inward), elbows forward and down in front
   of the chest, both palms pressed flat on the OUTSIDE of the hair over the ears (16-wide styles: palm centres at
-  head-local x +-9.5, y -10) and turned ~12 deg so the backs of the hands show from the front, the long fingers
-  wrapping back over the sides of the head (never above the crown).  Per hairstyle: paloma / rocio / anasofia / lola
+  head-local x +-9.5, y -10), yawed in so the hands cup the head, the long fingers half-curled (-+0.6) onto the hair
+  so they hug the sides of the skull and stay inside the head's outline from the front.  Per hairstyle: paloma /
+  rocio / anasofia / lola
   'cover_ears'; mecha (bob +-9) 'cover_ears_mecha'; ofelia (+-8.5) 'cover_ears_ofelia'; chela (curl clumps +-12)
   'cover_ears_chela' - same body/legs/head values, only the six arm bones differ (if a renderer prefers one pose plus
   an offset: add about -0.08 (right) / +0.08 (left) arm zRot per texel of extra hair width).  Warning when Sor Agonia
   hunts within 16 blocks ("shh, viene"), then dissolve.
 * head_180: the thumbnail shot.  neck + head yaw sum to pi; SNAP all girls on the same tick when the flashlight hits
-  the choir loft.  Works from any base pose (stand, sing, face_wall); body stays still.
+  the choir loft.  Works from any base pose (stand, sing, face_wall); body stays still.  The hair that hung down her
+  back now hangs over her chest: ofelia_curtain +0.15 keeps it clear of the school bow (Rocio's ponytail and Paloma's
+  braids need nothing).
 * run: Hora Muerta, running ahead lighting candles; braids/ponytail/curtain fly back.  Contact frame: the front
-  (right) sole is flat on the floor (body dy +1.53), the back foot kicked up toe-down.
+  (right) sole is flat on the floor (body dy +1.53), the back foot kicked up toe-down (left leg +0.45, shin +0.85,
+  shoe +0.25: the navy sock shows under the hem from behind, the shoe never folds up against the skirt).
 * peek: leaning sideways TOWARD the doorframe on her left (body zRot +0.42: in MC a positive zRot tips the top toward
   +X, which is her left; legs counter-rotated -0.36 / -0.48 so the feet stay apart, body dy +0.9 and the left knee
   bent forward so both soles stay on the floor), neck/head tilting on out past the edge (0.05 / 0.12).  The left hand

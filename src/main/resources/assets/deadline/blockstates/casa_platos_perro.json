@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "deadline:block/casa_platos_perro"
+  },
+  "facing=east": {
+   "model": "deadline:block/casa_platos_perro",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "deadline:block/casa_platos_perro",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "deadline:block/casa_platos_perro",
+   "y": 270
+  }
+ }
+}

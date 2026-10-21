@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "deadline:block/casa_cuchillos_vacio"
+  },
+  "facing=east": {
+   "model": "deadline:block/casa_cuchillos_vacio",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "deadline:block/casa_cuchillos_vacio",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "deadline:block/casa_cuchillos_vacio",
+   "y": 270
+  }
+ }
+}

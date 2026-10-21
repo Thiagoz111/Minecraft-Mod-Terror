@@ -12,6 +12,24 @@
    },
    {
     "model": "deadline:block/casa_medianera_3"
+   },
+   {
+    "model": "deadline:block/casa_medianera_4"
+   },
+   {
+    "model": "deadline:block/casa_medianera_5"
+   },
+   {
+    "model": "deadline:block/casa_medianera_6"
+   },
+   {
+    "model": "deadline:block/casa_medianera_7"
+   },
+   {
+    "model": "deadline:block/casa_medianera_8"
+   },
+   {
+    "model": "deadline:block/casa_medianera_9"
    }
   ]
  }

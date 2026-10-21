@@ -12,6 +12,24 @@
    },
    {
     "model": "deadline:block/casa_ladrillo_visto_3"
+   },
+   {
+    "model": "deadline:block/casa_ladrillo_visto_4"
+   },
+   {
+    "model": "deadline:block/casa_ladrillo_visto_5"
+   },
+   {
+    "model": "deadline:block/casa_ladrillo_visto_6"
+   },
+   {
+    "model": "deadline:block/casa_ladrillo_visto_7"
+   },
+   {
+    "model": "deadline:block/casa_ladrillo_visto_8"
+   },
+   {
+    "model": "deadline:block/casa_ladrillo_visto_9"
    }
   ]
  }

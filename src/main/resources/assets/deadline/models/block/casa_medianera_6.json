@@ -1,0 +1,12 @@
+{
+ "parent": "minecraft:block/cube",
+ "textures": {
+  "particle": "deadline:block/casa_medianera_6",
+  "north": "deadline:block/casa_medianera_6",
+  "south": "deadline:block/casa_medianera_6",
+  "east": "deadline:block/casa_medianera_6",
+  "west": "deadline:block/casa_medianera_6",
+  "up": "deadline:block/casa_medianera_6",
+  "down": "deadline:block/casa_medianera_6"
+ }
+}

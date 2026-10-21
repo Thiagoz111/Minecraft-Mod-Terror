@@ -1,0 +1,12 @@
+{
+ "parent": "minecraft:block/cube",
+ "textures": {
+  "particle": "deadline:block/casa_pared_pasillo_5",
+  "north": "deadline:block/casa_pared_pasillo_5",
+  "south": "deadline:block/casa_pared_pasillo_5",
+  "east": "deadline:block/casa_pared_pasillo_5",
+  "west": "deadline:block/casa_pared_pasillo_5",
+  "up": "deadline:block/casa_pared_pasillo_5",
+  "down": "deadline:block/casa_pared_pasillo_5"
+ }
+}

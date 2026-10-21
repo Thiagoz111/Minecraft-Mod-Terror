@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "deadline:block/casa_pelopincho_esquina_lona"
+  },
+  "facing=east": {
+   "model": "deadline:block/casa_pelopincho_esquina_lona",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "deadline:block/casa_pelopincho_esquina_lona",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "deadline:block/casa_pelopincho_esquina_lona",
+   "y": 270
+  }
+ }
+}

@@ -1,0 +1,12 @@
+{
+ "parent": "minecraft:block/cube",
+ "textures": {
+  "particle": "deadline:block/casa_empapelado_matrimonial_3",
+  "north": "deadline:block/casa_empapelado_matrimonial_3",
+  "south": "deadline:block/casa_empapelado_matrimonial_3",
+  "east": "deadline:block/casa_empapelado_matrimonial_3",
+  "west": "deadline:block/casa_empapelado_matrimonial_3",
+  "up": "deadline:block/casa_empapelado_matrimonial_3",
+  "down": "deadline:block/casa_empapelado_matrimonial_3"
+ }
+}

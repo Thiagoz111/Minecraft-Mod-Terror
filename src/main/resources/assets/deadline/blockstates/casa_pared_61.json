@@ -1,0 +1,36 @@
+{
+ "variants": {
+  "": [
+   {
+    "model": "deadline:block/casa_pared_61_0"
+   },
+   {
+    "model": "deadline:block/casa_pared_61_1"
+   },
+   {
+    "model": "deadline:block/casa_pared_61_2"
+   },
+   {
+    "model": "deadline:block/casa_pared_61_3"
+   },
+   {
+    "model": "deadline:block/casa_pared_61_4"
+   },
+   {
+    "model": "deadline:block/casa_pared_61_5"
+   },
+   {
+    "model": "deadline:block/casa_pared_61_6"
+   },
+   {
+    "model": "deadline:block/casa_pared_61_7"
+   },
+   {
+    "model": "deadline:block/casa_pared_61_8"
+   },
+   {
+    "model": "deadline:block/casa_pared_61_9"
+   }
+  ]
+ }
+}

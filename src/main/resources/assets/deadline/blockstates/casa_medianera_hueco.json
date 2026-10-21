@@ -1,0 +1,12 @@
+{
+ "variants": {
+  "": [
+   {
+    "model": "deadline:block/casa_medianera_hueco_0"
+   },
+   {
+    "model": "deadline:block/casa_medianera_hueco_1"
+   }
+  ]
+ }
+}

@@ -52,10 +52,12 @@ def room(B, W, D, H, floor, wall, base, ceil, x0=0, z0=0, walls=None):
 
 B = []
 W, D, H = 6, 6, 3
+WIN = {(4, 1): 'casa_ventana_inf_izq', (3, 1): 'casa_ventana_inf_der', (4, 2): 'casa_ventana_sup_izq', (3, 2): 'casa_ventana_sup_der'}
 WALL = pick('casa_pared_lucia', 'colegio_revoque')
 room(B, W, D, H, lambda x, z: pick('casa_parquet', 'colegio_tablas'), WALL, pick('casa_pared_lucia_zocalo', 'colegio_revoque_zocalo'),
      pick('casa_cielorraso', 'colegio_cielorraso'),
-     walls=lambda x, y, z: pick('casa_pared_lucia_stickers', 'casa_pared_lucia') if (x == -1 and y == 1 and z in (1, 2)) else None)
+     walls=lambda x, y, z: pick('casa_pared_lucia_stickers', 'casa_pared_lucia') if (x == -1 and y == 1 and z in (1, 2)) else
+     (WIN[(x, y)] if (z == -1 and (x, y) in WIN and WIN[(x, y)] in HAVE) else None))
 B += [(1, 0, 0, 'casa_cama_dosel_cabecera', 'south'), (1, 0, 1, 'casa_cama_dosel_pie', 'south'),
       (0, 0, 0, 'casa_mesa_luz', 'south'), (0, 1, 0, 'casa_lampara_hongo', 'south')]
 B += [(5, 0, 1, 'casa_estante_munecas_1', 'west'), (5, 0, 2, 'casa_estante_munecas_2', 'west'), (5, 0, 3, 'casa_estante_munecas_3', 'west')]
@@ -64,4 +66,6 @@ B += [(2, 0, 2, 'casa_alfombra_lucia', 'north'), (3, 0, 2, 'casa_alfombra_lucia'
       (3, 0, 3, 'casa_alfombra_lucia', 'south'), (2, 0, 3, 'casa_cuaderno_lemaza', 'east')]
 B += [(0, 0, 4, 'casa_baul_juguetes', 'east'), (0, 0, 3, 'casa_dibujo_lemaza', 'east'), (4, 0, 4, 'casa_mochila', 'west'),
       (1, 0, 4, 'casa_juguetes', 'north'), (3, 2, 3, 'casa_plafon_apagado', 'north')]
-SCENE = dict(blocks=B, camera=(4.6, 1.62, 5.6), target=(1.8, 0.8, 1.2), fov=76)
+if 'casa_ventana_inf_izq' in HAVE:
+    B += [(3, 1, 0, 'casa_cortina_rosa_izq', 'south'), (4, 1, 0, 'casa_cortina_rosa_der', 'south')]
+SCENE = dict(blocks=B, camera=(0.8, 1.62, 5.2), target=(5.0, 1.15, 2.2), fov=76)   # the flashlight lands on the dolls

@@ -12,6 +12,24 @@
    },
    {
     "model": "deadline:block/casa_pared_cocina_3"
+   },
+   {
+    "model": "deadline:block/casa_pared_cocina_4"
+   },
+   {
+    "model": "deadline:block/casa_pared_cocina_5"
+   },
+   {
+    "model": "deadline:block/casa_pared_cocina_6"
+   },
+   {
+    "model": "deadline:block/casa_pared_cocina_7"
+   },
+   {
+    "model": "deadline:block/casa_pared_cocina_8"
+   },
+   {
+    "model": "deadline:block/casa_pared_cocina_9"
    }
   ]
  }

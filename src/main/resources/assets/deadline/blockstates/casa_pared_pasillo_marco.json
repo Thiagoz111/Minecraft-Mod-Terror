@@ -1,0 +1,12 @@
+{
+ "variants": {
+  "": [
+   {
+    "model": "deadline:block/casa_pared_pasillo_marco_0"
+   },
+   {
+    "model": "deadline:block/casa_pared_pasillo_marco_1"
+   }
+  ]
+ }
+}

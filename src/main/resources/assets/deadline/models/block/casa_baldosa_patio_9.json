@@ -1,0 +1,12 @@
+{
+ "parent": "minecraft:block/cube",
+ "textures": {
+  "particle": "deadline:block/casa_baldosa_patio_9",
+  "north": "deadline:block/casa_baldosa_patio_9",
+  "south": "deadline:block/casa_baldosa_patio_9",
+  "east": "deadline:block/casa_baldosa_patio_9",
+  "west": "deadline:block/casa_baldosa_patio_9",
+  "up": "deadline:block/casa_baldosa_patio_9",
+  "down": "deadline:block/casa_baldosa_patio_9"
+ }
+}

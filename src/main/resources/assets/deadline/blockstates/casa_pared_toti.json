@@ -12,6 +12,24 @@
    },
    {
     "model": "deadline:block/casa_pared_toti_3"
+   },
+   {
+    "model": "deadline:block/casa_pared_toti_4"
+   },
+   {
+    "model": "deadline:block/casa_pared_toti_5"
+   },
+   {
+    "model": "deadline:block/casa_pared_toti_6"
+   },
+   {
+    "model": "deadline:block/casa_pared_toti_7"
+   },
+   {
+    "model": "deadline:block/casa_pared_toti_8"
+   },
+   {
+    "model": "deadline:block/casa_pared_toti_9"
    }
   ]
  }

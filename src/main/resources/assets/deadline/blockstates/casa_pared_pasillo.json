@@ -12,6 +12,24 @@
    },
    {
     "model": "deadline:block/casa_pared_pasillo_3"
+   },
+   {
+    "model": "deadline:block/casa_pared_pasillo_4"
+   },
+   {
+    "model": "deadline:block/casa_pared_pasillo_5"
+   },
+   {
+    "model": "deadline:block/casa_pared_pasillo_6"
+   },
+   {
+    "model": "deadline:block/casa_pared_pasillo_7"
+   },
+   {
+    "model": "deadline:block/casa_pared_pasillo_8"
+   },
+   {
+    "model": "deadline:block/casa_pared_pasillo_9"
    }
   ]
  }

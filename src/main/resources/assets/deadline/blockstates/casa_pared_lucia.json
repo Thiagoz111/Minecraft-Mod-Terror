@@ -12,6 +12,24 @@
    },
    {
     "model": "deadline:block/casa_pared_lucia_3"
+   },
+   {
+    "model": "deadline:block/casa_pared_lucia_4"
+   },
+   {
+    "model": "deadline:block/casa_pared_lucia_5"
+   },
+   {
+    "model": "deadline:block/casa_pared_lucia_6"
+   },
+   {
+    "model": "deadline:block/casa_pared_lucia_7"
+   },
+   {
+    "model": "deadline:block/casa_pared_lucia_8"
+   },
+   {
+    "model": "deadline:block/casa_pared_lucia_9"
    }
   ]
  }

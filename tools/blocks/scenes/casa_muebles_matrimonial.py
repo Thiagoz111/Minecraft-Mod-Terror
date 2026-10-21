@@ -62,4 +62,4 @@ B += [(6, 0, 2, 'casa_comoda_izq', 'west'), (6, 0, 3, 'casa_comoda_der', 'west')
 B += [(0, 0, 2, 'casa_placard_cerrado_der', 'east'), (0, 0, 3, 'casa_placard_cerrado_izq', 'east'),
       (0, 2, 2, 'casa_placard_maletero_der', 'east'), (0, 2, 3, 'casa_placard_maletero_izq', 'east')]
 B += [(5, 1, 5, 'casa_perchero_bata', 'north'), (3, 2, 3, 'casa_plafon_apagado', 'north'), (5, 0, 1, 'casa_pantuflas', 'south')]
-SCENE = dict(blocks=B, camera=(5.6, 1.62, 5.5), target=(2.4, 0.8, 0.9), fov=76)
+SCENE = dict(blocks=B, camera=(1.7, 1.62, 5.5), target=(4.8, 0.95, 1.8), fov=78)   # bed + the one-piece dresser mirror

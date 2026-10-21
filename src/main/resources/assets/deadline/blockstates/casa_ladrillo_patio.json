@@ -9,6 +9,27 @@
    },
    {
     "model": "deadline:block/casa_ladrillo_patio_2"
+   },
+   {
+    "model": "deadline:block/casa_ladrillo_patio_3"
+   },
+   {
+    "model": "deadline:block/casa_ladrillo_patio_4"
+   },
+   {
+    "model": "deadline:block/casa_ladrillo_patio_5"
+   },
+   {
+    "model": "deadline:block/casa_ladrillo_patio_6"
+   },
+   {
+    "model": "deadline:block/casa_ladrillo_patio_7"
+   },
+   {
+    "model": "deadline:block/casa_ladrillo_patio_8"
+   },
+   {
+    "model": "deadline:block/casa_ladrillo_patio_9"
    }
   ]
  }

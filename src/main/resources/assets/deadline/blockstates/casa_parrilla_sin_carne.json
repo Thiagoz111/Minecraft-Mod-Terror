@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "deadline:block/casa_parrilla_sin_carne"
+  },
+  "facing=east": {
+   "model": "deadline:block/casa_parrilla_sin_carne",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "deadline:block/casa_parrilla_sin_carne",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "deadline:block/casa_parrilla_sin_carne",
+   "y": 270
+  }
+ }
+}

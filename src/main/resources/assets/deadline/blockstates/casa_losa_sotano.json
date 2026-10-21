@@ -9,6 +9,27 @@
    },
    {
     "model": "deadline:block/casa_losa_sotano_2"
+   },
+   {
+    "model": "deadline:block/casa_losa_sotano_3"
+   },
+   {
+    "model": "deadline:block/casa_losa_sotano_4"
+   },
+   {
+    "model": "deadline:block/casa_losa_sotano_5"
+   },
+   {
+    "model": "deadline:block/casa_losa_sotano_6"
+   },
+   {
+    "model": "deadline:block/casa_losa_sotano_7"
+   },
+   {
+    "model": "deadline:block/casa_losa_sotano_8"
+   },
+   {
+    "model": "deadline:block/casa_losa_sotano_9"
    }
   ]
  }

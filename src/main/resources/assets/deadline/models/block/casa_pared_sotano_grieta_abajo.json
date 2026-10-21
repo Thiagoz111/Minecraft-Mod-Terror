@@ -1,0 +1,12 @@
+{
+ "parent": "minecraft:block/cube",
+ "textures": {
+  "particle": "deadline:block/casa_pared_sotano_grieta_abajo_north",
+  "north": "deadline:block/casa_pared_sotano_grieta_abajo_north",
+  "south": "deadline:block/casa_pared_sotano_grieta_abajo_north",
+  "east": "deadline:block/casa_pared_sotano_grieta_abajo_north",
+  "west": "deadline:block/casa_pared_sotano_grieta_abajo_north",
+  "up": "deadline:block/casa_pared_sotano_grieta_abajo_up",
+  "down": "deadline:block/casa_pared_sotano_grieta_abajo_up"
+ }
+}

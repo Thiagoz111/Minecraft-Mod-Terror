@@ -9,6 +9,27 @@
    },
    {
     "model": "deadline:block/casa_ceramica_cocina_2"
+   },
+   {
+    "model": "deadline:block/casa_ceramica_cocina_3"
+   },
+   {
+    "model": "deadline:block/casa_ceramica_cocina_4"
+   },
+   {
+    "model": "deadline:block/casa_ceramica_cocina_5"
+   },
+   {
+    "model": "deadline:block/casa_ceramica_cocina_6"
+   },
+   {
+    "model": "deadline:block/casa_ceramica_cocina_7"
+   },
+   {
+    "model": "deadline:block/casa_ceramica_cocina_8"
+   },
+   {
+    "model": "deadline:block/casa_ceramica_cocina_9"
    }
   ]
  }

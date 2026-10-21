@@ -9,6 +9,27 @@
    },
    {
     "model": "deadline:block/casa_asfalto_2"
+   },
+   {
+    "model": "deadline:block/casa_asfalto_3"
+   },
+   {
+    "model": "deadline:block/casa_asfalto_4"
+   },
+   {
+    "model": "deadline:block/casa_asfalto_5"
+   },
+   {
+    "model": "deadline:block/casa_asfalto_6"
+   },
+   {
+    "model": "deadline:block/casa_asfalto_7"
+   },
+   {
+    "model": "deadline:block/casa_asfalto_8"
+   },
+   {
+    "model": "deadline:block/casa_asfalto_9"
    }
   ]
  }

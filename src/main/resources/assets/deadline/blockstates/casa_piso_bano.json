@@ -12,6 +12,24 @@
    },
    {
     "model": "deadline:block/casa_piso_bano_3"
+   },
+   {
+    "model": "deadline:block/casa_piso_bano_4"
+   },
+   {
+    "model": "deadline:block/casa_piso_bano_5"
+   },
+   {
+    "model": "deadline:block/casa_piso_bano_6"
+   },
+   {
+    "model": "deadline:block/casa_piso_bano_7"
+   },
+   {
+    "model": "deadline:block/casa_piso_bano_8"
+   },
+   {
+    "model": "deadline:block/casa_piso_bano_9"
    }
   ]
  }

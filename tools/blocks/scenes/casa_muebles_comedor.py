@@ -60,6 +60,6 @@ for x in (2, 3, 4):
     B += [(x, 0, 2, 'casa_silla_comedor', 'south'), (x, 0, 4, 'casa_silla_comedor', 'north')]
 B += [(1, 0, 3, 'casa_silla_comedor', 'east'), (5, 0, 3, 'casa_silla_comedor', 'west')]
 B = [b for b in B if b[:3] != (3, 0, 4)] + [(3, 0, 5, 'casa_silla_comedor_volcada', 'north')]
-B += [(2, 0, 0, 'casa_aparador_izq', 'south'), (3, 0, 0, 'casa_aparador_der', 'south')]
+B += [(2, 0, 0, 'casa_aparador_izq', 'south'), (3, 0, 0, 'casa_aparador_der', 'south'), (4, 1, 0, 'casa_cuadro_ultima_cena', 'south')]
 B += [(3, 2, 3, 'casa_lampara_comedor', 'north'), (5, 2, 0, 'casa_reloj_cocina', 'south'), (0, 1, 2, 'casa_foto_nona_joven', 'east')]
 SCENE = dict(blocks=B, camera=(6.4, 1.62, 5.6), target=(2.4, 0.8, 1.6), fov=72)

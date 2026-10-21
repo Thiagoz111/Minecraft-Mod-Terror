@@ -12,6 +12,24 @@
    },
    {
     "model": "deadline:block/casa_tejas_3"
+   },
+   {
+    "model": "deadline:block/casa_tejas_4"
+   },
+   {
+    "model": "deadline:block/casa_tejas_5"
+   },
+   {
+    "model": "deadline:block/casa_tejas_6"
+   },
+   {
+    "model": "deadline:block/casa_tejas_7"
+   },
+   {
+    "model": "deadline:block/casa_tejas_8"
+   },
+   {
+    "model": "deadline:block/casa_tejas_9"
    }
   ]
  }

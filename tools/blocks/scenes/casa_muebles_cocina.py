@@ -71,7 +71,7 @@ B += [(0, 0, 0, 'casa_heladera_abajo', 'south'), (0, 1, 0, 'casa_heladera_arriba
 B += [(1, 1, 0, 'casa_panera', 'south'), (3, 1, 0, 'casa_mate_termo', 'south'), (5, 1, 0, 'casa_escurridor', 'south')]
 B += [(1, 2, 0, 'casa_alacena', 'south'), (3, 2, 0, 'casa_alacena_abierta', 'south'), (5, 2, 0, 'casa_alacena', 'south'),
       (6, 2, 0, 'casa_alacena', 'south')]
-B += [(6, 2, 3, 'casa_reloj_cocina_333', 'west')]
+B += [(6, 2, 3, 'casa_reloj_cocina_333', 'west'), (6, 1, 1, 'casa_almanaque', 'west')]
 B += [(3, 0, 3, 'casa_mesa_cocina', 'north'), (3, 1, 3, 'casa_desayuno', 'north'),
       (3, 0, 2, 'casa_silla_cocina', 'south'), (3, 0, 4, 'casa_silla_cocina', 'north'), (2, 0, 3, 'casa_silla_cocina', 'east'),
       (4, 0, 3, 'casa_silla_cocina', 'west'), (0, 0, 5, 'casa_tacho_basura', 'east')]

@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "deadline:block/casa_limonero_ramas"
+  },
+  "facing=east": {
+   "model": "deadline:block/casa_limonero_ramas",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "deadline:block/casa_limonero_ramas",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "deadline:block/casa_limonero_ramas",
+   "y": 270
+  }
+ }
+}

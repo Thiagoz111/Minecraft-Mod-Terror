@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "deadline:block/casa_pelopincho_agua_pelota"
+  },
+  "facing=east": {
+   "model": "deadline:block/casa_pelopincho_agua_pelota",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "deadline:block/casa_pelopincho_agua_pelota",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "deadline:block/casa_pelopincho_agua_pelota",
+   "y": 270
+  }
+ }
+}

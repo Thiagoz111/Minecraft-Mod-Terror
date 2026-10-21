@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "deadline:block/casa_aplique_patio"
+  },
+  "facing=east": {
+   "model": "deadline:block/casa_aplique_patio",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "deadline:block/casa_aplique_patio",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "deadline:block/casa_aplique_patio",
+   "y": 270
+  }
+ }
+}

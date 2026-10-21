@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "deadline:block/casa_cortina_floreada_izq"
+  },
+  "facing=east": {
+   "model": "deadline:block/casa_cortina_floreada_izq",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "deadline:block/casa_cortina_floreada_izq",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "deadline:block/casa_cortina_floreada_izq",
+   "y": 270
+  }
+ }
+}

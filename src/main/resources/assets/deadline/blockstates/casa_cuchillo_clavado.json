@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "deadline:block/casa_cuchillo_clavado"
+  },
+  "facing=east": {
+   "model": "deadline:block/casa_cuchillo_clavado",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "deadline:block/casa_cuchillo_clavado",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "deadline:block/casa_cuchillo_clavado",
+   "y": 270
+  }
+ }
+}

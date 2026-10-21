@@ -9,6 +9,27 @@
    },
    {
     "model": "deadline:block/casa_parquet_2"
+   },
+   {
+    "model": "deadline:block/casa_parquet_3"
+   },
+   {
+    "model": "deadline:block/casa_parquet_4"
+   },
+   {
+    "model": "deadline:block/casa_parquet_5"
+   },
+   {
+    "model": "deadline:block/casa_parquet_6"
+   },
+   {
+    "model": "deadline:block/casa_parquet_7"
+   },
+   {
+    "model": "deadline:block/casa_parquet_8"
+   },
+   {
+    "model": "deadline:block/casa_parquet_9"
    }
   ]
  }

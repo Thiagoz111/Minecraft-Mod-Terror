@@ -12,6 +12,24 @@
    },
    {
     "model": "deadline:block/casa_arena_3"
+   },
+   {
+    "model": "deadline:block/casa_arena_4"
+   },
+   {
+    "model": "deadline:block/casa_arena_5"
+   },
+   {
+    "model": "deadline:block/casa_arena_6"
+   },
+   {
+    "model": "deadline:block/casa_arena_7"
+   },
+   {
+    "model": "deadline:block/casa_arena_8"
+   },
+   {
+    "model": "deadline:block/casa_arena_9"
    }
   ]
  }

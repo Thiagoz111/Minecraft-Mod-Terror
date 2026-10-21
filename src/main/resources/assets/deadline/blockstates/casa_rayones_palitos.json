@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "deadline:block/casa_rayones_palitos"
+  },
+  "facing=east": {
+   "model": "deadline:block/casa_rayones_palitos",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "deadline:block/casa_rayones_palitos",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "deadline:block/casa_rayones_palitos",
+   "y": 270
+  }
+ }
+}

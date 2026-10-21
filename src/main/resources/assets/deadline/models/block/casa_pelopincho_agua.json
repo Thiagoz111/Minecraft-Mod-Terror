@@ -1,0 +1,32 @@
+{
+ "parent": "minecraft:block/block",
+ "textures": {
+  "t": "deadline:block/casa_pelopincho_agua",
+  "particle": "deadline:block/casa_pelopincho_agua"
+ },
+ "elements": [
+  {
+   "from": [
+    0.0,
+    10.4,
+    0.0
+   ],
+   "to": [
+    16.0,
+    10.4,
+    16.0
+   ],
+   "faces": {
+    "up": {
+     "uv": [
+      0.0,
+      0.0,
+      16.0,
+      16.0
+     ],
+     "texture": "#t"
+    }
+   }
+  }
+ ]
+}

@@ -6,6 +6,12 @@
    },
    {
     "model": "deadline:block/casa_pared_lucia_zocalo_1"
+   },
+   {
+    "model": "deadline:block/casa_pared_lucia_zocalo_2"
+   },
+   {
+    "model": "deadline:block/casa_pared_lucia_zocalo_3"
    }
   ]
  }

@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "deadline:block/casa_rayones_latin_brillo"
+  },
+  "facing=east": {
+   "model": "deadline:block/casa_rayones_latin_brillo",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "deadline:block/casa_rayones_latin_brillo",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "deadline:block/casa_rayones_latin_brillo",
+   "y": 270
+  }
+ }
+}

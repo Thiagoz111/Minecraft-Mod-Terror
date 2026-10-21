@@ -12,6 +12,24 @@
    },
    {
     "model": "deadline:block/casa_revoque_blanco_3"
+   },
+   {
+    "model": "deadline:block/casa_revoque_blanco_4"
+   },
+   {
+    "model": "deadline:block/casa_revoque_blanco_5"
+   },
+   {
+    "model": "deadline:block/casa_revoque_blanco_6"
+   },
+   {
+    "model": "deadline:block/casa_revoque_blanco_7"
+   },
+   {
+    "model": "deadline:block/casa_revoque_blanco_8"
+   },
+   {
+    "model": "deadline:block/casa_revoque_blanco_9"
    }
   ]
  }

@@ -9,6 +9,9 @@
    },
    {
     "model": "deadline:block/casa_ladrillo_salitre_2"
+   },
+   {
+    "model": "deadline:block/casa_ladrillo_salitre_3"
    }
   ]
  }

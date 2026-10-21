@@ -12,6 +12,24 @@
    },
    {
     "model": "deadline:block/casa_empapelado_nona_3"
+   },
+   {
+    "model": "deadline:block/casa_empapelado_nona_4"
+   },
+   {
+    "model": "deadline:block/casa_empapelado_nona_5"
+   },
+   {
+    "model": "deadline:block/casa_empapelado_nona_6"
+   },
+   {
+    "model": "deadline:block/casa_empapelado_nona_7"
+   },
+   {
+    "model": "deadline:block/casa_empapelado_nona_8"
+   },
+   {
+    "model": "deadline:block/casa_empapelado_nona_9"
    }
   ]
  }

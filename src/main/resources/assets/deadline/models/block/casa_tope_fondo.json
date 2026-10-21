@@ -1,0 +1,77 @@
+{
+ "parent": "minecraft:block/block",
+ "textures": {
+  "t": "deadline:block/casa_tope_fondo",
+  "particle": "deadline:block/casa_tope_fondo"
+ },
+ "elements": [
+  {
+   "from": [
+    0.2,
+    0.0,
+    6.0
+   ],
+   "to": [
+    15.8,
+    15.0,
+    16.0
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      0.0,
+      0.0,
+      3.875,
+      3.75
+     ],
+     "texture": "#t"
+    },
+    "south": {
+     "uv": [
+      3.875,
+      0.0,
+      7.75,
+      3.75
+     ],
+     "texture": "#t"
+    },
+    "west": {
+     "uv": [
+      7.75,
+      0.0,
+      10.25,
+      3.75
+     ],
+     "texture": "#t"
+    },
+    "east": {
+     "uv": [
+      10.25,
+      0.0,
+      12.75,
+      3.75
+     ],
+     "texture": "#t"
+    },
+    "up": {
+     "uv": [
+      0.0,
+      3.75,
+      3.875,
+      6.25
+     ],
+     "texture": "#t"
+    },
+    "down": {
+     "uv": [
+      3.875,
+      3.75,
+      7.75,
+      6.25
+     ],
+     "texture": "#t"
+    }
+   }
+  }
+ ]
+}

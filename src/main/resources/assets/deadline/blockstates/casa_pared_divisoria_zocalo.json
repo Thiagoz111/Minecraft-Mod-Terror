@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "deadline:block/casa_pared_divisoria_zocalo"
+  },
+  "facing=east": {
+   "model": "deadline:block/casa_pared_divisoria_zocalo",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "deadline:block/casa_pared_divisoria_zocalo",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "deadline:block/casa_pared_divisoria_zocalo",
+   "y": 270
+  }
+ }
+}

@@ -1,0 +1,12 @@
+{
+ "variants": {
+  "": [
+   {
+    "model": "deadline:block/casa_umbral_marmol_0"
+   },
+   {
+    "model": "deadline:block/casa_umbral_marmol_1"
+   }
+  ]
+ }
+}

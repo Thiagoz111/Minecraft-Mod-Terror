@@ -1,0 +1,12 @@
+{
+ "parent": "minecraft:block/cube",
+ "textures": {
+  "particle": "deadline:block/casa_cemento_lavadero_5",
+  "north": "deadline:block/casa_cemento_lavadero_5",
+  "south": "deadline:block/casa_cemento_lavadero_5",
+  "east": "deadline:block/casa_cemento_lavadero_5",
+  "west": "deadline:block/casa_cemento_lavadero_5",
+  "up": "deadline:block/casa_cemento_lavadero_5",
+  "down": "deadline:block/casa_cemento_lavadero_5"
+ }
+}

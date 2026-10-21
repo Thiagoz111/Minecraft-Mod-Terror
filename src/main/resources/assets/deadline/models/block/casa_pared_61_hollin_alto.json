@@ -1,0 +1,12 @@
+{
+ "parent": "minecraft:block/cube",
+ "textures": {
+  "particle": "deadline:block/casa_pared_61_hollin_alto_north",
+  "north": "deadline:block/casa_pared_61_hollin_alto_north",
+  "south": "deadline:block/casa_pared_61_hollin_alto_north",
+  "east": "deadline:block/casa_pared_61_hollin_alto_north",
+  "west": "deadline:block/casa_pared_61_hollin_alto_north",
+  "up": "deadline:block/casa_pared_61_hollin_alto_up",
+  "down": "deadline:block/casa_pared_61_hollin_alto_up"
+ }
+}

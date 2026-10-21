@@ -31,7 +31,10 @@ for y in range(HW):
             B.append((x, y, z, k, 'north'))
     for z in range(1, D - 1):
         for x in (0, W - 1):
-            k = 'casa_zocalo_revoque' if y == 0 else ('casa_revoque_humedad' if y == 1 and h(x, z) < 300 else 'casa_revoque_blanco')
+            # rising damp along the whole west side wall (damp courses meet at the same height on every seam), dry east
+            wet = x == 0
+            k = ('casa_zocalo_revoque_humedad' if wet else 'casa_zocalo_revoque') if y == 0 else \
+                ('casa_revoque_humedad' if (y == 1 and wet) else 'casa_revoque_blanco')
             B.append((x, y, z, k, 'north'))
 # gable walls above the eave level (full blocks under the roof line)
 for x in (0, W - 1):

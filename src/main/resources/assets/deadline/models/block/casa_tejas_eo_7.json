@@ -1,0 +1,12 @@
+{
+ "parent": "minecraft:block/cube",
+ "textures": {
+  "particle": "deadline:block/casa_tejas_eo_7_north",
+  "north": "deadline:block/casa_tejas_eo_7_north",
+  "south": "deadline:block/casa_tejas_eo_7_north",
+  "east": "deadline:block/casa_tejas_eo_7_north",
+  "west": "deadline:block/casa_tejas_eo_7_north",
+  "up": "deadline:block/casa_tejas_eo_7_up",
+  "down": "deadline:block/casa_tejas_eo_7_down"
+ }
+}

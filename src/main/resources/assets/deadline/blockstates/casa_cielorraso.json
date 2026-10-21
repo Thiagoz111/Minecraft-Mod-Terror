@@ -12,6 +12,24 @@
    },
    {
     "model": "deadline:block/casa_cielorraso_3"
+   },
+   {
+    "model": "deadline:block/casa_cielorraso_4"
+   },
+   {
+    "model": "deadline:block/casa_cielorraso_5"
+   },
+   {
+    "model": "deadline:block/casa_cielorraso_6"
+   },
+   {
+    "model": "deadline:block/casa_cielorraso_7"
+   },
+   {
+    "model": "deadline:block/casa_cielorraso_8"
+   },
+   {
+    "model": "deadline:block/casa_cielorraso_9"
    }
   ]
  }

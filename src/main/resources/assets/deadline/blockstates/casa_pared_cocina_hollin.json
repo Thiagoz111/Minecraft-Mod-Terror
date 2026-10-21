@@ -1,0 +1,12 @@
+{
+ "variants": {
+  "": [
+   {
+    "model": "deadline:block/casa_pared_cocina_hollin_0"
+   },
+   {
+    "model": "deadline:block/casa_pared_cocina_hollin_1"
+   }
+  ]
+ }
+}

@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "deadline:block/casa_sal_patio_d"
+  },
+  "facing=east": {
+   "model": "deadline:block/casa_sal_patio_d",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "deadline:block/casa_sal_patio_d",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "deadline:block/casa_sal_patio_d",
+   "y": 270
+  }
+ }
+}

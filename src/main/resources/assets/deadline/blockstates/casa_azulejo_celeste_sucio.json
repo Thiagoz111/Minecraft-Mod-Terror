@@ -1,0 +1,12 @@
+{
+ "variants": {
+  "": [
+   {
+    "model": "deadline:block/casa_azulejo_celeste_sucio_0"
+   },
+   {
+    "model": "deadline:block/casa_azulejo_celeste_sucio_1"
+   }
+  ]
+ }
+}

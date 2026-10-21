@@ -1,0 +1,15 @@
+{
+ "variants": {
+  "": [
+   {
+    "model": "deadline:block/casa_pared_sotano_ladrillo_0"
+   },
+   {
+    "model": "deadline:block/casa_pared_sotano_ladrillo_1"
+   },
+   {
+    "model": "deadline:block/casa_pared_sotano_ladrillo_2"
+   }
+  ]
+ }
+}

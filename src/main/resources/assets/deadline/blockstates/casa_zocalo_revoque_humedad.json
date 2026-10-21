@@ -1,0 +1,30 @@
+{
+ "variants": {
+  "": [
+   {
+    "model": "deadline:block/casa_zocalo_revoque_humedad_0"
+   },
+   {
+    "model": "deadline:block/casa_zocalo_revoque_humedad_1"
+   },
+   {
+    "model": "deadline:block/casa_zocalo_revoque_humedad_2"
+   },
+   {
+    "model": "deadline:block/casa_zocalo_revoque_humedad_3"
+   },
+   {
+    "model": "deadline:block/casa_zocalo_revoque_humedad_4"
+   },
+   {
+    "model": "deadline:block/casa_zocalo_revoque_humedad_5"
+   },
+   {
+    "model": "deadline:block/casa_zocalo_revoque_humedad_6"
+   },
+   {
+    "model": "deadline:block/casa_zocalo_revoque_humedad_7"
+   }
+  ]
+ }
+}

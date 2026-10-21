@@ -26,19 +26,22 @@ for z in range(-1, L + 1):
                 k = 'casa_alfombra_punta_der' if x == 1 else 'casa_alfombra_punta_izq'
                 B.append((x, 0, z, k, 'south'))
             else:
-                k = 'casa_alfombra_mancha' if False else ('casa_alfombra_izq' if x == 1 else 'casa_alfombra_der')
+                k = 'casa_alfombra_izq' if x == 1 else 'casa_alfombra_der'
                 B.append((x, 0, z, k, 'north'))
 for y in range(3):
     for z in range(-1, L + 1):
         for x in (-1, 2):
             if x == 2 and z in DOORS and y < 2:
                 wall, base = DOORS[z]
-                B.append((3, -1, z, 'casa_parquet', 'north'))
+                if y == 0:
+                    B.append((3, -1, z, 'casa_parquet', 'north'))
+                    B.append((2, -1, z, 'casa_umbral_marmol', 'north'))      # the threshold under the door
                 B.append((4, y, z, base if y == 0 else wall, 'north'))
                 for zz in (z - 1, z + 1):
                     B.append((3, y, zz, base if y == 0 else wall, 'north'))
                 continue
-            k = 'casa_pared_pasillo_zocalo' if y == 0 else ('casa_pared_pasillo' if h(x, y, z) > 200 else 'casa_pared_pasillo')
+            k = 'casa_pared_pasillo_zocalo' if y == 0 else ('casa_pared_pasillo_marco' if (x, y, z) in ((-1, 1, 2), (-1, 1, 5)) else
+                                                             'casa_pared_pasillo_rayada' if (x, y, z) == (-1, 1, 9) else 'casa_pared_pasillo')
             B.append((x, y, z, k, 'north'))
     for x in (0, 1):
         B.append((x, y, -1, 'casa_pared_pasillo_zocalo' if y == 0 else 'casa_pared_pasillo', 'north'))
@@ -47,7 +50,8 @@ for y in range(3):
 # the bathroom at the end of the corridor (door at x=0, z=L)
 for y in range(2):
     B.append((0, y, L + 1, 'casa_azulejo_celeste' if y == 0 else 'casa_azulejo_celeste_guarda', 'north'))
-B.append((0, -1, L, 'casa_piso_bano', 'north'))
+B.append((0, -1, L, 'casa_umbral_marmol', 'north'))
+B.append((0, -1, L + 1, 'casa_piso_bano', 'north'))
 # casings around the doors on the east wall (pieces face west, towards the corridor)
 for z in DOORS:
     B += [(1, 1, z - 1, 'casa_contramarco_izq', 'west'), (1, 1, z + 1, 'casa_contramarco_der', 'west'), (1, 2, z, 'casa_contramarco_dintel', 'west')]
