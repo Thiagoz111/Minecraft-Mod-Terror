@@ -10,6 +10,7 @@ public final class Script {
 	public final String caseKey;
 	final Map<Integer, Chapter> chapters = new TreeMap<>();
 	final List<Beat> beats = new ArrayList<>();
+	final Map<String, int[]> locks = new java.util.HashMap<>();
 
 	public Script(String caseKey) {
 		this.caseKey = caseKey;
@@ -25,6 +26,12 @@ public final class Script {
 		Beat b = new Beat(caseKey + "." + id);
 		beats.add(b);
 		return b;
+	}
+
+	/** A door marker that cannot be opened by hand from chapter `from` until chapter `until` (the script still can). */
+	public Script lock(String door, int from, int until) {
+		locks.put(door, new int[] {from, until});
+		return this;
 	}
 
 	public Chapter chapter(int n) {

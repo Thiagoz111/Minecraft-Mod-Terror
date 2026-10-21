@@ -444,6 +444,12 @@ public final class Run {
 		}
 	}
 
+	/** Locked doors rattle instead of opening by hand (see {@link Script#lock}). */
+	public boolean locked(String door) {
+		int[] l = compiled.locks.get(door);
+		return l != null && chapter >= l[0] && chapter < l[1];
+	}
+
 	public boolean doorOpen(String name) {
 		BlockPos rel = def.doors.get(name);
 		if (rel == null) {

@@ -43,6 +43,10 @@ public class ColegioScript extends CaseScript {
 
 	@Override
 	public void define(Script s) {
+		// doors that stay locked until their chapter opens them (the Silence Room only opens for the script)
+		s.lock("aula", 1, 2).lock("cocina", 1, 3).lock("direccion", 1, 4).lock("capilla", 1, 5).lock("capilla2", 1, 5)
+				.lock("coro", 1, 5).lock("dormitorio", 1, 6).lock("banos", 1, 6).lock("sacristia", 1, 7)
+				.lock("cuarto_silencio", 1, 99).lock("entrada", 2, 99);
 		chapters(s);
 		arrival(s);
 		study(s);

@@ -354,6 +354,7 @@
   "deadline.colegio.stamp.gritar": "For shouting in the Lord's house.",
   "deadline.colegio.stamp.irrespeto": "For disrespecting the institution.",
   "deadline.colegio.stamp.lista": "For not answering the roll call.",
+  "deadline.door.locked": "It's locked.",
   "deadline.hud.amonestacion": "REPRIMAND",
   "deadline.hud.amonestaciones": "Reprimands: %s",
   "deadline.hud.call": "INCOMING CALL",

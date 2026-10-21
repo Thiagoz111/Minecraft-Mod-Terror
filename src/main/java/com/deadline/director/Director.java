@@ -42,6 +42,11 @@ public final class Director {
 					if (m == null) {
 						m = r.markerAt(pos.above());
 					}
+					if (m != null && r.def.doors.containsKey(m) && r.locked(m)) {
+						world.playSound(null, pos, net.minecraft.sounds.SoundEvents.CHEST_LOCKED, net.minecraft.sounds.SoundSource.BLOCKS, 1.0F, 0.8F);
+						sp.displayClientMessage(net.minecraft.network.chat.Component.translatable("deadline.door.locked"), true);
+						return InteractionResult.FAIL;
+					}
 					if (m != null) {
 						r.post("use:" + m);
 						if (!r.def.doors.containsKey(m)) {

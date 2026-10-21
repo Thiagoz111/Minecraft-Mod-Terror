@@ -311,7 +311,7 @@ def build():
     skirting(s, -28, 8, 20, 12, 0, 'revoque_salitre')
     for x in range(-18, 17):  # the corridor ceiling cut into the taller front rooms' back wall
         s.set(x, 4, 8, 'wall')
-    doorway(s, 'aula', -8, 0, 8, 'north', 'puerta_aula_6', hinge='right', open_=True)
+    doorway(s, 'aula', -8, 0, 8, 'north', 'puerta_aula_6', hinge='right', open_=False)
     doorway(s, 'direccion', 11, 0, 8, 'north', 'puerta_direccion', hinge='left', open_=False)
     doorway(s, None, -20, 0, 8, 'north', 'puerta_aula_4', hinge='left', open_=False)
     K(s, -20, 0, 9, 'tablones_clavados', 'south')  # 4th grade: boarded up
@@ -350,7 +350,7 @@ def build():
             s.set(x, y, z, 'wall_damp')
     s.room(-18, 12, -6, 26, 0, 4, wall='wall', floor='floor', ceiling='ceiling_wood')
     skirting(s, -18, 12, -6, 26, 0, 'friso')
-    doorway(s, 'cocina', -23, 0, 12, 'south', 'puerta_celda', hinge='left', open_=True)
+    doorway(s, 'cocina', -23, 0, 12, 'south', 'puerta_celda', hinge='left', open_=False)
     for x in (-13, -12, -11):  # arched opening from the corridor
         for y in (0, 1, 2, 3):
             s.set(x, y, 12, 'minecraft:air')
@@ -422,7 +422,7 @@ def build():
     for z in (22, 26):
         K(s, 10, -1, z, 'lapida_piso')
     doorway(s, 'capilla', 10, 0, 12, 'south', 'puerta_capilla', hinge='left', open_=False)
-    doorway(s, None, 11, 0, 12, 'south', 'puerta_capilla', hinge='right', open_=False)
+    doorway(s, 'capilla2', 11, 0, 12, 'south', 'puerta_capilla', hinge='right', open_=False)
     for x, z, nm in ((4, 20, 'geo'), (4, 24, 'geo'), (4, 28, 'ines'), (4, 32, 'geo'), (16, 20, 'geo'), (16, 24, 'ines')):
         window3(s, x, 3, z, 'east' if x == 4 else 'west', f'vitral_{nm}')
     for x in (4, 16):
@@ -536,11 +536,11 @@ def build():
     s.point('pasillo_1p', -2, 6, 10, 'west')
     s.area('pasillo_1p', -17, 6, 9, 7, 9, 11)
     # door from the first-floor corridor straight into the upper choir of the chapel
-    doorway(s, 'coro', 6, 6, 12, 'south', 'puerta_celda', hinge='left', open_=True)
+    doorway(s, 'coro', 6, 6, 12, 'south', 'puerta_celda', hinge='left', open_=False)
     # dormitory: two rows of 8 iron beds (some with shapes under the sheets), trunks, the warden's chair at the far end
     s.room(-18, 12, -6, 35, 6, 9, wall='wall', floor='floor', ceiling='ceiling_wood')
     skirting(s, -18, 12, -6, 35, 6, 'friso')
-    doorway(s, 'dormitorio', -12, 6, 12, 'south', 'puerta_celda', hinge='left', open_=True)
+    doorway(s, 'dormitorio', -12, 6, 12, 'south', 'puerta_celda', hinge='left', open_=False)
     looks = ['', '_bulto', '_bulto', '_deshecha', '_bulto', '', '_bulto', '_deshecha']
     camas = []
     for i, z in enumerate(range(15, 31, 2)):
@@ -581,7 +581,7 @@ def build():
     # bathrooms at the far end, with a mirror wall onto a sealed mirrored copy
     s.room(-16, 35, -8, 43, 6, 9, wall='tile_wall', floor='tile_floor', ceiling='ceiling')
     skirting(s, -16, 35, -8, 43, 7, 'azulejo_guarda')
-    doorway(s, 'banos', -12, 6, 35, 'south', 'puerta_celda', hinge='left', open_=True)
+    doorway(s, 'banos', -12, 6, 35, 'south', 'puerta_celda', hinge='left', open_=False)
     s.room(-16, 43, -8, 51, 6, 9, wall='tile_wall', floor='tile_floor', ceiling='ceiling')
     skirting(s, -16, 43, -8, 51, 7, 'azulejo_guarda')
     for x in range(-15, -8):
