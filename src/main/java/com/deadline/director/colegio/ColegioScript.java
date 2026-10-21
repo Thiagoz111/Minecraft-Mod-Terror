@@ -119,7 +119,10 @@ public class ColegioScript extends CaseScript {
 				say("colegio.madre.usted", "aula_frente"),
 				run(e -> e.run.counters.remove("voice_seen")),
 				loop(e -> {
-					if (e.run.event("voice")) {
+					// without a microphone, raising your hand (sneak) answers for you
+					ServerPlayer p = e.target();
+					boolean hand = p != null && !com.deadline.voice.Voice.enabled(p) && p.isShiftKeyDown();
+					if (e.run.event("voice") || hand) {
 						e.run.counters.put("voice_seen", 1);
 						return true;
 					}
