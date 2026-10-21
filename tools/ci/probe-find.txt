@@ -1,2 +1,2 @@
-client/model/(player/)?PlayerModel
-client/renderer/entity/layers/(Equipment|HumanoidArmor)
+client/renderer/(rendertype/)?RenderTypes?$
+client/model/geom/builders/LayerDefinition

@@ -1,6 +1,7 @@
-net.minecraft.client.renderer.entity.player.AvatarRenderer#p|Hand|Arm
-net.minecraft.client.renderer.entity.layers.EquipmentLayerRenderer|render|submit|Layer
-net.minecraft.client.renderer.entity.layers.HumanoidArmorLayer#p|render|submit|Piece|Model
-net.minecraft.client.model.player.PlayerModel|Arm|Sleeve|leftArm|rightArm
-net.minecraft.client.renderer.SubmitNodeCollector|submitModel
-net.minecraft.client.resources.model.EquipmentClientInfo$LayerType|
+net.minecraft.client.renderer.OrderedSubmitNodeCollector|submitModelPart|submitModel
+net.minecraft.client.model.geom.ModelPart|copyFrom|Scale|visible|getChild|public
+net.minecraft.client.model.player.PlayerModel#p|createMesh|static
+net.minecraft.client.model.geom.builders.LayerDefinition|create|bake
+net.minecraft.client.renderer.rendertype.RenderTypes|entityCutout|armorCutout|entityTranslucent|entitySolid
+net.minecraft.client.model.geom.ModelLayers|PLAYER
+net.minecraft.client.renderer.texture.OverlayTexture|NO_OVERLAY
