@@ -310,6 +310,7 @@ public class ColegioScript extends CaseScript {
 
 		s.beat("llave").chapter(3).when(event("use:tablero")).then(
 				give(ModItems.LLAVE_CAPILLA, 1),
+				run(e -> Props.swap(e.run, "tablero", "colegio_tablero_llaves_falta")),
 				sound(ModSounds.TIZA_ROMPE, "tablero", 0.6F),
 				complete("llave"),
 				flag("llave"));

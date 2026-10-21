@@ -1,5 +1,6 @@
 package com.deadline.director;
 
+import com.deadline.DeadLine;
 import com.deadline.entity.HauntEntity;
 import com.deadline.item.FlashlightItem;
 import com.deadline.net.Fx;
@@ -143,7 +144,7 @@ public final class Props {
 			}
 			Vec3 c = Vec3.atCenterOf(r.origin.offset(w.pos()));
 			Direction f = w.facing();
-			Vec3 v = c.add(-f.getStepX() * 0.46, -0.25, -f.getStepZ() * 0.46);
+			Vec3 v = c.add(-f.getStepX() * 0.35, -0.25, -f.getStepZ() * 0.35);
 			td.snapTo(v.x, v.y, v.z, f.toYRot(), 0F);
 			td.setBillboardConstraints(Display.BillboardConstraints.FIXED);
 			td.setBackgroundColor(0);
@@ -178,6 +179,21 @@ public final class Props {
 	}
 
 	// ------------------------------------------------------------------ furniture
+	/** Swaps the block at a point marker for another building-kit block, keeping its facing (the key board missing a key). */
+	public static void swap(Run r, String point, String block) {
+		BlockPos pos = BlockPos.containing(r.at(point));
+		BlockState old = r.level.getBlockState(pos);
+		net.minecraft.world.level.block.Block b = net.minecraft.core.registries.BuiltInRegistries.BLOCK.getOptional(DeadLine.id(block)).orElse(null);
+		if (b == null) {
+			return;
+		}
+		BlockState st = b.defaultBlockState();
+		if (old.hasProperty(BlockStateProperties.HORIZONTAL_FACING) && st.hasProperty(BlockStateProperties.HORIZONTAL_FACING)) {
+			st = st.setValue(BlockStateProperties.HORIZONTAL_FACING, old.getValue(BlockStateProperties.HORIZONTAL_FACING));
+		}
+		r.setBlock(pos, st);
+	}
+
 	/** Turns every directional block of a group to face a position (chairs that drag round to stare at you). */
 	public static void faceGroup(Run r, String group, Vec3 target) {
 		for (BlockPos rel : r.def.group(group)) {

@@ -6,6 +6,7 @@ import com.deadline.caseload.HunterData;
 import com.deadline.net.Fx;
 import com.deadline.registry.ModAttachments;
 import com.deadline.registry.ModSounds;
+import com.deadline.site.Fixtures;
 import com.deadline.site.SiteDef;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -373,24 +374,14 @@ public final class Run {
 	}
 
 	// ------------------------------------------------------------------ world changes
-	/** Switches a fixture group: light blocks go dark (air) and come back with their authored level. */
+	/** Switches a fixture group: light blocks go dark (air), lamps and candles swap to their unlit form. */
 	public void lights(String group, boolean on) {
-		for (BlockPos rel : def.group(group)) {
-			BlockPos pos = origin.offset(rel);
-			BlockState authored = authored(rel);
-			if (on) {
-				if (authored != null) {
-					level.setBlock(pos, authored, FLAGS);
-				}
-			} else if (authored != null && authored.is(Blocks.LIGHT)) {
-				level.setBlock(pos, Blocks.AIR.defaultBlockState(), FLAGS);
-			} else if (authored != null && authored.hasProperty(BlockStateProperties.LIT)) {
-				level.setBlock(pos, authored.setValue(BlockStateProperties.LIT, false), FLAGS);
-			}
+		for (int i = 0; i < def.group(group).size(); i++) {
+			light(group, i, on);
 		}
 	}
 
-	/** Lights one fixture of a group (index order as authored). */
+	/** Lights one fixture of a group (index order as authored); "on" lights it even if it was authored unlit. */
 	public void light(String group, int index, boolean on) {
 		List<BlockPos> g = def.group(group);
 		if (index < 0 || index >= g.size()) {
@@ -401,13 +392,9 @@ public final class Run {
 		if (authored == null) {
 			return;
 		}
-		BlockPos pos = origin.offset(rel);
-		if (on) {
-			level.setBlock(pos, authored, FLAGS);
-		} else if (authored.is(Blocks.LIGHT)) {
-			level.setBlock(pos, Blocks.AIR.defaultBlockState(), FLAGS);
-		} else if (authored.hasProperty(BlockStateProperties.LIT)) {
-			level.setBlock(pos, authored.setValue(BlockStateProperties.LIT, false), FLAGS);
+		BlockState st = on ? Fixtures.lit(authored) : Fixtures.dark(authored);
+		if (st != null) {
+			level.setBlock(origin.offset(rel), st, FLAGS);
 		}
 	}
 
@@ -431,10 +418,25 @@ public final class Run {
 			return;
 		}
 		BlockPos pos = origin.offset(rel);
-		for (BlockPos p : new BlockPos[] {pos, pos.above()}) {
-			BlockState s = level.getBlockState(p);
-			if (s.getBlock() instanceof DoorBlock && s.hasProperty(BlockStateProperties.OPEN)) {
-				level.setBlock(p, s.setValue(BlockStateProperties.OPEN, open), FLAGS);
+		BlockState lower = level.getBlockState(pos);
+		List<BlockPos> leaves = new ArrayList<>(List.of(pos));
+		if (lower.getBlock() instanceof DoorBlock) {
+			// the other leaf of a double door: same door block and facing, opposite hinge, side by side
+			for (net.minecraft.core.Direction d : net.minecraft.core.Direction.Plane.HORIZONTAL) {
+				BlockState n = level.getBlockState(pos.relative(d));
+				if (n.getBlock() == lower.getBlock() && n.getValue(DoorBlock.FACING) == lower.getValue(DoorBlock.FACING)
+						&& n.getValue(DoorBlock.HINGE) != lower.getValue(DoorBlock.HINGE)
+						&& n.getValue(DoorBlock.HALF) == DoubleBlockHalf.LOWER) {
+					leaves.add(pos.relative(d));
+				}
+			}
+		}
+		for (BlockPos leaf : leaves) {
+			for (BlockPos p : new BlockPos[] {leaf, leaf.above()}) {
+				BlockState s = level.getBlockState(p);
+				if (s.getBlock() instanceof DoorBlock && s.hasProperty(BlockStateProperties.OPEN)) {
+					level.setBlock(p, s.setValue(BlockStateProperties.OPEN, open), FLAGS);
+				}
 			}
 		}
 		if (slam && !open) {

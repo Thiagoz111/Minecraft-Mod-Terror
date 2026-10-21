@@ -264,6 +264,15 @@ public class MonjaEntity extends HauntEntity {
 	}
 
 	/** Candles near her go out, one every 10-14 s. */
+	/** Candles and candle-like kit fixtures (candlesticks, chandelier, sanctuary lamp); not the electric globes. */
+	private static boolean blowable(BlockState s) {
+		if (s.getBlock() instanceof net.minecraft.world.level.block.CandleBlock) {
+			return s.getValue(BlockStateProperties.LIT);
+		}
+		String path = net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(s.getBlock()).getPath();
+		return path.startsWith("colegio_") && !path.contains("globo") && com.deadline.site.Fixtures.burning(s);
+	}
+
 	private void blowCandles(ServerLevel level) {
 		if (--blowCooldown > 0) {
 			return;
@@ -272,8 +281,8 @@ public class MonjaEntity extends HauntEntity {
 		BlockPos c = this.blockPosition();
 		for (BlockPos p : BlockPos.betweenClosed(c.offset(-6, -1, -6), c.offset(6, 3, 6))) {
 			BlockState s = level.getBlockState(p);
-			if (s.hasProperty(BlockStateProperties.LIT) && s.getValue(BlockStateProperties.LIT) && s.getBlock() instanceof net.minecraft.world.level.block.CandleBlock) {
-				level.setBlock(p, s.setValue(BlockStateProperties.LIT, false), 3);
+			if (blowable(s)) {
+				level.setBlock(p, com.deadline.site.Fixtures.dark(s), 3);
 				level.playSound(null, p.getX(), p.getY(), p.getZ(), ModSounds.MONJA_SOPLIDO, SoundSource.HOSTILE, 1.0F, 1.0F);
 				level.sendParticles(net.minecraft.core.particles.ParticleTypes.SMOKE, p.getX() + 0.5, p.getY() + 0.6, p.getZ() + 0.5, 6, 0.05, 0.1, 0.05, 0.01);
 				this.setAction(ACT_BLOW);

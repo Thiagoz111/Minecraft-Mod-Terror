@@ -1,0 +1,41 @@
+{
+ "parent": "minecraft:block/block",
+ "textures": {
+  "t": "deadline:block/colegio_espejo_bano",
+  "particle": "deadline:block/colegio_espejo_bano"
+ },
+ "elements": [
+  {
+   "from": [
+    0.0,
+    0.0,
+    7.7
+   ],
+   "to": [
+    16.0,
+    16.0,
+    8.3
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      0.0,
+      0.0,
+      8.0,
+      8.0
+     ],
+     "texture": "#t"
+    },
+    "south": {
+     "uv": [
+      8.0,
+      0.0,
+      16.0,
+      8.0
+     ],
+     "texture": "#t"
+    }
+   }
+  }
+ ]
+}

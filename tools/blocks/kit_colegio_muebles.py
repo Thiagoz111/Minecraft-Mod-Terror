@@ -16,7 +16,7 @@ edges. No directional light is baked (Minecraft shades faces).
 """
 import math
 
-from bkit import Furniture, Door, box, plane, NORMALS
+from bkit import Furniture, Door, Trapdoor, box, plane, NORMALS
 from paint import hx, mix
 from mcmodel import vnoise
 
@@ -2973,6 +2973,7 @@ F('mesa_larga_centro', 'Mesa larga del refectorio (tramo)', 'Long refectory tabl
 F('mesa_larga_puesta', 'Mesa larga del refectorio puesta', 'Long refectory table (set)', mesa_larga_parts('puesta'))
 F('banco_largo_extremo', 'Banco largo (punta)', 'Long bench (end)', banco_largo_parts('extremo'))
 F('banco_largo_centro', 'Banco largo (tramo)', 'Long bench (middle)', banco_largo_parts('centro'))
+F('banco_largo_fin', 'Banco largo (otra punta)', 'Long bench (other end)', mirror_parts(banco_largo_parts('extremo')))
 F('cubiertos_mesa', 'Plato, tazón y cubiertos (sobre mesa)', 'Place setting (on a table)', place_setting(5.0, 8.4, y=-4.0),
   collision='none', sound='ceramic')
 F('pila_platos', 'Pila de platos (sobre mesa)', 'Stack of plates (on a table)', stack_plates_parts(), collision='none',
@@ -3594,3 +3595,156 @@ F('radiograbador', 'Radiograbador (sobre mesa)', 'Radio-cassette player (on a de
   sound='metal')
 F('archivero', 'Archivero de chapa', 'Steel filing cabinet', archivero_parts(), sound='metal')
 F('caja_fuerte', 'Caja fuerte con teclado', 'Safe with keypad', caja_fuerte_parts(), sound='metal')
+
+
+# ------------------------------------------------------------------------------------------------ hanging lights (corridors, hall)
+OPAL = pal('#2c2a26', '#45423b', '#625d52', '#827b6c', '#a29a86', '#c0b79f', '#d9d0b6', '#ece4cc', '#fbf5e2')
+OPAL_LIT = pal('#5a3c1c', '#8a6030', '#b88a48', '#dcb468', '#f2d08a', '#fbe4a8', '#fff2c8', '#fffae6')
+
+
+def opal_tone(lit, seed=0):
+    """Milk-glass globe: lit = warm glow brightest at the belly; unlit = grey milk glass, dead insects in the bowl."""
+    def t(ctx):
+        if ctx.face in ('up', 'down'):
+            c = 1 - max(abs(ctx.s * 2 - 1), abs(ctx.t * 2 - 1))
+        else:
+            c = 1 - abs(ctx.t * 2 - 1)
+        if lit:
+            return (OPAL_LIT, 2 + int(c * 5) + (1 if ctx.face == 'down' else 0))
+        if ctx.face == 'down' and hh(ctx.i, ctx.j, seed) < 0.07:
+            return (IRON, 1)
+        k = 3 + int(c * 2.5) + (1 if ctx.face == 'down' else 0) - (1 if hh(ctx.i, ctx.j, seed + 1) < 0.05 else 0)
+        return (OPAL, k)
+    return t
+
+
+def globo_parts(lit):
+    """School corridor pendant: chain, brass gallery and an opal-glass globe (hangs from the ceiling above)."""
+    mB = fin(brass(seed=611, base=4, tarnish=0.5), dust=0.6)
+    mG = fin(opal_tone(lit, 613), ao=0, dust=0 if lit else 0.5)
+    P = [
+        box((5.4, 2.0, 5.4), (10.6, 2.8, 10.6), mG, shade=not lit),
+        box((4.4, 2.8, 4.4), (11.6, 4.0, 11.6), mG, shade=not lit),
+        box((3.8, 4.0, 3.8), (12.2, 7.4, 12.2), mG, shade=not lit),        # belly
+        box((4.4, 7.4, 4.4), (11.6, 8.6, 11.6), mG, shade=not lit),
+        box((5.4, 8.6, 5.4), (10.6, 9.2, 10.6), mG, shade=not lit),
+        box((5.0, 9.2, 5.0), (11.0, 10.2, 11.0), mB),                       # gallery
+        box((6.2, 10.2, 6.2), (9.8, 11.4, 9.8), mB),
+        box((7.2, 11.4, 7.2), (8.8, 12.2, 8.8), mB),
+    ]
+    P += chain_parts(8.0, 8.0, 12.2, 16.0, 1.3)
+    return P
+
+
+def arana_parts(lit):
+    """Hall chandelier: wrought-iron octagonal ring on four arms, eight candles in drip cups, stem and chain."""
+    mI = fin(iron(seed=621, rust=0.25), dust=0.7)
+    mC = fin(brass(seed=623, base=3, tarnish=0.6), dust=0.6)
+    R, a, y = 10.0, 4.14, 5.0
+    P = [box((7.0, 0.0, 7.0), (9.0, 1.4, 9.0), mI),                        # finial
+         box((7.4, 1.4, 7.4), (8.6, 14.4, 8.6), mI),                       # stem
+         box((6.4, 4.6, 6.4), (9.6, 6.2, 9.6), mI),                        # hub
+         box((6.8, 10.0, 6.8), (9.2, 11.0, 9.2), mI)]
+    for rot in (None, ('y', 45.0, (8.0, y, 8.0))):
+        P += [box((8 - a, y, 8 + R - 0.5), (8 + a, y + 0.8, 8 + R + 0.5), mI, rot=rot),
+              box((8 - a, y, 8 - R - 0.5), (8 + a, y + 0.8, 8 - R + 0.5), mI, rot=rot),
+              box((8 + R - 0.5, y, 8 - a), (8 + R + 0.5, y + 0.8, 8 + a), mI, rot=rot),
+              box((8 - R - 0.5, y, 8 - a), (8 - R + 0.5, y + 0.8, 8 + a), mI, rot=rot)]
+    P += [box((9.6, y + 0.2, 7.7), (8 + R - 0.5, y + 0.7, 8.3), mI), box((8 - R + 0.5, y + 0.2, 7.7), (6.4, y + 0.7, 8.3), mI),
+          box((7.7, y + 0.2, 9.6), (8.3, y + 0.7, 8 + R - 0.5), mI), box((7.7, y + 0.2, 8 - R + 0.5), (8.3, y + 0.7, 6.4), mI)]
+    for (sx, sz) in ((0, 0), (1, 0), (0, 1), (1, 1)):                       # S-scroll braces up to the stem
+        x = 8 + (R * 0.55 if sx else -R * 0.55) if sz == 0 else 8
+        z = 8 if sz == 0 else 8 + (R * 0.55 if sx else -R * 0.55)
+        P.append(box((x - 0.3, y + 0.8, z - 0.3), (x + 0.3, 10.0, z + 0.3), mI))
+    d = R * 0.7071
+    for n, (cx, cz) in enumerate(((8 + R, 8), (8 - R, 8), (8, 8 + R), (8, 8 - R),
+                                  (8 + d, 8 + d), (8 - d, 8 + d), (8 + d, 8 - d), (8 - d, 8 - d))):
+        P.append(box((cx - 1.2, y + 0.8, cz - 1.2), (cx + 1.2, y + 1.3, cz + 1.2), mC))      # drip cup
+        P += candle(cx, cz, y + 1.3, y + 4.3, r=0.6, lit=lit, seed=630 + n)
+    P += chain_parts(8.0, 8.0, 14.4, 16.0, 1.4)
+    return P
+
+
+F('lampara_globo', 'Lámpara de globo encendida', 'Opal globe pendant (lit)', globo_parts(True), env=('ceil',), light=13,
+  sound='glass', collision='none', directional=False)
+F('lampara_globo_apagada', 'Lámpara de globo apagada', 'Opal globe pendant (off)', globo_parts(False), env=('ceil',),
+  sound='glass', collision='none', directional=False)
+F('arana', 'Araña de hierro encendida', 'Wrought-iron chandelier (lit)', arana_parts(True), env=('ceil',), light=14,
+  sound='metal', collision='none', directional=False)
+F('arana_apagada', 'Araña de hierro apagada', 'Wrought-iron chandelier (out)', arana_parts(False), env=('ceil',),
+  sound='metal', collision='none', directional=False)
+
+
+# ------------------------------------------------------------------------------------------------ kitchen hatch, bathroom
+def hatch_tone():
+    """Service hatch (trapdoor, 32x32): vertical pine boards, two iron straps with rivets, greasy kitchen side."""
+    wd = wood(PINO, seed=641, base=4, axis=2, boards=(0, 8), worn_pal=RAW, wear=0.5)
+
+    def t(ctx):
+        i, j = ctx.i, ctx.j
+        if j in (5, 6, 25, 26):
+            if i % 8 == 3 and j in (5, 25):
+                return (IRON, 6)
+            return (IRON, 3 if j in (5, 25) else 2)
+        if i in (0, 31) or j in (0, 31):
+            return (PINO, 2)
+        r = wd(ctx)
+        if j > 22 and hh(i, j, 7) < 0.2:
+            return (r[0], r[1] - 1)                   # grease where hands push it
+        return r
+    return t
+
+
+def mirror_glass(seed=0):
+    """Bathroom mirror seen as glass (the reflection is a mirrored room behind it): faint silver tint, smudges."""
+    def t(ctx):
+        i, j, w, h = ctx.i, ctx.j, ctx.w, ctx.h
+        a = 34
+        if hh(i // 3, j // 3, seed) < 0.12:
+            a = 58                                     # smudges and toothpaste spots
+        if hh(i, j, seed + 1) < 0.01:
+            a = 120
+        if j >= h - 2:
+            a = 90                                     # silvering creeping in from the bottom edge
+        return (196, 206, 212, a)
+    return t
+
+
+def basin_tone(seed=0):
+    """Pedestal sink top: porcelain rim, grey bowl, drain, rust streak under the tap."""
+    def t(ctx):
+        if ctx.face != 'up':
+            return (PORC, 6 if ctx.face != 'down' else 3)
+        s_, t_ = ctx.s, ctx.t
+        d = ((s_ - 0.5) / 0.38) ** 2 + ((t_ - 0.45) / 0.32) ** 2
+        if d > 1.0:
+            return (PORC, 7 - (1 if hh(ctx.i, ctx.j, seed) < 0.1 else 0))
+        if abs(s_ - 0.5) < 0.05 and abs(t_ - 0.48) < 0.06:
+            return (IRON, 1)                           # drain
+        if abs(s_ - 0.5) < 0.06 and t_ > 0.5:
+            return (RUST, 4 + (1 if hh(ctx.i, ctx.j, seed + 2) < 0.4 else 0))
+        return (PORC, 4 + int((1 - d) * 2))
+    return t
+
+
+def lavatorio_parts():
+    """Pedestal washbasin against the wall (wall on the south side), brass tap and two cross handles."""
+    mP = fin(flat(PORC, 6), dust=0.3)
+    mB = fin(basin_tone(651), ao=0.2, dust=0.2)
+    mBr = fin(brass(seed=653, base=4, tarnish=0.6), dust=0.3)
+    P = [box((6.0, 0.0, 7.0), (10.0, 1.0, 11.0), mP), box((6.6, 1.0, 7.6), (9.4, 9.6, 10.4), mP),   # pedestal
+         box((5.4, 9.6, 6.4), (10.6, 10.6, 11.6), mP),
+         box((2.0, 10.6, 3.0), (14.0, 13.4, 15.0), mB),                                          # basin
+         box((2.0, 13.4, 14.4), (14.0, 16.0, 16.0), mP),                                         # backsplash
+         box((7.4, 13.4, 13.0), (8.6, 15.0, 14.4), mBr), box((7.6, 14.2, 10.6), (8.4, 14.8, 13.0), mBr),   # tap + spout
+         box((7.6, 13.4, 10.6), (8.4, 14.2, 11.2), mBr)]
+    for x in (4.6, 10.6):
+        P += [box((x, 13.4, 13.2), (x + 0.8, 14.6, 14.0), mBr), box((x - 0.6, 14.6, 13.4), (x + 1.4, 15.0, 13.8), mBr),
+              box((x + 0.2, 14.6, 12.8), (x + 0.6, 15.0, 14.4), mBr)]
+    return P
+
+
+Trapdoor('colegio_ventanilla', 'Ventanilla de la cocina', 'Kitchen service hatch', fin(hatch_tone(), dust=0.3), kit=KIT)
+F('espejo_bano', 'Espejo del baño', 'Bathroom mirror', [box((0.0, 0.0, 7.7), (16.0, 16.0, 8.3), fin(mirror_glass(661), ao=0, dust=0),
+                                                         faces=('north', 'south'))], render='translucent', sound='glass')
+F('lavatorio', 'Lavatorio de pie', 'Pedestal washbasin', lavatorio_parts(), sound='stone')
