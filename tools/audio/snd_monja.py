@@ -30,6 +30,9 @@ breath noise). The choir is the same synth with child formants singing Schubert'
 Positional sounds are mono; only the coro.* streams are stereo. Loudness: screams -0.5 dBFS, voices -1 dBFS,
 foley -3 dBFS, loops/streams -4 dBFS.
 """
+import sys as _sys, os as _os
+_sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), '..'))
+from workdir import WORK  # noqa: E402
 import json
 import os
 import sys
@@ -47,7 +50,7 @@ from sounds_def import SOUNDS  # noqa: E402
 
 REVIEW_DIR = os.environ.get(
     'DEADLINE_REVIEW_DIR',
-    '/tmp/claude-0/-home-user-Minecraft-Mod-Terror/f464a6ad-b203-50f8-a993-93d7fecfc5d1/scratchpad/audio/colegio_nun')
+    _os.path.join(WORK, 'audio/colegio_nun'))
 TWO_PI = 2 * np.pi
 
 

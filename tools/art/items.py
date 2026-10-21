@@ -1,4 +1,7 @@
 """DEAD LINE item icons (32x32)."""
+import sys as _sys, os as _os
+_sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), '..'))
+from workdir import WORK  # noqa: E402
 import math
 import numpy as np
 from PIL import Image
@@ -6,7 +9,7 @@ from px import Sprite, glow, hexc, shade, lerp, Material
 from mats import *
 
 S = 32
-OUT = '/tmp/claude-0/-home-user-Minecraft-Mod-Terror/f464a6ad-b203-50f8-a993-93d7fecfc5d1/scratchpad'
+OUT = WORK
 
 
 def with_glow(img, color, radius=1.6, strength=0.5):

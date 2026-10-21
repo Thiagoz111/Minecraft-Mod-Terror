@@ -14,6 +14,9 @@ Pieces
 Armour UVs use the vanilla 64x32 box layout; textures are painted at 2x (128x64) so every armour pixel is half size.
 Mirrored limbs (left arm/leg) reuse the right limb's texture flipped, so limb designs are symmetric on purpose.
 """
+import sys as _sys, os as _os
+_sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), '..'))
+from workdir import WORK  # noqa: E402
 import json
 import math
 import os
@@ -30,7 +33,7 @@ import bkit  # noqa: E402
 from bkit import Part  # noqa: E402
 
 ASSETS = os.path.join(ROOT, 'src/main/resources/assets/deadline')
-SP = '/tmp/claude-0/-home-user-Minecraft-Mod-Terror/f464a6ad-b203-50f8-a993-93d7fecfc5d1/scratchpad'
+SP = WORK
 OUT = os.path.join(SP, 'suit')
 K = 2  # texture pixels per armour unit
 

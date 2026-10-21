@@ -42,3 +42,7 @@ replay_*.log
 # python
 __pycache__/
 run-smoke/
+
+# dev scratch (renders, audio QA) and the renderer deps
+.work/
+tools/render/node_modules/

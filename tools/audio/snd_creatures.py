@@ -41,6 +41,9 @@ the loop point; the bone cracks get 6 dB of transient limiting first so they sit
 every OGG is decoded back and re-mastered lower if Vorbis overshoot would clip it. Demonic lines report a STOI intelligibility proxy against the clean (time-aligned) TTS. Self-contained: the voice tools (YIN, TD-PSOLA, DTW, whisper,
 source-filter synth) are local so this build never depends on another group's module.
 """
+import sys as _sys, os as _os
+_sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), '..'))
+from workdir import WORK  # noqa: E402
 import json
 import math
 import os
@@ -59,7 +62,7 @@ from dsp import SR  # noqa: E402
 
 REVIEW_DIR = os.environ.get(
     'DEADLINE_REVIEW_DIR',
-    '/tmp/claude-0/-home-user-Minecraft-Mod-Terror/f464a6ad-b203-50f8-a993-93d7fecfc5d1/scratchpad/audio/colegio_creatures')
+    _os.path.join(WORK, 'audio/colegio_creatures'))
 TWO_PI = 2 * np.pi
 
 

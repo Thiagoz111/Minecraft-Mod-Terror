@@ -7,6 +7,9 @@ Ground floor: front rooms z 0..8 (classroom, hall, principal's office), corridor
 hall and chapel (with the upper choir over its entrance) from z 12. Everything is built from the colegio_* building kit
 (tools/blocks/kit_colegio_*.py); K() places a kit block, PALETTE holds the semantic materials of walls and floors.
 """
+import sys as _sys, os as _os
+_sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), '..'))
+from workdir import WORK  # noqa: E402
 import os
 import sys
 import zlib
@@ -770,7 +773,7 @@ if __name__ == '__main__':
     site = build()
     out, n, pal = site.export()
     print(f'{out}: {n} blocks, {pal} states')
-    sp = '/tmp/claude-0/-home-user-Minecraft-Mod-Terror/f464a6ad-b203-50f8-a993-93d7fecfc5d1/scratchpad/sites'
+    sp = _os.path.join(WORK, 'sites')
     os.makedirs(sp, exist_ok=True)
     plan_png(site, os.path.join(sp, 'colegio_plan.png'))
     print(os.path.join(sp, 'colegio_plan.png'))

@@ -35,6 +35,9 @@ Poisson debris, turbulent noise) and placed in the room it happens in (BIBLIA 2.
 
 Positional sounds are all mono. Loudness: stingers -0.5 dBFS, foley/UI -3 dBFS, loops -4 dBFS.
 """
+import sys as _sys, os as _os
+_sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), '..'))
+from workdir import WORK  # noqa: E402
 import json
 import os
 import sys
@@ -51,7 +54,7 @@ from sounds_def import SOUNDS  # noqa: E402
 
 REVIEW_DIR = os.environ.get(
     'DEADLINE_REVIEW_DIR',
-    '/tmp/claude-0/-home-user-Minecraft-Mod-Terror/f464a6ad-b203-50f8-a993-93d7fecfc5d1/scratchpad/audio/colegio_sfx')
+    _os.path.join(WORK, 'audio/colegio_sfx'))
 TWO_PI = 2 * np.pi
 
 

@@ -25,6 +25,9 @@ Character presets (lines.py 'voice' field):
              fx 'head' = whispered right behind your ear.
   operadora  ef_dora bright and smiling, IVR compression, telephone band and tiny codec glitches.
 """
+import sys as _sys, os as _os
+_sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), '..'))
+from workdir import WORK  # noqa: E402
 import json
 import math
 import os
@@ -44,7 +47,7 @@ from lines import LINES  # noqa: E402
 
 REVIEW_DIR = os.environ.get(
     'DEADLINE_REVIEW_DIR',
-    '/tmp/claude-0/-home-user-Minecraft-Mod-Terror/f464a6ad-b203-50f8-a993-93d7fecfc5d1/scratchpad/audio/colegio_voices')
+    _os.path.join(WORK, 'audio/colegio_voices'))
 LINES_JSON = os.path.join(dsp.ROOT, 'src/main/resources/data/deadline/lines.json')
 TWO_PI = 2 * np.pi
 PEAK_DB = -1.0

@@ -5,6 +5,9 @@ render_views(model, texture, out_png, focus_bone='head') writes one image with:
   row 2: close-ups of `focus_bone` (front, 3/4) + full body under dark "in-game night" lighting
 Safe to call from several processes at once (unique temp files).
 """
+import sys as _sys, os as _os
+_sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), '..'))
+from workdir import WORK  # noqa: E402
 import base64
 import io
 import json
@@ -12,10 +15,14 @@ import os
 import subprocess
 import tempfile
 
-SP = '/tmp/claude-0/-home-user-Minecraft-Mod-Terror/f464a6ad-b203-50f8-a993-93d7fecfc5d1/scratchpad'
+SP = WORK
 HERE = os.path.dirname(os.path.abspath(__file__))
-THREE = SP + '/render/node_modules/three/build/three.min.js'
-SHOT = SP + '/render/shot.mjs'
+# three.js + the headless-Chromium screenshot script live in tools/render (cd tools/render && npm install)
+_RENDER = os.path.join(HERE, '..', 'render')
+THREE = os.path.join(_RENDER, 'node_modules/three/build/three.min.js')
+if not os.path.exists(THREE):
+    THREE = SP + '/render/node_modules/three/build/three.min.js'
+SHOT = os.path.join(_RENDER, 'shot.mjs')
 
 PAGE = r'''<!doctype html><html><body style="margin:0;background:#1d1a24">
 <canvas id=c></canvas>

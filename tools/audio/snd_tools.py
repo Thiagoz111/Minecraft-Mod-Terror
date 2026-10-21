@@ -38,6 +38,9 @@ All files are MONO (positional). In-game use it is sized to (see the Java items)
 Loudness: screams/stingers -0.5 dBFS, voices -1 dBFS, foley/UI -3 dBFS, loops -4 dBFS. build() decodes every OGG it
 writes and re-masters lower when the Vorbis encoder overshoots the target peak by more than 0.25 dB.
 """
+import sys as _sys, os as _os
+_sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), '..'))
+from workdir import WORK  # noqa: E402
 import os
 import sys
 import time
@@ -54,7 +57,7 @@ from sounds_def import SOUNDS  # noqa: E402
 
 REVIEW_DIR = os.environ.get(
     'DEADLINE_REVIEW_DIR',
-    '/tmp/claude-0/-home-user-Minecraft-Mod-Terror/f464a6ad-b203-50f8-a993-93d7fecfc5d1/scratchpad/audio/colegio_tools')
+    _os.path.join(WORK, 'audio/colegio_tools'))
 TWO_PI = 2 * np.pi
 
 

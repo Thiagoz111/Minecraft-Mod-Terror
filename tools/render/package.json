@@ -1,0 +1,8 @@
+{
+  "name": "deadline-render",
+  "private": true,
+  "description": "three.js for the headless preview renderers (tools/models/render.py, tools/blocks/brender.py). Install with: cd tools/render && npm install",
+  "dependencies": {
+    "three": "0.160.0"
+  }
+}

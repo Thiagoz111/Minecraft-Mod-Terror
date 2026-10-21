@@ -18,6 +18,9 @@ In-game use (sized to it):
   anchor.purify    vol 3.0 (heard ~48 blocks away).
   ambient.stinger  4 short horror stingers.
 """
+import sys as _sys, os as _os
+_sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), '..'))
+from workdir import WORK  # noqa: E402
 import os
 import sys
 import time
@@ -32,7 +35,7 @@ from dsp import SR, n_of  # noqa: E402
 
 REVIEW_DIR = os.environ.get(
     'DEADLINE_REVIEW_DIR',
-    '/tmp/claude-0/-home-user-Minecraft-Mod-Terror/f464a6ad-b203-50f8-a993-93d7fecfc5d1/scratchpad/audio/ui')
+    _os.path.join(WORK, 'audio/ui'))
 TWO_PI = 2 * np.pi
 
 # ====================================================================== small helpers

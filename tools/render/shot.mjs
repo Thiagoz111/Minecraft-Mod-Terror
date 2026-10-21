@@ -1,0 +1,10 @@
+import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs';
+const [,, html, out, w, h] = process.argv;
+const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome', args: ['--use-gl=swiftshader', '--enable-webgl', '--ignore-gpu-blocklist'] });
+const page = await browser.newPage({ viewport: { width: +w || 1200, height: +h || 600 } });
+page.on('console', m => console.log('console:', m.text()));
+page.on('pageerror', e => console.log('pageerror:', e.message));
+await page.goto('file://' + html);
+await page.waitForFunction(() => window.__done === true, null, { timeout: 60000 });
+await page.screenshot({ path: out });
+await browser.close();

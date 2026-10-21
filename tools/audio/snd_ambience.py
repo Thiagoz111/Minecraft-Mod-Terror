@@ -22,6 +22,9 @@ Finally the timeline is rotated so the file starts in a lull (dsp.master's 3/20 
 
 Run from the repo root:  python3 tools/audio/snd_ambience.py [casa rio bosque parque convento whispers music]
 """
+import sys as _sys, os as _os
+_sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), '..'))
+from workdir import WORK  # noqa: E402
 import os
 import sys
 import time
@@ -36,7 +39,7 @@ from dsp import SR  # noqa: E402
 
 REVIEW = os.environ.get(
     'DEADLINE_REVIEW_DIR',
-    '/tmp/claude-0/-home-user-Minecraft-Mod-Terror/f464a6ad-b203-50f8-a993-93d7fecfc5d1/scratchpad/audio/ambience')
+    _os.path.join(WORK, 'audio/ambience'))
 TWO_PI = 2 * np.pi
 STEMS = bool(os.environ.get('STEMS'))
 
