@@ -1,5 +1,6 @@
-net.minecraft.client.renderer.entity.player.AvatarRenderer#p|Hand|Arm|render
-net.minecraft.client.renderer.entity.player.PlayerRenderer#p|Hand|Arm|render
-net.minecraft.client.renderer.ItemInHandRenderer#p|Arm|Hand
-net.minecraft.client.renderer.entity.layers.EquipmentLayerRenderer#p|render|Layer
-net.minecraft.client.renderer.entity.layers.HumanoidArmorLayer#p|render|Model|setPart
+net.minecraft.client.renderer.entity.player.AvatarRenderer#p|Hand|Arm
+net.minecraft.client.renderer.entity.layers.EquipmentLayerRenderer|render|submit|Layer
+net.minecraft.client.renderer.entity.layers.HumanoidArmorLayer#p|render|submit|Piece|Model
+net.minecraft.client.model.player.PlayerModel|Arm|Sleeve|leftArm|rightArm
+net.minecraft.client.renderer.SubmitNodeCollector|submitModel
+net.minecraft.client.resources.model.EquipmentClientInfo$LayerType|

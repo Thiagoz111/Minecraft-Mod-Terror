@@ -1,2 +1,2 @@
-client/renderer/entity/player/
-client/renderer/entity/(Avatar|Player)
+client/model/(player/)?PlayerModel
+client/renderer/entity/layers/(Equipment|HumanoidArmor)
