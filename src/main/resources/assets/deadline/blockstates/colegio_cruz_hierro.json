@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "deadline:block/colegio_cruz_hierro"
+  },
+  "facing=east": {
+   "model": "deadline:block/colegio_cruz_hierro",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "deadline:block/colegio_cruz_hierro",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "deadline:block/colegio_cruz_hierro",
+   "y": 270
+  }
+ }
+}

@@ -238,7 +238,7 @@ def build():
             K(s, x, 8, z, 'viga', 'east')
     K(s, 0, 8, 4, 'cadena')
     K(s, -5, 3, 4, 'retrato_benigna', 'east')
-    K(s, -3, 2, 7, 'lista_castigos', 'north')
+    K(s, -4, 2, 7, 'reglamento', 'north')  # "3. Toda voz será escuchada": the microphone counts
     K(s, -5, 0, 7, 'santa_ines', 'east')
     s.point('hall_centro', 0, 0, 4, 'north')
     s.point('hall', 0, 0, 6, 'north')
@@ -338,6 +338,7 @@ def build():
     K(s, -10, 1, 9, 'cartel_aula_6', 'south')
     K(s, -22, 1, 9, 'cartel_aula_4', 'south')
     K(s, 13, 1, 9, 'cartel_direccion', 'south')
+    K(s, 4, 1, 9, 'cartel_prohibido_correr', 'south')
     K(s, 19, 2, 10, 'crucifijo_chico', 'west')
     s.point('pasillo_fondo', 18, 0, 10, 'west')
     s.area('pasillo_pb', -27, 0, 9, 19, 3, 11)
@@ -565,9 +566,11 @@ def build():
             K(s, -17, 6, z, 'mesita_luz', 'east')
             K(s, -7, 6, z, 'mesita_luz', 'west')
     s.point('cama8', -8, 6, 29, 'west')
-    for z in (15, 19, 23, 27, 31):
+    for z in (15, 19, 23, 27, 31):  # 2x2 patches of moonlight down the aisle
         s.light(-12, 7, z, 9, 'dormitorio_luna')
         s.light(-11, 7, z + 1, 9, 'dormitorio_luna')
+        for dx, dz, f in ((0, 0, 'north'), (1, 0, 'east'), (1, 1, 'south'), (0, 1, 'west')):
+            K(s, -12 + dx, 6, z + dz, 'mancha_luna', f)
     s.area('dormitorio', -17, 6, 13, -7, 9, 34)
     s.point('dormitorio_puerta', -12, 6, 10, 'south')
     for i, z in enumerate((33, 29, 25, 21, 17)):
@@ -666,6 +669,56 @@ def build():
     s.area('atril8', 13, 6, 14, 15, 8, 16)
     s.point('atril8', 14, 6, 15, 'north')
     s.point('coro_pared', 10, 6, 13.4, 'north')
+
+    # ------------------------------------------------------------ bell tower behind the corridor (the opening shot's silhouette)
+    tx0, tx1, tz0, tz1, by = 17, 21, 13, 17, 17  # by = floor level of the belfry
+    for x in range(tx0, tx1 + 1):
+        for z in range(tz0, tz1 + 1):
+            edge = x in (tx0, tx1) or z in (tz0, tz1)
+            for y in range(0, by + 5):
+                if by <= y <= by + 3 and not edge:
+                    s.set(x, y, z, 'minecraft:air')
+                elif y in (by - 1, by + 4, 11):
+                    K(s, x, y, z, 'sillar_moldura')
+                else:
+                    K(s, x, y, z, 'sillar_tallado' if y in (1, 12) else 'sillar')
+    sides = (('north', [(x, tz0) for x in range(tx0, tx1 + 1)]), ('south', [(x, tz1) for x in range(tx1, tx0 - 1, -1)]),
+             ('west', [(tx0, z) for z in range(tz1, tz0 - 1, -1)]), ('east', [(tx1, z) for z in range(tz0, tz1 + 1)]))
+    for facing, cells in sides:  # an arched opening on every side (izq = the left seen from outside)
+        for k, (x, z) in enumerate(cells):
+            if k in (0, 4):
+                continue
+            s.set(x, by, z, 'minecraft:air')
+            s.set(x, by + 1, z, 'minecraft:air')
+            if k == 2:
+                s.set(x, by + 2, z, 'minecraft:air')
+                K(s, x, by + 3, z, 'arco_alto_centro', facing)
+            else:
+                side = 'izq' if k == 1 else 'der'
+                K(s, x, by + 2, z, f'arco_bajo_{side}', facing)
+                K(s, x, by + 3, z, f'arco_alto_{side}', facing)
+        x, z = cells[2]
+        window3(s, x, 6, z, facing, 'postigo')  # a shuttered window halfway up
+    K(s, 19, by + 1, 15, 'campana')
+    K(s, 19, by + 2, 15, 'cadena')
+    for span, y in ((range(tx0, tx1 + 1), by + 5), (range(tx0 + 1, tx1), by + 6)):  # tiled pyramid roof
+        lo, hi = span[0], span[-1]
+        zlo, zhi = tz0 + (lo - tx0), tz1 - (lo - tx0)
+        for x in span:
+            for z in range(zlo, zhi + 1):
+                corner = x in (lo, hi) and z in (zlo, zhi)
+                if corner or not (x in (lo, hi) or z in (zlo, zhi)):
+                    K(s, x, y, z, 'tejas')
+                elif z == zlo:
+                    stairs(s, x, y, z, 'tejas_escalera', 'south')
+                elif z == zhi:
+                    stairs(s, x, y, z, 'tejas_escalera', 'north')
+                elif x == lo:
+                    stairs(s, x, y, z, 'tejas_escalera', 'east')
+                else:
+                    stairs(s, x, y, z, 'tejas_escalera', 'west')
+    slab(s, 19, by + 7, 15, 'tejas_losa')
+    K(s, 19, by + 8, 15, 'cruz_hierro', 'north')
 
     # whole interior (the "no running in the halls" rule)
     s.area('edificio', -28, 0, 0, 22, 10, 38)

@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "deadline:block/colegio_reglamento"
+  },
+  "facing=east": {
+   "model": "deadline:block/colegio_reglamento",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "deadline:block/colegio_reglamento",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "deadline:block/colegio_reglamento",
+   "y": 270
+  }
+ }
+}

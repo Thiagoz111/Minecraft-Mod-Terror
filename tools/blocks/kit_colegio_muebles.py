@@ -3353,7 +3353,7 @@ def portrait_parts(state):
     cv = benigna_canvas(state)
     mF = fin(gilt_frame_tone, dust=0.7)
     mC = fin(canvas_tone(cv), ao=0, dust=0.15)
-    plate = set(draw_text(F35, 'BENIGNA', 2, 1))
+    plate = set(draw_text(F35, 'REMEDIOS', 2, 1))
     mPl = fin(lambda c: INK if (c.face == 'north' and (c.i, c.j) in plate) else (BRASS, 6 if c.edge() else 4), ao=0, dust=0.3)
     return [
         box((3.0, -13.0, 15.3), (29.0, 29.0, 15.4), mC, faces=('north',)),
@@ -3363,7 +3363,7 @@ def portrait_parts(state):
         box((0.0, -16.0, 14.2), (3.4, -12.6, 14.6), mF), box((28.6, -16.0, 14.2), (32.0, -12.6, 14.6), mF),   # corner bosses
         box((0.0, 28.6, 14.2), (3.4, 32.0, 14.6), mF), box((28.6, 28.6, 14.2), (32.0, 32.0, 14.6), mF),
         box((12.0, 32.0, 14.6), (20.0, 32.0, 16.0), mF),
-        box((8.6, -15.6, 14.2), (23.4, -12.8, 14.6), mPl),                                     # name plate
+        box((7.6, -15.6, 14.2), (24.4, -12.8, 14.6), mPl),                                     # name plate
     ]
 
 
@@ -3748,3 +3748,153 @@ Trapdoor('colegio_ventanilla', 'Ventanilla de la cocina', 'Kitchen service hatch
 F('espejo_bano', 'Espejo del baño', 'Bathroom mirror', [box((0.0, 0.0, 7.7), (16.0, 16.0, 8.3), fin(mirror_glass(661), ao=0, dust=0),
                                                          faces=('north', 'south'))], render='translucent', sound='glass')
 F('lavatorio', 'Lavatorio de pie', 'Pedestal washbasin', lavatorio_parts(), sound='stone')
+
+
+# ------------------------------------------------------------------------------------------------ signs, moonlight, bell tower
+SIGN_NAVY = hx('#1a2448')
+SIGN_RED = hx('#8a1616')
+
+
+def enamel_canvas(W, Hh, seed, base='#e6dfca', border=SIGN_NAVY):
+    """Aged enamel sign: mottled cream, chips showing black iron, rust bleeding from the four screw holes."""
+    cv = Canvas(W, Hh, hx(base))
+    for y in range(Hh):
+        for x in range(W):
+            c = cv.get(x, y)
+            if hh(x // 2, y // 2, seed) < 0.2:
+                c = mix(c, hx('#cbc0a2'), 0.55)
+            if y > Hh - 6 and hh(x, seed + 1) < 0.5:
+                c = mix(c, hx('#a08a64'), 0.3)                    # grime along the bottom edge
+            cv.set(x, y, c)
+    for x in range(W):
+        for y in (1, Hh - 2):
+            cv.set(x, y, border)
+    for y in range(1, Hh - 1):
+        for x in (1, W - 2):
+            cv.set(x, y, border)
+    for (hx_, hy) in ((4, 4), (W - 5, 4), (4, Hh - 5), (W - 5, Hh - 5)):
+        for dy in range(0, 7 + int(hh(hx_, hy, seed) * 6)):        # rust run below each screw
+            if hh(hx_, hy + dy, seed + 2) < 0.8:
+                cv.set(hx_ + (1 if hh(dy, seed) < 0.3 else 0), hy + dy, lambda c: mix(c, hx('#7a4a22'), 0.55 - dy * 0.05))
+        cv.set(hx_, hy, hx('#3a3530'))
+    for n in range(int(W * Hh / 260)):                             # chips
+        x, y = int(hh(n, seed + 3) * W), int(hh(n, seed + 4) * Hh)
+        for dx in range(1 + int(hh(n, seed + 5) * 2)):
+            cv.set(x + dx, y, hx('#22201e'))
+    return cv
+
+
+def opaque(cv):
+    """Canvas pixels as RGBA (hx() and mix() give RGB)."""
+    cv.px = [[tuple(c[:3]) + (255,) if len(c) == 3 else c for c in row] for row in cv.px]
+    return cv
+
+
+def paint_lines(cv, lines, seed):
+    """lines: (text, font, y, colour, indent) centred unless indent is given."""
+    for text, font, y, col, indent in lines:
+        w = text_width(font, text)
+        x0 = indent if indent is not None else (cv.w - w) // 2
+        for (x, yy) in draw_text(font, text, x0, y):
+            if hh(x, yy, seed) < 0.08:
+                continue                                           # worn paint
+            cv.set(x, yy, col)
+
+
+def reglamento_canvas():
+    cv = enamel_canvas(88, 60, 731)
+    paint_lines(cv, [('REGLAMENTO', F57, 4, SIGN_NAVY, None)], 733)
+    for x in range(18, 70):
+        cv.set(x, 12, SIGN_NAVY)
+    paint_lines(cv, [('1. SILENCIO.', F35, 16, SIGN_NAVY, 6), ('2. EN EL COLEGIO', F35, 23, SIGN_NAVY, 6),
+                     ('SE CAMINA.', F35, 30, SIGN_NAVY, 18), ('NO SE CORRE.', F35, 37, SIGN_NAVY, 18),
+                     ('3. TODA VOZ SERÁ', F35, 44, SIGN_RED, 6), ('ESCUCHADA.', F35, 51, SIGN_RED, 18)], 735)
+    return opaque(cv)
+
+
+def prohibido_canvas():
+    cv = enamel_canvas(60, 28, 741, base='#ebe6d8', border=SIGN_RED)
+    paint_lines(cv, [('PROHIBIDO', F57, 3, SIGN_RED, None), ('CORRER', F57, 12, SIGN_RED, None),
+                     ('EN LOS PASILLOS', F35, 21, SIGN_NAVY, None)], 743)
+    return opaque(cv)
+
+
+def sign_parts(cv, x0, y0, x1, y1, seed, frame=True):
+    """A flat sign on the wall (wall on the south side); the canvas covers x0..x1, y0..y1 in model units."""
+    mC = fin(canvas_tone(cv, other=lambda c: (IRON, 2)), ao=0, dust=0.25)
+    P = [box((x0, y0, 15.2), (x1, y1, 15.5), mC, faces=('north', 'west', 'east', 'up', 'down')),
+         box((x0, y0, 15.5), (x1, y1, 16.0), fin(flat(CORK, 1), ao=0), faces=('south',))]
+    if frame:
+        mF = fin(outline(wood(NOGAL, seed=seed, base=2, axis=None, wear=0.3)), dust=0.6)
+        P += [box((x0 - 1.0, y0 - 1.0, 14.9), (x1 + 1.0, y0, 16.0), mF), box((x0 - 1.0, y1, 14.9), (x1 + 1.0, y1 + 1.0, 16.0), mF),
+              box((x0 - 1.0, y0, 14.9), (x0, y1, 16.0), mF), box((x1, y0, 14.9), (x1 + 1.0, y1, 16.0), mF)]
+    return P
+
+
+def moon_tone(seed=0):
+    """Moonlight through a window lying on the floor: cold pale blue, mullion shadows along two edges (the centre of a
+    2x2 patch when the four blocks are turned), soft falloff on the outer edges, dust motes."""
+    def t(ctx):
+        i, j, w, h = ctx.i, ctx.j, ctx.w, ctx.h
+        if i >= w - 2 or j >= h - 2:
+            return None
+        edge = min(i, j)
+        a = 74 if edge > 4 else 30 + edge * 9
+        if hh(i, j, seed) < 0.04:
+            a += 20
+        return (208, 222, 255, a)
+    return t
+
+
+def bronze(seed=0):
+    br = brass(BRASS, base=3, seed=seed, tarnish=0.75)
+
+    def t(ctx):
+        P = ctx.pos
+        if vn(P[0] / 2.2, P[1] / 1.6, P[2] / 2.2, seed + 3) > 0.62:
+            return (VERDI, 2 + (1 if hh(ctx.i, ctx.j, seed) < 0.4 else 0))
+        return br(ctx)
+    return t
+
+
+def campana_parts():
+    """Chapel bell hanging from its oak headstock: bronze with verdigris, iron straps and clapper."""
+    mB = fin(bronze(751), dust=0.4)
+    mW = fin(outline(wood(NOGAL, seed=753, base=3, axis=0, wear=0.4)), dust=0.8)
+    mI = fin(iron(seed=755, rust=0.5))
+    P = [box((2.6, 1.2, 2.6), (13.4, 2.4, 13.4), mB),                   # lip
+         box((3.2, 2.4, 3.2), (12.8, 4.2, 12.8), mB),
+         box((3.8, 4.2, 3.8), (12.2, 6.6, 12.2), mB),
+         box((4.2, 6.6, 4.2), (11.8, 9.4, 11.8), mB),                    # waist
+         box((4.8, 9.4, 4.8), (11.2, 11.0, 11.2), mB),                   # shoulder
+         box((5.8, 11.0, 5.8), (10.2, 11.8, 10.2), mB),                  # crown
+         box((7.0, 11.8, 7.0), (9.0, 12.8, 9.0), mB),                    # canons
+         box((7.6, 0.6, 7.6), (8.4, 4.0, 8.4), mI), box((7.0, 0.0, 7.0), (9.0, 1.4, 9.0), mI),   # clapper
+         box((0.0, 12.8, 6.6), (16.0, 15.0, 9.4), mW),                   # headstock
+         box((6.4, 11.6, 6.4), (7.0, 15.2, 9.6), mI), box((9.0, 11.6, 6.4), (9.6, 15.2, 9.6), mI),   # straps
+         box((0.0, 13.2, 7.4), (0.6, 14.6, 8.6), mI), box((15.4, 13.2, 7.4), (16.0, 14.6, 8.6), mI)]  # gudgeons
+    return P
+
+
+def cruz_parts():
+    """Wrought-iron cross on an orb, crowning the bell tower (2 blocks tall)."""
+    mI = fin(iron(seed=761, rust=0.4))
+    P = [box((6.4, 0.0, 6.4), (9.6, 1.0, 9.6), mI), box((6.0, 1.0, 6.0), (10.0, 3.6, 10.0), mI),
+         box((7.4, 3.6, 7.4), (8.6, 30.0, 8.6), mI),
+         box((2.0, 20.6, 7.4), (14.0, 21.8, 8.6), mI)]
+    for (x, y) in ((2.0, 21.2), (14.0, 21.2), (8.0, 30.0)):          # trefoil tips
+        P.append(box((x - 1.2, y - 1.2, 7.2), (x + 1.2, y + 1.2, 8.8), mI))
+    P += [box((6.2, 18.6, 7.6), (7.0, 20.6, 8.4), mI, rot=('z', -22.5, (6.6, 20.6, 8.0))),
+          box((9.0, 18.6, 7.6), (9.8, 20.6, 8.4), mI, rot=('z', 22.5, (9.4, 20.6, 8.0)))]
+    return P
+
+
+F('reglamento', 'Cartel "Reglamento"', 'Rules sign', sign_parts(reglamento_canvas(), -14.0, 1.0, 30.0, 31.0, 737),
+  env=('wall',), collision='none', sound='metal')
+F('cartel_prohibido_correr', 'Cartel "Prohibido correr en los pasillos"', '"No running in the halls" sign',
+  sign_parts(prohibido_canvas(), 1.0, 1.0, 31.0, 15.0, 747, frame=False), env=('wall',), collision='none', sound='metal')
+F('mancha_luna', 'Luz de luna en el piso', 'Moonlight on the floor',
+  [box((0.0, 0.0, 0.0), (16.0, 0.06, 16.0), moon_tone(771), faces=('up',), shade=False)], render='translucent',
+  collision='none', sound='glass')
+F('campana', 'Campana', 'Chapel bell', campana_parts(), env=(), sound='metal')
+F('cruz_hierro', 'Cruz de hierro', 'Wrought-iron cross', cruz_parts(), sound='metal', collision='none')
