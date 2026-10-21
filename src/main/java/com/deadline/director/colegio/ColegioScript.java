@@ -475,7 +475,7 @@ public class ColegioScript extends CaseScript {
 
 	// ================================================================== 5. compline: confession and the upper choir
 	private void compline(Script s) {
-		s.beat("confesionario").chapter(5).when(crouch("confesionario_in", 40).or(event("use:confesionario"))).then(
+		s.beat("confesionario").chapter(5).when(crouch("confesionario_in", 40).or(event("use:confesionario")).or(event("use:confesionario_cara"))).then(
 				say("colegio.cura.ave", "confesionario"),
 				// he listens for 4-8 s of your voice (6 s without a microphone)
 				run(e -> e.run.counters.remove("voice_ticks")),
@@ -708,6 +708,7 @@ public class ColegioScript extends CaseScript {
 				}),
 				door("cuarto_silencio", true, false),
 				complete("silencio"),
+				unflag("encerrado"),
 				delay(40),
 				chapter(7));
 	}
@@ -989,7 +990,7 @@ public class ColegioScript extends CaseScript {
 		} else {
 			Props.burnAway(r, NUN);
 		}
-		r.start("captura", p, List.of(
+		List<Step> steps = new ArrayList<>(List.of(
 				say("colegio.monja.a_la_pared", null),
 				jumpscare("monja"),
 				fade(60),
@@ -1005,9 +1006,15 @@ public class ColegioScript extends CaseScript {
 						e.run.counters.put("conduct:" + q.getUUID(), 10);
 						Props.commend(e.run, q);
 					}
-				}),
-				door("cuarto_silencio", true, false),
-				unflag("captura")));
+				})));
+		if (r.chapter() == 6) {
+			// the sacristy stays locked until chapter 7: back to the dormitory door, the cupboard stays shut
+			steps.addAll(List.of(fade(40), delay(20), teleport("dormitorio_puerta")));
+		} else {
+			steps.add(door("cuarto_silencio", true, false));
+		}
+		steps.add(unflag("captura"));
+		r.start("captura", p, steps);
 	}
 
 	/** One prayer phrase: speak it aloud (Simple Voice Chat) or hold the ritual book still; 6 s of progress. */

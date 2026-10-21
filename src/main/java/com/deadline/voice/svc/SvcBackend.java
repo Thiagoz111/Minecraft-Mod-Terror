@@ -115,6 +115,7 @@ final class SvcBackend implements VoiceBackend {
 			if (!voiced) {
 				return;
 			}
+			cap.lastMs = now;  // before started: drain() must never see a started capture with no timestamp
 			cap.started = true;
 		}
 		synchronized (cap) {
@@ -134,6 +135,9 @@ final class SvcBackend implements VoiceBackend {
 		}
 		synchronized (cap) {
 			int n = cap.pcm.size() - Math.min(cap.silentFrames, 10);
+			if (n <= 0) {
+				return;
+			}
 			short[] all = new short[Math.max(0, n) * FRAME];
 			for (int i = 0; i < n; i++) {
 				short[] f = cap.pcm.get(i);

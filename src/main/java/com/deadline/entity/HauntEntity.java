@@ -302,6 +302,7 @@ public abstract class HauntEntity extends Monster {
 						&& this.level().noCollision(this, this.getBoundingBox().move(x - this.getX(), pos.getY() - this.getY(), z - this.getZ()))
 						&& !SaltGuard.blocked(this.level(), pos)) {
 					this.teleportTo(x, pos.getY(), z);
+					this.setOnGround(true);  // standing on the solid block just checked (navigation needs it, even while noPhysics)
 					this.getNavigation().stop();
 					return true;
 				}
