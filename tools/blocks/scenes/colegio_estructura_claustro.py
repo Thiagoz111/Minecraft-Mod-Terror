@@ -53,4 +53,25 @@ for x in range(X0, X1 + 1):
         for z in range(1, 5):
             if (y == 6 and z >= 1) or (y == 7 and z >= 3):
                 B.append((x, y, z, 'colegio_revoque', 'north'))
+# dry fountain (5 x 5) in the courtyard, the chalk hopscotch beside it
+FX, FZ = 4, -7
+for dx in range(-2, 3):
+    for dz in range(-2, 3):
+        x, z = FX + dx, FZ + dz
+        edge = abs(dx) == 2 or abs(dz) == 2
+        if not edge:
+            B.append((x, -1, z, 'colegio_fuente_fondo', 'north'))
+            continue
+        if abs(dx) == 2 and abs(dz) == 2:
+            fac = {(2, 2): 'north', (-2, 2): 'east', (-2, -2): 'south', (2, -2): 'west'}[(dx, dz)]
+            B.append((x, 0, z, 'colegio_fuente_esquina', fac))
+        else:
+            fac = 'north' if dz == 2 else 'south' if dz == -2 else ('west' if dx == 2 else 'east')
+            B.append((x, 0, z, 'colegio_fuente_borde', fac))
+B.append((FX, -1, FZ, 'colegio_piedra_fuente', 'north'))
+B.append((FX, 0, FZ, 'colegio_fuente_pila', 'north'))
+for i, (dx, dz, n) in enumerate([(0, 0, '1'), (0, -1, '2'), (0, -2, '3'), (-1, -3, '4'), (1, -3, '5'), (0, -4, '6'),
+                                 (-1, -5, '7'), (1, -5, '8'), (0, -6, '9')]):
+    B.append((11 + dx, 0, -1 + dz, 'colegio_rayuela_' + n, 'south'))
+B.append((11, 0, -8, 'colegio_rayuela_cielo', 'south'))
 SCENE = dict(blocks=B, camera=(-2.5, 1.7, -7.5), target=(7.0, 3.0, 1.5), fov=70)

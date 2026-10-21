@@ -352,17 +352,30 @@ def neck_mat(ctx):
 
 
 def collar_mat(ctx):
+    """Celeste nylon band: light top edge, white saddle stitch down the middle, gold buckle on the right side,
+    gold D-ring at the throat (bottom end of the slab, where the tag hangs)."""
     f = ctx.face
-    v = 0.55 + face_light(ctx) * 1.0
-    if ctx.j == 0 and f not in ('top', 'bottom'):
-        v += 0.12
+    x, y, z = A(ctx)
+    v = 0.56 + face_light(ctx) * 1.0
+    if f in ('west', 'east'):
+        # 2 wide x 11 long: edges lighter/darker, stitching on the inner column
+        v += 0.1 if front_u(ctx) == 1 else -0.04
+        c = pick(CELESTE, v)
+        if front_u(ctx) == 0 and ctx.j % 2 == 0:
+            c = mix(c, WHITE, 0.55)
+        if f == 'west' and 3 <= ctx.j <= 5:
+            c = GOLD[5] if ctx.j == 3 else GOLD[3]       # buckle on the right side of the neck
+        return c
+    if f in ('front', 'back'):
+        c = pick(CELESTE, v + (0.08 if ctx.i in (0, ctx.w - 1) else 0))
+        if ctx.i == ctx.w // 2 and ctx.j % 2 == 0:
+            c = mix(c, WHITE, 0.55)
+        if f == 'front' and ctx.j == ctx.h - 1 and ctx.i == ctx.w // 2:
+            c = GOLD[4]                                  # D-ring
+        return c
     c = pick(CELESTE, v)
-    if f in ('front', 'back', 'west', 'east') and ctx.j == 1 and ctx.i % 2 == 0:
-        c = mix(c, WHITE, 0.55)                        # white saddle stitching
-    if f == 'front' and ctx.i == ctx.w // 2 and ctx.j == 1:
-        c = GOLD[4]                                    # the D-ring the tag hangs from
-    if f == 'west' and ctx.w >= 5 and ctx.i in (3, 4):
-        c = GOLD[5] if ctx.j == 0 else GOLD[3]         # buckle on the right side
+    if ctx.i == ctx.w // 2:
+        c = mix(c, WHITE, 0.5)
     return c
 
 
@@ -673,7 +686,8 @@ def tail_mat(ctx):
 DEFAULT_MAT = body_mat
 FOCUS = 'head'
 DZ = -0.5          # authoring z -> model z (recentres the long dog on the entity origin)
-HY = 1.0           # the whole head subtree sits this much lower than authored
+HY = 1.0           # the whole head subtree sits this much lower than authored...
+HZ = -2.0          # ...and this much further forward, so a real neck (with the collar on it) shows
 HEAD_BONES = {'head', 'lips', 'jaw', 'tongue', 'right_brow', 'left_brow', 'right_ear', 'left_ear'}
 
 
@@ -681,16 +695,16 @@ def build():
     r = Rig()
 
     def box(bone, frm, size, mat=None, inflate=0.0, decals=None, name=None, side=''):
-        dy = HY if bone in HEAD_BONES else 0.0
-        c = r.box(bone, (frm[0], frm[1] + dy, frm[2] + DZ), size, mat=mat, inflate=inflate, decals=decals)
+        dy, dz = (HY, HZ) if bone in HEAD_BONES else (0.0, 0.0)
+        c = r.box(bone, (frm[0], frm[1] + dy, frm[2] + DZ + dz), size, mat=mat, inflate=inflate, decals=decals)
         c.a0 = tuple(float(v) for v in frm)            # materials work in authoring coordinates
         c.name = name
         c.side = side
         return c
 
     def bone(name, pivot, parent=None, rot=(0, 0, 0), mat=None):
-        dy = HY if name in HEAD_BONES else 0.0
-        return r.bone(name, (pivot[0], pivot[1] + dy, pivot[2] + DZ), parent=parent, rot=rot, mat=mat)
+        dy, dz = (HY, HZ) if name in HEAD_BONES else (0.0, 0.0)
+        return r.bone(name, (pivot[0], pivot[1] + dy, pivot[2] + DZ + dz), parent=parent, rot=rot, mat=mat)
 
     # ---------------- body (root, pivot at the hips so sit / beg rotate around the rump)
     bone('body', (0, 16, 11), mat=body_mat)
@@ -732,12 +746,16 @@ def build():
     bone('tail_tip', (0, 12.8, 20.5), parent='tail', rot=(18, 0, 0), mat=tail_mat)
     box('tail_tip', (-1, 11.8, 20), (2, 2, 5), name='tip')
 
-    # ---------------- neck, collar (low on the throat), bone-shaped tag
+    # ---------------- neck, collar, bone-shaped tag
+    # The collar is a slab on its own bone, tilted 30 degrees so it sits perpendicular to the forward-leaning
+    # neck: it crosses the back of the neck just behind the skull and wraps under the throat, where the tag
+    # hangs below the chin.  (Children of a rotated bone are authored in that bone's unrotated frame.)
     bone('neck', (0, 13, -4.5), parent='body', mat=neck_mat)
-    box('neck', (-3, 9, -11), (6, 9, 6), name='neck')
-    box('neck', (-3.5, 15, -11.5), (7, 2, 7), mat=collar_mat, inflate=0.2, name='collar')
-    bone('tag', (0, 17.2, -11.9), parent='neck', mat=tag_mat)
-    box('tag', (-3, 17.4, -12.4), (6, 4, 1), name='tag')
+    box('neck', (-3, 9, -13), (6, 9, 8), name='neck')
+    bone('collar', (0, 13.5, -10), parent='neck', rot=(-30, 0, 0), mat=collar_mat)
+    box('collar', (-3.5, 8, -11), (7, 11, 2), inflate=0.2, name='collar')
+    bone('tag', (0, 19.2, -10.8), parent='collar', rot=(30, 0, 0), mat=tag_mat)
+    box('tag', (-3, 19.4, -11.3), (6, 4, 1), name='tag')
 
     # ---------------- head
     bone('head', (0, 11, -8.5), parent='neck', mat=skull_mat)
@@ -746,8 +764,8 @@ def build():
     box('head', (-6, 11, -16.5), (12, 4, 6), mat=cheek_mat, name='cheek')
     box('head', (-2.5, 12.5, -23), (5, 2, 7), mat=muzzle_mat, name='muzzle')
     box('head', (-1.5, 11.5, -20), (3, 1, 4), mat=muzzle_mat, name='bridge')
-    box('head', (-3, 12.5, -23.6), (6, 2, 1), mat=nose_mat, name='nose')
-    box('head', (-2, 12, -23.35), (4, 1, 1), mat=nose_mat, name='bulb')
+    box('head', (-3, 12.3, -23.6), (6, 2, 1), mat=nose_mat, name='nose')
+    box('head', (-2, 11.8, -23.35), (4, 1, 1), mat=nose_mat, name='bulb')
     for sd, x0 in (('r', -7.3), ('l', 1.3)):
         box('head', (x0, 5, -16.3), (6, 6, 2), mat=eye_mat, name='eye', side=sd,
             decals={'eyes:front': at(EYE_GLOW)})

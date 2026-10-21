@@ -810,13 +810,13 @@ def pupitres_giran():
         ch = sc + 0.35 * norm(rough) + 0.3 * joints
         d = ri.uniform(0.0, 0.25) if i < 3 else ri.uniform(0.35, 1.0)  # three right next to you, the rest across the room
         ch = dsp.lowpass(ch, 11000 - 6500 * d, 2) / (1 + 2.2 * d)
-        add(out, ch, start, 0.55)
+        add(out, ch, start, 0.72)
         # all of them land at once: four legs clack on the tiles
         tl = T + ri.normal(0, 0.003)
-        add(out, knock(480 + i, CHAIR + [(3900, 260, .5)], 0.25, contact=0.0009, click=0.5), tl, 2.2 / (1 + 1.6 * d))
-        add(out, knock(490 + i, CHAIR[2:] + [(4400, 300, .5)], 0.12, contact=0.0006, click=0.5), tl + ri.uniform(0.012, 0.03), 0.6 / (1 + 1.6 * d))
+        add(out, knock(480 + i, CHAIR + [(3900, 260, .5)], 0.25, contact=0.0009, click=0.5), tl, 1.6 / (1 + 1.6 * d))
+        add(out, knock(490 + i, CHAIR[2:] + [(4400, 300, .5)], 0.12, contact=0.0006, click=0.5), tl + ri.uniform(0.012, 0.03), 0.35 / (1 + 1.6 * d))
     tb = taxis(N(0.5))
-    add(out, np.sin(TWO_PI * np.cumsum(62 * (1 + 0.6 * np.exp(-tb * 40))) / SR) * np.exp(-tb * 14) * np.minimum(1, tb / 0.002), T, 2.5)
+    add(out, np.sin(TWO_PI * np.cumsum(62 * (1 + 0.6 * np.exp(-tb * 40))) / SR) * np.exp(-tb * 14) * np.minimum(1, tb / 0.002), T, 1.3)
     out = norm(out)
     return verb(out, 'aula', wet=0.2, decay=1.15)
 
@@ -898,7 +898,7 @@ def luces_fuera():
     spk = dsp.highpass(pulse_train(ns, poisson_times(np.full(ns, 3000.0), 104), r.uniform(.3, 1, len(poisson_times(np.full(ns, 3000.0), 104))), burst(0.0003, 105)), 1800, 2)
     add(out, norm(spk + 1e-9), t0 - 0.002, 0.3)
     # -CHUNK: the contact block slams home in its iron box
-    box = [(85, 14, 1), (140, 18, .8), (260, 25, .7), (410, 35, .5), (720, 50, .35), (1300, 80, .2), (2400, 120, .15)]
+    box = [(85, 38, 1), (140, 42, .8), (260, 50, .7), (410, 60, .5), (720, 75, .35), (1300, 95, .25), (2400, 130, .2)]
     add(out, knock(106, box, 0.6, contact=0.0025, click=0.5), t0, 1.3)
     tb = taxis(N(0.8))
     add(out, np.sin(TWO_PI * 46 * tb) * np.exp(-tb * 7) * np.minimum(1, tb / 0.004), t0, 0.55)
@@ -958,12 +958,13 @@ def silla_gira():
     sp = env_pts(n, [(0, 0), (0.1, .55), (0.45, .9), (0.72, .45), (0.86, .85), (1.55, .7), (1.86, 0), (2.15, 0)])
     sp = np.clip(sp * (1 + 0.2 * snoise(n, 3, 121)), 0, None)
     # iron screw squeal: harmonic stick-slip whose pitch follows the speed, stuttering on and off
-    f = (480 + 340 * sp) * (1 + 0.03 * snoise(n, 220, 122) + 0.02 * snoise(n, 9, 129))
+    f = (650 + 420 * sp) * (1 + 0.03 * snoise(n, 220, 122) + 0.025 * snoise(n, 9, 129))
     ph = TWO_PI * np.cumsum(f) / SR
     # stick-slip: a jittery pulse-like wave (sharp slip, slow stick), harmonics rough rather than pure
     saw = (ph / TWO_PI) % 1.0
-    sq = np.tanh(6 * (saw - 0.5)) + 0.15 * dsp.highpass(white(n, 130), 2000, 2) * (saw < 0.2)
-    gate = smooth((snoise(n, 7, 123) > -0.15).astype(np.float32), 0.012)
+    sq = saw ** 2.5 - 0.3 + 0.1 * dsp.highpass(white(n, 130), 2000, 2) * (saw > 0.85)  # slow stick, sudden slip
+    sq = dsp.lowpass(sq, 4800, 2)
+    gate = smooth((snoise(n, 7, 123) > 0.1).astype(np.float32), 0.012)
     sq = sq * sp ** 1.4 * gate * (0.6 + 0.4 * grain(n, 70, 131, 1.2) / 2)
     sq = dsp.peak(dsp.peak(dsp.peak(sq, 1450, 9, 5), 2900, 7, 5), 4300, 4, 4)
     sq = dsp.highpass(sq, 400, 2)
@@ -1070,9 +1071,9 @@ def mate_sorbo():
     for fpk, g in [(1010, 8), (2020, 7), (3030, 5), (4040, 3), (5050, 2)]:
         air = dsp.peak(air, fpk, g, 5)
     # the dry rattle of the last drops: a 25-45 Hz stutter that gets wetter in the second pull
-    fr = 33 * (1 + 0.25 * snoise(n, 3, 153))
-    phr = np.cumsum(fr) / SR
-    rattle = 0.12 + 0.88 * np.clip(np.sin(TWO_PI * phr) + 0.6 * snoise(n, 60, 154), 0, 1) ** 0.6
+    ri, ra = stick_slip(n, 30 * (1 + 0.35 * snoise(n, 3, 153)), 154, 0.55, None, 0.15)
+    rattle = pulse_train(n, ri, ra, np.exp(-taxis(N(0.03)) / 0.008))  # liquid film bursting, irregularly
+    rattle = 0.1 + 0.9 * np.clip(rattle / (np.percentile(rattle, 98) + 1e-9), 0, 1)
     airy = norm(air) * pull * rattle
     # gurgle: slugs of water bursting into bubbles in the yerba
     out = np.zeros(n + N(0.3), np.float32)
@@ -1179,8 +1180,8 @@ def muro_cae():
     tb = taxis(N(1.6))
     boom = np.sin(TWO_PI * np.cumsum(36 * (1 + 0.45 * np.exp(-tb * 7))) / SR) * np.exp(-tb * 3.5) * np.minimum(1, tb / 0.006)
     nb = bp(colored(len(tb), 'pink', 232), 40, 300) * np.exp(-tb * 6)
-    out += 0.45 * norm(rumble)
-    add(out, norm(boom) + 0.6 * norm(nb), ti, 1.0)
+    out += 0.35 * norm(rumble)
+    add(out, norm(boom) + 0.6 * norm(nb), ti, 0.8)
     # crunch of the wall hitting the floor
     nc = N(0.3)
     lam = 900 * np.exp(-taxis(nc) / 0.08)
@@ -1189,10 +1190,10 @@ def muro_cae():
                     [(620, 60, 1), (1150, 80, .8), (2100, 110, .5), (3300, 150, .3)], 0.08)
     add(out, norm(crunch), ti, 0.7)
     # bricks: tumbling, clacking, bouncing
-    bt = ti - 0.15 + r.gamma(2.0, 0.28, 85)
+    bt = np.concatenate([ti - 0.15 + r.gamma(2.0, 0.28, 85), 1.15 + r.gamma(2.0, 0.25, 28)])  # then the top courses
     bt = bt[bt < 2.75]
     for j, tb_ in enumerate(np.sort(bt)):
-        a = r.uniform(0.25, 0.9) * np.exp(-max(0, tb_ - 0.7) / 1.7)
+        a = 1.5 * r.uniform(0.25, 0.9) * np.exp(-max(0, tb_ - 0.7) / 1.7)
         add(out, brick(300 + j, a), tb_)
         if r.random() < 0.5:
             add(out, brick(500 + j, a * 0.35, 0.5), tb_ + r.uniform(0.05, 0.16))
@@ -1282,8 +1283,8 @@ def regla_rompe():
     tt = taxis(len(crack))
     crack += 0.3 * np.sin(TWO_PI * np.cumsum(140 * (1 - 0.35 * np.minimum(1, tt / 0.1))) / SR) * np.exp(-tt * 20)
     crack = norm(crack)
-    ce = dsp.echo(crack, 0.31, 0.42, 5, 2600)
-    ce = verb(ce, 'capilla', wet=0.42)
+    ce = dsp.echo(crack, 0.36, 0.5, 5, 4500)  # slap-back off the far end of the chapel
+    ce = verb(ce, 'capilla', wet=0.3)
     add(out, ce, tc, 1.0)
     # the choir swells in: eight voices at last (D major, girls), with a shimmer an octave up
     cs, cl = tc + 0.12, total - tc - 0.12
@@ -1294,12 +1295,12 @@ def regla_rompe():
             ch += choir_voice(f * 2 ** (r.uniform(-9, 9) / 1200), cl, 2300 + 10 * i + vv) * (0.75 if f > 700 else 1.0)
     form = sum(g * bp(ch, c * 2 ** (-w), c * 2 ** w) for c, w, g in CHILD_AH)
     nch = len(form)
-    sw = env_pts(nch, [(0, 0), (0.25, .15), (2.0, 1.0), (3.2, .85), (cl - 0.3, 0.0), (cl, 0)])
-    sw = sw ** 1.6
+    sw = env_pts(nch, [(0, 0), (0.3, .1), (2.3, 1.0), (3.4, .9), (cl - 0.2, 0.0), (cl, 0)])
+    sw = sw ** 1.5
     form = norm(form) * sw
     shimmer = dsp.pitch_shift(form, 12)
     shimmer = fit(shimmer, nch) * (1 + 0.3 * snoise(nch, 9, 2400))
-    choir = padsum((verb(form, 'capilla', wet=0.55, decay=5.0), 1.0),
+    choir = padsum((verb(form, 'capilla', wet=0.4, decay=5.0), 1.0),
                    (verb(dsp.highpass(shimmer, 1200, 2), 'capilla', wet=1.0, dry=0.0, decay=6.0, seed=9), 0.55))
     for j in range(9):  # sparkles in the vault
         fz = notes[j % 6] * 4
@@ -1308,22 +1309,22 @@ def regla_rompe():
         tzz = taxis(nz)
         z = (np.sin(TWO_PI * fz * tzz) + 0.3 * np.sin(TWO_PI * fz * 2.76 * tzz) * np.exp(-tzz * 4)) * np.exp(-tzz * 2.5) * np.minimum(1, tzz / 0.002)
         add(choir, verb(z, 'capilla', wet=0.6), tz, 0.07)
-    add(out, norm(choir), cs, 0.36)
+    add(out, norm(choir), cs, 0.62)
     return out
 
 
 # ====================================================================== 21. reprimand (UI)
-DESK = [(95, 18, .8), (160, 22, 1), (270, 30, .8), (430, 40, .5), (700, 55, .35), (1150, 80, .2)]
+DESK = [(95, 45, .8), (160, 50, 1), (270, 60, .8), (430, 70, .5), (700, 85, .35), (1150, 110, .2)]
 
 
 def stamp(seed, amp=1.0, heavy=1.0):
     n = N(0.5)
     out = np.zeros(n, np.float32)
-    add(out, knock(seed, DESK, 0.5, contact=0.004, click=0.0), 0, 1.0)
+    add(out, knock(seed, DESK, 0.5, contact=0.006, click=0.0), 0, 1.0)
     add(out, bp(burst(0.012, seed + 1, 1.5), 700, 5000), 0, 0.5)
     add(out, knock(seed + 2, [(1900, 90, 1), (3100, 120, .6)], 0.06, contact=0.0005, click=0.3), 0.012, 0.12)
     tb = taxis(N(0.3))
-    add(out, np.sin(TWO_PI * 75 * tb) * np.exp(-tb * 22) * np.minimum(1, tb / 0.003), 0, 0.35 * heavy)
+    add(out, np.sin(TWO_PI * 75 * tb) * np.exp(-tb * 38) * np.minimum(1, tb / 0.003), 0, 0.35 * heavy)
     return norm(out) * amp
 
 
@@ -1379,16 +1380,16 @@ def madre_pluma():
 
 
 # ====================================================================== 23. sleepers breathing (loop)
-def breather(L, seed, phase, depth=1.0, muffle=2200.0, voiced=0.0, f0=170.0, inhale=0.36):
-    """One sleeper under a sheet over a circular buffer of L samples (one breath per loop)."""
+def breather(L, seed, phase, depth=1.0, muffle=2200.0, voiced=0.0, f0=170.0, inhale=0.3):
+    """One sleeper under a sheet over a circular buffer of L samples (one slow breath per loop:
+    inhale ~1.2 s, exhale ~1.6 s, then a held pause)."""
     r = dsp.rng(seed)
     t = np.arange(L) / L
     p = (t + phase) % 1.0
-    gap = 0.05
-    ex0, ex1 = inhale + gap, 0.93
-    ein = np.where(p < inhale, np.sin(np.pi * p / inhale) ** 1.6, 0.0)
+    ex0, ex1 = inhale + 0.03, 0.72
+    ein = np.where(p < inhale, np.clip(np.sin(np.pi * p / inhale), 0, 1) ** 1.8, 0.0)
     q = np.clip((p - ex0) / (ex1 - ex0), 0, 1)
-    eex = np.where((p >= ex0) & (p < ex1), np.sin(np.pi * q ** 0.7) ** 1.3 * (1 - 0.3 * q), 0.0)
+    eex = np.where((p >= ex0) & (p < ex1), (1 - np.exp(-q * 14)) * (1 - q) ** 1.6, 0.0)
     w = r.standard_normal(L)
     nin = cfilt(w, lambda f: bumps(f, [(520, .35, 1.0), (1500, .3, .7), (2600, .25, .4)], 0.05) / (1 + (f / muffle) ** 4))
     nex = cfilt(r.standard_normal(L), lambda f: bumps(f, [(380, .45, 1.0), (1100, .35, .55), (2300, .3, .2)], 0.04) / (1 + (f / (muffle * 0.8)) ** 4))
@@ -1417,20 +1418,20 @@ def dormitorio_respira(v):
     L = N(4.0)
     out = np.zeros(L, np.float32)
     r = dsp.rng(300 + v)
-    if v == 1:
-        sleepers = [(0.0, 1.0, 2400, 0.0), (0.27, 0.7, 1900, 0.12), (0.52, 0.55, 1600, 0.0), (0.78, 0.45, 1400, 0.0)]
-    else:  # too many of them breathing exactly together
-        sleepers = [(0.0, 1.0, 2400, 0.0), (0.012, 0.8, 2000, 0.15), (0.022, 0.65, 1700, 0.0), (0.03, 0.5, 1500, 0.1), (0.35, 0.35, 1300, 0.0)]
+    if v == 1:  # one close sleeper, three further down the rows, out of step
+        sleepers = [(0.0, 1.0, 3000, 0.0), (0.31, 0.42, 2000, 0.12), (0.58, 0.28, 1700, 0.0), (0.84, 0.18, 1400, 0.0)]
+    else:  # too many of them breathing exactly together, and one that is not
+        sleepers = [(0.0, 1.0, 3000, 0.0), (0.01, 0.75, 2200, 0.15), (0.02, 0.6, 1800, 0.0), (0.03, 0.45, 1500, 0.1), (0.5, 0.2, 1300, 0.0)]
     for i, (ph, g, muf, vo) in enumerate(sleepers):
         b = breather(L, 310 + 10 * v + i, ph, g, muf, vo, r.uniform(150, 200))
         out += b
-    for j, (tr, a) in enumerate([(1.3, 0.25), (3.1, 0.15)] if v == 1 else [(2.6, 0.2)]):
+    for j, (tr, a) in enumerate([(1.3, 0.1), (3.1, 0.07)] if v == 1 else [(2.6, 0.09)]):
         rs = rustle(330 + 5 * v + j, r.uniform(0.35, 0.6))
         e = np.zeros(L, np.float32)
         add(e, rs, 0)
         out += np.roll(e, N(tr)) * a
     out = dsp.lowpass(np.tile(out, 2), 7000, 2)[L:]
-    return cverb(out, 'dormitorio', wet=0.32)
+    return cverb(out, 'dormitorio', wet=0.12)
 
 
 # ====================================================================== 24. little girls running
@@ -1523,10 +1524,17 @@ def seam_report(x):
     return float(abs(x[0] - x[-1]) / (np.percentile(d, 75) + 1e-9))
 
 
+def rotate_to_lull(x):
+    """Roll a periodic buffer so it starts at its quietest 60 ms (where master's edge fades are inaudible)."""
+    e = uniform_filter1d(np.abs(x), N(0.06), mode='wrap')
+    return np.roll(x, -int(np.argmin(e)))
+
+
 def finish(x, peak_db, loop):
     x = np.asarray(x, np.float32)
     if loop:  # keep the exact period; master's tiny edge fades sit on the quiet seam
-        return dsp.master(x, peak_db=peak_db)
+        x = dsp.highpass(np.tile(x, 2), 30, 2)[len(x):]  # settle master's filter state on the loop itself
+        return dsp.master(rotate_to_lull(x), peak_db=peak_db)
     x = dsp.trim(x, -62, 0.08)
     return dsp.master(x, peak_db=peak_db)
 

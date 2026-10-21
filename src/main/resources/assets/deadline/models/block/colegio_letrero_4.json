@@ -1,0 +1,41 @@
+{
+ "parent": "minecraft:block/block",
+ "textures": {
+  "t": "deadline:block/colegio_letrero_4",
+  "particle": "deadline:block/colegio_letrero_4"
+ },
+ "elements": [
+  {
+   "from": [
+    0.0,
+    0.0,
+    8.0
+   ],
+   "to": [
+    16.0,
+    26.0,
+    8.0
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      0.0,
+      0.0,
+      8.0,
+      13.0
+     ],
+     "texture": "#t"
+    },
+    "south": {
+     "uv": [
+      8.0,
+      0.0,
+      16.0,
+      13.0
+     ],
+     "texture": "#t"
+    }
+   }
+  }
+ ]
+}

@@ -1,0 +1,15 @@
+{
+ "variants": {
+  "": [
+   {
+    "model": "deadline:block/colegio_muro_perimetral_0"
+   },
+   {
+    "model": "deadline:block/colegio_muro_perimetral_1"
+   },
+   {
+    "model": "deadline:block/colegio_muro_perimetral_2"
+   }
+  ]
+ }
+}

@@ -1,0 +1,12 @@
+{
+ "variants": {
+  "": [
+   {
+    "model": "deadline:block/colegio_piedra_fuente_0"
+   },
+   {
+    "model": "deadline:block/colegio_piedra_fuente_1"
+   }
+  ]
+ }
+}

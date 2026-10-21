@@ -1543,8 +1543,14 @@ def make_poses():
             Wt[1] = -6.0 - idx * 5.0
             k.arm(idx, side, Wt, (0.0, -1.0, 0.0), R_deg(0, bang, 0))
         else:
-            # outer arms brace on the floor, pushing away from the ring
-            Wt = S - dirc * 13.0
+            # outer arms brace on the floor, pushing away from the ring (far enough for the arm to reach)
+            g = ARM_GEOM[(idx, side)]
+            need = abs(g['L1'] - g['L2']) + 2.0
+            for dist in np.arange(13.0, 40.0, 1.0):
+                Wt = S - dirc * dist
+                Wt[1] = 24.0 - hand_drop(spec)
+                if np.linalg.norm(Wt - S) >= need:
+                    break
             k.plant_arm(idx, side, (Wt[0], Wt[2]), (0.0, -1.0, 0.0), bang + 180 - 25)
     k.hang_ears(0)
     poses['coil'] = k.table()
@@ -1586,13 +1592,122 @@ def make_poses():
     return poses
 
 
+def prayer_rot(sx, tilt=0.0):
+    """World rotation of a hand pressed palm-to-palm with its twin: fingers up, palm facing the midline."""
+    Rp = np.array([[0.0, -sx, 0.0], [0.0, 0.0, 1.0], [-sx, 0.0, 0.0]])
+    return R_deg(tilt, 0, 0) @ Rp
+
+
+BEG_CURL = [('seg2', 52), ('seg3', 50), ('seg4', 46), ('seg5', 44), ('seg6', 46), ('hips', 40)]
+
+
 def make_beg():
+    """THE gag: the 8-legged monster SITS and begs.  The chest stands straight up on the floor, the long body
+    curls round to its left on the ground like a sleeping cat's tail (bellies on the floor), so the rump and the
+    wagging tail end up beside the chest.  Stubby paws up at the chin with bent wrists, head tilt, sad brows,
+    the first pair of human hands pressed together 'por favor' under the chin, the rump's pair begging too,
+    the middle pair propped flat on the floor like a person sitting."""
     k = Kit()
+    # chest vertical (front up), standing on its back end
+    k.set_world_rot('seg1', R_deg(-82, 0, 0))
+    axis_y = 24.0 - 6.3 - 0.45                         # link axis height so the bellies rest on the floor
+    p1 = np.array(k.rest['seg1'][1], float)
+    base = k.wpos('seg2')                               # chest back end (seg2 pivot) for the current pivot
+    k.set_world_pos('seg1', p1 + np.array([0.0, axis_y - base[1], -6.0 - (base[2] - p1[2])]))
+    # the body curls round on the floor to the dog's left (+X): level links, yawed progressively
+    heading = 0.0
+    for n, a in BEG_CURL:
+        heading += a
+        k.set_world_rot(n, R_deg(0, -heading, 0))
+    # bellies exactly on the floor (links differ in height a little)
+    for n, *_ in LINKS:
+        low = k.lowest([n])
+        k.add(n, dy=0.0)
+        if abs(low - 23.6) > 0.05:
+            k.add(n, dy=(23.6 - low) * 0.5)
+    # neck up and forward, head level with a big dog tilt, looking at you
+    k.set_world_rot('neck', R_deg(-62, 0, 0))
+    k.set_world_rot('head', R_deg(0, 6, 0) @ R_deg(0, 0, 21) @ R_deg(8, 0, 0))
+    k.set('jaw_upper_right', -4, 3, 0)
+    k.set('jaw_upper_left', -4, -3, 0)
+    k.set('jaw_lower_right', 9, 6, 0)
+    k.set('jaw_lower_left', 9, -6, 0)
+    k.set('right_brow', 0, 0, 14, 0, -0.6, 0)
+    k.set('left_brow', 0, 0, -14, 0, -0.6, 0)
+    k.set('tongue', 10, 6, 0)
+    k.set('tongue_tip', 18, 10, 0)
+    # stubby front paws raised to the chin, wrists bent down
+    for side, sx in (('right', -1), ('left', 1)):
+        lb, pb = f'front_{side}_leg', f'front_{side}_paw'
+        k.set_world_rot(lb, R_deg(0, 0, 10 * sx) @ R_deg(-150, 0, 0))
+        k.set_world_rot(pb, R_deg(0, 0, 6 * sx) @ R_deg(-40, 0, 0))
+    # pair 1: human palms pressed together 'por favor' under the chin, in front of the chest
+    chin = k.wpos('head', (0.0, 6.0, -10.0))
+    for side, sx in (('right', -1), ('left', 1)):
+        W = np.array([0.0 + sx * 1.0, chin[1] + 9.0, chin[2] - 2.0])
+        k.arm(1, side, W, (sx * 1.0, 0.2, 0.3), prayer_rot(sx, -12))
+    # pair 3 (the rump, beside the chest): begging too, a second pair of praying hands
+    hp = k.wpos('hips', (0.0, -6.0, LINK['hips'][2] + 4.0))
+    for side, sx in (('right', -1), ('left', 1)):
+        W = np.array([hp[0] + sx * 1.0, hp[1] - 10.0, hp[2] - 6.0])
+        k.arm(3, side, W, (sx * 1.0, 0.3, 0.6), prayer_rot(sx, -20))
+    # pair 2: propped flat on the floor, splayed out like a person sitting
+    for side, sx in (('right', -1), ('left', 1)):
+        S = k.wpos(arm_names(2, side)[0])
+        out = k.R('seg5') @ np.array([sx * 1.0, 0.0, 0.3])
+        out[1] = 0.0
+        out = out / np.linalg.norm(out)
+        g = ARM_GEOM[(2, side)]
+        W = S + out * 22.0
+        yaw = math.degrees(math.atan2(-out[0], -out[2]))
+        k.plant_arm(2, side, (W[0], W[2]), (0.0, -1.0, 0.0), yaw)
+    # the tail stands up beside the chest, wagging hard
+    k.set_world_rot('tail', R_deg(0, 30, 0) @ R_deg(-70, 0, 0))
+    k.set('tail_tip', 20, 0, 25)
+    k.hang_ears(0)
     return k.table()
 
 
 def make_stretch():
+    """The transformation, w = 1 = compressed: every link telescopes into the one in front (only ~4 texels of
+    each fur link still show), the compressed body slopes from the chest down to the rump sitting on the floor
+    (a sitting dachshund), the neck telescopes in and the six arms are folded tight along the flanks."""
     k = Kit()
+    vis = 4.0
+    prev = 'seg1'
+    for n, par, Lb, Lf, *_ in LINKS:
+        k.set(n, -LINK[n][7], 0, 0, 0, 0, vis - Lb - Lf)            # cancel the hunch pitch, slide in
+        prev = n
+    k.add('seg2', rx=0.0, rz=0.0)
+    # slope the whole telescope down so the rump sits on the floor
+    lo, hi = -40.0, 0.0
+    for _ in range(30):
+        mid = (lo + hi) / 2
+        k.set('seg2', -LINK['seg2'][7] + mid, 0, 0, 0, 0, vis - LINK['seg2'][2] - LINK['seg2'][3])
+        if k.lowest(['hips']) > 23.6:
+            lo = mid
+        else:
+            hi = mid
+    k.set('head', 0, 0, 0, 0, 0, 7.0)
+    k.set('tail', -30, 0, 0)
+    # arms folded tight along the flanks, hands on the floor beside the sitting body
+    for (idx, side), spec in ARMS.items():
+        sx = -1 if side == 'right' else 1
+        ab = arm_names(idx, side)[0]
+        S = k.wpos(ab)
+        seg = spec['seg']
+        fwd = k.R(seg) @ np.array([0.0, 0.0, 1.0])
+        fwd[1] = 0
+        fwd /= np.linalg.norm(fwd)
+        g = ARM_GEOM[(idx, side)]
+        W = S + np.array([sx * 9.0, 0.0, 0.0]) + fwd * (4.0 + idx * 2.0)
+        W[1] = 24.0 - hand_drop(spec)
+        if np.linalg.norm(W - S) < abs(g['L1'] - g['L2']) + 1.5:
+            W = S + (W - S) / np.linalg.norm(W - S) * (abs(g['L1'] - g['L2']) + 1.5)
+            W[1] = 24.0 - hand_drop(spec)
+        yaw = math.degrees(math.atan2(-fwd[0], -fwd[2])) + 180 + sx * 20
+        k.plant_arm(idx, side, (W[0], W[2]), (sx * 0.3, -1.0, 0.0), yaw)
+    k.hang_ears(0)
     return k.table()
 
 

@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "deadline:block/colegio_grafiti_kevin_no_salio"
+  },
+  "facing=east": {
+   "model": "deadline:block/colegio_grafiti_kevin_no_salio",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "deadline:block/colegio_grafiti_kevin_no_salio",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "deadline:block/colegio_grafiti_kevin_no_salio",
+   "y": 270
+  }
+ }
+}

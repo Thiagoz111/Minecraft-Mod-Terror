@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "deadline:block/colegio_muro_coronamiento"
+  },
+  "facing=east": {
+   "model": "deadline:block/colegio_muro_coronamiento",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "deadline:block/colegio_muro_coronamiento",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "deadline:block/colegio_muro_coronamiento",
+   "y": 270
+  }
+ }
+}

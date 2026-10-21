@@ -1,0 +1,41 @@
+{
+ "parent": "minecraft:block/block",
+ "textures": {
+  "t": "deadline:block/colegio_rayuela_2",
+  "particle": "deadline:block/colegio_rayuela_2"
+ },
+ "elements": [
+  {
+   "from": [
+    0.0,
+    0.06,
+    0.0
+   ],
+   "to": [
+    16.0,
+    0.06,
+    16.0
+   ],
+   "faces": {
+    "up": {
+     "uv": [
+      0.0,
+      0.0,
+      8.0,
+      8.0
+     ],
+     "texture": "#t"
+    },
+    "down": {
+     "uv": [
+      8.0,
+      0.0,
+      16.0,
+      8.0
+     ],
+     "texture": "#t"
+    }
+   }
+  }
+ ]
+}

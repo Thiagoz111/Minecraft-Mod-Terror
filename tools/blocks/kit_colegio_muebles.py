@@ -2652,7 +2652,7 @@ def mesa_larga_parts(kind):
                   box((1.0, 0.0, z - 0.3), (3.0, 0.6, z + 1.7), mL)]
         P.append(box((1.6, 2.2, 3.2), (2.4, 3.0, 12.8), mW))
     if kind == 'puesta':
-        P += place_setting(3.5, 1.4, north=True) + place_setting(9.0, 9.0, north=False)
+        P += place_setting(1.6, 1.4, north=True) + place_setting(5.2, 9.4, north=False)
     return P
 
 
@@ -2893,8 +2893,6 @@ def tablero_llaves_parts(missing=False):
         for c, x in enumerate((3.0, 6.4, 9.8, 13.0)):
             P.append(box((x - 0.3, y, 14.2), (x + 0.3, y + 0.5, 15.0), mH))            # hook
             P.append(box((x - 0.3, y + 0.5, 14.2), (x + 0.3, y + 0.9, 14.6), mH))
-            lab = fin(lambda ctx, n=n: (PAPER, 6) if ctx.edge() else (PAPER, 4), ao=0)
-            P.append(box((x - 0.9, y - 3.4, 14.95), (x + 0.9, y - 2.8, 15.0), lab, faces=('north',)))  # paper labels
             key_ = (r, c)
             if key_ == (0, 2):         # the office key: brass with a red tag
                 if not missing:
@@ -2917,7 +2915,7 @@ def castigos_tone():
     hw = max(x for x, y in head) + 1
     date = set(draw_text(F35, '18/6/84', 0, 9))
     dw = max(x for x, y in date) + 1
-    alb = set(draw_text(F35, 'ALBORNOZ', 0, 0))
+    alb = set(draw_text(F35, 'CUARTO', 0, 0)) | set((x + 25, y) for (x, y) in draw_text(F35, '3', 0, 0))
 
     def t(ctx):
         i, j, w, h = ctx.i, ctx.j, ctx.w, ctx.h
@@ -2995,3 +2993,604 @@ F('tablero_llaves_falta', 'Tablero de llaves (falta la del despacho)', 'Key boar
   tablero_llaves_parts(True), env=('wall',), collision='none')
 F('lista_castigos', 'Lista de castigos', 'Punishment list', lista_castigos_parts(), env=('wall',), collision='none',
   sound='paper')
+
+
+# ============================================================================================ OFFICE
+class Canvas:
+    """Tiny raster painter for pictures (photo, portraits): rgba rows, painter's algorithm."""
+
+    def __init__(self, w, h, bg):
+        self.w, self.h = w, h
+        self.px = [[bg] * w for _ in range(h)]
+
+    def get(self, x, y):
+        if 0 <= x < self.w and 0 <= y < self.h:
+            return self.px[y][x]
+        return None
+
+    def set(self, x, y, c):
+        x, y = int(x), int(y)
+        if c is not None and 0 <= x < self.w and 0 <= y < self.h:
+            if callable(c):
+                c = c(self.px[y][x])
+            self.px[y][x] = c
+
+    def rect(self, x0, y0, x1, y1, c):
+        for y in range(int(y0), int(y1)):
+            for x in range(int(x0), int(x1)):
+                self.set(x, y, c(x, y) if callable(c) and c.__code__.co_argcount == 2 else c)
+
+    def ellipse(self, cx, cy, rx, ry, c, y_min=-999, y_max=999):
+        for y in range(int(cy - ry - 1), int(cy + ry + 2)):
+            for x in range(int(cx - rx - 1), int(cx + rx + 2)):
+                if y_min <= y <= y_max and ((x + 0.5 - cx) / rx) ** 2 + ((y + 0.5 - cy) / ry) ** 2 <= 1.0:
+                    self.set(x, y, c(x, y) if callable(c) and c.__code__.co_argcount == 2 else c)
+
+    def poly(self, pts, c):
+        ys = [p[1] for p in pts]
+        for y in range(int(min(ys)), int(max(ys)) + 1):
+            for x in range(0, self.w):
+                if _pip(x + 0.5, y + 0.5, pts):
+                    self.set(x, y, c(x, y) if callable(c) and c.__code__.co_argcount == 2 else c)
+
+    def ascii(self, x0, y0, rows, pal_):
+        for j, row in enumerate(rows):
+            for i, ch in enumerate(row):
+                if ch in pal_:
+                    self.set(x0 + i, y0 + j, pal_[ch])
+
+
+def canvas_tone(cv, face='north', x0=0, y0=0, other=None):
+    """Material that shows canvas pixels on one face (i, j offset by x0/y0); other faces use `other`."""
+    def t(ctx):
+        if ctx.face != face:
+            return other(ctx) if other else (PAPER, 5)
+        c = cv.get(ctx.i + x0, ctx.j + y0)
+        return c if c is not None else (PAPER, 6)
+    return t
+
+
+# ------------------------------------------------------------------------------------------------ choir photo 1984
+PH_SKIN = [hx('#8a5a4a'), hx('#b98470'), hx('#d8a891'), hx('#ebc6b0')]
+PH_HAIR = {'dark': [hx('#1e1412'), hx('#3a2820'), hx('#5a3e2e')], 'brown': [hx('#3a2418'), hx('#5e3c26'), hx('#7e5638')],
+           'light': [hx('#6a4a28'), hx('#93703e'), hx('#b8955a')]}
+
+
+def photo_grade(c):
+    """Faded 1984 colour print: warm magenta cast, lifted blacks, lowered contrast."""
+    r, g, b = c[0], c[1], c[2]
+    r = int(r * 0.86 + 40)
+    g = int(g * 0.80 + 26)
+    b = int(b * 0.74 + 30)
+    return (min(255, r), min(255, g), min(255, b), 255)
+
+
+def draw_girl(cv, x, y, hair='dark', style='bob', mouth=True, small=False, seed=0):
+    """Pupil in a white guardapolvo with a navy bow; head 7x8 at (x, y)."""
+    H = PH_HAIR[hair]
+    sk = PH_SKIN
+    white = [hx('#7d808a'), hx('#b9bec8'), hx('#e2e5ea'), hx('#f4f5f7')]
+    navy = hx('#1b2448')
+    by = y + 8
+    bh = 18 if not small else 16
+    # body (guardapolvo): trapezoid with folds
+    for j in range(bh):
+        half = 4 + j * 0.18
+        for i in range(int(-half), int(half) + 1):
+            k = 2
+            if abs(i) >= half - 1:
+                k = 1
+            elif (i + seed) % 3 == 0 and j > 6:
+                k = 1 if j % 4 else 2
+            if i == 0 and j > 2:
+                k = 1                                     # button line
+            cv.set(x + 3 + i, by + j, white[k])
+    for j in range(2, 10):                                # arms / sleeves
+        cv.set(x - 2, by + j, white[1])
+        cv.set(x + 8, by + j, white[1])
+    cv.set(x - 2, by + 10, sk[2])
+    cv.set(x + 8, by + 10, sk[2])
+    cv.rect(x + 1, by, x + 6, by + 1, white[3])           # collar
+    cv.rect(x + 2, by + 1, x + 5, by + 2, navy)           # bow
+    cv.set(x + 1, by + 2, navy)
+    cv.set(x + 5, by + 2, navy)
+    # head
+    face = ['..HHH..', '.HHHHH.', 'HSSSSSH', 'HSeSeSH', 'HSSSSSH', 'HSSmSSH', '.SSSSS.', '..sss..']
+    if style == 'bob':
+        face[2] = 'HHHHHHH'
+    if not mouth:
+        face[5] = 'HSSzSSH'
+    pal_ = {'H': H[1], 'S': sk[2], 's': sk[1], 'e': hx('#241a1a'), 'm': hx('#8a3a3a'), 'z': sk[1]}
+    cv.ascii(x, y, face, pal_)
+    cv.set(x + 2, y + 4, sk[3])
+    # hair styles
+    if style == 'trenzas':
+        for j in range(8, 16):
+            cv.set(x - 1, y + j - 2, H[0 if j % 2 else 1])
+            cv.set(x + 7, y + j - 2, H[0 if j % 2 else 1])
+        cv.set(x - 1, y + 14, hx('#a8303a'))
+        cv.set(x + 7, y + 14, hx('#a8303a'))
+    elif style == 'cola':
+        for j in range(2, 9):
+            cv.set(x + 7, y + j, H[1])
+        cv.set(x + 7, y + 1, hx('#d8d0c0'))
+    elif style == 'rulos':
+        for (dx, dy) in ((-1, 0), (7, 0), (-1, 2), (7, 2), (-1, 4), (7, 4), (0, -1), (3, -1), (6, -1), (-1, 6), (7, 6)):
+            cv.set(x + dx, y + dy, H[2] if (dx + dy) % 2 else H[0])
+    elif style == 'largo':
+        for j in range(2, 13):
+            cv.set(x, y + j, H[1])
+            cv.set(x + 6, y + j, H[1])
+            cv.set(x - 1, y + j + 1, H[0])
+            cv.set(x + 7, y + j + 1, H[0])
+        cv.rect(x + 1, y + 1, x + 6, y + 2, hx('#e8e2d6'))  # headband
+    elif style == 'colitas':
+        for (dx, dy) in ((-1, 1), (-2, 0), (-2, 2), (7, 1), (8, 0), (8, 2)):
+            cv.set(x + dx, y + dy, H[1])
+    elif style == 'mono':
+        for (dx, dy) in ((4, -1), (5, -1), (6, -1), (7, -2), (3, -2), (5, -2), (7, 0)):
+            cv.set(x + dx, y + dy, hx('#e8e8f0'))
+    elif style == 'corto':
+        pass
+
+
+def draw_nun(cv, x, y, young=True, mouth=True):
+    black = [hx('#121014'), hx('#221e24'), hx('#35303a')]
+    white = hx('#ecebe6')
+    sk = PH_SKIN
+    for j in range(0, 34):                                # veil + habit
+        half = 4 + min(j, 12) * 0.45 + max(0, j - 12) * 0.12
+        for i in range(int(-half), int(half) + 1):
+            cv.set(x + 4 + i, y + j, black[1 if abs(i) < half - 1 else 0])
+    cv.rect(x + 1, y + 2, x + 8, y + 12, white)            # toca
+    cv.rect(x + 2, y + 3, x + 7, y + 11, sk[2])            # face
+    cv.set(x + 3, y + 6, hx('#241a1a'))
+    cv.set(x + 5, y + 6, hx('#241a1a'))
+    if mouth:
+        cv.set(x + 4, y + 9, hx('#8a4a44'))
+        cv.set(x + 3, y + 9, hx('#a86a5a'))
+    cv.rect(x + 0, y + 12, x + 9, y + 17, white)           # bib
+    cv.set(x + 4, y + 14, black[0])                        # little crucifix
+    cv.set(x + 4, y + 15, black[0])
+    cv.set(x + 3, y + 14, black[0])
+    cv.set(x + 5, y + 14, black[0])
+
+
+GIRLS = [('Paloma', 'brown', 'trenzas'), ('Mecha', 'dark', 'bob'), ('Rocío', 'light', 'cola'), ('Chela', 'dark', 'rulos'),
+         ('Ofelia', 'brown', 'largo'), ('Ana Sofía', 'light', 'colitas'), ('Teresita', 'brown', 'corto'), ('Lola', 'dark', 'mono')]
+
+
+def choir_photo(state):
+    """state: 'normal' | 'sin_bocas' | 'vacia'. 88 x 56 px print (white border + caption 'CORO 1984')."""
+    W, Hh = 88, 56
+    cv = Canvas(W, Hh, hx('#f1eee6'))
+    img = Canvas(84, 44, hx('#cdbb9a'))
+    # background: chapel wall with an arched door, dado and floor
+    for y in range(44):
+        for x in range(84):
+            c = hx('#d4c39f') if y < 27 else (hx('#7a5a40') if y < 30 else hx('#8b8274'))
+            if 54 <= x < 70 and y >= 6 + int(abs(x - 61.5) ** 2 / 12) and y < 30:
+                c = hx('#4e3e30') if y > 8 else hx('#6a5440')
+            if y < 27 and (x * 7 + y * 3) % 17 == 0:
+                c = mix(c, hx('#b8a684'), 0.5)
+            img.set(x, y, c)
+    for x in range(4, 80):                                  # bench for the front row
+        img.set(x, 35, hx('#5a3e28'))
+        img.set(x, 36, hx('#4a3220'))
+    back = [(GIRLS[0], 8), (GIRLS[1], 20), (GIRLS[2], 32), (GIRLS[3], 44)]
+    front = [(GIRLS[4], 4), (GIRLS[5], 16), (GIRLS[6], 28), (GIRLS[7], 40)]
+    keep = ('Teresita',)
+    ghost = []
+    for (g, x) in back:
+        if state == 'vacia' and g[0] not in keep:
+            ghost.append((x, 5, 18))
+            continue
+        draw_girl(img, x + 6, 5, g[1], g[2], mouth=state == 'normal', seed=x)
+    draw_nun(img, 72, 2, mouth=True)
+    for (g, x) in front:
+        if state == 'vacia' and g[0] not in keep:
+            ghost.append((x + 4, 17, 20))
+            continue
+        draw_girl(img, x + 4, 17 + (2 if g[0] == 'Teresita' else 0), g[1], g[2], mouth=state == 'normal',
+                  small=g[0] == 'Teresita', seed=x + 1)
+    for (x, y, hgt) in ghost:                               # faint pale smudges where they stood
+        for j in range(hgt):
+            for i in range(-2, 9):
+                if hh(x + i, y + j, 3) < 0.35 and abs(i - 3) < 3 + j * 0.15:
+                    img.set(x + i, y + j, lambda c: mix(c, hx('#efe6d6'), 0.18))
+    # grade + vignette + scratches
+    for y in range(44):
+        for x in range(84):
+            c = photo_grade(img.px[y][x])
+            v = ((x - 42) / 42.0) ** 2 + ((y - 22) / 22.0) ** 2
+            if v > 0.6:
+                c = mix(c, hx('#5a3a30'), (v - 0.6) * 0.35)
+            if hh(x, y, 77) < 0.006:
+                c = mix(c, hx('#ffffff'), 0.5)
+            cv.set(x + 2, y + 2, c)
+    cap = draw_text(F35, 'CORO 1984', 0, 0)
+    cw = max(p[0] for p in cap) + 1
+    for (x, y) in cap:
+        cv.set((W - cw) // 2 + x, 48 + y, hx('#2a2a48'))
+    # age: yellowed corner, a crease
+    for y in range(Hh):
+        for x in range(W):
+            if x + y < 10:
+                cv.set(x, y, lambda c: mix(c, hx('#c8a86a'), 0.25))
+            if abs(x - 61 - y * 0.3) < 0.5 and hh(x, y) < 0.7:
+                cv.set(x, y, lambda c: mix(c, hx('#ffffff'), 0.3))
+    return cv
+
+
+def photo_parts(state):
+    """3x2 framed photo: ONE block placed at the bottom-centre of its 3x2 wall area (model overflows)."""
+    cv = choir_photo(state)
+    mF = fin(outline(wood(NOGAL, seed=501, base=2, axis=None, wear=0.3)), dust=0.6)
+    mG = fin(brass(GOLD, base=4, seed=502, sheen=False), dust=0.5)
+    mPh = fin(canvas_tone(cv, other=lambda c: (PAPER, 6)), ao=0, dust=0.2)
+    P = [box((-14.0, 2.0, 15.3), (30.0, 30.0, 15.5), mPh, faces=('north',)),
+         box((-15.8, 0.2, 15.0), (31.8, 2.0, 16.0), mF), box((-15.8, 30.0, 15.0), (31.8, 31.8, 16.0), mF),
+         box((-15.8, 2.0, 15.0), (-14.0, 30.0, 16.0), mF), box((30.0, 2.0, 15.0), (31.8, 30.0, 16.0), mF),
+         box((-14.0, 2.0, 15.2), (30.0, 2.4, 15.3), mG), box((-14.0, 29.6, 15.2), (30.0, 30.0, 15.3), mG),
+         box((-14.0, 2.4, 15.2), (-13.6, 29.6, 15.3), mG), box((29.6, 2.4, 15.2), (30.0, 29.6, 15.3), mG),
+         box((-14.0, 2.0, 15.5), (30.0, 30.0, 16.0), fin(flat(CORK, 2), ao=0), faces=('south',))]
+    return P
+
+
+# ------------------------------------------------------------------------------------------------ portrait of Madre Benigna
+def benigna_canvas(state):
+    """52x84 oil portrait: old founder in black habit, white coif and bib, crucifix, hands on a book, red chair.
+    state: 'abiertos' | 'cerrados' | 'vacio' (only the empty chair remains)."""
+    W, Hh = 52, 84
+    cv = Canvas(W, Hh, hx('#1a140e'))
+    for y in range(Hh):                                    # dark ground with a warm glow behind the head
+        for x in range(W):
+            d = math.hypot((x - 26) / 26.0, (y - 26) / 30.0)
+            k = max(0.0, 1.0 - d)
+            c = mix(hx('#17110c'), hx('#5a4630'), k * 0.9)
+            if (x + int(vn(x / 3.0, y / 9.0, 0.2, 5) * 6)) % 4 == 0:
+                c = mix(c, hx('#0e0a07'), 0.25)            # brush strokes
+            cv.set(x, y, c)
+    # the chair (red velvet, gilt edge) - visible in every state
+    for y in range(18, 76):
+        for x in range(9, 44):
+            top = 18 + (abs(x - 26.5) ** 2) / 40.0
+            if y >= top:
+                edge = y < top + 1.5 or x in (9, 10, 42, 43)
+                cv.set(x, y, hx('#b08a3a') if edge else mix(hx('#5a1418'), hx('#8a2a2a'), vn(x / 4.0, y / 4.0, 0.3, 7) * 0.7))
+    if state != 'vacio':
+        blk = [hx('#0c0a0c'), hx('#18141a'), hx('#262028'), hx('#352d36')]
+        # veil + habit
+        cv.ellipse(26, 25, 14, 14, lambda x, y: blk[1 if (x - y) % 5 else 2], y_max=38)
+        cv.poly([(11, 34), (41, 34), (49, 84), (3, 84)], lambda x, y: blk[1 + (1 if (x * 3 + y) % 9 == 0 else 0) - (1 if x < 8 or x > 44 else 0)])
+        for y in range(34, 84):                            # folds
+            for xx in (14 + (y - 34) // 7, 37 - (y - 34) // 7, 26):
+                cv.set(xx, y, blk[0])
+        # coif (toca) framing the face
+        cv.rect(16, 15, 37, 41, hx('#e9e4d8'))
+        for y in range(15, 41):
+            cv.set(16, y, hx('#b9b2a2'))
+            cv.set(36, y, hx('#b9b2a2'))
+        # bib
+        cv.ellipse(26, 39, 17, 16, lambda x, y: hx('#e2dccd') if (x + y) % 7 else hx('#c8c0ae'), y_min=39)
+        # crucifix on the bib
+        cv.rect(25, 45, 27, 55, hx('#1a1410'))
+        cv.rect(22, 47, 30, 49, hx('#1a1410'))
+        cv.set(25, 47, hx('#a8a8a0'))
+        cv.set(26, 48, hx('#c8c8c0'))
+        # hands on a black missal
+        cv.rect(16, 68, 37, 77, hx('#141010'))
+        cv.rect(16, 76, 37, 77, hx('#b08a3a'))
+        sk = {'S': hx('#c8a088'), 's': hx('#9a7460'), 'L': hx('#e0bea6'), 'w': hx('#7a5848')}
+        hands = ['..sSSSs....sSSSs..', '.sSLLSSs..sSSLLSs.', 'sSLLSSwSssSwSSLLSs', 'sSSSwSSSSSSSSwSSSs', '.ssSSSSs..sSSSSss.']
+        cv.ascii(17, 64, hands, sk)
+        # rosary hanging from the hands
+        for k in range(10):
+            cv.set(34 + (k % 2), 69 + k, hx('#2a2018') if k % 2 else hx('#5a4a38'))
+        # face 14x18 at (19, 20)
+        if state == 'abiertos':
+            eyes = ['sSbbbbSLSbbbbs', 'sSWeeWSLSWeeWs', 'sSsehsSLSsehss']
+        else:
+            eyes = ['sSbbbbSLSbbbbs', 'sSSwwwSLSwwwSs', 'sSsSSsSLSsSSss']
+        face = ['..sSSSSSSSSs..', '.sSLLLLLLLLSs.', '.SLLLLLLLLLLS.', 'sSLwwLLLLwwLSs', 'sSLLLLLLLLLLSs'] + eyes + \
+               ['sSSSSSLnSSSSSs', 'sSwSSSLnSSSwSs', 'sSswSnnnnSwsSs', 'sSSwSSSSSSwSSs', 'sSSSwrllllrwSs', 'sSSSSwSSSSwSSs',
+                '.sSSSSSSSSSSs.', '..ssSSSSSSss..', '....ssssss....']
+        fp = {'S': hx('#c99e86'), 's': hx('#9c7562'), 'L': hx('#e2bea6'), 'w': hx('#86604f'), 'b': hx('#5a4a44'),
+              'W': hx('#d8d0c4'), 'e': hx('#1c1416'), 'h': hx('#f0f0ea'), 'n': hx('#8a6250'), 'r': hx('#9a5a50'),
+              'l': hx('#6a3a36')}
+        cv.ascii(19, 20, face, fp)
+        if state == 'abiertos':
+            cv.set(22, 26, hx('#1c1416'))
+            cv.set(30, 26, hx('#1c1416'))
+    else:
+        # only a faint dark silhouette stain where she sat
+        cv.ellipse(26, 30, 9, 11, lambda c: mix(c, hx('#0c0808'), 0.25))
+    # craquelure + yellow varnish
+    cell = 6.0
+    for y in range(Hh):
+        for x in range(W):
+            gx, gy = x / cell, y / cell
+            ix, iy = int(gx), int(gy)
+            ds = []
+            for a in (-1, 0, 1):
+                for b in (-1, 0, 1):
+                    px = ix + a + hh(ix + a, iy + b, 1) * 0.9
+                    py = iy + b + hh(ix + a, iy + b, 2) * 0.9
+                    ds.append(math.hypot(gx - px, gy - py))
+            ds.sort()
+            c = cv.px[y][x]
+            if ds[1] - ds[0] < 0.07:
+                c = mix(c, hx('#0a0806'), 0.35)
+            c = mix(c, hx('#a88a3a'), 0.10)
+            cv.px[y][x] = c
+    return cv
+
+
+def gilt_frame_tone(ctx):
+    """Gilded moulding with a bead-and-reel ornament along the rail."""
+    i, j, w, h = ctx.i, ctx.j, ctx.w, ctx.h
+    if ctx.face in ('north',):
+        long_ = max(w, h)
+        u = j if h >= w else i
+        v = i if h >= w else j
+        across = w if h >= w else h
+        k = 5
+        if v == 0 or v == across - 1:
+            k = 3
+        elif v == across // 2:
+            k = 7 if u % 4 in (1, 2) else 3
+        elif v == 1:
+            k = 6
+        if hh(i, j, 9) < 0.05:
+            k -= 2
+        return (GOLD, k)
+    return (GOLD, 3)
+
+
+def portrait_parts(state):
+    """Madre Benigna, 2 wide x 3 tall: ONE block at the middle-left of its 2x3 area (model x 0..32, y -16..32)."""
+    cv = benigna_canvas(state)
+    mF = fin(gilt_frame_tone, dust=0.7)
+    mC = fin(canvas_tone(cv), ao=0, dust=0.15)
+    plate = set(draw_text(F35, 'BENIGNA', 2, 1))
+    mPl = fin(lambda c: INK if (c.face == 'north' and (c.i, c.j) in plate) else (BRASS, 6 if c.edge() else 4), ao=0, dust=0.3)
+    return [
+        box((3.0, -13.0, 15.3), (29.0, 29.0, 15.4), mC, faces=('north',)),
+        box((0.0, -16.0, 14.6), (3.0, 32.0, 16.0), mF), box((29.0, -16.0, 14.6), (32.0, 32.0, 16.0), mF),
+        box((3.0, 29.0, 14.6), (29.0, 32.0, 16.0), mF), box((3.0, -16.0, 14.6), (29.0, -13.0, 16.0), mF),
+        box((3.0, -13.0, 15.0), (29.0, -12.6, 15.3), fin(flat(GOLD, 2), ao=0)),
+        box((-0.4, -16.4, 14.2), (3.4, -12.6, 14.6), mF), box((28.6, -16.4, 14.2), (32.4, -12.6, 14.6), mF),   # corner bosses
+        box((-0.4, 28.6, 14.2), (3.4, 32.0, 14.6), mF), box((28.6, 28.6, 14.2), (32.4, 32.0, 14.6), mF),
+        box((12.0, 32.0, 14.6), (20.0, 32.0, 16.0), mF),
+        box((8.6, -15.6, 14.2), (23.4, -12.8, 14.6), mPl),                                     # name plate
+    ]
+
+
+# ------------------------------------------------------------------------------------------------ office furniture
+def madre_desk_parts(side):
+    """Mother Superior's desk: walnut, green leather writing surface, blotter and inkstand (she sits on the south side)."""
+    P = teacher_desk_parts(side, base_y=0.0, with_tarima=False, pal_=NOGAL, seed=511)
+    P = [p for p in P if not (p.frm[1] >= 12.0 and p.size()[1] < 1.2 and p.size()[0] < 13)]   # drop the books/ruler
+    off = (0, 0, 0) if side == 'izq' else (16, 0, 0)
+    mLe = fin(cloth(LEATHER_G, base=3, seed=513, folds=0, weave=False, stains=0.3, stain_col=hx('#0a0c0a'), off=off), ao=0.3, dust=0.8)
+    x0, x1 = (2.0, 16.0) if side == 'izq' else (0.0, 14.0)
+    P.append(box((x0, 12.0, 2.4), (x1, 12.1, 13.2), mLe, faces=('up',)))
+    if side == 'izq':
+        mPa = fin(cloth(PAPER, base=6, seed=515, folds=0, weave=False, stains=0.5), ao=0.3, dust=0.6)
+        P += [box((6.0, 12.1, 6.0), (16.0, 12.3, 12.6), mPa),                  # blotter / open register
+              box((5.4, 12.0, 5.6), (6.2, 12.6, 13.0), fin(painted(LEATHER_B, base=3, seed=516))),
+              box((9.0, 12.3, 8.0), (15.0, 12.35, 8.2), fin(flat([INK], 0), ao=0))]
+    else:
+        mB = fin(brass(seed=517, base=4))
+        P += [box((5.0, 12.0, 3.0), (12.0, 12.6, 7.0), mB),                    # inkstand tray
+              box((5.8, 12.6, 3.6), (7.8, 14.0, 5.6), fin(glow(pal('#0a0c14', '#121828', '#1a2440', '#26365a'), base=2), ao=0.3)),
+              box((9.2, 12.6, 3.6), (11.2, 14.0, 5.6), fin(glow(pal('#0a0c14', '#121828', '#1a2440', '#26365a'), base=2), ao=0.3)),
+              box((8.0, 12.6, 4.4), (8.6, 17.0, 4.8), fin(flat(PAPER, 7)), rot=('z', 22.5, (8.3, 12.6, 4.6)))]   # quill pen
+    return P
+
+
+def swivel_chair_parts():
+    """Banker's swivel chair (the one that turns by itself): spindle bow back, saddle seat, iron spider base."""
+    mW = fin(outline(wood(NOGAL, seed=521, base=4, worn_pal=RAW, wear=0.5)))
+    mS = fin(wood(NOGAL, seed=523, base=4, boards=(2, 9), worn_pal=RAW, wear=0.6))
+    mI = fin(iron(seed=525, rust=0.3))
+    P = [box((7.2, 1.6, 7.2), (8.8, 6.6, 8.8), mI),                         # column
+         box((6.4, 6.6, 6.4), (9.6, 7.4, 9.6), mI),                         # spring housing
+         box((1.4, 1.0, 7.3), (14.6, 1.8, 8.7), mI), box((7.3, 1.0, 1.4), (8.7, 1.8, 14.6), mI),   # spider legs
+         box((5.4, 1.8, 5.4), (10.6, 2.4, 10.6), mI)]
+    for (x, z) in ((1.2, 7.4), (13.6, 7.4), (7.4, 1.2), (7.4, 13.6)):
+        P.append(box((x, 0.0, z), (x + 1.2, 1.0, z + 1.2), fin(flat(IRON, 1))))                   # casters
+    P += [box((2.4, 7.4, 2.6), (13.6, 8.6, 13.4), mS),                      # saddle seat
+          box((3.0, 7.4, 2.0), (13.0, 8.4, 2.6), mS),
+          box((1.6, 12.0, 2.8), (3.0, 12.8, 12.6), mW), box((13.0, 12.0, 2.8), (14.4, 12.8, 12.6), mW),   # arms
+          box((1.9, 8.6, 3.4), (2.7, 12.0, 4.2), mW), box((13.3, 8.6, 3.4), (14.1, 12.0, 4.2), mW),
+          box((2.0, 14.2, 12.6), (14.0, 15.6, 14.2), mW),                   # bow top rail
+          box((1.6, 8.6, 11.6), (3.0, 15.6, 13.4), mW), box((13.0, 8.6, 11.6), (14.4, 15.6, 13.4), mW)]
+    for x in (4.2, 6.2, 8.2, 10.2, 12.0):
+        P.append(box((x - 0.35, 8.6, 12.9), (x + 0.35, 14.2, 13.5), mW))  # spindles
+    return P
+
+
+def dial_tone(ctx):
+    """Rotary dial: black disc, cream number ring with ten finger holes, chrome finger stop."""
+    w, h = ctx.w, ctx.h
+    x, y = (ctx.i + 0.5) / w * 2 - 1, (ctx.j + 0.5) / h * 2 - 1
+    r = math.hypot(x, y)
+    if ctx.face not in ('north', 'up'):
+        return (BAKE, 3)
+    if r > 1.0:
+        return (BAKE, 4)
+    if r < 0.32:
+        return (PAPER, 7) if r < 0.2 else (NICKEL, 6)
+    a = (math.atan2(y, x) + math.pi) / (2 * math.pi)
+    hole = abs(((a * 12) % 1.0) - 0.5) < 0.28 and 0.5 < r < 0.86 and not (0.62 < a < 0.82)
+    if hole:
+        return (PAPER, 6)
+    return (BAKE, 2 if r > 0.9 else 3)
+
+
+def telefono_parts():
+    """Black bakelite rotary desk phone (sits on a 12/16 desk)."""
+    y = -4.0
+    mB = fin(brass(BAKE, base=4, seed=531, tarnish=0.1), dust=0.6)
+    mD = fin(dial_tone, ao=0, dust=0.4)
+    P = [box((3.8, y, 4.2), (12.2, y + 0.8, 12.4), mB),                    # base plate
+         box((4.4, y + 0.8, 5.6), (11.6, y + 3.0, 12.0), mB),              # body
+         box((4.4, y + 0.8, 3.4), (11.6, y + 2.4, 5.6), mB, rot=('x', 22.5, (8.0, y + 0.8, 5.6))),   # sloped front
+         box((5.4, y + 1.5, 3.0), (10.6, y + 1.7, 7.0), mD, rot=('x', 22.5, (8.0, y + 0.8, 5.6)), faces=('up',)),
+         box((5.0, y + 3.0, 7.4), (5.9, y + 4.0, 9.0), mB), box((10.1, y + 3.0, 7.4), (11.0, y + 4.0, 9.0), mB),   # cradle
+         box((3.0, y + 3.8, 7.4), (13.0, y + 4.6, 8.8), mB),               # handset grip
+         box((2.6, y + 3.0, 6.8), (5.0, y + 4.8, 9.4), mB), box((11.0, y + 3.0, 6.8), (13.4, y + 4.8, 9.4), mB),
+         box((12.6, y + 0.6, 11.2), (13.2, y + 3.2, 11.8), fin(flat(BAKE, 2)))]
+    for k in range(5):                                                      # coiled cord
+        P.append(box((13.0 + (k % 2) * 0.4, y + 0.2, 11.8 + k * 0.8), (13.6 + (k % 2) * 0.4, y + 0.8, 12.4 + k * 0.8), fin(flat(BAKE, 3))))
+    return P
+
+
+def mate_parts():
+    """Mate (calabaza with alpaca rim and bombilla), 1980s termo and a yerba package (sit on a 12/16 desk)."""
+    y = -4.0
+    mG = fin(painted(pal('#2a1a0e', '#3e2814', '#56381c', '#6e4a26', '#8a5e32'), base=2, seed=541, wear=0.3), dust=0.4)
+    mN = fin(brass(NICKEL, base=5, seed=543), dust=0.3)
+    mY = fin(lambda c: (pal('#2e3a14', '#46561e', '#5e7028', '#7a8a38'), 1 + (hh(c.i, c.j) > 0.5)), ao=0, dust=0)
+    mT = fin(painted(pal('#3a0a0a', '#5a1010', '#7a1a16', '#9a2a20', '#b84030'), base=3, seed=545, wear=0.3), dust=0.5)
+    P = [box((3.2, y, 6.2), (6.8, y + 2.6, 9.8), mG),                     # gourd
+         box((2.8, y + 0.6, 6.6), (7.2, y + 2.2, 9.4), mG), box((3.6, y + 0.6, 5.8), (6.4, y + 2.2, 10.2), mG),
+         box((3.5, y + 2.6, 6.5), (6.5, y + 3.2, 9.5), mN),                # virola (rim)
+         box((3.9, y + 3.0, 6.9), (6.1, y + 3.1, 9.1), mY, faces=('up',)),
+         box((5.0, y + 2.6, 7.8), (5.4, y + 6.4, 8.2), mN, rot=('z', -22.5, (5.2, y + 2.6, 8.0))),   # bombilla
+         box((9.2, y, 7.4), (12.0, y + 6.6, 10.2), mT),                    # termo body
+         box((9.0, y + 6.6, 7.2), (12.2, y + 8.6, 10.4), mN),              # cup-cap
+         box((9.4, y + 8.6, 7.6), (11.8, y + 9.0, 10.0), mN),
+         box((12.0, y + 2.0, 8.4), (12.6, y + 5.0, 9.2), mT),              # handle
+         box((9.2, y + 3.0, 7.3), (12.0, y + 3.4, 7.4), mN, faces=('north',)),
+         box((7.4, y, 11.2), (10.6, y + 4.2, 13.2), fin(lambda c: (PAPER, 6) if c.j < 3 or c.face == 'up' else
+                                                       ((GREENP, 6) if (c.i + c.j) % 7 else (PAPER, 5)), dust=0.6))]
+    return P
+
+
+def radio_face_tone(ctx):
+    """Front of the 80s radiograbador: two speaker grilles, tuning scale with a red needle, cassette window."""
+    w, h, i, j = ctx.w, ctx.h, ctx.i, ctx.j
+    if ctx.face != 'north':
+        return (NICKEL, 4 if ctx.face != 'up' else 5)
+    if ctx.edge() == 0:
+        return (NICKEL, 3)
+    for cx in (w * 0.2, w * 0.8):                          # speakers
+        d = math.hypot(i + 0.5 - cx, (j + 0.5 - h * 0.58) * 1.0)
+        if d < h * 0.36:
+            if d > h * 0.32:
+                return (NICKEL, 6)
+            return (BAKE, 1) if (i + j) % 2 else (BAKE, 3)
+    if w * 0.38 <= i < w * 0.62:
+        if 2 <= j <= 3:                                    # tuning scale
+            if i == int(w * 0.52):
+                return INK_RED
+            return (PAPER, 6) if i % 2 else (BAKE, 2)
+        if 5 <= j < h - 2:                                 # cassette window
+            cy = (5 + h - 2) / 2
+            for cx in (w * 0.45, w * 0.55):
+                if math.hypot(i + 0.5 - cx, j + 0.5 - cy) < 1.3:
+                    return (PAPER, 6)
+            return (BAKE, 1) if j in (5, h - 3) else (pal('#2a1a10', '#3a2618'), 1)
+    return (BAKE, 3)
+
+
+def radio_parts():
+    y = -4.0
+    mF = fin(radio_face_tone, ao=0.3, dust=0.5)
+    mN = fin(brass(NICKEL, base=5, seed=551), dust=0.5)
+    mK = fin(painted(BAKE, base=3, seed=553, wear=0.3))
+    P = [box((2.0, y, 5.0), (14.0, y + 6.4, 9.6), mF),
+         box((3.0, y + 6.4, 6.6), (3.8, y + 8.6, 7.6), mN), box((12.2, y + 6.4, 6.6), (13.0, y + 8.6, 7.6), mN),   # handle
+         box((3.0, y + 8.6, 6.6), (13.0, y + 9.4, 7.6), mN),
+         box((1.6, y + 6.4, 8.4), (2.2, y + 13.0, 9.0), mN, rot=('z', 22.5, (1.9, y + 6.4, 8.7)))]   # antenna
+    for k in range(6):
+        P.append(box((5.6 + k * 0.85, y + 6.4, 5.4), (6.3 + k * 0.85, y + 7.0, 6.6), mK))           # piano keys
+    return P
+
+
+def archivero_parts():
+    """Olive-green steel filing cabinet (4 drawers, 1.4 blocks high); the second drawer is ajar with folders."""
+    mS = fin(painted(GREENP, base=4, seed=561, chips=0.25, under=IRON, under_k=3, grime=0.5))
+    mD = fin(painted(GREENP, base=5, seed=562, chips=0.2, under=IRON, under_k=3, bevel=True))
+    mN = fin(brass(NICKEL, base=5, seed=563), dust=0.4)
+    mLab = fin(lambda c: (PAPER, 6) if c.edge() else (PAPER, 4), ao=0, dust=0.3)
+    P = [box((2.0, 0.6, 3.0), (14.0, 22.0, 15.0), mS), box((2.4, 0.0, 3.4), (13.6, 0.6, 14.6), fin(flat(IRON, 2)))]
+    rows = ((1.2, 6.0), (6.4, 11.2), (11.6, 16.4), (16.8, 21.6))
+    for n, (a, b) in enumerate(rows):
+        z0 = 2.6 if n != 2 else 0.6
+        P.append(box((2.4, a, z0), (13.6, b, z0 + 0.4), mD))
+        P.append(box((6.4, (a + b) / 2 - 0.6, z0 - 0.5), (9.6, (a + b) / 2 - 0.1, z0), mN))
+        P.append(box((6.6, b - 1.6, z0 - 0.1), (9.4, b - 0.7, z0), mLab, faces=('north',)))
+        if n == 2:
+            P.append(box((2.6, a, 1.0), (2.8, b - 0.4, 3.0), mD))
+            P.append(box((13.2, a, 1.0), (13.4, b - 0.4, 3.0), mD))
+            mFo = fin(lambda c: (pal('#5a4424', '#7a6034', '#a08048', '#c0a060', '#d8bc80'), 3 + (c.j % 3 == 0)), dust=0.6)
+            for k in range(5):
+                P.append(box((3.4, a + 0.4, 1.4 + k * 0.32), (12.6, b + 0.2 - (k % 2) * 0.6, 1.6 + k * 0.32), mFo))
+    return P
+
+
+def safe_front_tone(ctx):
+    """Old safe door: green enamel with gold pinstripe border and corner flourishes."""
+    i, j, w, h = ctx.i, ctx.j, ctx.w, ctx.h
+    if ctx.face != 'north':
+        return None
+    e = min(i, j, w - 1 - i, h - 1 - j)
+    if e == 2:
+        return (GOLD, 5)
+    if e == 4 and ((i + j) % 2 == 0):
+        return (GOLD, 3)
+    if e in (5, 6) and (min(i, w - 1 - i) < 8 and min(j, h - 1 - j) < 8) and (i + j) % 3 == 0:
+        return (GOLD, 4)
+    return None
+
+
+def caja_fuerte_parts():
+    mB = fin(painted(GREENP, base=3, seed=571, chips=0.15, under=IRON, under_k=2, grime=0.6))
+    base_ = painted(GREENP, base=3, seed=572, grime=0.3)
+    mDoor = fin(lambda c: safe_front_tone(c) or base_(c), dust=0.6)
+    mBr = fin(brass(seed=573, base=5))
+    P = [box((1.0, 1.2, 2.0), (15.0, 15.0, 15.0), mB),
+         box((1.6, 1.8, 1.6), (14.4, 14.4, 2.0), mDoor),
+         box((1.0, 0.0, 2.0), (3.0, 1.2, 4.0), fin(flat(IRON, 2))), box((13.0, 0.0, 2.0), (15.0, 1.2, 4.0), fin(flat(IRON, 2))),
+         box((1.0, 0.0, 13.0), (3.0, 1.2, 15.0), fin(flat(IRON, 2))), box((13.0, 0.0, 13.0), (15.0, 1.2, 15.0), fin(flat(IRON, 2))),
+         box((11.4, 6.4, 0.6), (12.2, 10.6, 1.6), mBr),                    # lever handle
+         box((10.8, 8.0, 1.0), (12.8, 9.0, 1.6), mBr),
+         box((4.0, 9.0, 1.2), (9.4, 13.2, 1.6), mBr),                      # keypad plate
+         box((6.2, 4.0, 1.4), (7.4, 5.6, 1.6), mBr)]                       # keyhole escutcheon
+    kp = [(r, c) for r in range(3) for c in range(3)]
+    for (r, c) in kp:
+        x = 4.6 + c * 1.6
+        yy = 12.0 - r * 1.3
+        n = r * 3 + c + 1
+        num = set(draw_text(F35, str(n), 0, 0))
+        P.append(box((x, yy - 0.8, 0.9), (x + 1.1, yy + 0.2, 1.2),
+                     fin(lambda ctx: (MARBLE, 6) if ctx.edge() == 0 else (MARBLE, 7), ao=0, dust=0.3)))
+    P.append(box((6.5, 4.5, 1.35), (7.1, 5.1, 1.4), fin(flat(IRON, 0), ao=0)))
+    return P
+
+
+# ============================================================================================ register: office
+F('foto_coro', 'Foto "Coro 1984"', 'Photo "Choir 1984"', photo_parts('normal'), env=('wall',), collision='none', sound='paper')
+F('foto_coro_sin_bocas', 'Foto "Coro 1984" (sin bocas)', 'Photo "Choir 1984" (no mouths)', photo_parts('sin_bocas'),
+  env=('wall',), collision='none', sound='paper')
+F('foto_coro_vacia', 'Foto "Coro 1984" (faltan las chicas)', 'Photo "Choir 1984" (girls missing)', photo_parts('vacia'),
+  env=('wall',), collision='none', sound='paper')
+F('retrato_benigna', 'Retrato de la Madre Benigna', 'Portrait of Mother Benigna', portrait_parts('abiertos'), env=('wall',),
+  collision='none')
+F('retrato_benigna_ojos_cerrados', 'Retrato de la Madre Benigna (ojos cerrados)', 'Portrait of Mother Benigna (eyes closed)',
+  portrait_parts('cerrados'), env=('wall',), collision='none')
+F('retrato_benigna_vacio', 'Retrato de la Madre Benigna (vacío)', 'Portrait of Mother Benigna (empty)',
+  portrait_parts('vacio'), env=('wall',), collision='none')
+F('escritorio_madre_izq', 'Escritorio de la Madre (izquierda)', "Mother Superior's desk (left)", madre_desk_parts('izq'))
+F('escritorio_madre_der', 'Escritorio de la Madre (derecha)', "Mother Superior's desk (right)", madre_desk_parts('der'))
+F('silla_giratoria', 'Silla giratoria de la Madre', "Mother Superior's swivel chair", swivel_chair_parts())
+F('telefono_baquelita', 'Teléfono de baquelita (sobre mesa)', 'Bakelite phone (on a desk)', telefono_parts(), collision='none',
+  sound='stone')
+F('mate_termo', 'Mate, termo y yerba (sobre mesa)', 'Mate, thermos and yerba (on a desk)', mate_parts(), collision='none')
+F('radiograbador', 'Radiograbador (sobre mesa)', 'Radio-cassette player (on a desk)', radio_parts(), collision='none',
+  sound='metal')
+F('archivero', 'Archivero de chapa', 'Steel filing cabinet', archivero_parts(), sound='metal')
+F('caja_fuerte', 'Caja fuerte con teclado', 'Safe with keypad', caja_fuerte_parts(), sound='metal')

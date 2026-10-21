@@ -1,0 +1,12 @@
+{
+ "parent": "minecraft:block/cube",
+ "textures": {
+  "particle": "deadline:block/colegio_muro_perimetral_1",
+  "north": "deadline:block/colegio_muro_perimetral_1",
+  "south": "deadline:block/colegio_muro_perimetral_1",
+  "east": "deadline:block/colegio_muro_perimetral_1",
+  "west": "deadline:block/colegio_muro_perimetral_1",
+  "up": "deadline:block/colegio_muro_perimetral_1",
+  "down": "deadline:block/colegio_muro_perimetral_1"
+ }
+}

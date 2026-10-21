@@ -3356,6 +3356,393 @@ def tablones_parts():
     return parts
 
 
+# =============================================================================================== EXTERIOR
+MURO = Ramp('#2c2925', '#3e3a34', '#524c44', '#675f55', '#7c7367', '#91877a', '#a49a8c', '#b5ab9d')
+FUENTE = Ramp('#3a3732', '#4d4943', '#615c54', '#767066', '#8b8478', '#9f988b', '#b2ab9e', '#c3bdb1')
+
+
+@painter('muro_perimetral')
+def p_muro_perimetral(v):
+    """Perimeter wall: field-stone rubble in lime mortar, rain-washed, lichen and dark run-off streaks."""
+    cv, lab, mortar = rubble(v, 5000 + v * 13, MURO, MORTAR, nsites=6, mind=10.5, jitter=2.6, mortar_w=2.0)
+    X, Y = cv.X, cv.Y
+    for k, (x, y) in enumerate(poisson(5010 + v, 1 + v % 2, 12, keep=lambda x, y: lab[int(y), int(x)] >= 0)):
+        d = (X - x) ** 2 + (Y - y) ** 2
+        cv.put(LICHEN if k % 2 else LICHEN_O, np.full((N, N), 1) + (d <= 1), (d <= 3) & (lab >= 0) & (fbm(N, N, 5020 + k, cells=8, octaves=1) > 0.4))
+    run = (fbm(N, N, 5030 + v, cells=2, octaves=2, ax=4, ay=0.3) > 0.68)
+    cv.mul(np.where(run, 0.82, 1.0))
+    return cv.out()
+
+
+@painter('patio_ladrillo')
+def p_patio_ladrillo(v):
+    """Herringbone brick paving for the garden paths (ladrillo de campo laid on edge)."""
+    cv = Cv()
+    X, Y = cv.X, cv.Y
+    # herringbone: bricks 8 x 4 px, alternating horizontal / vertical in a 45 degree zig-zag
+    u = (X + Y) // 4
+    w = (X - Y) % 16
+    lab = -np.ones((N, N), int)
+    horiz = ((X // 4 + Y // 4) % 2 == 0)
+    # simpler readable basket-weave/herringbone hybrid: 2x2 groups of bricks alternating direction
+    gx, gy = X // 8, Y // 8
+    hz = (gx + gy) % 2 == 0
+    lab = np.where(hz, (gy * 4 + gx) * 2 + (Y % 8) // 4, (gy * 4 + gx) * 2 + (X % 8) // 4)
+    joint = np.where(hz, (Y % 4 == 0) | (X % 8 == 0), (X % 4 == 0) | (Y % 8 == 0))
+    lab = np.where(joint, -1, lab)
+    rng = np.random.default_rng(5100 + v)
+    tone = rng.choice([-2, -1, 0, 0, 1], 64)
+    idx = 4 + tone[np.maximum(lab, 0) % 64] + posterize(fbm(N, N, 5101 + v, cells=8, octaves=2), [(0.68, 1), (0.3, -1)])
+    idx = bevel(idx, lab, hi=1, lo=-1)
+    cv.put(BRICK_OLD, idx)
+    cv.put(Ramp('#2a231b', '#3a3026', '#4b3f32'), np.full((N, N), 1) + (fbm(N, N, 5102, cells=8, octaves=1) > 0.6), joint)
+    moss = joint & (fbm(N, N, 5103 + v, cells=8, octaves=2) > 0.55)
+    cv.put(MOSS, np.full((N, N), 2), moss)
+    return cv.out()
+
+
+@painter('piedra_fuente')
+def p_piedra_fuente(v):
+    """Fountain stone: weathered sandstone with lime-scale tide marks and lichen."""
+    cv = Cv()
+    X, Y = cv.X, cv.Y
+    f = fbm(N, N, 5200 + v, cells=4, octaves=3)
+    idx = np.full((N, N), 4) + posterize(f, [(0.7, 1), (0.3, -1)])
+    idx = relief(idx, 5210, 5211 + v, count=18, mind=4.5, body=-1, light=1)
+    cv.put(FUENTE, idx)
+    for th in (11, 17):     # dried water lines (lime scale)
+        line = Y == th + np.round(np.sin(X / 4.0 + v)).astype(int)
+        cv.tint('#d8d4c4', np.where(line, 0.45, 0))
+    cv.tint('#4a4636', np.where(Y > 18, 0.18, 0))
+    for k, (x, y) in enumerate(poisson(5220 + v, 3, 9)):
+        d = (X - x) ** 2 + (Y - y) ** 2
+        cv.put(LICHEN_O if k % 2 else LICHEN, np.full((N, N), 1), (d <= 2) & (fbm(N, N, 5230 + k, cells=8, octaves=1) > 0.4))
+    return cv.out()
+
+
+@painter('fuente_fondo')
+def p_fuente_fondo(v):
+    """Dry basin floor: cracked render with a green-black waterline stain, dead leaves and a puddle of muck."""
+    cv = Cv()
+    X, Y = cv.X, cv.Y
+    idx = lime_idx(v + 400, base=4, rough=0.6)
+    cv.put(RENDER, idx)
+    cv.tint('#2c3324', np.where(fbm(N, N, 5300 + v, cells=4, octaves=3) > 0.55, 0.45, 0.18))
+    # mud cracks (polygonal)
+    cv2, lab, mortar = rubble(v, 5310 + v, RENDER, RENDER, nsites=7, mind=9, mortar_w=0.9)
+    cv.col('#1b1a14', mortar & (fbm(N, N, 5311 + v, cells=8, octaves=1) > 0.35))
+    # dead leaves (paraíso / plátano): small brown and ochre shapes
+    LEAF = Ramp('#3e2412', '#5e3a1a', '#7f5226', '#a06d34', '#b98a45')
+    for k, (x, y) in enumerate(poisson(5320 + v, 7, 6)):
+        ang = (k * 47) % 180
+        a = math.radians(ang)
+        d1 = ((X - x) * math.cos(a) + (Y - y) * math.sin(a)) / 2.4
+        d2 = (-(X - x) * math.sin(a) + (Y - y) * math.cos(a)) / 1.2
+        leaf = d1 ** 2 + d2 ** 2 <= 1
+        cv.put(LEAF, np.full((N, N), 1 + k % 4) + (d2 < 0), leaf)
+        cv.put(LEAF, np.full((N, N), 0), leaf & (np.abs(d2) < 0.3))
+    return cv.out()
+
+
+def fuente_borde_parts(corner=False):
+    """Fountain rim (parapet with a rounded moulded top) along the back of the block; corner piece adds the
+    side run. The basin side (front) faces the water."""
+    st = pp_plaster('piedra_fuente')
+    top = pp_plaster('piedra_fuente', 1)
+    parts = [P((0, 0, 11), (16, 7, 16), st, name='wall'),
+             P((0, 7, 10.2), (16, 8.5, 16.8), top, name='cap'),
+             P((0, 8.5, 11), (16, 9.5, 16), top, name='cap2'),
+             P((0, 0, 10.4), (16, 1.2, 11), st, name='plinth')]
+    if corner:
+        parts += [P((11, 0, 0), (16, 7, 11), st, name='wall2'),
+                  P((10.2, 7, -0.8), (16.8, 8.5, 10.2), top, name='cap_s'),
+                  P((11, 8.5, 0), (16, 9.5, 11), top, name='cap2_s')]
+    return parts
+
+
+def fuente_pila_parts():
+    """Centre of the fountain: square plinth, baluster shaft and a shallow bowl with a lion-mouth spout."""
+    st = pp_plaster('piedra_fuente')
+    top = pp_plaster('piedra_fuente', 1)
+    parts = [P((3, 0, 3), (13, 3, 13), st, name='plinth'), P((4, 3, 4), (12, 4, 12), top, name='plinth_top')]
+    parts += octo(5.2, 10.8, 4, 9, st) + octo(4.6, 11.4, 9, 10, top)
+    parts += [P((1.5, 10, 1.5), (14.5, 11, 14.5), st, name='bowl_b'),
+              P((0.5, 11, 0.5), (15.5, 13.5, 15.5), top, name='bowl'),
+              P((7, 13.5, 7), (9, 16, 9), st, name='spout')]
+    return parts
+
+
+# --- iron work: gate, fence, sign
+def iron_canvas_plane(img_fn):
+    """Plane painter from a full-res RGBA composition (float array) indexed by block-space position."""
+    def p(face, w, h, part):
+        return img_fn(face, w, h, part)
+    return p
+
+
+def scroll_mask(w, h, cx, cy, r0, turns=1.6, thick=0.7, flip=False):
+    """A spiral C-scroll (iron) centred at cx, cy."""
+    Y, X = np.mgrid[0:h, 0:w]
+    dx, dy = X + 0.5 - cx, Y + 0.5 - cy
+    if flip:
+        dx = -dx
+    r = np.sqrt(dx * dx + dy * dy)
+    th = (np.arctan2(dy, dx) + 2 * np.pi) % (2 * np.pi)
+    m = np.zeros((h, w), bool)
+    for k in range(int(turns) + 1):
+        rr = r0 * (1 - (th + 2 * np.pi * k) / (2 * np.pi * (turns + 0.6)))
+        m |= (np.abs(r - rr) < thick) & (rr > 0.6) & ((th + 2 * np.pi * k) < 2 * np.pi * turns)
+    return m
+
+
+def iron_comp(mask, seed=0):
+    """Colour a cut-out iron composition: highlight on top edges, rust specks; alpha 0 elsewhere."""
+    h, w = mask.shape
+    out = np.zeros((h, w, 4))
+    idx = np.full((h, w), 2) + (nb(mask, 1, 0, False) == False) * 3 - (nb(mask, -1, 0, False) == False) * 1
+    col = IRON[idx]
+    rs = (vnoise(w, h, max(2, w // 3), max(2, h // 3), seed) > 0.8) & mask
+    col[rs] = RUST[np.full((h, w), 2)][rs]
+    out[..., :3] = col
+    out[..., 3] = np.where(mask, 255, 0)
+    return out
+
+
+def gate_leaf_comp():
+    """Wrought-iron gate leaf, 32 x 64 px (1 block wide, 2 tall): frame, bars with spear heads, a band of
+    C-scrolls, a lock plate."""
+    W, H = 32, 64
+    Y, X = np.mgrid[0:H, 0:W]
+    m = np.zeros((H, W), bool)
+    m |= (X <= 1) | (X >= W - 2)                         # stiles
+    m |= (Y >= 62) | ((Y >= 20) & (Y <= 21)) | ((Y >= 34) & (Y <= 35)) | ((Y >= 8) & (Y <= 9))
+    for xb in (5, 10, 15, 20, 25):
+        m |= (X >= xb) & (X <= xb + 1) & (Y >= 3)
+        # spear heads at the top
+        head = (Y >= 0) & (Y <= 3) & (np.abs(X + 0.5 - (xb + 1)) <= (Y + 0.5) * 0.7)
+        m |= head
+    # scroll band between the two middle rails
+    for cx in (8, 24):
+        m |= scroll_mask(W, H, cx, 27.5, 5.5, turns=1.3, thick=0.6, flip=(cx > 16))
+    # dog bars at the bottom (short)
+    for xb in (3, 8, 13, 18, 23, 28):
+        m |= (X == xb) & (Y >= 50)
+    lock = (X >= 26) & (X <= 31) & (Y >= 38) & (Y <= 44)
+    img = iron_comp(m, 5400)
+    img[lock, :3] = IRON[np.full((H, W), 4)][lock]
+    img[lock, 3] = 255
+    return img
+
+
+_IRON = {}
+
+
+def comp_plane(name, builder, xoff_px=0, rows=None, cols_total=None, px_w=32, y_top_units=16):
+    """Painter mapping a composition onto a plane: column from x (left = high x, as seen from the front), row from y."""
+    def p(face, w, h, part):
+        if name not in _IRON:
+            _IRON[name] = builder()
+        img = _IRON[name]
+        x, y, z = face_coords(part, face, w, h)
+        H_, W_ = img.shape[:2]
+        col = np.clip(xoff_px + np.floor((16 - x) * 2).astype(int), 0, W_ - 1)
+        row = np.clip(np.floor((y_top_units - y) * 2).astype(int), 0, H_ - 1)
+        return np.clip(img[row, col], 0, 255).round().astype(np.uint8)
+    return p
+
+
+def gate_parts(piece):
+    """Gate leaf (decorative, two blocks tall): 'inf' carries the whole 32 px wide x 64 px tall composition
+    rows 32..63, 'sup' rows 0..31."""
+    if piece == 'inf':
+        pl = PL((0, 0, 8.0), (16, 16, 8.0), comp_plane('gate', gate_leaf_comp, y_top_units=32), name='leaf')
+    else:
+        pl = PL((0, 0, 8.0), (16, 16, 8.0), comp_plane('gate', gate_leaf_comp, y_top_units=16), name='leaf')
+    it = pp_iron(seed=91, rust=0.25)
+    parts = [pl, P((0, 0, 7.4), (1, 16, 8.6), it, name='stile_l'), P((15, 0, 7.4), (16, 16, 8.6), it, name='stile_r')]
+    if piece == 'inf':
+        parts.append(P((0, 0, 7.4), (16, 1, 8.6), it, name='bottom'))
+    return parts
+
+
+def sign_comp():
+    """Iron arch sign over the main gate, 128 x 52 px (4 blocks wide): cross, arched band, two lines of cut
+    letters welded to bars, scroll frieze, end posts."""
+    W, H = 128, 52
+    Y, X = np.mgrid[0:H, 0:W]
+    m = np.zeros((H, W), bool)
+    xc = (X + 0.5 - 64) / 64.0
+    arc = 8 + np.round(8 * xc * xc).astype(int)
+    m |= (Y >= arc) & (Y <= arc + 1)
+    m |= (Y >= 38) & (Y <= 39)
+    m |= (Y >= 50)
+    m |= ((X <= 2) | (X >= W - 3)) & (Y >= arc)
+    # cross on the apex
+    m |= (np.abs(X + 0.5 - 64) <= 1) & (Y <= 8)
+    m |= (np.abs(Y - 3) <= 0) & (np.abs(X + 0.5 - 64) <= 3.5)
+    t1 = text_mask('COLEGIO SANTA INÉS')
+    t2 = text_mask('DE LA VIGILIA · 1931')
+    stamp(m, t1, (W - t1.shape[1]) // 2, 15)
+    stamp(m, t2, (W - t2.shape[1]) // 2, 27)
+    m |= (Y == 25) & (X >= (W - t1.shape[1]) // 2 - 2) & (X <= (W + t1.shape[1]) // 2 + 1)
+    m |= (Y == 37) & (X >= 4) & (X <= W - 5)
+    # vertical ties between the arch and the text
+    for xt in (14, 40, 88, 114):
+        m |= (X == xt) & (Y >= arc) & (Y <= 15)
+    # scroll frieze between the two lower bars
+    for k, cx in enumerate(range(10, W - 6, 12)):
+        m |= scroll_mask(W, H, cx, 44.5, 4.6, turns=1.2, thick=0.55, flip=(k % 2 == 1))
+    return iron_comp(m, 5500)
+
+
+def sign_parts(k):
+    """k = 0..3 from left to right as seen from the street (front)."""
+    return [PL((0, 0, 8.0), (16, 26, 8.0), comp_plane('sign', sign_comp, xoff_px=k * 32, y_top_units=26), name='sign')]
+
+
+def fence_parts():
+    """Spear-headed iron fence on top of the perimeter wall."""
+    it = pp_iron(seed=95, rust=0.3)
+    parts = [P((0, 1.0, 7.4), (16, 2.0, 8.6), it, name='rail_b'), P((0, 11.0, 7.4), (16, 12.0, 8.6), it, name='rail_t')]
+    for x in (2, 6, 10, 14):
+        parts.append(P((x - 0.5, 0, 7.5), (x + 0.5, 14.5, 8.5), it, name='bar'))
+        parts.append(P((x - 0.9, 14.0, 7.6), (x + 0.9, 15.8, 8.4), it, name='spear', rot=('z', 45, (x, 14.9, 8.0))))
+    return parts
+
+
+def coping_parts():
+    """Coping on top of the perimeter wall: overhanging cap with a rounded lime crown."""
+    cap = pp_plaster('revoque', 2)
+    return [P((-0.01, 0, -1.0), (16.01, 2.5, 17.0), cap, name='cap'), P((0, 2.5, 1.5), (16, 4.0, 14.5), cap, name='crown'),
+            P((0, 4.0, 4.0), (16, 4.8, 12.0), cap, name='crown2')]
+
+
+def pier_cap_parts():
+    st = pp_plaster('revoque', 0)
+    return [P((-0.8, 0, -0.8), (16.8, 2.0, 16.8), st, name='cornice'), P((1, 2.0, 1), (15, 4.0, 15), st, name='step'),
+            P((4, 4.0, 4), (12, 5.0, 12), st, name='neck')] + octo(4.4, 11.6, 5.0, 11.0, st) + octo(5.8, 10.2, 11.0, 12.5, st)
+
+
+# --- wall graffiti (decals on the wall behind) and chalk hopscotch
+def spray(text_lines, color, scale=(2, 2), drips=True, halo=True, seed=0, width_px=96, height_px=48, scratch=False,
+          heart=False):
+    W, H = width_px, height_px
+    rng = np.random.default_rng(seed)
+    m = np.zeros((H, W), bool)
+    y = 2
+    for ln in text_lines:
+        t = text_mask(ln, spacing=1, scale_x=scale[0], scale_y=scale[1])
+        th, tw = t.shape
+        x0 = (W - tw) // 2 + int(rng.integers(-2, 3))
+        # hand-sprayed: every glyph column band jitters a pixel up/down
+        tt = np.zeros_like(t)
+        step = 6 * scale[0]
+        for c0 in range(0, tw, step):
+            dy = int(rng.integers(-1, 2))
+            seg = t[:, c0:c0 + step]
+            if dy > 0:
+                tt[dy:, c0:c0 + step] = seg[:-dy]
+            elif dy < 0:
+                tt[:dy, c0:c0 + step] = seg[-dy:]
+            else:
+                tt[:, c0:c0 + step] = seg
+        stamp(m, tt, x0, y)
+        y += th + 2
+    if heart:
+        pts = []
+        for tt_ in np.linspace(0, 2 * math.pi, 80):
+            hx_ = 16 * math.sin(tt_) ** 3
+            hy_ = 13 * math.cos(tt_) - 5 * math.cos(2 * tt_) - 2 * math.cos(3 * tt_) - math.cos(4 * tt_)
+            pts.append((int(round(W - 12 + hx_ * 0.45)), int(round(H - 12 - hy_ * 0.45))))
+        for a_, b_ in zip(pts, pts[1:]):
+            m |= path_mask(line_px(*a_, *b_), W, H, wrap=False)
+    out = np.zeros((H, W, 4))
+    c = C(color)
+    Y, X = np.mgrid[0:H, 0:W]
+    n = vnoise(W, H, W // 3, H // 3, seed + 1)
+    if scratch:   # scratched into the plaster: pale lines with a dark lower edge
+        out[m, :3] = C('#e4dfd2')
+        out[m, 3] = 230
+        lo = nb(m, 1, 0, False) & ~m
+        out[lo, :3] = C('#6e6760')
+        out[lo, 3] = 200
+        return out
+    if halo:
+        hm = dilate(m, 1, False) & ~m
+        out[hm, :3] = c
+        out[hm, 3] = 70 + 40 * (n[hm] > 0.5)
+    out[m, :3] = c * (0.9 + 0.2 * n[m][:, None])
+    out[m, 3] = 235
+    if drips:
+        bottoms = m & ~nb(m, -1, 0, False)
+        for (yy, xx) in zip(*np.nonzero(bottoms)):
+            if rng.random() < 0.12:
+                L = int(rng.integers(2, 7))
+                for k in range(1, L):
+                    if yy + k < H:
+                        out[yy + k, xx, :3] = c * 0.85
+                        out[yy + k, xx, 3] = 220 - k * 15
+    return out
+
+
+def decal_parts(name, builder, w_blocks=3, h_units=24, y0=0):
+    """Wall decal on the face of the wall block behind (z = 16 side), centred on this block."""
+    x0 = 8 - w_blocks * 8
+    def p(face, w, h, part):
+        if name not in _IRON:
+            _IRON[name] = builder()
+        img = _IRON[name]
+        x, y, z = face_coords(part, face, w, h)
+        H_, W_ = img.shape[:2]
+        col = np.clip(np.floor((x0 + w_blocks * 16 - x) * 2).astype(int), 0, W_ - 1)
+        row = np.clip(np.floor((y0 + h_units - y) * 2).astype(int), 0, H_ - 1)
+        a = np.clip(img[row, col], 0, 255).round().astype(np.uint8)
+        if face != 'north':
+            a[..., 3] = 0
+        return a
+    return [PL((x0, y0, 15.92), (x0 + w_blocks * 16, y0 + h_units, 15.92), p, name='decal')]
+
+
+def rayuela_comp(label, cielo=False):
+    """Chalk square of the hopscotch drawn on the courtyard (32 x 32 px), number in the middle."""
+    W = 32
+    Y, X = np.mgrid[0:W, 0:W]
+    m = np.zeros((W, W), bool)
+    if cielo:   # half-moon 'CIELO' at the top of the hopscotch
+        d = np.sqrt((X + 0.5 - 16) ** 2 + (Y + 0.5 - 30) ** 2)
+        m |= (np.abs(d - 14) < 0.8) & (Y <= 30)
+        m |= (Y >= 29) & (Y <= 30) & (X >= 2) & (X <= 29)
+        t = tiny_mask('CIELO')
+        stamp(m, t, (W - t.shape[1]) // 2, 20)
+    else:
+        m |= (border_dist(W, W) == 1)
+        t = text_mask(label, scale_x=2, scale_y=2)[4:, :]
+        stamp(m, t, (W - t.shape[1]) // 2, (W - t.shape[0]) // 2)
+    n = vnoise(W, W, 10, 10, hash(label) & 0xffff)
+    keep = m & (n > 0.18)
+    out = np.zeros((W, W, 4))
+    out[keep, :3] = np.where((n[keep] > 0.6)[:, None], C('#efeee6'), C('#d9d8cf'))
+    out[keep, 3] = 210
+    return out
+
+
+def rayuela_parts(label, cielo=False):
+    nm = 'rayuela_' + label
+
+    def p(face, w, h, part):
+        if nm not in _IRON:
+            _IRON[nm] = rayuela_comp(label, cielo)
+        img = _IRON[nm]
+        x, y, z = face_coords(part, face, w, h)
+        col = np.clip(np.floor(x * 2).astype(int), 0, 31)
+        row = np.clip(np.floor(z * 2).astype(int), 0, 31)
+        a = np.clip(img[row, col], 0, 255).round().astype(np.uint8)
+        if face != 'up':
+            a[..., 3] = 0
+        return a
+    return [PL((0, 0.06, 0), (16, 0.06, 16), p, name='chalk')]
+
+
 # =============================================================================================== BLOCKS
 def cube(key, es, en, painter_name, variants=1, sound='plaster', up=None, down=None, **kw):
     mats = {}
@@ -3490,3 +3877,43 @@ F('cartel_aula_6', 'Cartel "6° GRADO"', '"6th grade" plate', wall_plate_parts([
 F('cartel_aula_4', 'Cartel "4° GRADO"', '"4th grade" plate', wall_plate_parts([('4°', 'big'), ('GRADO', 't')], 10, 9, y0=4), sound='metal', collision='none')
 F('cartel_direccion', 'Cartel "DIRECCIÓN"', '"Office" plate', wall_plate_parts([('DIRECCIÓN', 't')], 16, 5.5, y0=6, ramp=BRASS, ink='#2a1a08'), sound='metal', collision='none')
 F('tablones_clavados', 'Tablones clavados', 'Boards nailed across a door', tablones_parts(), breakable=True)
+
+# --- exterior
+cube('muro_perimetral', 'Muro perimetral de piedra', 'Stone perimeter wall', 'muro_perimetral', 3, sound='stone')
+F('muro_coronamiento', 'Coronamiento del muro', 'Wall coping', coping_parts(), sound='plaster')
+F('reja_cerca', 'Reja de lanzas', 'Spear-top iron fence', fence_parts(), sound='metal', render='cutout')
+F('reja_porton_inf', 'Reja del portón (abajo)', 'Iron gate leaf (bottom)', gate_parts('inf'), sound='metal', render='cutout')
+F('reja_porton_sup', 'Reja del portón (arriba)', 'Iron gate leaf (top)', gate_parts('sup'), sound='metal', render='cutout')
+F('pilar_remate', 'Remate de pilar', 'Gate pier cap', pier_cap_parts(), sound='plaster')
+for k in range(4):
+    F(f'letrero_{k + 1}', f'Letrero de hierro ({k + 1}/4)', f'Iron arch sign ({k + 1}/4)', sign_parts(k), sound='metal',
+      render='cutout', collision='none')
+cube('patio_ladrillo', 'Ladrillo del patio', 'Brick paving', 'patio_ladrillo', 2, sound='stone')
+cube('piedra_fuente', 'Piedra de la fuente', 'Fountain stone', 'piedra_fuente', 2, sound='stone')
+cube('fuente_fondo', 'Fondo de la fuente seca', 'Dry fountain basin', 'fuente_fondo', 2, sound='stone', down='piedra_fuente')
+F('fuente_borde', 'Borde de la fuente', 'Fountain rim', fuente_borde_parts(), sound='stone')
+F('fuente_esquina', 'Borde de la fuente (esquina)', 'Fountain rim (corner)', fuente_borde_parts(True), sound='stone')
+F('fuente_pila', 'Pila de la fuente', 'Fountain pedestal', fuente_pila_parts(), sound='stone')
+# --- graffiti decals (placed in front of a wall; the paint sits on the wall face)
+F('grafiti_aca_espantan', 'Grafiti "ACÁ ESPANTAN"', '"ACÁ ESPANTAN" graffiti',
+  decal_parts('g_espantan', lambda: spray(['ACÁ', 'ESPANTAN'], '#9c1f1a', (2, 2), seed=61, width_px=96, height_px=48), 3, 24, 0),
+  render='translucent', collision='none', sound='plaster')
+F('grafiti_kevin', 'Grafiti "KEVIN ESTUVO ACÁ 2019"', '"KEVIN WAS HERE 2019" graffiti',
+  decal_parts('g_kevin', lambda: spray(['KEVIN ESTUVO', 'ACÁ 2019'], '#1c1c22', (1, 2), seed=62, width_px=96, height_px=48), 3, 24, 0),
+  render='translucent', collision='none', sound='plaster')
+F('grafiti_kevin_no_salio', 'Grafiti "KEVIN NO SALIÓ"', '"KEVIN NEVER LEFT" graffiti',
+  decal_parts('g_kevin2', lambda: spray(['KEVIN NO SALIÓ'], '#7a1414', (1, 2), seed=63, width_px=96, height_px=24), 3, 12, 4),
+  render='translucent', collision='none', sound='plaster')
+F('grafiti_sor_agonia', 'Grafiti "SOR AGONÍA BRUJA"', '"SISTER AGONY WITCH" carving',
+  decal_parts('g_agonia', lambda: spray(['SOR AGONÍA', 'BRUJA'], '#e4dfd2', (1, 1), seed=64, width_px=64, height_px=24, scratch=True), 2, 12, 4),
+  render='translucent', collision='none', sound='plaster')
+F('grafiti_tere_coro', 'Grafiti "TERE + CORO"', '"TERE + CHOIR" crayon',
+  decal_parts('g_tere', lambda: spray(['TERE + CORO =', 'AMIGAS PARA', 'SIEMPRE 1984'], '#b5455e', (1, 1), drips=False,
+                                       halo=False, seed=65, width_px=96, height_px=40, heart=True), 3, 20, 2),
+  render='translucent', collision='none', sound='plaster')
+# --- the hopscotch drawn in chalk in the cloister (code 2-1-6-8-4)
+for n_ in range(1, 10):
+    F(f'rayuela_{n_}', f'Rayuela: casilla {n_}', f'Hopscotch square {n_}', rayuela_parts(str(n_)), render='translucent',
+      collision='none', sound='stone', directional=True)
+F('rayuela_cielo', 'Rayuela: CIELO', 'Hopscotch: SKY', rayuela_parts('CIELO', cielo=True), render='translucent',
+  collision='none', sound='stone')

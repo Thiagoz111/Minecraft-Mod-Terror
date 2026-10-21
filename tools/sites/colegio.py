@@ -66,6 +66,22 @@ PALETTE = Palette({
     'bookshelf': 'minecraft:bookshelf',
     'shelf': 'minecraft:barrel',
     'coat_rack': 'minecraft:dark_oak_fence',
+    'bed_head': 'minecraft:white_bed',
+    'bed_foot': 'minecraft:white_bed',
+    'moon_patch': 'minecraft:light_gray_carpet',
+    'nun_chair': 'minecraft:dark_oak_stairs',
+    'tile_wall': ['minecraft:white_terracotta', 'minecraft:diorite'],
+    'tile_floor': ['minecraft:polished_diorite', 'minecraft:polished_andesite'],
+    'mirror': 'minecraft:glass_pane',
+    'basin': 'minecraft:cauldron',
+    'stool': 'minecraft:spruce_slab',
+    'crypt_wall': ['minecraft:deepslate_bricks', 'minecraft:cracked_deepslate_bricks', 'minecraft:deepslate_tiles'],
+    'crypt_floor': ['minecraft:polished_deepslate', 'minecraft:deepslate_tiles'],
+    'crypt_stairs': 'minecraft:deepslate_brick_stairs',
+    'niche': 'minecraft:chiseled_deepslate',
+    'tomb': 'minecraft:polished_blackstone',
+    'new_brick': 'minecraft:bricks',
+    'small_chair': 'minecraft:spruce_stairs',
 })
 
 
@@ -90,8 +106,8 @@ def build():
     for x in range(-34, 35):
         for y in range(0, 3):
             s.set(x, y, -22, 'fence_wall', up=True, north='none', south='none', east='low' if y < 2 else 'none', west='low' if y < 2 else 'none', waterlogged=False)
-            s.set(x, y, 44, 'fence_wall', up=True, north='none', south='none', east='low', west='low', waterlogged=False)
-    for z in range(-22, 45):
+            s.set(x, y, 54, 'fence_wall', up=True, north='none', south='none', east='low', west='low', waterlogged=False)
+    for z in range(-22, 55):
         for y in range(0, 3):
             s.set(-34, y, z, 'fence_wall', up=True, north='low', south='low', east='none', west='none', waterlogged=False)
             s.set(34, y, z, 'fence_wall', up=True, north='low', south='low', east='none', west='none', waterlogged=False)
@@ -332,8 +348,135 @@ def build():
     s.door('sacristia', 16, 0, 31, 'east', hinge='left', open_=False)
     s.point('sacristia', 19, 0, 31, 'west')
 
-    # dormitory placeholder checkpoint (chapter 6, built in a later pass)
-    s.point('dormitorio_puerta', -26, 0, 10, 'east')
+    # ------------------------------------------------------------ first floor: stairs, corridor, dormitory, bathrooms
+    # main staircase along the east wall of the hall, up to a landing and the first-floor corridor
+    for k in range(6):
+        s.set(5, k, 2 + k, 'stairs_wood', facing='south', half='bottom', shape='straight', waterlogged=False)
+        for y in range(k + 1, k + 4):
+            s.set(5, y, 2 + k, 'minecraft:air')
+    for x in (4, 5):
+        s.set(x, 5, 7, 'floor')
+        for y in (6, 7):
+            s.set(x, y, 8, 'minecraft:air')
+    s.room(-18, 8, 8, 12, 6, 9, wall='wall', floor='floor', ceiling='ceiling')
+    for x in (4, 5):
+        for y in (6, 7):
+            s.set(x, y, 8, 'minecraft:air')
+    for x in range(-15, 7, 5):
+        s.light(x, 8, 10, 4, 'pasillo_1p')
+    s.point('pasillo_1p', -2, 6, 10, 'west')
+    s.area('pasillo_1p', -17, 6, 9, 7, 9, 11)
+    # door from the first-floor corridor straight into the upper choir of the chapel
+    s.door('coro', 6, 6, 12, 'south', hinge='left', open_=True)
+    # dormitory: two rows of 8 beds, moonlight patches down the aisle, the warden's chair at the far end
+    s.room(-18, 12, -6, 35, 6, 9, wall='wall', floor='floor', ceiling='ceiling')
+    s.door('dormitorio', -12, 6, 12, 'south', hinge='left', open_=True)
+    camas = []
+    for i, z in enumerate(range(15, 33, 2)):
+        if i >= 8:
+            break
+        for x, f, fx in ((-16, 'west', -15), (-8, 'east', -9)):
+            s.set(x, 6, z, 'bed_head', facing=f, part='head', occupied=False)
+            s.set(fx, 6, z, 'bed_foot', facing=f, part='foot', occupied=False)
+            camas.append([x, 6, z])
+    s.markers['groups']['dormitorio_camas'] = camas
+    s.point('cama8', -8, 6, 29, 'west')
+    luna = []
+    for z in (15, 19, 23, 27, 31):
+        for dx in (0, 1):
+            for dz in (0, 1):
+                s.set(-12 + dx, 6, z + dz, 'moon_patch')
+        s.light(-12, 7, z, 9, 'dormitorio_luna')
+        s.light(-11, 7, z + 1, 9, 'dormitorio_luna')
+        luna.append([-12, 6, z])
+    s.area('dormitorio', -17, 6, 13, -7, 9, 34)
+    s.point('dormitorio_puerta', -12, 6, 10, 'south')
+    for i, z in enumerate((33, 29, 25, 21, 17)):
+        s.point(f'dorm_silla_{i}', -12, 6, z, 'north')
+    s.set(-12, 6, 33, 'nun_chair', facing='north')
+    s.markers['groups']['dorm_silla'] = [[-12, 6, 33]]
+    # bathrooms at the far end, with a mirror wall onto a sealed mirrored copy
+    s.room(-16, 35, -8, 43, 6, 9, wall='tile_wall', floor='tile_floor', ceiling='ceiling')
+    s.door('banos', -12, 6, 35, 'south', hinge='left', open_=True)
+    for x in range(-15, -8):
+        for y in range(6, 9):
+            s.set(x, y, 43, 'mirror', east=True, west=True, north=False, south=False, waterlogged=False)
+    for x in (-14, -12, -10):
+        s.set(x, 6, 42, 'basin', facing='south')
+    s.room(-16, 43, -8, 51, 6, 9, wall='tile_wall', floor='tile_floor', ceiling='ceiling')
+    for x in range(-15, -8):
+        for y in range(6, 9):
+            s.set(x, y, 43, 'mirror', east=True, west=True, north=False, south=False, waterlogged=False)
+    for x in (-14, -12, -10):
+        s.set(x, 6, 44, 'basin', facing='north')
+    s.light(-12, 8, 47, 4, 'espejo_luz')
+    s.write('diario_espejo', -12, 7, 50, 'south', width=4.0)
+    s.point('espejo', -12, 7, 43)
+    s.point('espejo_cara', -12, 6, 44.4, 'south')
+    s.point('espejo_detras', -12, 6, 47, 'south')
+    for i, x in enumerate((-14, -10)):
+        s.point(f'espejo_nena_{i}', x, 6, 45, 'south')
+    s.area('banos', -15, 6, 36, -9, 9, 42)
+
+    # ------------------------------------------------------------ the Silence Room (a cupboard next to the sacristy)
+    s.room(22, 29, 26, 33, 0, 1, wall='chapel_wall', floor='floor', ceiling='ceiling')
+    s.door('cuarto_silencio', 22, 0, 31, 'west', mat='iron_door', hinge='left', open_=False)
+    s.set(25, 0, 31, 'stool')
+    s.light(24, 1, 32, 3, 'rendija')
+    s.point('cuarto_silencio', 24, 0, 31, 'west')
+    s.point('rendija', 25, 1, 31)
+    s.area('cuarto_silencio', 23, 0, 30, 25, 1, 32)
+
+    # ------------------------------------------------------------ the crypt under the chapel
+    for x in range(4, 17):
+        for z in range(20, 39):
+            for y in range(-7, -1):
+                edge = x in (4, 16) or z in (20, 38) or y == -7
+                s.set(x, y, z, 'crypt_floor' if y == -7 else ('crypt_wall' if edge else 'minecraft:air'))
+    # stairs down from the sacristy (east), through the chapel's east wall
+    for k in range(6):
+        x = 20 - k
+        s.set(x, -k - 1, 30, 'crypt_stairs', facing='west', half='bottom', shape='straight', waterlogged=False)
+        for y in range(-k, -k + 3):
+            s.set(x, y, 30, 'minecraft:air')
+    # niches on the long walls, the foundress' tomb in the middle
+    for z in range(22, 33, 2):
+        s.set(5, -5, z, 'niche', facing='east')
+        s.set(15, -5, z, 'niche', facing='west')
+    for x in range(9, 12):
+        s.set(x, -6, 28, 'tomb')
+    s.point('cripta_tumba', 10, -6, 28)
+    s.point('cripta_entrada', 15, -6, 30, 'west')
+    # the new brick wall and, behind it, the room of the 7 chairs facing the wall
+    muro = []
+    for x in range(5, 16):
+        for y in range(-6, -2):
+            s.set(x, y, 33, 'new_brick')
+            muro.append([x, y, 33])
+    s.markers['groups']['cripta_muro'] = muro
+    for i, x in enumerate(range(7, 14)):
+        s.set(x, -6, 36, 'small_chair', facing='north')
+        s.point(f'silla7_{i}', x, -6, 36.2, 'north')
+    islas = []
+    for (x, z) in ((10, 31), (13, 26), (8, 23), (14, 21)):
+        s.set(x, -6, z, 'candle', candles=4, lit=False, waterlogged=False)
+        islas.append([x, -6, z])
+    s.markers['groups']['cripta_islas'] = islas
+    s.area('cripta', 5, -6, 21, 15, -2, 37)
+    s.point('regla_spawn', 10, -5, 28)
+
+    # ------------------------------------------------------------ the upper choir: 7 candles at the lecterns + lectern 8
+    velas = []
+    for i, x in enumerate(range(6, 15)):
+        if i < 7:
+            s.set(x, 7, 14, 'candle', candles=1, lit=False, waterlogged=False)
+            velas.append([x, 7, 14])
+            s.point(f'vela_{i}', x, 7, 14)
+            s.point(f'atril_{i}', x, 6, 15, 'north')
+    s.markers['groups']['coro_velas'] = velas
+    s.area('atril8', 13, 6, 14, 15, 8, 16)
+    s.point('atril8', 14, 6, 15, 'north')
+    s.point('coro_pared', 10, 6, 13.4, 'north')
 
     # whole interior (the "no running in the halls" rule)
     s.area('edificio', -28, 0, 0, 22, 10, 38)

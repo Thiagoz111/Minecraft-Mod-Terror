@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "deadline:block/colegio_reja_porton_sup"
+  },
+  "facing=east": {
+   "model": "deadline:block/colegio_reja_porton_sup",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "deadline:block/colegio_reja_porton_sup",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "deadline:block/colegio_reja_porton_sup",
+   "y": 270
+  }
+ }
+}

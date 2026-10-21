@@ -1,0 +1,12 @@
+{
+ "variants": {
+  "": [
+   {
+    "model": "deadline:block/colegio_patio_ladrillo_0"
+   },
+   {
+    "model": "deadline:block/colegio_patio_ladrillo_1"
+   }
+  ]
+ }
+}

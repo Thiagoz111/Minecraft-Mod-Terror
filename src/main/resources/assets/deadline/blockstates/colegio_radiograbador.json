@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "deadline:block/colegio_radiograbador"
+  },
+  "facing=east": {
+   "model": "deadline:block/colegio_radiograbador",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "deadline:block/colegio_radiograbador",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "deadline:block/colegio_radiograbador",
+   "y": 270
+  }
+ }
+}

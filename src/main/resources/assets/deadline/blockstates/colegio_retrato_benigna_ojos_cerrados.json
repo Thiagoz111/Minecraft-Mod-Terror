@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "deadline:block/colegio_retrato_benigna_ojos_cerrados"
+  },
+  "facing=east": {
+   "model": "deadline:block/colegio_retrato_benigna_ojos_cerrados",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "deadline:block/colegio_retrato_benigna_ojos_cerrados",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "deadline:block/colegio_retrato_benigna_ojos_cerrados",
+   "y": 270
+  }
+ }
+}

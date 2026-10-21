@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "deadline:block/colegio_telefono_baquelita"
+  },
+  "facing=east": {
+   "model": "deadline:block/colegio_telefono_baquelita",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "deadline:block/colegio_telefono_baquelita",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "deadline:block/colegio_telefono_baquelita",
+   "y": 270
+  }
+ }
+}

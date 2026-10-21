@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "deadline:block/colegio_grafiti_sor_agonia"
+  },
+  "facing=east": {
+   "model": "deadline:block/colegio_grafiti_sor_agonia",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "deadline:block/colegio_grafiti_sor_agonia",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "deadline:block/colegio_grafiti_sor_agonia",
+   "y": 270
+  }
+ }
+}

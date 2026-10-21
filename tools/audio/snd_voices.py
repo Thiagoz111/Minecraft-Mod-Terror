@@ -195,11 +195,33 @@ def respell(text):
     return text
 
 
+def strip_islands(y, max_island=0.07, min_gap=0.03, thresh_db=-36.0):
+    """Drop a stray click/breath that Kokoro sometimes leaves before the first word (or after the last)."""
+    m = rms_env(y, 0.005) > np.max(rms_env(y, 0.005)) * 10 ** (thresh_db / 20)
+    for _ in range(2):
+        idx = np.where(m)[0]
+        if not len(idx):
+            break
+        a = idx[0]
+        b = a
+        while b < len(m) and m[b]:
+            b += 1
+        g = b
+        while g < len(m) and not m[g]:
+            g += 1
+        if b - a < n_of(max_island) and g - b >= n_of(min_gap) and g < len(m):
+            y = y[g - n_of(0.004):]
+            m = m[g - n_of(0.004):]
+        y, m = y[::-1], m[::-1]
+    return np.ascontiguousarray(y)
+
+
 def say(text, voice='ef_dora', speed=0.9):
-    """Kokoro line, leading/trailing silence trimmed, peak 0.8."""
+    """Kokoro line, leading/trailing silence and stray edge clicks trimmed, peak 0.8."""
     y = dsp.tts(respell(text), voice, speed)
     y = dsp.highpass(y, 60, 2)
     y = dsp.trim(y, -46, 0.03)
+    y = dsp.fade(strip_islands(y), 0.003, 0.01)
     return norm(y, 0.8)
 
 
@@ -661,9 +683,10 @@ def tape84(x, seed=0, drops=((0.31, 0.06), (0.62, 0.05))):
     lp = dsp.lowpass(y, 1400, 2)
     y = lp + (y - lp) * g ** 2
     y = y * (0.35 + 0.65 * g)
-    hiss = dsp.highpass(dsp.noise(n / SR, 'white', seed + 1), 2500, 2) * 0.035 + \
-        dsp.bandpass(dsp.noise(n / SR, 'pink', seed + 2), 200, 3000, 2) * 0.02
-    motor = dsp.bandpass(dsp.osc(31.0 * (1 + 0.01 * snoise(n, 1, seed)), n / SR, 'saw')[:n], 60, 400, 2) * 0.006
+    hiss = dsp.bandpass(dsp.noise(n / SR, 'white', seed + 1), 1800, 4600, 2) * 0.09 + \
+        dsp.bandpass(dsp.noise(n / SR, 'pink', seed + 2), 200, 3000, 2) * 0.05
+    hiss = hiss * (1 + 0.25 * snoise(n, 0.8, seed + 6))                         # tape hiss breathes with the wow
+    motor = dsp.bandpass(dsp.osc(31.0 * (1 + 0.01 * snoise(n, 1, seed)), n / SR, 'saw')[:n], 60, 400, 2) * 0.03
     return (norm(y, 0.85) + hiss + motor).astype(np.float32)
 
 
@@ -690,10 +713,41 @@ def codec_glitches(x, seed=0, count=3):
 
 
 # ====================================================================== character presets
+def aspirate(x, y, gain=0.35, seed=0, lo=0.02, hi=0.2, duck=0.7):
+    """Put back a [x] (velar fricative) in short unvoiced gaps between vowels: Kokoro voices the 'j' of 'Ajá'
+    almost like a glide, so the voicing is ducked across the gap and a velar-shaped breath burst goes in."""
+    c, f = track_f0(x, 90, 450)
+    v = f > 0
+    out = y.copy()
+    pk = np.max(np.abs(y))
+    k = 1
+    while k < len(v):
+        if v[k - 1] and not v[k]:
+            j = k
+            while j < len(v) and not v[j]:
+                j += 1
+            if j < len(v) and lo <= (c[j] - c[k]) / SR <= hi:
+                a, b = int(c[k]) - n_of(0.01), int(c[j]) + n_of(0.03)
+                L = b - a
+                L = max(L, n_of(0.075))
+                a = max(0, (a + b) // 2 - L // 2)
+                L = min(L, len(out) - a)
+                src = fit(y[int(c[j]):int(c[j]) + L], L)
+                h = dsp.peak(dsp.highpass(whisper(src, seed + k), 700, 2), 1500, 9, 1.3)
+                h = norm(h, 1.0) * dsp.env_points(L, [(0, 0), (0.25, 0.8), (0.6, 1.0), (0.85, 0.5), (1, 0)])
+                out[a:a + L] *= 1 - duck * np.hanning(L)
+                out[a:a + L] += gain * pk * h
+            k = j
+        k += 1
+    return out
+
+
 def vox_madre(text, fx, seed, tw):
     x = say(text, 'ef_dora', tw.get('speed', 0.8))
     y = reshape(x, semis=tw.get('semis', -3.0), formant=-0.7, wobble=8, wobble_rate=1.5, tremor=0.008, tremor_rate=5.3,
                 jitter=0.012, shimmer=0.07, curve=tw.get('curve'), seed=seed, fmin=90, fmax=420)
+    if tw.get('aspirate'):
+        y = aspirate(x, y, tw['aspirate'], seed)
     rasp = dsp.bandpass(whisper(y, seed + 1), 1200, 6500, 2)
     y = y + 0.14 * rasp
     y = dsp.highpass(y, 110, 2)
@@ -805,8 +859,8 @@ def vox_cura(text, fx, seed, tw):
     z = dsp.peak(z, 345, 3.0, 3.5)
     z = dsp.peak(z, 1900, -2.5, 2.0)
     z = dsp.lowpass(z, 5600, 2)
-    beyond = space(z, 3.0, 1.0, 2600, 0.04, (), 0, 220, seed + 5, dry=0.0)
-    return send(z, beyond, 0.15), dry
+    beyond = space(z, 2.2, 1.0, 2600, 0.04, (), 0, 220, seed + 5, dry=0.0)
+    return send(z, beyond, 0.12), dry
 
 
 def girl(text, seed, speed=0.9, semis=4.0, formant=2.0, wob=28, wh=0.25, curve=None):
@@ -832,7 +886,7 @@ def vox_alumna(text, fx, seed, tw, lid=''):
         y = girl(text, seed, tw.get('speed', 0.86), wh=wh)
         y = dsp.bandpass(y, 400, 6000, 2)
     dry = y.copy()
-    z = space(y, 2.6, 0.34, 7500, 0.035, [(23, 0.25), (37, 0.2), (52, 0.15)], 0.3, 550, seed + 2, build=0.05)
+    z = space(y, 2.2, 0.32, 7500, 0.035, [(23, 0.25), (37, 0.2), (52, 0.15)], 0.3, 550, seed + 2, build=0.05)
     return z, dry
 
 
@@ -852,9 +906,47 @@ def vox_paloma(text, fx, seed, tw, lid=''):
     return z, dry
 
 
-CHOIR = [  # (speed, formant st, detune cents, offset ms, gain, pan-free level variation)
+CHOIR = [  # (speed, formant st, detune cents, offset ms, gain)
     (0.94, 2.4, -14, 12, 1.0), (1.00, 1.6, 9, 27, 0.92), (1.06, 2.0, -6, 18, 0.85), (0.90, 1.2, 18, 35, 0.8),
     (1.10, 2.8, -19, 22, 0.75), (0.97, 1.9, 4, 40, 0.85), (1.03, 1.4, 14, 31, 0.8)]
+
+_SYL = {}
+
+
+def giggle_syllables(text):
+    """Cut Kokoro's 'ji ji ji ji' into its syllables at the loudness dips."""
+    if text not in _SYL:
+        src = say(text, 'ef_dora', 1.0)
+        e = uniform_filter1d(rms_env(src, 0.012), n_of(0.02))
+        k = len(text.split())
+        pk, pr = signal.find_peaks(-e, distance=n_of(0.1), prominence=0)
+        inner = [p for p in pk if n_of(0.08) < p < len(src) - n_of(0.08)]
+        cuts = sorted(sorted(inner, key=lambda p: -pr['prominences'][list(pk).index(p)])[:k - 1])
+        edges = [0] + cuts + [len(src)]
+        _SYL[text] = [src[edges[i]:edges[i + 1]] for i in range(len(edges) - 1)]
+    return _SYL[text]
+
+
+def giggle(text, seed, rate, semis, formant, count):
+    """One girl's stifled giggle: staccato breathy 'hi-hi-hi' syllables falling in pitch, maybe a snort at the end."""
+    r = dsp.rng(seed)
+    syl = giggle_syllables(text)
+    parts = []
+    t = 0.0
+    top = r.uniform(1.5, 3.0)
+    for k in range(count):
+        s0 = syl[int(r.integers(len(syl)))]
+        d = r.uniform(0.09, 0.13)
+        g = fit(s0, n_of(d)) * dsp.env_points(n_of(d), [(0, 0), (0.08, 1.0), (0.45, 0.75), (1, 0)])
+        st = semis + top - k * r.uniform(0.4, 0.8) + r.normal(0, 0.3)
+        v = reshape(g, semis=st, formant=formant, wobble=20, wobble_rate=6.0, seed=seed + k, fmin=110, fmax=480)
+        v = 0.55 * v + 0.75 * whisper(v, seed + 50 + k)
+        parts.append((norm(v, 1.0 - 0.07 * k), t, 1.0))
+        t += r.uniform(0.85, 1.15) / rate
+    if r.random() < 0.5:   # trying not to laugh: a little nose snort
+        sn = breath_in(0.12, seed + 9, 0.8, 0.45, 0.6)
+        parts.append((sn, t + 0.04, 1.0))
+    return dsp.mix(*parts)
 
 
 def vox_coro(text, fx, seed, tw, lid=''):
@@ -868,32 +960,30 @@ def vox_coro(text, fx, seed, tw, lid=''):
         y = dsp.mix(*takes)
         y = dsp.concat(breath_in(0.16, seed + 99, 0.8, 0.35 * np.max(np.abs(y))), y)
         dry = y.copy()
-        return chapel(y, seed, wet=0.32, decay=3.2), dry
-    giggle = lid.endswith('risitas')
-    texts = ['ji ji ji ji', 'ji ji ji', 'ji ji ji ji ji', 'ji ji', 'ji ji ji ji', 'ji ji ji', 'ji ji ji ji'] if giggle else [text] * 7
+        return chapel(y, seed, wet=0.3, decay=3.0), dry
+    if lid.endswith('risitas'):        # the ghost class giggles: never in sync, spreading around the room
+        starts = [0.0, 0.12, 0.3, 0.45, 0.62, 0.8, 0.95]
+        for i, (sp, fm, dt, off, g) in enumerate(CHOIR):
+            v = giggle(text, seed + 31 * i, 6.2 * sp, 4.0 + dt / 100, fm, 3 + (i * 5) % 4)
+            takes.append((v, starts[i] + off / 1000, g * (1.0 - 0.06 * i)))
+        y = dsp.bandpass(dsp.mix(*takes), 330, 7500, 2)
+        dry = y.copy()
+        return space(y, 1.7, 0.22, 7000, 0.015, CLASSROOM_ER, 0.28, 500, seed + 1, build=0.03), dry
     for i, (sp, fm, dt, off, g) in enumerate(CHOIR):
-        if giggle:
-            curve = np.array([0.0, 1.5, 0.5, 2.0, 1.0, 2.5]) * (0.6 + 0.1 * i)
-            v = girl(texts[i], seed + 7 * i, sp * 1.15, 4.0 + dt / 100 + 1.0, fm, 30, 0.4, curve)
-            off = off + [0, 140, 60, 260, 90, 330, 190][i]           # giggles are never in sync
-        else:
-            curve = np.array([0.0, 1.0, 2.5, 2.0])                    # shout: rises into the stressed vowel
-            v = girl(texts[i], seed + 7 * i, sp, 5.0 + dt / 100, fm, 22, 0.12, curve)
-            v = shelf_hi(v, 1500, 6.0)                                # vocal effort: flatter, brighter spectrum
-            v = dsp.drive(norm(v, 1.0) * 1.8, 1.8)
-        takes.append((norm(v, 1.0), off / 1000, g))
-    y = dsp.mix(*takes)
-    y = dsp.bandpass(y, 330, 7500, 2)
+        curve = np.array([0.0, 1.0, 2.5, 2.0])                        # shout: rises into the stressed vowel
+        v = girl(text, seed + 7 * i, sp, 5.0 + dt / 100, fm, 22, 0.1, curve)
+        v = shelf_hi(v, 1500, 6.0)                                    # vocal effort: flatter, brighter spectrum
+        v = dsp.drive(norm(v, 1.0) * 1.4, 1.4)
+        takes.append((norm(v, 1.0), off / 1000, g * (1.0 if i < 3 else 0.6)))   # Paloma and two more lead
+    y = dsp.bandpass(dsp.mix(*takes), 330, 7500, 2)
     dry = y.copy()
-    if giggle:   # the ghost class: classroom-sized but cold
-        return space(y, 2.2, 0.3, 7000, 0.02, CLASSROOM_ER, 0.3, 500, seed + 1, build=0.04), dry
-    return space(y, 3.4, 0.33, 4500, 0.02, CRYPT_ER, 0.3, 250, seed + 1, build=0.03), dry
+    return space(y, 2.8, 0.2, 4500, 0.035, CRYPT_ER, 0.25, 250, seed + 1, build=0.03), dry
 
 
 def vox_monja(text, fx, seed, tw):
     sp = tw.get('speed', 0.84)
     a = say(text, 'ef_dora', sp)
-    b = say(text, 'em_santa', sp * (len(say(text, 'em_santa', sp)) / len(a)) ** 0.0)
+    b = say(text, 'em_santa', sp)
     tm = dtw_map(a, b)
     va = reshape(a, semis=-5.0, formant=-1.6, wobble=18, wobble_rate=1.0, jitter=0.02, shimmer=0.12, seed=seed,
                  fmin=110, fmax=420)
@@ -916,13 +1006,13 @@ def vox_monja(text, fx, seed, tw):
         out = space(y, 0.7, 0.09, 3500, 0.006, [(3.1, 0.25), (6.3, 0.18)], 0.25, 200, seed + 5)
         return dsp.concat(breath_in(0.22, seed + 6, 1.15, 0.22 * np.max(np.abs(y)), 0.3), out), \
             dsp.concat(np.zeros(n_of(0.22), np.float32), dry)
-    y = 0.95 * va + 0.8 * vb + 0.35 * whisper(va, seed + 3)
-    y = dsp.drive(norm(y, 1.0) * 2.4, 2.2)
+    y = 1.0 * va + 0.62 * vb + 0.28 * whisper(va, seed + 3)
+    y = dsp.drive(norm(y, 1.0) * 1.8, 1.7)
     y = dsp.peak(y, 160, 3, 1.0)
     y = dsp.peak(y, 2600, 2.5, 1.5)
     y = dsp.lowpass(y, 7000, 2)
     dry = y.copy()
-    return space(y, 1.6, 0.22, 3800, 0.02, CRYPT_ER, 0.25, 180, seed + 6, build=0.02), dry
+    return space(y, 1.5, 0.16, 3800, 0.03, CRYPT_ER, 0.22, 180, seed + 6, build=0.02), dry
 
 
 def vox_operadora(text, fx, seed, tw):
@@ -949,9 +1039,9 @@ NEEDS_ID = {'alumna', 'paloma', 'coro'}
 
 # per-line direction (speed, pitch contour in semitones, extra grit...)
 TWEAKS = {
-    'colegio.madre.como_dijo': dict(curve=np.array([0.0, 0.5, 2.5, 3.5, 2.0]), drive=1.6, speed=0.85),
+    'colegio.madre.como_dijo': dict(curve=np.array([0.0, 0.5, 2.5, 3.5, 2.0]), drive=1.25, speed=0.85),
     'colegio.madre.usted': dict(speed=0.82),
-    'colegio.madre.aja': dict(speed=0.75, curve=np.array([0.0, 0.0, -1.0])),
+    'colegio.madre.aja': dict(speed=0.75, curve=np.array([0.0, 0.0, -1.0]), aspirate=0.5),
     'colegio.madre.albornoz': dict(speed=0.78),
     'colegio.madre.megafonia': dict(speed=0.86),
     'colegio.madre.pregunta1': dict(speed=0.84),
@@ -1014,11 +1104,26 @@ def align(ref, y, max_lag=0.6):
     return int(lags[ok][np.argmax(c[ok])] * h) if ok.any() else 0
 
 
+CREST_DB = 15.0      # peak-to-active-speech-RMS after limiting: similar loudness for every line at -1 dBFS peak
+TRIM_DB = {'alumna': -46, 'coro': -46, 'paloma': -48, 'clara84': -50, 'monja': -48}
+
+
+def active_rms(x, thresh_db=-30.0):
+    e = rms_env(x, 0.02)
+    act = e > np.max(e) * 10 ** (thresh_db / 20)
+    return float(np.sqrt(np.mean(x[act] ** 2))) if act.any() else float(np.sqrt(np.mean(x ** 2)))
+
+
 def finish(y, voice):
-    """Trim dead air (keeping the reverb tail), fade the tail, master to -1 dBFS."""
+    """De-ess hushed voices, limit the crest factor, trim dead air (keeping the audible tail), master -1 dBFS."""
     y = np.asarray(y, np.float32)
-    thr = -50 if voice in ('alumna', 'coro', 'clara84', 'monja') else -54
-    y = dsp.trim(y, thr, 0.04)
+    if voice in ('clara', 'clara84', 'paloma', 'alumna', 'operadora', 'madre'):
+        y = deess(y)
+    ceiling = active_rms(y) * 10 ** (CREST_DB / 20)
+    pk = np.max(np.abs(y))
+    if pk > ceiling:
+        y = limit(y, max(ceiling, pk * 10 ** (-8 / 20)))     # at most 8 dB of peak reduction
+    y = dsp.trim(y, TRIM_DB.get(voice, -48), 0.04)
     fl = min(len(y) // 4, n_of(0.12))
     y = y.copy()
     y[-fl:] *= np.linspace(1, 0, fl) ** 1.5

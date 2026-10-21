@@ -1,0 +1,12 @@
+{
+ "variants": {
+  "": [
+   {
+    "model": "deadline:block/colegio_fuente_fondo_0"
+   },
+   {
+    "model": "deadline:block/colegio_fuente_fondo_1"
+   }
+  ]
+ }
+}
