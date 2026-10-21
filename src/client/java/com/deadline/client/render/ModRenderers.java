@@ -1,7 +1,9 @@
 package com.deadline.client.render;
 
 import com.deadline.DeadLine;
+import com.deadline.client.model.AlumnaModel;
 import com.deadline.client.model.AnimaModel;
+import com.deadline.client.model.ClaraModel;
 import com.deadline.client.model.MadreModel;
 import com.deadline.client.model.MonjaModel;
 import com.deadline.client.model.MunecaModel;
@@ -54,9 +56,9 @@ public final class ModRenderers {
 		EntityRendererRegistry.register(ModEntities.MUNECA, ctx -> new HauntRenderer<>(ctx, new MunecaModel(ctx.bakeLayer(MUNECA)), 0.3F, "muneca", true));
 		EntityRendererRegistry.register(ModEntities.ANIMA, ctx -> new HauntRenderer<>(ctx, new AnimaModel(ctx.bakeLayer(ANIMA)), 0.0F, "anima", true));
 		// placeholders until the alumna / madre / clara models ship (tools/models/ent_*.py)
-		EntityRendererRegistry.register(ModEntities.ALUMNA, ctx -> new HauntRenderer<>(ctx, new AnimaModel(ctx.bakeLayer(ANIMA)), 0.0F, "anima", true));  // TODO AlumnaModel
+		EntityRendererRegistry.register(ModEntities.ALUMNA, ctx -> new HauntRenderer<>(ctx, new AlumnaModel(ctx.bakeLayer(ALUMNA)), 0.0F, "alumna", true));
 		EntityRendererRegistry.register(ModEntities.MADRE, ctx -> new HauntRenderer<>(ctx, new MadreModel(ctx.bakeLayer(MADRE)), 0.0F, "madre", true));
-		EntityRendererRegistry.register(ModEntities.CLARA, ctx -> new HauntRenderer<>(ctx, new AnimaModel(ctx.bakeLayer(ANIMA)), 0.0F, "anima", true));  // TODO ClaraModel
+		EntityRendererRegistry.register(ModEntities.CLARA, ctx -> new HauntRenderer<>(ctx, new ClaraModel(ctx.bakeLayer(CLARA)), 0.0F, "clara", true));
 		EntityRendererRegistry.register(ModEntities.ANCHOR, AnchorRenderer::new);
 		EntityRendererRegistry.register(ModEntities.HOLY_WATER, ThrownItemRenderer::new);
 		EntityRendererRegistry.register(ModEntities.FLARE, ctx -> new ThrownItemRenderer<>(ctx, 1.0F, true));
