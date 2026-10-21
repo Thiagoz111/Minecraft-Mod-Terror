@@ -6,35 +6,55 @@ Centred on x = 0, z = 0.  Real height 1.35 blocks: ground y = 24, top of the sku
 Design
 ------
 Silhouette: a little girl whose head is a third of her height (14 x 15 x 13 on a 4-texel neck, wider than her
-narrow 12-texel chest) and whose arms are too long: thin sleeves end in pale spidery hands that hang to the knee,
-below the hem.  Argentine school uniform: a starched white guardapolvo (smock-coat) with a yoke, a box-pleated
-A-line skirt made of four flared panels (front panel with a button placket and two patch pockets, one blotted with
-ink; back panel with an inverted box pleat under a buttoned half-belt), a white Peter Pan collar (two planes) and
-the navy school bow at the throat (knot, two pinched loops, two notched tails).  Bare knees (the pale band between
-hem and socks), navy ribbed knee socks with a turned-down cuff, black patent Mary-Janes with a strap and buckle.
-She is a ghost: every texel is translucent (alpha ~232 on the head, ~220 at the waist, fading to ~180 at the
-shoes, the shoes and socks tinted toward a cold mist blue).
+narrow 12-texel chest) and whose arms are too long: thin sleeves angled a little out and forward, ending in cold
+lavender-grey spidery hands (palm + thumb + three splayed 1x5 fingers with 1-texel gaps, palms turned back) whose
+dirty fingertips hang 3 texels below the hem, down to the sock cuffs.  Argentine school uniform: a starched white
+guardapolvo (smock-coat) with a yoke and 6.5 texels of chest above the waist seam, an A-line box-pleated skirt of
+four flared 16 x 10 panels (front panel with a button placket and two patch pockets, one blotted with ink; back
+panel with an inverted box pleat under a buttoned half-belt; the top corners of the front/back panels are cut so
+the waist is 14 wide and the hem 16), a white Peter Pan collar (two planes) and the navy school bow at the throat
+(knot, two pinched loops, two notched tails).  A pale knee band (with a plaster / bruise) between hem and the navy
+ribbed knee socks with a turned-down cuff; black patent Mary-Janes with one clear strap across the instep, the
+silver buckle on the outer side, a single specular texel on the toe and a dark sole edge.
+She is a ghost: every texel is translucent (alpha ~228 on the head, ~214 at the waist, dissolving from the hem down
+into a cold mist: ~200 at the knee, ~158 at the soles, tinted toward mist blue) and the vertical silhouette edges of
+the smock, sleeves and hair carry a 1-texel cold cyan rim.  Faces that are always buried (torso below the waist
+seam, every face of the waist band except its dark underside, the skull top, the shin tops) are left transparent so
+nothing ghosts through in entityTranslucent (no face sorting inside a model).
 
 Face (front of a 1-texel skin plate, 14 x 15, read at 64 px): a big pale doll forehead; faint brows whose inner
 ends are raised (worried); upper-lid creases; two 4x4 sockets that are REAL holes in the plate: through them you
 see the skull front one texel deeper, painted from a dark grey ring to black with a 1-px glint that glows pale
 cyan (emissive 'eyes' layer); purple-grey dark circles; a lit nose bridge and a 1-px nose shadow; doll blush 2x1;
-and NO MOUTH: smooth skin with a 1-px darker seam where the mouth should be, a lit ridge above it and a soft
-shadow under it, as if the skin had grown shut.  The 'jaw' bone holds the round singing "O" (lips ring, black
-mouth); it is parked inside the skull and only comes out (pose 'freed') when the girls get their voices back.
+and NO MOUTH: below a band of blank skin, two 1-px soft seam lines with a smooth, slightly lit ridge of fused skin
+between them, pinched into the cheeks by faint creases - as if the lips had grown together.  (Tested against a
+dozen variants: anything with a dark core line and darker end points reads as a closed mouth; this reads as "no
+mouth" from the full-body view down to the 512 px portrait.)  The 'jaw' bone holds the round singing "O" (a 4x4
+zero-thickness plane: lips ring, black mouth); it is parked inside the skull and pose 'freed' slides it flush onto
+the face (z = -7.03, rows 10-13) when the girls get their voices back.
+
+Head from behind (the choir-loft and crypt angle): every hair shell is two stepped boxes (the back block 2 narrower
+and 1 lower) plus an occipital bump, painted with a sheen arc and sides that turn away, so the head rounds off;
+the hair reaches the nape (y -4) with ragged tips around a narrow 4-6 px bare nape patch; the underside of the skull
+is deep hair shadow (no pale slab when the head bows in face_wall / cover_ears).
 
 Hair (seven bone groups, exactly one visible per girl; Java toggles ModelPart.visible):
-  hair_paloma   dark brown, centre parting, hair pulled behind the ears into two long braids that fall over the
-                shoulders onto the chest, faded sky-blue ribbon bows and brush ends (the leader).
+  hair_paloma   dark brown, centre parting, hair pulled behind the ears into two braid roots (visible from behind)
+                and two long braids that fall over the shoulders onto the chest, faded sky-blue ribbon bows and brush
+                ends (the leader).
   hair_mecha    black bob with heavy blunt bangs down to the brows, hair curtains framing the cheeks.
-  hair_rocio    brown, combed back to a high ponytail with a maroon scrunchie (two segments, swings).
-  hair_chela    chestnut, a big cloud of tight ringlets (hanging columns of round turns, random phase) with side,
-                crown and lower-back clumps that widen the cloud toward the shoulders, curly fringe.
+  hair_rocio    brown, combed back to a high ponytail: the maroon scrunchie sits on the crown (peeks over it from the
+                front), the tail runs back and falls behind the head; two loose strands at the temples.
+  hair_chela    chestnut, a big cloud of corkscrew ringlets (hand-drawn S/Z ringlet columns on a fixed stagger, round
+                coil heads on top), ringlet clumps on the sides/crown/back and four ringlet tubes turned 45 deg on
+                the vertical corners so the outline is bumpy and round, curly fringe.
   hair_ofelia   blue-black, long and dead straight: centre parting, curtains beside the face, two locks over the
-                shoulders, a waist-long back curtain, an ivory satin Alice band painted across the front of the
-                crown and down behind the ears (no frame-like hoop cube).
+                shoulders, a waist-long back curtain, and a dull ivory Alice band: a thin inflated strip at the
+                hairline over the crown (with its shadow on the fringe), painted on down behind the ears.
   hair_anasofia dark brown, centre parting, two high pigtails with red elastics that stick out and droop.
-  hair_lola     black pixie cut with a side-swept fringe and a huge white satin bow on the top-left of the head.
+  hair_lola     black pixie cut with a side-swept fringe and a huge dull-ivory satin bow on the top-left of the head
+                (two puffy loops lit from above with one fold line and a 1-px dark outline, a knot); its two ribbon
+                tails lie flat along the left side of the head, never over the forehead.
 The rest pose of the preview / gallery JSON shows one hairstyle (env ALUMNA_HAIR, default 'paloma'); the generated
 Java model contains all seven groups.
 """
@@ -62,7 +82,6 @@ NAVY = pal('#05080f', '#0a0f1e', '#0f162b', '#121a33', '#18223f', '#1e2a4d', '#2
 # ghost-pale skin (#e8dcd6 #b9a6a2 #8a7676), extended into cold lavender shadows
 SKIN = pal('#3a3140', '#54474f', '#6e5e65', '#8a7676', '#a28f8d', '#b9a6a2', '#d0c2bd', '#e8dcd6', '#f6efeb')
 BLUSH = hx('#e0a2a6')
-BLUSH_D = hx('#c98189')
 BROW = hx('#6a5658')
 LAVENDER = hx('#7a6a86')
 NAIL = hx('#9aa6bd')
@@ -77,7 +96,6 @@ SCALP = hx('#9c8a8a')
 CELESTE = pal('#1c3244', '#2a4a63', '#3d6a88', '#5689aa', '#74a7c6', '#98c4dc', '#c2e0ee', '#e2f2f8')
 MAROON = pal('#160407', '#28080d', '#3e0e15', '#55151e', '#6e1f28', '#8a2d33', '#a5403f')
 RED = pal('#220405', '#3e0808', '#5f0e0d', '#821814', '#a3241d', '#c2382b', '#d9553c')
-SATIN = pal('#2f3442', '#474e60', '#646c80', '#848c9f', '#a3abbb', '#c1c7d3', '#dadee6', '#eceef3', '#fafbfc')
 PATENT = pal('#010102', '#040407', '#08080e', '#0e0e16', '#161722', '#212334', '#33374f', '#535a7c', '#8e98c0',
              '#d6def5')
 SOLE = pal('#121016', '#1e1b23', '#2d2933', '#3e3946', '#524c5b')
@@ -223,6 +241,8 @@ def skin_mat(ctx):
     w, h, d = ctx.cube.size
     v = skin_v(ctx)
     if t == 'neck':
+        if f in ('top', 'bottom'):
+            return None                                 # buried in the skull / the torso
         v -= 0.06
         if ly < 1.6:
             v -= 0.16                                   # shadow under the big head
@@ -238,6 +258,8 @@ def skin_mat(ctx):
                 v += 0.05
         return pick(SKIN, v - 0.04)
     if t == 'thigh':
+        if f == 'top':
+            return None                                 # flush with the waist band's underside (no z-fight)
         return pick(SKIN, v - 0.12 - ly / h * 0.1)
     return pick(SKIN, v)
 
@@ -377,11 +399,6 @@ def shoe_mat(ctx):
 
 
 # ------------------------------------------------------------------ smock (guardapolvo)
-def pleat(u, period=4, off=0):
-    k = (int(math.floor(u)) + off) % period
-    return (0.06, 0.03, -0.05, -0.2)[k] if period == 4 else (0.05, -0.03, -0.18)[k]
-
-
 @G
 def smock_mat(ctx):
     t = tag(ctx)
@@ -1642,9 +1659,12 @@ Variants and toggles (synced data: variant 0..6, freed, pose)
 * Exactly one hair group is visible: variant 0 hair_paloma, 1 hair_mecha, 2 hair_rocio, 3 hair_chela, 4 hair_ofelia,
   5 hair_anasofia, 6 hair_lola.  Every frame: for each part in group("hair_") set visible = (name == HAIRS[variant])
   (hiding a group hides its child bones too).  The order is the same as the HAIRS list in ent_alumna.py.
-* jaw.visible = freed.  When freed, also apply POSE 'freed' (it pushes the "O" mouth 2 texels forward out of the
-  skull).  Never show the jaw before Laudes; the mouthless face IS the character.
-* Render type entityTranslucent (texture alpha 180-232).  Camera flash: render with alpha forced to 255 for the flash
+* jaw.visible = freed.  When freed, also apply POSE 'freed' (it slides the flat "O" mouth plane 1.53 texels forward,
+  flush onto the face; never more, or it shows as a box).  Never show the jaw before Laudes; the mouthless face IS
+  the character.
+* Render type entityTranslucent (texture alpha ~158-228: misty from the hem down, cold rim on the cloth/hair edges).
+  Buried faces are already transparent in the texture; keep the model part order as exported (head cubes before the
+  hair groups) so the dark skull acts as an occluder behind the hair.  Camera flash: render with alpha forced to 255 for the flash
   frames (they look solid) and set freed = true for that frame only (in the photo they have mouths).
 * Emissive layer 'eyes': only the two 1-px socket glints (pale cyan).  Flicker their alpha 0.6-1.0 while a girl is
   singing backwards; switch them off for 3 ticks right before a head_180 snap.
@@ -1656,57 +1676,69 @@ light, too-even glide: the legs walk but the body has no bob at all (dy = 0), th
 Bones
 * body (root, pivot at the waist): whole girl.  Idle: still; every 6-10 s a single 0.03 zRot settle.  Walk: no bob, no
   sway (that evenness is the creepy part).  Run: pose 'run' with a 0.08 xRot bounce on each footfall.
-* skirt_front, skirt_back, skirt_right, skirt_left: the four box-pleated panels of the guardapolvo, hinged at the waist.
-  Idle: ripple("skirt_", t, 0.05, 1.4, 0.015, 0.01, 0).  Walk/run: the panel on the side of the forward leg opens
-  -0.12 * s, skirt_back flares +0.25 in 'run'.  skirt_back carries the buttoned half-belt.
+* body also carries the waist band ('core': only its dark underside is painted - it closes the bell of the skirt).
+* skirt_front, skirt_back, skirt_right, skirt_left: the four 16 x 10 box-pleated panels of the guardapolvo, hinged at
+  the waist seam (y 6.5).  Idle: ripple("skirt_", t, 0.05, 1.4, 0.015, 0.01, 0).  Walk/run: the panel on the side of
+  the forward leg opens -0.12 * s, skirt_back flares +0.25 in 'run'.  skirt_back carries the buttoned half-belt.
+  sit_desk drapes them: front laid on the lap (short overhang past the knees), back tucked under onto the seat,
+  sides opened 0.2.
 * collar: the two Peter Pan collar planes (static, rest xRot -12 deg so they stand off the chest).  No animation.
 * bow: the navy school bow at the throat (child of collar).  Secondary: zRot spring-lagged from body/head motion
   (+-0.08), xRot -0.15 in 'run'.
 * right_leg / left_leg: thighs (hip joint).  Walk: xRot = +-sin(walk) * 0.5 * s.  Sit/crouch/hop: pose values.
-* right_shin / left_shin: knee joint (pale knee band + navy knee sock + cuff).  Walk: xRot = max(0, sin(walk + 1.2))
+* right_shin / left_shin: knee joint (pale knee band 3 texels + navy knee sock + turned-down cuff).  Walk: xRot = max(0, sin(walk + 1.2))
   * 0.6 * s (bend on the back-swing only).  sit_desk +1.57.
 * right_shoe / left_shoe: ankle (black patent Mary-Janes).  Keep the sole flat: xRot = -(leg + shin) * 0.4 while
   walking; cover_ears -0.25.
-* right_arm / left_arm: shoulders (thin white sleeves, rest angled 14 deg out over the skirt).  Idle: hanging dead
-  still; no swing when walking.  Run: +-0.8 counter to the legs.
-* right_forearm / left_forearm: elbows (sleeve + cuff).  Follow pose values only.
-* right_hand / left_hand: wrists (long pale palm + thumb).  Idle: a 0.04 zRot tremor on one hand every few seconds.
-* right_fingers / left_fingers: the three grouped long fingers.  zRot curls them into the palm (right -1.4, left
-  +1.4): fist for 'point', grip on the frame for 'peek'.  Idle: slow 0.1 curl/uncurl, never both hands together.
-* right_index / left_index: the index finger, separate so 'point' can keep it straight while the others curl.
+* right_arm / left_arm: shoulders (thin white sleeves, rest angled 15 deg out and 4 deg forward so the long hands
+  hang clear of the skirt).  Idle: hanging dead still; no swing when walking.  Run: +-0.8 counter to the legs.
+* right_forearm / left_forearm: elbows (forearm sleeve + cuff, 5 long).  Follow pose values only.
+* right_hand / left_hand: wrists (cold palm + thumb; rest yRot 35 deg so the palms turn back and the splayed
+  fingers read from the front).  Idle: a 0.04 zRot tremor on one hand every few seconds.
+* right_fingers / left_fingers: the middle and ring fingers (two 1x5 cubes with a 1-texel gap).  zRot curls them
+  into the palm (right -1.4, left +1.4): fist for 'point', grip on the frame for 'peek'.  Idle: slow 0.1
+  curl/uncurl, never both hands together.
+* right_index / left_index: the 1x5 index finger (splayed 1 texel in front of the others), separate so 'point' can
+  keep it straight while the others curl.
   In 'point' add a slow beckoning curl xRot 0..-0.5 on the right index after the pose has held 2 s.
 * neck: takes 30% of the head look (yaw/pitch) and 0.5 of the yaw in 'head_180'.
 * head: 70% of the head look; rest pose already tilted 6 deg toward her right shoulder and nodded 4 deg.
   Idle: hold, then every 5-12 s SNAP a +-0.25 zRot tilt in 2 ticks and hold it.  When the player comes within 3 blocks:
   SNAP 'head_180' (neck + head yaw = pi in 2 ticks, overshoot 0.1 and settle), giggle, then dissolve.
-* jaw: the round singing "O" (lips ring + black mouth).  Hidden (visible = false) unless freed; pose 'freed' pushes it
-  out with dz -2.  While freed and singing: dy oscillation 0..0.4 on the beat, never open wider.
-* hair_paloma: centre-parted brown hair + braids.  paloma_braid_right / paloma_braid_left: the upper plaits (hinged
+* jaw: the round singing "O" (a flat 4x4 plane: lips ring + black mouth).  Hidden (visible = false) unless freed;
+  pose 'freed' slides it flush onto the face with dz -1.53.  While freed and singing: dy oscillation 0..0.4 on the
+  beat, never open wider.
+* hair_paloma: centre-parted brown hair + the two braid roots behind the ears (rigid) + braids.  paloma_braid_right / paloma_braid_left: the upper plaits (hinged
   behind the ears, swung forward over the shoulders); paloma_braid_right_tip / paloma_braid_left_tip: lower plaits
   with the sky-blue ribbon bows and brush ends.  Pendulums: xRot/zRot spring-lag the head and body by 3-4 ticks
   (amplitude 0.1 idle, 0.5 back in 'run'); the tips lag the uppers by 2 more ticks.
-* hair_mecha: black bob with bangs (shell + bangs plane).  Rigid; no bones to animate.
+* hair_mecha: black bob with bangs (stepped shell + occipital bump + bangs plane).  Rigid; no bones to animate.
+  Every hair group is built the same way (two stepped shell boxes, an occipital bump, a fringe plane).
 * hair_rocio: combed-back hair + scrunchie.  rocio_tail (upper ponytail, sticks out behind) and rocio_tail_tip
   (hanging end): pendulum chain, +0.4 xRot in 'run', bounce 0.15 on each footfall, side swing zRot +-0.2 when the
   head snaps.  Gravity: whenever the head is bowed, counter-rotate rocio_tail by ~ -0.9 x the summed body + neck +
   head pitch so it keeps hanging behind instead of sticking up (baked into 'face_wall' -0.65 and 'cover_ears' -0.5).
 * hair_chela: the curly cloud (shell, fringe, ringlet clumps).  Rigid; on footfalls a 0.3 texel dy squash is enough.
-* hair_ofelia: long straight blue-black hair, the ivory Alice band (painted, no bone) and the two locks over the
-  shoulders (rigid with the head).  ofelia_curtain: the waist-long back curtain; lags the head (xRot spring) and lifts
+  chela_curls: the four ringlet tubes on the corners of the cloud (bone yawed 45 deg to round the outline).  Static
+  (never animate it on its own; it moves with hair_chela).
+* hair_ofelia: long straight blue-black hair, the Alice band (a thin cube at the hairline, no bone of its own) and
+  the two locks over the shoulders (rigid with the head).  ofelia_curtain: the waist-long back curtain; lags the head (xRot spring) and lifts
   +0.35 in 'run'.  When the head bows it keeps hanging vertical: counter-rotate like rocio_tail ('face_wall' -0.6,
   'cover_ears' -0.45).
 * hair_anasofia: centre parting + red elastics.  anasofia_tail_right / anasofia_tail_left: the high pigtails (stick
   out sideways); anasofia_tail_right_tip / anasofia_tail_left_tip: drooping ends.  Bounce zRot +-0.25 on every hop
   in 'hop' and on footfalls, opposite phase left/right.
-* hair_lola: black pixie cut with a side-swept fringe.  lola_bow: the huge white satin bow; small spring wobble
-  (zRot +-0.06) after head snaps.
+* hair_lola: black pixie cut with a side-swept fringe; the two ribbon tails lie flat on the left side of the head
+  (rigid with hair_lola).  lola_bow: the huge dull-ivory satin bow (loops + knot); small spring wobble (zRot +-0.06)
+  after head snaps.
 
 Poses
 * stand: hands joined in front of the skirt, head a little down.  Default pose in classrooms, refectory, locutorio.
 * sing: chin up, prayer hands at the chest.  Choir (Completas, Maitines).  Combine with 'freed' at Laudes.
 * sit_desk: knees at 90 deg, hands folded on the desk, head tilted.  body dy +6 puts the soles on the floor of the
-  same block (stool height ~0.3 blocks); raise the entity 0.2 blocks for the classroom benches.  The front skirt
-  panel is laid over the thighs.
+  same block (seat 0.2 blocks above the floor); raise the entity 0.2 blocks for the classroom benches.  The front
+  skirt panel lies on the thighs (1-2 texels past the knees), the back panel is tucked under her onto the seat, the
+  side panels open a little.
 * face_wall: punished pupil: forehead on the wall, neck and head bowed, shoulders dropped 1 texel, arms hanging
   dead.  Place her 0.25 blocks from the wall.  Cripta at the Hora Muerta (before the 180 + "CORRE").
 * point: the right arm straight at the player, index out, other fingers curled, head tilted.  Ronda beat ("...con
@@ -1724,5 +1756,5 @@ Poses
 * ronda: arms out to the sides to hold hands in the ring (claustro).  Rotate the ring, not the girls.
 * hop: rayuela hop (Paloma): one leg up behind, arms out for balance, body dy -1.5 at the top of the hop.
 * wave: the right arm raised beside the head (Laudes goodbye); drive right_forearm zRot +-0.35 at 0.25 rad/tick.
-* freed: the "O" mouth pushed out of the skull + chin up.  Only after the final chorus.
+* freed: the "O" mouth slid flush onto the face + chin up.  Only after the final chorus.
 """
