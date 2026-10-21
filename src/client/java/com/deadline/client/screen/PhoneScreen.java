@@ -277,8 +277,9 @@ public class PhoneScreen extends Screen {
 			g.renderOutline(SX + 10, by, SW - 20, 28, 0x80E33A3A);
 			Component place = Component.translatable("deadline.case." + d.activeCase() + ".place");
 			g.drawString(font, font.plainSubstrByWidth(place.getString(), SW - 34), SX + 16, by + 5, 0xFFFFFFFF, false);
-			g.drawString(font, font.plainSubstrByWidth(Component.translatable(ClientState.objectiveKey(d.activeCase(), d.stage())).getString(), SW - 34),
-					SX + 16, by + 16, 0xFFFFC23A, false);
+			Component line = com.deadline.client.hud.StoryHud.active() ? com.deadline.client.hud.StoryHud.text(com.deadline.client.hud.StoryHud.chapterKey)
+					: Component.translatable(ClientState.objectiveKey(d.activeCase(), d.stage()));
+			g.drawString(font, font.plainSubstrByWidth(line.getString(), SW - 34), SX + 16, by + 16, 0xFFFFC23A, false);
 			hits.add(new Hit(SX + 10, by, SW - 20, 28, () -> app = App.CASE));
 		}
 	}
@@ -401,8 +402,9 @@ public class PhoneScreen extends Screen {
 				SX + 46, y + 22, 0xFF9A9AA6, false);
 		y += 42;
 
-		// progress
-		int steps = 4;
+		// progress (a scripted case shows its chapter and the HUD checklist instead of the four legacy stages)
+		boolean story = com.deadline.client.hud.StoryHud.active();
+		int steps = story ? 9 : 4;
 		int bw = (SW - 20 - (steps - 1) * 4) / steps;
 		for (int i = 0; i < steps; i++) {
 			int c = i < d.stage() ? 0xFFB3121B : i == d.stage() ? ((ClientState.ticks / 8) % 2 == 0 ? 0xFFFFFFFF : 0xFFB3121B) : 0xFF2A2A34;
@@ -411,7 +413,17 @@ public class PhoneScreen extends Screen {
 		y += 12;
 		g.drawString(font, Component.translatable("deadline.phone.objective"), SX + 10, y, 0xFF9A9AA6, false);
 		y += 11;
-		y = wrap(g, Component.translatable(ClientState.objectiveKey(key, d.stage())), SX + 10, y, SW - 20, 0xFFFFFFFF) + 6;
+		if (story) {
+			y = wrap(g, com.deadline.client.hud.StoryHud.text(com.deadline.client.hud.StoryHud.chapterKey), SX + 10, y, SW - 20, 0xFFFFFFFF) + 3;
+			for (int i = 0; i < com.deadline.client.hud.StoryHud.objKeys.size(); i++) {
+				boolean ok = com.deadline.client.hud.StoryHud.objDone.get(i);
+				y = wrap(g, Component.literal(ok ? "✔ " : "□ ").append(com.deadline.client.hud.StoryHud.text(com.deadline.client.hud.StoryHud.objKeys.get(i))),
+						SX + 10, y, SW - 20, ok ? 0xFF8A8A92 : 0xFFE8E2D6) + 2;
+			}
+			y += 4;
+		} else {
+			y = wrap(g, Component.translatable(ClientState.objectiveKey(key, d.stage())), SX + 10, y, SW - 20, 0xFFFFFFFF) + 6;
+		}
 		g.drawString(font, Component.translatable("deadline.phone.evidence", d.evidence()), SX + 10, y, 0xFF8CFFB0, false);
 		y += 16;
 		g.drawString(font, Component.translatable("deadline.phone.hint"), SX + 10, y, 0xFF9A9AA6, false);
@@ -423,7 +435,7 @@ public class PhoneScreen extends Screen {
 		wrap(g, Component.translatable("deadline.weakness." + beast), SX + 10, y, SW - 20, 0xFFFFC23A);
 
 		int by = SY + SH - 30;
-		if (d.stage() >= 3) {
+		if (!story && d.stage() >= 3) {
 			button(g, SX + 10, by, SW - 20, 22, Component.translatable("deadline.phone.go_home"), 0xFF1FAF5A, () -> {
 				send(PhoneActionPayload.RETURN_HOME, 0);
 				onClose();

@@ -166,7 +166,8 @@ public final class CaseManager {
 				if (d.requests.size() < MAX_PENDING && now >= d.nextCall && hasPhone(p)) {
 					ring(p, randomRequest(p, now));
 				}
-			} else if (d.active.stage >= 3) {
+			} else if (!d.active.type.scripted() && d.active.stage >= 3) {
+				// legacy cases: stage 3 = solved; scripted cases keep their chapter in stage and end from the script
 				if (--d.active.solvedTimer <= 0) {
 					returnHome(p, true);
 				}
@@ -226,7 +227,7 @@ public final class CaseManager {
 			}
 			case PhoneActionPayload.RETURN_HOME -> {
 				if (d.active != null) {
-					returnHome(p, d.active.stage >= 3);
+					returnHome(p, !d.active.type.scripted() && d.active.stage >= 3);
 				}
 			}
 			case PhoneActionPayload.ABANDON -> {
@@ -418,7 +419,7 @@ public final class CaseManager {
 	private static void advance(ServerLevel level, int site, int stage, String msgKey) {
 		for (ServerPlayer p : huntersOf(level, site)) {
 			HunterData d = ModAttachments.get(p);
-			if (d.active.stage < stage) {
+			if (!d.active.type.scripted() && d.active.stage < stage) {
 				d.active.stage = stage;
 				Fx.objective(p, d.active.type.key(), stage);
 				p.displayClientMessage(Component.translatable(msgKey), false);
@@ -457,6 +458,9 @@ public final class CaseManager {
 		}
 		for (ServerPlayer p : huntersOf(level, boss.siteIndex())) {
 			HunterData d = ModAttachments.get(p);
+			if (d.active.type.scripted()) {
+				continue; // the director decides when a scripted case is over
+			}
 			d.active.stage = 3;
 			d.active.solvedTimer = 12;
 			Fx.objective(p, d.active.type.key(), 3);
