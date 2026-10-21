@@ -1,5 +1,6 @@
 package com.deadline.item;
 
+import com.deadline.casa.CasaNet;
 import com.deadline.caseload.CaseManager;
 import com.deadline.entity.HauntEntity;
 import com.deadline.net.Fx;
@@ -52,6 +53,11 @@ public class SpiritBoxItem extends Item {
 			return;
 		}
 		int used = getUseDuration(stack, user) - remaining;
+		// Casa Morales: when the chapter asks for it, the box opens the question wheel instead of sweeping
+		if (used <= 1 && CasaNet.spiritHook(p)) {
+			p.stopUsingItem();
+			return;
+		}
 		HauntEntity near = null;
 		if (used == 50 || used == 75) {
 			for (HauntEntity e : server.getEntitiesOfClass(HauntEntity.class, p.getBoundingBox().inflate(18))) {

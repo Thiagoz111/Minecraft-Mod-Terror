@@ -230,3 +230,105 @@ SCRIPT = {
     'entity.deadline.madre': ('Madre Remedios', 'Mother Remedios'),
     'entity.deadline.clara': ('Clara', 'Clara'),
 }
+
+# --- casa:P3 (items: choripán chain, the Nona's tin, the slipper; the grill) ---
+ITEMS.update({
+    'chorizo_crudo': ('Chorizo crudo', 'Raw chorizo'),
+    'chorizo_asado': ('Chorizo asado', 'Grilled chorizo'),
+    'pan': ('Pan francés', 'Bread roll'),
+    'choripan': ('Choripán', 'Choripán'),
+    'choripan_bendito': ('Choripán bendito', 'Blessed choripán'),
+    'lata_galletitas': ('Lata de galletitas', 'Cookie tin'),
+    'hilo_bendito': ('Hilo bendito', 'Blessed thread'),
+    'aguja': ('Aguja', 'Needle'),
+    'foto_1960': ('Foto vieja', 'Old photo'),
+    'chancleta': ('Chancleta de la Nona', "Grandma's slipper"),
+})
+ENTITIES.update({
+    'choripan_bendito': ('Choripán bendito', 'Blessed choripán'),
+    'chancleta': ('Chancleta', 'Slipper'),
+})
+SCRIPT.update({
+    'deadline.casa.grill': ('Cocinando el chorizo...', 'Grilling the chorizo...'),
+    'deadline.casa.grill.listo': ('¡Chorizo a punto!', 'Chorizo done!'),
+    'deadline.casa.grill.cortado': ('¡El chorizo! Volvé adentro del círculo de sal.', 'The chorizo! Get back inside the salt circle.'),
+    'deadline.casa.grill.afuera': ('§7Para cocinar, parate adentro del círculo de sal, al lado del fuego.', '§7To cook, stand inside the salt circle, next to the fire.'),
+    'deadline.msg.casa.chorizo_crudo': ('§7Crudo no, che. A la parrilla.', '§7Not raw. Put it on the grill.'),
+    'deadline.msg.casa.chorizo_asado': ('§7Le falta el pan. Juntalos en el inventario.', '§7It needs bread. Combine them in your inventory.'),
+    'deadline.msg.casa.pan': ('§7Con un chorizo asado adentro, es un choripán.', '§7Put a grilled chorizo in it and it is a choripán.'),
+    'deadline.msg.casa.choripan': ('§7Para él no alcanza. Bendecilo: juntalo con agua bendita.', '§7Not enough for him. Bless it: combine it with holy water.'),
+    'deadline.lore.casa.choripan_bendito': ('Lo único que un perro no puede rechazar.', 'The one thing no dog can refuse.'),
+    'deadline.lore.casa.lata_galletitas': ('«Tomá, guardame esto.»', '"Here, keep this for me."'),
+    'deadline.lore.casa.hilo_bendito': ('Rojo. Bendecido en 1961.', 'Red. Blessed in 1961.'),
+    'deadline.lore.casa.aguja': ('Para coser lo que no tiene que hablar.', 'For sewing shut what must not speak.'),
+    'deadline.lore.casa.chancleta': ('Vuelve sola. Aturde a cualquiera.', 'Comes back on its own. Stuns anyone.'),
+})
+# --- end casa:P3
+
+# --- casa:P4 (set pieces: demon wisp, knives, salt hits, dolls, yarn, props) ---
+ENTITIES['demon_wisp'] = ('Voluta del demonio', 'Demon wisp')
+SCRIPT.update({
+    'deadline.casa.msg.sal': ('Sal: %s/%s', 'Salt: %s/%s'),
+    'deadline.casa.msg.lana': ('¡Te enganchaste en la lana! Cortala con la daga o quemala con una bengala.',
+                               'Caught in the yarn! Cut it with the dagger or burn it with a flare.'),
+})
+# --- end casa:P4
+
+# --- casa:P5 (UI: family chat, stitches, the name, the scripted spirit box) ---
+SCRIPT.update({
+    # Marta's phone: the family group (CasaNet.familyChat) and the live message
+    'deadline.casa.chat.title': ('Familia Morales', 'Morales Family'),
+    'deadline.casa.chat.members': ('Jorge, Mamá, Toti, Vos', 'Jorge, Mum, Toti, You'),
+    'deadline.casa.chat.today': ('HOY', 'TODAY'),
+    'deadline.casa.chat.typing': ('%s está escribiendo...', '%s is typing...'),
+    'deadline.casa.chat.input': ('Mensaje', 'Message'),
+    'deadline.casa.chat.from.marta': ('Marta', 'Marta'),
+    'deadline.casa.chat.from.jorge': ('Jorge', 'Jorge'),
+    'deadline.casa.chat.from.nona': ('Mamá', 'Mum'),
+    'deadline.casa.chat.from.toti': ('Toti', 'Toti'),
+    'deadline.casa.chat.from.lucia': ('Lucía', 'Lucía'),
+    'deadline.casa.chat.from.unknown': ('+54 9 11 3333-1961', '+54 9 11 3333-1961'),
+    'deadline.casa.chat.m1': ('¡¡Miren lo que le compré a Lucía en la feria de San Telmo!!', 'Look what I got Lucía at the San Telmo fair!!'),
+    'deadline.casa.chat.m2': ('Re barata, dos lucas', 'Dirt cheap, two grand'),
+    'deadline.casa.chat.m3': ('¿Otra muñeca? Ya tiene diez en el estante', 'Another doll? She already has ten on the shelf'),
+    'deadline.casa.chat.m4': ('tiene la boca cosida jajaja re turbia', 'its mouth is sewn shut lol so creepy'),
+    'deadline.casa.chat.m5': ('DE DONDE SACARON ESO', 'WHERE DID YOU GET THAT'),
+    'deadline.casa.chat.m6': ('De la feria, mamá. Ya te dije', 'From the fair, Mum. I told you'),
+    'deadline.casa.chat.m7': ('DEVUELVANLA', 'TAKE IT BACK'),
+    'deadline.casa.chat.m8': ('Y NO LE CORTEN LOS HILOS', "AND DON'T CUT THE THREADS"),
+    'deadline.casa.chat.m9': ('la nona escribe en mayúscula porque no ve jajaja', "grandma types in caps because she can't see lol"),
+    'deadline.casa.chat.m10': ('Choripán no comió nada y le gruñe a la pared. ¿Lo llevo al veterinario?',
+                               "Choripán hasn't eaten a thing and he growls at the wall. Should I take him to the vet?"),
+    'deadline.casa.chat.m11': ('Es la humedad', "It's the damp"),
+    'deadline.casa.chat.m12': ('¿¿Quién apiló las sillas del comedor??', 'Who stacked the dining room chairs??'),
+    'deadline.casa.chat.m13': ('yo no', 'not me'),
+    'deadline.casa.chat.m14': ('Yo tampoco. Me voy a buscar carbón para el domingo', "Me neither. I'm off to get charcoal for Sunday"),
+    'deadline.casa.chat.m15': ('Lucía habla sola de noche. Dice que es su amigo nuevo', 'Lucía talks to herself at night. She says it is her new friend'),
+    'deadline.casa.chat.m16': ('PRENDAN UNA VELA', 'LIGHT A CANDLE'),
+    'deadline.casa.chat.m17': ('ya le saqué los hilos', 'i took out the threads'),
+    'deadline.casa.chat.ya_llego': ('ya llegó?', 'is he here yet?'),
+    # the stitches (StitchOverlay)
+    'deadline.casa.stitch': ('PUNTADA %s/%s', 'STITCH %s/%s'),
+    'deadline.casa.stitch.hint': ('Mantené la mira en la boca de Ofelia.', "Keep your aim on Ofelia's mouth."),
+    'deadline.casa.stitch.hold': ('No la sueltes...', "Don't let go..."),
+    'deadline.casa.stitch.snap': ('¡SE SOLTÓ LA PUNTADA!', 'THE STITCH SLIPPED!'),
+    'deadline.casa.stitch.done': ('Cosida.', 'Sewn.'),
+    'deadline.casa.stitch.kit': ('Te faltan el hilo y la aguja (la lata de la Nona).', "You need the thread and the needle (Grandma's tin)."),
+    # the name (NameScreen)
+    'deadline.casa.name.title': ('¿CÓMO SE LLAMA?', 'WHAT IS ITS NAME?'),
+    'deadline.casa.name.sub': ('Llamalo por su nombre. Una sola vez.', 'Call it by its name. Only once.'),
+    'deadline.casa.name.help': ('Hacé clic en un nombre o apretá 1, 2 o 3.', 'Click a name or press 1, 2 or 3.'),
+    # the scripted spirit box (SpiritWheelScreen; answers are the lines casa.spirit.*)
+    'deadline.casa.spirit.title': ('SPIRIT BOX', 'SPIRIT BOX'),
+    'deadline.casa.spirit.sub': ('Hacé una pregunta (clic o 1-4). Esc para guardarla.', 'Ask a question (click or 1-4). Esc to put it away.'),
+    'deadline.casa.spirit.q.nombre': ('¿Cómo te llamás?', 'What is your name?'),
+    'deadline.casa.spirit.q.que_queres': ('¿Qué querés?', 'What do you want?'),
+    'deadline.casa.spirit.q.alquiler': ('¿Pagás el alquiler?', 'Do you pay rent?'),
+    'deadline.casa.spirit.q.futbol': ('¿Sos de Boca o de River?', 'Boca or River?'),
+    # the answers as the on-screen spirit box phrase (same text as the lines casa.spirit.* in tools/audio/lines.py)
+    'deadline.spiritbox.casa.azamel': ('...A... ZA... MEL.', '...A... ZA... MEL.'),
+    'deadline.spiritbox.casa.al_perro': ('...AL... PE... RRO.', '...THE... DOG.'),
+    'deadline.spiritbox.casa.nunca': ('...NUN... CA.', '...NE... VER.'),
+    'deadline.spiritbox.casa.temperley': ('...SOY DE... TEMPERLEY.', "...I'M... A TEMPERLEY FAN."),
+})
+# --- end casa:P5
