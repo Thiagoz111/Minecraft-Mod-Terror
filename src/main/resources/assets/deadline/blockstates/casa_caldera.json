@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "deadline:block/casa_caldera"
+  },
+  "facing=east": {
+   "model": "deadline:block/casa_caldera",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "deadline:block/casa_caldera",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "deadline:block/casa_caldera",
+   "y": 270
+  }
+ }
+}

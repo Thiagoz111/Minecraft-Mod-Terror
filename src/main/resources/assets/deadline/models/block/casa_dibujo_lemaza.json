@@ -1,0 +1,32 @@
+{
+ "parent": "minecraft:block/block",
+ "textures": {
+  "t": "deadline:block/casa_dibujo_lemaza",
+  "particle": "deadline:block/casa_dibujo_lemaza"
+ },
+ "elements": [
+  {
+   "from": [
+    0.0,
+    0.0,
+    15.96
+   ],
+   "to": [
+    16.0,
+    16.0,
+    15.96
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      0.0,
+      0.0,
+      16.0,
+      16.0
+     ],
+     "texture": "#t"
+    }
+   }
+  }
+ ]
+}

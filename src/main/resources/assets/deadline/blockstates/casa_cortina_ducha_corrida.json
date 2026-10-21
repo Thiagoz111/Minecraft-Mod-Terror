@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "deadline:block/casa_cortina_ducha_corrida"
+  },
+  "facing=east": {
+   "model": "deadline:block/casa_cortina_ducha_corrida",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "deadline:block/casa_cortina_ducha_corrida",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "deadline:block/casa_cortina_ducha_corrida",
+   "y": 270
+  }
+ }
+}

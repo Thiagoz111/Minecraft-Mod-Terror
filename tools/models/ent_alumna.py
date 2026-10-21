@@ -213,16 +213,21 @@ def ghost(c, y, rim=0.0, fade=1.0):
 
 _RIM = [0.0]
 _FADE = [1.0]
+_SOLID = [False]
 
 
 def G(fn):
     def f(ctx):
         _RIM[0] = 0.0
         _FADE[0] = 1.0
+        _SOLID[0] = False
         c = fn(ctx)
         if c is None:
             return None
-        return ghost(c, A(ctx)[1], _RIM[0], _FADE[0])
+        g = ghost(c, A(ctx)[1], _RIM[0], _FADE[0])
+        if _SOLID[0]:
+            g = (g[0], g[1], g[2], 255)                 # always-covered occluder: nothing behind may ghost through
+        return g
     f.__name__ = fn.__name__
     return f
 
@@ -652,8 +657,9 @@ def bow_mat(ctx):
 #  o skin  O highlight  s soft shade  S deep socket shade  b faint brow  u lid crease  d dark circle
 #  . socket hole (the skull front shows through, one texel deeper)  N nose bridge light  n nose shadow
 #  p blush  f/g philtrum: two 1-px soft shades under the nose that run down into nothing
-#  m the seam: one 6-px healed-over line (SKIN[4]-ish) where the lips grew together, e its dissolving ends
-#  L a 1-px lit lip of fused skin below it  l / c faint seam / crease (kept for variants)
+#  m the seam: a short (3 + 2 dissolving ends 'e') healed-over line (SKIN[4]-ish) where the lips grew together
+#  X two 1-px pinches across it (skin grown shut, like old stitch scars), x the skin they pull just under it
+#  (no lit lip row: a lit row under the seam read as a lower lip)  L / l / c lip / faint seam / crease (variants)
 #  (No dark line with corners: every variant with a dark core + end dimples read as a closed mouth.)
 FACE = [
     # 0123456789ABCD
@@ -669,9 +675,9 @@ FACE = [
     "ssS..SooS..Sss",   # r9
     "soddddonddddos",   # r10 dark circles, 1-px nose shadow
     "sppooofofoopps",   # r11 doll blush 2x1; the philtrum starts under the nose ...
-    "sooooogogoooos",   # r12 ... and runs down into nothing
-    "sooemmmmmmeoos",   # r13 NO MOUTH: one healed-over seam where the mouth should be (soft ends)
-    "SssoLLLLLLossS",   # r14 a lit lip of fused skin under it
+    "sooooogogoooos",   # r12 ... and runs down into the two pinches
+    "sooooeXmXeooos",   # r13 NO MOUTH: a short healed-over seam, pinched shut at two points (soft ends)
+    "SssoooxoxoossS",   # r14 the pinches pull the plain skin under it (no lip)
 ]
 assert all(len(r) == 14 for r in FACE) and len(FACE) == 15
 
@@ -719,7 +725,11 @@ def face_px(ch, fx, fy):
     if ch == 'g':
         return mix(base, SKIN[5], 0.2)                  # ... running down into nothing
     if ch == 'm':
-        return mix(mix(base, SKIN[4], 0.78), LAVENDER, 0.05)   # the healed-over seam (stronger line)
+        return mix(mix(base, SKIN[4], 0.78), LAVENDER, 0.05)   # the healed-over seam
+    if ch == 'X':
+        return mix(mix(base, SKIN[3], 0.62), LAVENDER, 0.08)   # a pinch where the skin grew shut across it
+    if ch == 'x':
+        return mix(base, SKIN[4], 0.42)                 # the pinch pulls the skin just under the seam
     if ch == 'e':
         return mix(base, SKIN[5], 0.3)                  # seam ends dissolve (never dark end points)
     return base
@@ -777,11 +787,14 @@ def skull_mat(ctx):
     if f == 'top':
         return None                                     # buried under every hair shell
     if f == 'bottom':
+        _SOLID[0] = True                                # opaque: the socket rings on the skull front never ghost through
         if z < -3.0:
             return pick(SKIN, 0.4 + (z + 6.0) * -0.03)   # under the chin
         if z < -2.0:
             return pick(SKIN, 0.24)
-        return pick(BROWN, 0.08)                        # the underside of the skull is hair in shadow
+        # behind the jaw every hair shell's own underside covers this 1 texel lower; only the pulled-back styles'
+        # nape notch (a skin strip from the nape down to the neck) shows it: shadowed nape skin, never a black band
+        return pick(SKIN, 0.3 + clamp((z - 2.0) / 4.0) * 0.1)
     if f in ('west', 'east'):
         # one skull serves all seven hairstyles: skin wherever any pulled-back style leaves the side bare, grown by
         # 1 texel for the recess under the shell (seen past the hair edge at 3/4 angles), so no dark slit ever opens
@@ -806,7 +819,9 @@ def skull_mat(ctx):
             return mix(pick(SKIN, v), BLUSH, 0.35)
         return pick(SKIN, v)
     if f == 'back':
-        # a narrow nape (4-6 px) at the centre with ragged hair tips; hair shadow everywhere else
+        # a narrow nape (4-6 px) at the centre with ragged hair tips; hair shadow everywhere else (opaque: always
+        # behind a hair shell or seen through the nape window, so the face never ghosts through the back of the head)
+        _SOLID[0] = True
         ax = abs(x)
         top = -7.0 + ax * 0.9 + hash3(int(math.floor(x)), 7, 3, 11) * 1.3
         if ax < 3.0 and y > top:
@@ -893,40 +908,51 @@ def strands(u, along, ctx, seed, clump=2.5, sheen=None, light=0.9, soft=1.0):
 
 
 def curls(ctx, a, b, top=False):
-    """Corkscrew ringlets, hand-drawn on a 6-texel period: each ringlet is a 5-texel column of diagonal turns (a
-    2-px bright crest, one mid texel, a 2-px dark core) beside a 1-px dark gap; neighbouring ringlets twist the other
-    way (mirrored glyph) half a turn lower, so the cloud reads as big springy S/Z spirals even at full-body distance
-    (no mottled static).  Seen from above (top=True) the ringlets are round coil heads on a staggered grid.  Only four
-    values.  Returns a ramp value."""
+    """Corkscrew ringlets, drawn on an 8-texel period so each coil still reads at a 300-px close-up: every ringlet is
+    a 7-texel tube of diagonal turns (a 3-px bright crest, a 1-px black shadow tucked right under it, a 4-px dark
+    core; the tube's two edge columns stay dark so it reads round) beside a 1-px dark gap.  Each ringlet starts its
+    turns at its own height (random phase, never mirrored into a herringbone), so the cloud reads as separate springy
+    spirals, not orange-brown blotches or knitting.  Seen from above (top=True) the ringlets are round coil heads on a
+    staggered grid.  Three values only (no mid tone).  Returns a ramp value."""
     ai = int(math.floor(a + 1000.0)) - 1000
-    col = ai // 6
-    i = ai - col * 6
-    bi = int(math.floor(b + (col % 2) * 3 + 1000.0)) - 1000
+    col = ai // 8
+    i = ai - col * 8
     if top:
-        return CURL_V[CURL_TOP[bi % 6][i]] + face_light(ctx) * 0.6
-    if col % 2 and i < 5:
-        i = 4 - i                                       # mirrored neighbour: S next to Z
-    return CURL_V[CURL_G[bi % 6][i]] + face_light(ctx) * 0.6
+        bi = int(math.floor(b + (col % 2) * 4 + 1000.0)) - 1000
+        return CURL_V[CURL_TOP[bi % 8][i]] + face_light(ctx) * 0.6
+    bi = int(math.floor(b + hash3(col, 3, 5, 47) * 8.0 + 1000.0)) - 1000
+    return CURL_V[CURL_G[bi % 8][i]] + face_light(ctx) * 0.6
 
 
-CURL_G = [
-    # one turn of the corkscrew: the crest runs down left -> right, then the dark core under it; col 5 = gap
-    "HHMddk",
-    "MHHMdk",
-    "dMHHMk",
-    "ddMHHk",
-    "dddMHk",
-    "kdddMk",
-]
+def _curl_glyph():
+    rows = []
+    for j in range(8):
+        r = ''
+        for i in range(8):
+            if i == 7:
+                r += 'k'                                # the gap between two ringlets
+                continue
+            ph = (j - i * 0.6) % 8.0
+            ch = 'H' if ph < 3.6 else 'k' if ph < 4.6 else 'd'
+            if i in (0, 6):
+                ch = 'd' if ch == 'H' else 'k' if ch == 'k' else 'd'   # the tube turns away at its edges
+            r += ch
+        rows.append(r)
+    return rows
+
+
+CURL_G = _curl_glyph()
 CURL_TOP = [
-    "kdMMdk",
-    "dMHHMd",
-    "MHHHMd",
-    "MHHMdd",
-    "dMMddk",
-    "kddkkk",
+    "kddHHddk",
+    "dHHHHHdk",
+    "dHHHHHdk",
+    "HHHHHddk",
+    "dHHHddkk",
+    "kdddddkk",
+    "kkddkkkk",
+    "kkkkkkkk",
 ]
-CURL_V = {'k': 0.15, 'd': 0.27, 'M': 0.47, 'H': 0.68}
+CURL_V = {'k': 0.15, 'd': 0.3, 'M': 0.47, 'H': 0.7}
 
 
 def pulled(style):
@@ -1000,6 +1026,119 @@ def back_seed(st):
     return HAIRS.index(st) * 7 + 3
 
 
+def crown_field(st, x, z):
+    """Strand field on the crown (the top faces of both shell blocks, seen from above): (u, a) = the across-strand
+    coordinate (texels at the parting / whorl) and the along-strand coordinate.  The level lines of u ARE the strands:
+    they leave the parting sideways and turn toward the front / the back as they near those edges (a fan, never
+    parallel planks); paloma's sweep back to the braid roots, rocio's converge on the scrunchie, anasofia's on the
+    pigtail roots, mecha's radiate from a whorl on the crown, lola's sweep across from a side parting."""
+    if st in ('paloma', 'ofelia', 'anasofia'):
+        ax = abs(x + 0.25)                              # the parting: x -0.5 (16 wide) / 0 (odd widths)
+        if st in ('paloma', 'anasofia'):
+            # converging on the braid roots behind the ears / the pigtail roots on the sides
+            rx, rz, R = (9.5, 4.5, 9.0) if st == 'paloma' else (8.8, 1.0, 8.5)
+            u = math.atan2(z - rz, rx - ax) * R
+            ax = rx - math.hypot(rx - ax, z - rz)       # along: from the parting toward the root
+        else:
+            u = (z + 0.5) / (1.0 + 0.3 * ax)            # dead straight: falls sideways, fanning out
+        return u + (0.0 if x > -0.25 else 23.0), ax     # each side of the parting has its own strands
+    if st == 'rocio':
+        return x / (0.42 + 0.58 * clamp((7.5 - z) / 15.5)), z    # combed back onto the scrunchie
+    if st == 'lola':
+        dx = x - 3.5                                    # side parting
+        if dx < 0:
+            return (z + 1.0 + 0.4 * -dx) / (1.0 + 0.22 * -dx) + 23.0, -dx   # swept forward across to her right
+        return (z - 0.2 * dx) / (1.0 + 0.2 * dx), dx
+    dz = z - 2.5                                        # mecha: the bob falls every way from a whorl on the crown
+    return math.atan2(x, dz) * 4.2, math.hypot(x, dz)
+
+
+CROWN_C = {'rocio': 3.0, 'mecha': 2.5}                  # crown point (z) the sheen arc curves round
+
+
+_LINES = {}
+
+
+def strand_lines(seed):
+    """Positions (in u) of the strand borders on the crown: irregular spacing 2-3.5 texels."""
+    if seed not in _LINES:
+        pos, u, k = [], -60.0, 0
+        while u < 60.0:
+            pos.append(u)
+            u += 2.0 + hash3(k, seed, 0, 97) * 1.5
+            k += 1
+        _LINES[seed] = pos
+    return _LINES[seed]
+
+
+def crown_v(st, x, z, ctx, seed, lower=False):
+    """Hair seen from above.  The strand borders are drawn as clean 1-px dark lines along the level lines of the crown
+    field (each pixel tests its distance to the nearest border in pixels, so a curved line never breaks into
+    stair-step noise); every line is broken into 3-6 texel runs with offset gaps, so neighbouring borders never line
+    up into plank lines.  Between two borders the strand is shaded like a tube (lit just past the border, darker
+    toward the next).  One broken sheen arc runs round the crown point following the curve of the skull, and the
+    value falls off toward all four edges so the box corners round off.  The back block's top (lower=True, 1 texel
+    lower) runs on in the same field, a touch darker, with no lit edge."""
+    u, a = crown_field(st, x, z)
+    gx = (crown_field(st, x + 0.25, z)[0] - crown_field(st, x - 0.25, z)[0]) * 2.0
+    gz = (crown_field(st, x, z + 0.25)[0] - crown_field(st, x, z - 0.25)[0]) * 2.0
+    g = max(0.35, math.hypot(gx, gz))                   # u per pixel across the strands
+    L = strand_lines(seed)
+    k = bisect.bisect_right(L, u) - 1
+    u0, u1 = L[k], L[k + 1]
+    if (u1 - u0) / g < 1.9:                             # strands converging: every other border merges away
+        k -= k % 2
+        u0, u1 = L[k], L[k + 2]
+    elif (u1 - u0) / g > 3.6 + hash3(k, seed, 5, 67) * 1.6:
+        um = (u0 + u1) * 0.5 + (hash3(k, seed, 6, 59) - 0.5) * 0.4 * (u1 - u0)
+        k = k * 2 + 200                                 # fanning out: a new strand surfaces between the two
+        if u < um:
+            u1 = um
+        else:
+            u0, k = um, k + 1
+    p = (u - u0) / (u1 - u0)                            # 0..1 across this strand
+    v = 0.52 + (hash3(k, seed, 0, 71) - 0.5) * 0.04
+    if (u - u0) / g < 1.0:
+        v += 0.08                                       # the lit side of the strand, just past the border
+    v -= p * 0.06                                       # rolling into shadow toward the next border
+    for kk, uu in ((k, u0), (k + 1, u1)):
+        if abs(u - uu) / g < 0.5:
+            run = 3.0 + hash3(kk, seed, 1, 73) * 3.0
+            seg = int(math.floor((a + hash3(kk, seed, 4, 61) * 6.0) / run))
+            if hash3(kk, seg, seed, 79) < 0.78:
+                v = 0.52 - 0.17 + (hash3(kk, seg, seed, 81) - 0.5) * 0.04   # the dark border (broken)
+    cz = CROWN_C.get(st, 1.0)
+    q = math.hypot(x / 7.6, (z - cz) / 7.2) * 7.0      # ~texels out from the crown point
+    q0 = 3.9 + (hash3(k, seed, 2, 83) - 0.5) * 1.3
+    if z < cz + 0.5 and hash3(k, seed, 3, 89) < 0.8:
+        dq = abs(q - q0)
+        if dq < 0.6:
+            v += 0.17                                   # the broken sheen arc
+        elif dq < 1.5:
+            v += 0.06
+    e = ((x / 8.0) ** 4 + ((z + 0.5) / 7.5) ** 4) ** 0.25
+    v -= clamp((e - 0.66) / 0.34) ** 1.3 * 0.18         # rounds off toward every edge
+    if lower:
+        v -= 0.04
+    return v
+
+
+def under_v(st, x, z, c, ctx):
+    """Underside of the hair: every shell ends 1 texel below the skull (y -3), and whenever the head bows (face_wall,
+    cover_ears) this face turns toward a viewer behind her.  It continues the back face's strands (same columns, same
+    seed) rolling under toward the neck, ~0.1 darker, with no baked face light (the renderer darkens a bottom face)."""
+    yy = -3.0 + max(0.0, c.zb - z) * 0.6
+    if st == 'chela':
+        v = curls(ctx, x, yy + 3.0) - 0.12
+    else:
+        v = back_v(st, x, yy, ctx, back_seed(st), light=0.0) - 0.1
+        if pulled(st) and abs(x) < 4.2:
+            v -= 0.05                                   # the short wisps framing the nape notch
+    dn = max(abs(x) - 2.0, abs(z) - 2.0)
+    v -= clamp((3.0 - dn) / 3.0) * 0.06                 # occlusion beside the neck
+    return v
+
+
 @G
 def shell_mat(ctx):
     c = ctx.cube
@@ -1013,21 +1152,29 @@ def shell_mat(ctx):
     if f == 'front':
         # behind the fringe plane: only the top row and the hair-covered outer columns are painted, so no light
         # sliver can show between the plane and the shell when the head bows (the face stays open)
-        if getattr(c, 'part', '') != 'front':
-            return None
+        if getattr(c, 'part', '') != 'front' or st == 'chela':
+            return None                                 # (chela's fringe plane paints every texel it covers itself)
         prof = FRONT_PROFILE[st]
         jr = int(math.floor(y - c.a0[1]))
         if jr == 0 or (ctx.i in (0, w - 1) and jr < prof[ctx.i] - 1):
             return pick(P, 0.22)
         return None
     if f == 'bottom':
-        if z < -7.0 or (-7.01 < x < 7.01 and z < 6.0):
-            return None                                 # over the skull's own underside (never share its plane)
-        if abs(x) > 7.0 and not side_hair(st, y - 0.5, z):
+        # the underside of the hair, 1 texel below the skull's own underside (never its plane): hair, then the nape
+        # notch, then the neck when the head bows and you stand behind her
+        if z < -7.0:
             return None
-        if pulled(st) and abs(x) < 7.0:
-            return None                                 # the ragged nape edge is the back face's own tips
-        return pick(P, 0.12)
+        if abs(x) > 7.0:
+            if not side_hair(st, y - 0.5, z):
+                return None
+            return pick(P, under_v(st, x, z, c, ctx))   # under the side hair
+        if z < -2.5:
+            return None                                 # under the face: the skull's chin underside shows
+        if abs(x) < 2.1 and abs(z) < 2.1:
+            return None                                 # the neck stands here
+        if pulled(st) and z > 2.0 and abs(x) < 3.2 and bottom - 0.5 > nape_top(x) + 0.5:
+            return None                                 # nape notch: the bare nape runs on under the head to the neck
+        return pick(P, under_v(st, x, z, c, ctx))
     if f in ('west', 'east') and not side_hair(st, y, z):
         return None
     if f == 'back' and getattr(c, 'part', '') == 'front':
@@ -1064,27 +1211,19 @@ def shell_mat(ctx):
             v = curls(ctx, x, y)
         v -= clamp((y + 8.0) / 6.0) * 0.14
         return pick(P, v)
-    if f == 'top' and getattr(c, 'part', '') == 'back':
-        # the back block's top: continues the back face (same strands, top light cancelled) -> no lit lid edge
-        return pick(P, back_v(st, x, y - 0.5, ctx, back_seed(st), light=0.15) + 0.02)
     if f == 'top':
+        # the crown (front block top + the back block's top 1 lower, one field): strands radiating from the parting
         part = st in ('paloma', 'ofelia', 'anasofia')
-        if part and abs(x) < 0.5 and z < 1.5:
-            return mix(pick(P, 0.6), SCALP, 0.5)        # centre parting
+        if part and abs(x + 0.25) < 0.5 and z < 6.5:
+            return mix(pick(P, 0.4), SCALP, 0.32 - clamp((z - 1.0) / 5.0) * 0.16)   # centre parting
         if st == 'lola' and abs(x - 3.5) < 0.5 and z < 0.5:
-            return mix(pick(P, 0.6), SCALP, 0.45)       # side parting
-        if part:
-            v = strands(z, abs(x), ctx, seed, sheen=5.5, light=0.5, soft=0.55)
-        elif st == 'rocio':
-            v = strands(x, z, ctx, seed, sheen=-1.0, light=0.5, soft=0.6)
-        else:
-            ang = math.atan2(x, z - 2.0) * 6.0
-            v = strands(ang, math.hypot(x, z - 2.0), ctx, seed, sheen=5.0, light=0.5, soft=0.6)
-        rr = max(abs(x) / 8.0, abs(z + 0.5) / 7.5)
-        v -= clamp((rr - 0.75) / 0.25) * 0.08            # the crown rounds off toward the edges
-        if z > 1.0:
-            v -= 0.05                                   # toward the back step: turning away from the light
-        return pick(P, v + 0.06)
+            return mix(pick(P, 0.55), SCALP, 0.45)      # side parting
+        v = crown_v(st, x, z, ctx, HAIRS.index(st) * 7, lower=getattr(c, 'part', '') == 'back')
+        if part and abs(x + 0.25) < 1.5:
+            v -= 0.05                                   # the hair each side of the parting
+        if st == 'lola' and abs(x - 3.5) < 1.5 and z < 0.5:
+            v -= 0.05
+        return pick(P, v)
     if f in ('west', 'east'):
         if st in ('rocio', 'anasofia'):
             u = z + (y + 16.0) * 0.9                    # combed up and back
@@ -1343,10 +1482,10 @@ def ribbon_mat(ctx):
             if not far:
                 return None
             return pick(P, 0.5 - ly / h * 0.2)
+        # top / bottom: only over the columns whose first / last row is filled (as bow_mat does for the navy bow),
+        # so no lit lid floats above the cut upper-inner corner of the wing
         ii = ctx.i if c.side == 'r' else ctx.w - 1 - ctx.i
-        rows = BIG_LOOP if f == 'top' else BIG_LOOP[::-1]
-        col = [r[ii] for r in rows if r[ii] != '.']     # the loop's outline seen from above / below
-        if not col:
+        if (BIG_LOOP[0] if f == 'top' else BIG_LOOP[-1])[ii] == '.':
             return None
         return pick(P, 0.82 if f == 'top' else 0.2)
     if t == 'big_knot':
@@ -1362,13 +1501,13 @@ def ribbon_mat(ctx):
         if f not in ('west', 'east'):
             return None
         out = (f == 'east') == (A(ctx)[0] > 0)
+        if not out:
+            return None                                 # zero-thickness plane: only the face away from the head
         if ly > h - 1 and ctx.i == 1:
             return None                                 # notched ribbon end
         v = 0.66 - ly / h * 0.22 + face_light(ctx)
         if ctx.i == 0 or ly < 1.0:
             v -= 0.2                                    # folded edge in shadow
-        if not out:
-            v -= 0.25
         return pick(P, v)
     if t == 'band':
         # Ofelia's Alice band: deep maroon velvet lying across the crown 2 texels behind the hairline (its side
@@ -1532,9 +1671,9 @@ def build(show=None):
         x0, y0, z0 = frm
         w, h, d = size
         box('hair_' + style, frm, (w, h, int(split - z0)), mat=shell_mat, name='shell', style=style, pal=P,
-            part='front')
+            part='front', zb=z0 + d)
         box('hair_' + style, (x0 + 0.5, y0 + 1, split), (w - 1, h - 1, int(z0 + d - split)), mat=shell_mat,
-            name='shell', style=style, pal=P, part='back')
+            name='shell', style=style, pal=P, part='back', zb=z0 + d)
         if style in TIPS:
             # ragged strand tips: a zero-thickness plane 0.12 behind the back face, from its last row down 3
             box('hair_' + style, (x0 + 0.5, y0 + h - 1, z0 + d + 0.12), (w - 1, 4, 0), mat=hairbit_mat,
@@ -1547,7 +1686,7 @@ def build(show=None):
     # Paloma: centre parting, two long plaits over the shoulders with sky-blue bows
     P = BROWN
     bone('hair_paloma', HC, parent='head', mat=shell_mat)
-    shell('paloma', P, (-8, -20, -8), (16, 16, 15))
+    shell('paloma', P, (-8, -20, -8), (16, 17, 15))
     front('paloma', P, (-8, -20, -8.05), (16, 7, 0))
     for side, sx in (('right', -1), ('left', 1)):
         b1, b2 = f'paloma_braid_{side}', f'paloma_braid_{side}_tip'
@@ -1565,14 +1704,14 @@ def build(show=None):
     # Mecha: black bob, blunt bangs, curtains framing the cheeks
     P = BLACK
     bone('hair_mecha', HC, parent='head', mat=shell_mat)
-    shell('mecha', P, (-9, -20, -8), (18, 16, 16))
+    shell('mecha', P, (-9, -20, -8), (18, 17, 16))
     front('mecha', P, (-9, -20, -8.05), (18, 15, 0))
 
     # Rocio: combed back into a ponytail gathered at the back of the crown by a maroon scrunchie; the tail leaves it
     # at ~35 deg and falls in one tapered lock (4 -> 3 -> 2 wide, ragged tip) close to the back of the head
     P = BROWN_L
     bone('hair_rocio', HC, parent='head', mat=shell_mat)
-    shell('rocio', P, (-8, -20, -8), (16, 16, 15))
+    shell('rocio', P, (-8, -20, -8), (16, 17, 15))
     front('rocio', P, (-8, -20, -8.05), (16, 11, 0))
     box('hair_rocio', (-2, -19.6, 6.0), (4, 3, 2), mat=ribbon_mat, name='scrunchie', inflate=0.35, style='rocio',
         pal=MAROON)
@@ -1622,7 +1761,7 @@ def build(show=None):
     # Ana Sofia: centre parting, two high pigtails with red elastics
     P = BROWN
     bone('hair_anasofia', HC, parent='head', mat=shell_mat)
-    shell('anasofia', P, (-8, -20, -8), (16, 16, 15))
+    shell('anasofia', P, (-8, -20, -8), (16, 17, 15))
     front('anasofia', P, (-8, -20, -8.05), (16, 5, 0))
     for side, sx in (('right', -1), ('left', 1)):
         t1, t2 = f'anasofia_tail_{side}', f'anasofia_tail_{side}_tip'
@@ -1637,7 +1776,7 @@ def build(show=None):
     # Lola: black pixie cut, side-swept fringe, huge crimson satin bow on the top-left of the head
     P = BLACK
     bone('hair_lola', HC, parent='head', mat=shell_mat)
-    shell('lola', P, (-8, -20, -8), (16, 15, 15))
+    shell('lola', P, (-8, -20, -8), (16, 17, 15))
     front('lola', P, (-8, -20, -8.05), (16, 9, 0))
     bone('lola_bow', (4.5, -20.5, -8.0), parent='hair_lola', rot=(-6, 0, -10), mat=ribbon_mat)
     box('lola_bow', (3.0, -22.0, -9.6), (3, 3, 3), name='big_knot', style='lola', pal=BOWRED)

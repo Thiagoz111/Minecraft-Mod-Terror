@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "deadline:block/casa_ropero_abajo"
+  },
+  "facing=east": {
+   "model": "deadline:block/casa_ropero_abajo",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "deadline:block/casa_ropero_abajo",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "deadline:block/casa_ropero_abajo",
+   "y": 270
+  }
+ }
+}

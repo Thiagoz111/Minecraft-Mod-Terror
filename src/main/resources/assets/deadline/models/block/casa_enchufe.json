@@ -1,0 +1,77 @@
+{
+ "parent": "minecraft:block/block",
+ "textures": {
+  "t": "deadline:block/casa_enchufe",
+  "particle": "deadline:block/casa_enchufe"
+ },
+ "elements": [
+  {
+   "from": [
+    5.8,
+    3.0,
+    15.4
+   ],
+   "to": [
+    10.2,
+    8.4,
+    16.0
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      0.0,
+      0.0,
+      4.5,
+      5.5
+     ],
+     "texture": "#t"
+    },
+    "south": {
+     "uv": [
+      4.5,
+      0.0,
+      9.0,
+      5.5
+     ],
+     "texture": "#t"
+    },
+    "west": {
+     "uv": [
+      9.0,
+      0.0,
+      9.5,
+      5.5
+     ],
+     "texture": "#t"
+    },
+    "east": {
+     "uv": [
+      9.5,
+      0.0,
+      10.0,
+      5.5
+     ],
+     "texture": "#t"
+    },
+    "up": {
+     "uv": [
+      10.0,
+      0.0,
+      14.5,
+      0.5
+     ],
+     "texture": "#t"
+    },
+    "down": {
+     "uv": [
+      10.0,
+      0.5,
+      14.5,
+      1.0
+     ],
+     "texture": "#t"
+    }
+   }
+  }
+ ]
+}

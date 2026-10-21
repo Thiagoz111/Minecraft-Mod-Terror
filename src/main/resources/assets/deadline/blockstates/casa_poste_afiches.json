@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "deadline:block/casa_poste_afiches"
+  },
+  "facing=east": {
+   "model": "deadline:block/casa_poste_afiches",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "deadline:block/casa_poste_afiches",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "deadline:block/casa_poste_afiches",
+   "y": 270
+  }
+ }
+}

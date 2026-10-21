@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "deadline:block/casa_alfombra_punta_der"
+  },
+  "facing=east": {
+   "model": "deadline:block/casa_alfombra_punta_der",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "deadline:block/casa_alfombra_punta_der",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "deadline:block/casa_alfombra_punta_der",
+   "y": 270
+  }
+ }
+}

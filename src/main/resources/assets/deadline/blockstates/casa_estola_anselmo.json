@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "deadline:block/casa_estola_anselmo"
+  },
+  "facing=east": {
+   "model": "deadline:block/casa_estola_anselmo",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "deadline:block/casa_estola_anselmo",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "deadline:block/casa_estola_anselmo",
+   "y": 270
+  }
+ }
+}

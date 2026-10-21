@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "deadline:block/casa_canasta_lana"
+  },
+  "facing=east": {
+   "model": "deadline:block/casa_canasta_lana",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "deadline:block/casa_canasta_lana",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "deadline:block/casa_canasta_lana",
+   "y": 270
+  }
+ }
+}

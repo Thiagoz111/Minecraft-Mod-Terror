@@ -1376,7 +1376,8 @@ def p_ladrillo_salitre(v):
 
 # =============================================================================================== EXTERIOR: white render
 def render_idx(v, seed=0, rough=1.0):
-    return lime_idx(v, base=6, seed=seed, rough=rough)
+    """Painted lime render: the tonal clusters and stucco clumps of lime_idx at 0.6 contrast (soft at facade scale)."""
+    return 6.0 + (lime_idx(v, base=6, seed=seed, rough=rough) - 6) * 0.6
 
 
 @painter('revoque_blanco')
@@ -2110,8 +2111,9 @@ def p_parquet_gastado(v):
     X, Y = cv.X, cv.Y
     worn = rank(cblend(fbm(N, N, 8230, cells=2, octaves=3), fbm(N, N, 8231 + v, cells=2, octaves=3))) > 0.45
     cv.put(PARQ, idx)
-    widx = np.clip(idx - 1, 0, 6)
-    cv.put(PARQ_W, widx, worn & ((nb(lab, -1, 0) == lab) & (nb(lab, 0, -1) == lab)))
+    inner = worn & ((nb(lab, -1, 0) == lab) & (nb(lab, 0, -1) == lab))
+    cv.tint('#8a7458', np.where(inner, 0.38, 0))      # varnish gone: greyer, flatter, a bit lighter
+    cv.tint('#2a1c10', np.where(inner & (rank(fbm(N, N, 8232 + v, cells=8, octaves=1)) > 0.8), 0.25, 0))
     if v == 1:   # missing strip
         k = lab[13, 18]
         hole = lab == k
@@ -2439,16 +2441,34 @@ def p_asfalto(v):
 
 @painter('cesped_top')
 def p_cesped_top(v):
+    """Scruffy conurbano lawn seen from above: dense blades (lit tip, dark shadow beside), clover clumps, dry
+    straw-coloured patches, a few specks of earth. Variants differ inside, share the border."""
     cv = Cv()
     X, Y = cv.X, cv.Y
     f = cblend(fbm(N, N, 9200, cells=4, octaves=3), fbm(N, N, 9201 + v, cells=4, octaves=3))
-    idx = np.full((N, N), 4) + posterize(f, [(0.7, 1), (0.3, -1)])
-    for (x, y) in poisson(9202 + v, 70, 1.6):
-        idx[y, x] += 2
-        idx[(y + 1) % N, x] -= 1
+    idx = np.full((N, N), 3) + posterize(f, [(0.72, 1), (0.3, -1)])
+    rng = np.random.default_rng(9205 + v)
+    bd = border_dist(N, N)
+    pts = poisson(9202, 60, 1.9, keep=lambda x, y: bd[int(y), int(x)] < 3) + \
+          poisson(9206 + v, 110, 1.9, keep=lambda x, y: bd[int(y), int(x)] >= 3)
+    for k, (x, y) in enumerate(pts):
+        L = 2 + (k % 3 == 0)
+        lean = (k % 4) - 1.5
+        for j in range(L):
+            xx = int(round(x + lean * j * 0.4)) % N
+            yy = (y - j) % N
+            idx[yy, xx] = 6 if j == L - 1 else 5
+        idx[y % N, (x + 1) % N] = min(idx[y % N, (x + 1) % N], 1)
     cv.put(GRASS, idx)
-    bare = rank(fbm(N, N, 9203 + v, cells=2, octaves=2)) > 0.86
-    cv.put(EARTH, np.full((N, N), 3), bare & (fbm(N, N, 9204, cells=16, octaves=1) > 0.4))
+    dry = rank(cblend(fbm(N, N, 9210, cells=2, octaves=2), fbm(N, N, 9211 + v, cells=2, octaves=2))) > 0.72
+    cv.tint('#8a8648', np.where(dry, 0.30, 0) * (idx >= 4))
+    cv.tint('#4a4a2a', np.where(dry, 0.15, 0) * (idx < 4))
+    for (x, y) in poisson(9212 + v, 3, 9, keep=lambda x, y: bd[int(y), int(x)] >= 4):
+        clov = ((X - x) ** 2 + (Y - y) ** 2 <= 4.5) & ((X + Y) % 2 == 0)
+        cv.put(GRASS, np.full((N, N), 2), clov)
+        cv.put(GRASS, np.full((N, N), 4), clov & (Y < y))
+    for (x, y) in poisson(9213 + v, 5, 6, keep=lambda x, y: bd[int(y), int(x)] >= 2):
+        cv.put(EARTH, np.full((N, N), 3), (X == x) & (Y == y))
     return cv.out()
 
 
@@ -2488,6 +2508,7 @@ def p_cielorraso(v):
     cobweb thread shadow, v3 nicotine haze."""
     cv = Cv()
     idx = lime_idx(v + 90, base=6, seed=9400, rough=0.25)
+    idx = 6.0 + (idx - 6) * 0.42           # látex over smooth plaster: the clusters stay, the contrast goes
     X, Y = cv.X, cv.Y
     if v == 1:
         idx, _ = crack_line(idx, [(2, 15), (11, 16), (20, 14), (30, 16)], 9401, amp=1.5, dark=2)
@@ -2606,20 +2627,27 @@ PAINTERS['tejas_eo'] = lambda v: teja_tex(v, 'x')
 
 @painter('tejas_canto')
 def p_tejas_canto(v):
-    """Side of the roof tiles (gable edges, stair risers): the tile ends on their mortar bed and the wooden batten."""
+    """Side of the tile cubes (stair risers, slab edges, gable ends of a cube roof): the overlapping rows of tiles
+    seen edge-on, two rows per block: the lit lip with the roll humps, the tile body under it, the black gap and
+    the next tile's head."""
     cv = Cv()
     X, Y = cv.X, cv.Y
     ly = Y % 16
     lx = X % 8
-    prof = np.array([0, 1, 1, 2, 2, 1, 1, 0])
-    tile = ly <= 3 + (prof[lx] > 1)
-    idx = np.full((N, N), 5) + np.where(ly == 0, 2, 0) - np.where(ly >= 3, 2, 0)
-    cv.put(TEJA, idx, tile)
-    bed = (ly > 3 + (prof[lx] > 1)) & (ly <= 10)
-    cv.put(MORTAR, np.full((N, N), 3) + posterize(fbm(N, N, 9700, cells=8, octaves=1), [(0.6, 1)]) - (ly == 10), bed)
-    bat = ly > 10
-    cv.put(PINO, np.full((N, N), 3) + wood_grain(N, N, 9701, 'x', period=True) - (ly == 15), bat)
-    cv.tint('#000000', np.where(ly == 4 + (prof[lx] > 1), 0.4, 0))
+    hump = (lx == 1) | (lx == 2) | (lx == 3)
+    rc = np.random.default_rng(9700)
+    tone = rc.choice([-1, 0, 0, 1], 8)[(X // 8) + 4 * (Y // 16)]
+    idx = np.full((N, N), 4) + tone
+    idx = np.where(ly == 0, 7 + hump, idx)                       # lip
+    idx = np.where(ly == 1, 6 + hump, idx)
+    idx = np.where((ly >= 2) & (ly <= 9), 4 + tone - (ly >= 7) + np.where(hump, 1, 0) - (lx == 0) * 2, idx)
+    idx = np.where((ly >= 10) & (ly <= 12), np.where(hump & (ly == 10), 3, 1), idx)   # the dark gap under the row
+    idx = np.where(ly >= 13, 0, idx)
+    idx = np.where((ly == 15) & ~hump, 2, idx)                   # the head of the tile below catches a little light
+    cv.put(TEJA, idx)
+    mo = (ly >= 9) & (ly <= 12) & (fbm(N, N, 9701 + v, cells=8, octaves=1) > 0.62)
+    cv.put(MOSS, np.full((N, N), 1), mo)
+    cv.put(MORTAR, np.full((N, N), 3), (ly >= 11) & (ly <= 13) & (fbm(N, N, 9702 + v, cells=16, octaves=1) > 0.72))
     return cv.out()
 
 
@@ -2672,22 +2700,23 @@ def mould_specks(cv, seed, count, keep=None, spread=2.2):
 
 @painter('revoque_chorreado')
 def p_revoque_chorreado(v):
-    """Render under a leaking gutter / window sill: dark grey-green streaks running down from the top."""
+    """Render under a leaking gutter / window sill: soft grey-green run-off stains hanging from the top edge, each a
+    bundle of narrow vertical streaks that fade and fray downwards, a darker damp band right under the eave."""
     cv = Cv()
     idx = render_idx(v + 14, seed=200)
     cv.put(RENDER_W, idx)
     X, Y = cv.X, cv.Y
-    prof = 0.55 + 0.45 * np.sin((X + 3 + v * 11) / 32 * 2 * math.pi * 2)
-    f = (prof * (22 + v * 4) - Y) / 10.0 + (fbm(N, N, 6410 + v, cells=4, octaves=3) - 0.5) * 0.6
-    st = f > 0
-    cv.tint('#3e4234', np.where(st, np.clip(0.25 + f * 0.25, 0, 0.6), 0))
-    rng = np.random.default_rng(6411 + v)
-    for x in rng.choice(np.arange(1, 31), 9, replace=False):
-        L = int(prof[0, x] * (22 + v * 4) + rng.integers(2, 10))
-        m = (X == x) & (Y < min(32, L)) & (fbm(N, N, 6412 + int(x), cells=8, octaves=1) > 0.2)
-        cv.tint('#2e3226', np.where(m, 0.35, 0))
+    n = fbm(N, N, 6410 + v, cells=2, octaves=3, ax=6, ay=0.35)          # vertically stretched, periodic in x
+    reach = 8 + 22 * np.clip((n - 0.25) * 1.8, 0, 1)                      # how far each column's stain runs down
+    fray = fbm(N, N, 6420 + v, cells=4, octaves=2, ax=4, ay=1)
+    t = np.clip((reach - Y) / reach, 0, 1) ** 1.3
+    t = t * (0.55 + 0.45 * fray)
+    cv.tint('#4a4e40', t * 0.55)
+    edge = (np.abs(Y - reach) < 1.0) & (Y > 4)
+    cv.tint('#3a3e30', np.where(edge, 0.18, 0))
+    cv.tint('#3e4234', np.clip((6 - Y) / 6.0, 0, 1) * 0.35)
     if v == 1:
-        mould_specks(cv, 6415, 3, keep=lambda x, y: y < 14)
+        mould_specks(cv, 6415, 3, keep=lambda x, y: y < 12)
     return cv.out()
 
 
@@ -2769,3 +2798,2093 @@ TEJAS_EO = Cube('casa_tejas_eo', 'Tejas francesas (faldón E/O)', 'French clay r
 Stairs('casa_tejas_eo_escalera', 'Techo de tejas (escalera, faldón E/O)', 'Tiled roof stairs (E/W slope)', of=TEJAS_EO, kit=KIT, sound='ceramic')
 Slab('casa_tejas_eo_losa', 'Techo de tejas (losa, E/O)', 'Tiled roof slab (E/W)', of=TEJAS_EO, kit=KIT, sound='ceramic')
 cube('machimbre', 'Machimbre del alero', 'Eave soffit boards', 'machimbre', 2, sound='wood')
+
+
+# =============================================================================================== FURNITURE HELPER
+def F(key, es, en, parts, **kw):
+    """Register an element-model piece of this kit (key gets the 'casa_' prefix)."""
+    kw.setdefault('kit', KIT)
+    kw.setdefault('sound', 'wood')
+    return Furniture('casa_' + key, es, en, parts=parts, **kw)
+
+
+# =============================================================================================== ROOF SYSTEM
+# Smooth 45-degree roof made of rotated tile slabs (Minecraft allows +-45 degree element rotations), so the chalet
+# gets a real pitched roof instead of vanilla stair steps. All pieces face NORTH = the downhill side; the slope rises
+# towards +z (the back). One block of slope = 16 up + 16 back. The tile surface passes through the block's lower
+# front corner (z=0, y=0) and its upper back corner (z=16, y=16), so pieces placed diagonally (one up, one back)
+# continue each other. The roof's EAVE piece sits directly ON TOP of the facade's top wall block (its slope starts at
+# the outer top edge of the wall and overhangs 4/16 with fascia, soffit and the gutter). A 15-deep house gets its
+# ridge piece (peak in the middle of the block) at the 8th row. Gable ends: '_izq'/'_der' pieces fill the wall
+# triangle under the slope (wall material sampled in block space so it continues the gable's cubes) and add the
+# verge overhang on the OUTER side: _izq = the gable is on the LEFT of a viewer standing downhill looking at the
+# roof (authoring +x), _der = on the right.
+R2 = math.sqrt(2.0)
+ROOF_T = 2.0                  # tile layer thickness (perpendicular to the slope)
+TILE_ROWS = 45                # texel rows of tile field per block along the slope (16*sqrt2 units)
+_TMAP = {}
+
+
+def teja_map(kind='normal'):
+    """The tile field of one block of slope: (45 rows along the slope, 32 cols) RGBA. Row 0 = eave side.
+    Marseille tiles in straight columns (8 px wide), 3 rows per block (15 px): lip highlight at the bottom of each
+    tile with the roll humps, interlock groove, two channels and a rib, the dark crevice under the row above."""
+    if kind in _TMAP:
+        return _TMAP[kind]
+    W_, H_ = 32, TILE_ROWS
+    Y, X = np.mgrid[0:H_, 0:W_]
+    row, lu = Y // 15, Y % 15
+    col, lx = X // 8, X % 8
+    rc = np.random.default_rng(9900 + len(kind))
+    tone = rc.choice([-2, -1, -1, 0, 0, 0, 1, 1], 12)
+    t = tone[(row % 3) * 4 + col]
+    prof = np.array([-3, 2, 1, -1, -1, 1, 0, -1])
+    idx = 5 + t + prof[lx]
+    mott = vnoise(W_, H_, 4, 6, 9910) * 0.6 + vnoise(W_, H_, 8, 9, 9911) * 0.4
+    idx = idx + np.where(mott > 0.68, 1, 0) - np.where(mott < 0.3, 1, 0)
+    idx = np.where(lu == 0, 7 + (t > 0) + (lx == 1), idx)            # the lip catching light
+    idx = np.where(lu == 1, idx + 1, idx)
+    idx = np.where((lu >= 10) & (lu <= 11), idx - 1, idx)
+    idx = np.where(lu == 12, idx - 2, idx)
+    crev = lu >= 13
+    idx = np.where(crev, np.where(lu == 13, 1, 0), idx)
+    hump = (lu == 14) & ((lx == 1) | (lx == 2))                       # the roll of the row above dips into the gap
+    idx = np.where(hump, 5, idx)
+    cv = Cv(W_, H_)
+    cv.put(TEJA, idx)
+    # grime in the interlock grooves, rain streaks running down the slope (towards row 0)
+    cv.tint('#1e140c', np.where((lx == 0) & ~crev & (vnoise(W_, H_, 8, 15, 9912) > 0.45), 0.35, 0))
+    streak = (vnoise(W_, H_, 16, 3, 9913) > 0.72) & ~crev
+    cv.tint('#3a2a20', np.where(streak, 0.18, 0))
+    # pale efflorescence bloom on some tiles + grey-yellow lichen rosettes on the flat parts
+    cv.tint('#9a8a78', np.where((vnoise(W_, H_, 4, 3, 9914) > 0.66) & ~crev, 0.16, 0))
+    nlich = {'normal': 4, 'musgo': 12, 'roto': 5}[kind]
+    rng = np.random.default_rng(9920 + nlich)
+    for k in range(nlich):
+        cx_, cy_ = int(rng.integers(0, W_)), int(rng.integers(0, H_))
+        if cy_ % 15 >= 12:
+            continue
+        for j in range(int(rng.integers(4, 9))):
+            px_, py_ = int(round(cx_ + rng.normal(0, 1.1))), int(round(cy_ + rng.normal(0, 0.8)))
+            if 0 <= py_ < H_ and py_ % 15 < 13:
+                cv.put(LICHEN, np.full((H_, W_), 1 + (j % 3)), (X == px_ % W_) & (Y == py_))
+    if kind == 'musgo':   # moss cushions in the crevices and grooves, black streaks
+        mo = (crev | (lx == 0)) & (vnoise(W_, H_, 8, 9, 9930) > 0.42)
+        cv.put(MOSS, np.full((H_, W_), 2) + (vnoise(W_, H_, 16, 15, 9931) > 0.6) + (lu == 14), mo)
+        cv.put(MOSS, np.full((H_, W_), 3), (lu == 0) & (vnoise(W_, H_, 8, 3, 9932) > 0.6))
+        cv.tint('#16120e', np.where((vnoise(W_, H_, 16, 2, 9933) > 0.7) & ~crev, 0.3, 0))
+    if kind == 'roto':
+        # a missing tile (col 2, row 1): black felt and the pine batten, the head of the tile below
+        hole = (col == 2) & (row == 1) & (lu <= 13)
+        felt = Ramp('#0b0a09', '#141210', '#1d1a17', '#26221e')
+        cv.put(felt, np.full((H_, W_), 1) + ((X + Y) % 4 == 0) - (lu == 0), hole)
+        cv.put(PINO, np.full((H_, W_), 3) + (lu == 6) - (lu == 8), hole & (lu >= 6) & (lu <= 8))
+        cv.put(TEJA, np.full((H_, W_), 3), hole & (lu <= 2) & (lx >= 1) & (lx <= 6))     # head of the tile below
+        # a cracked tile next to it and a shard lying in the gap
+        cm = path_mask(wander([(4, 17), (6, 22), (5, 26)], 9940, amp=0.8), W_, H_, wrap=False)
+        cv.put(TEJA, np.full((H_, W_), 1), cm)
+        cv.put(TEJA, np.full((H_, W_), 6), (X == 19) & (Y >= 21) & (Y <= 22))
+    _TMAP[kind] = cv.out()
+    return _TMAP[kind]
+
+
+def slope_box(za, ya, zb, yb, x0=0.0, x1=16.0, dy0=0.0, dy1=ROOF_T, kind='normal', mat='tile', mirror=False, name=None):
+    """A slab along the 45-degree line from (za, ya) to (zb, yb) (za < zb), occupying depths dy0..dy1 below the line.
+    mat 'tile' = the roof (tile field on top), 'render' = plastered verge band, 'wood' = barge board."""
+    rising = yb > ya
+    zm, ym = (za + zb) / 2.0, (ya + yb) / 2.0
+    L = R2 * (zb - za)
+    ang = -45 if rising else 45
+    z1 = zm - L / 2
+    if rising:
+        u_z1, sgn = (za + ya) / R2, 1.0
+    else:
+        u_z1, sgn = ((16 - za) + ya) / R2, -1.0
+    tm = teja_map(kind)
+
+    def along(z):
+        return u_z1 + sgn * (z - z1)
+
+    def p(face, w, h, part):
+        x, y, z = face_coords(part, face, w, h)
+        xx = (16 - x) if mirror else x
+        cx = np.floor(xx * 2).astype(int) % 32
+        cv = Cv(w, h)
+        if mat == 'tile' and face == 'up':
+            r = np.floor(along(z) * TILE_ROWS / (16 * R2)).astype(int) % TILE_ROWS
+            return tm[r, cx]
+        if mat == 'tile' and face in ('west', 'east'):
+            r = np.floor(along(z) * TILE_ROWS / (16 * R2)).astype(int) % TILE_ROWS
+            dep = np.floor((ym - dy0 - y) * 2).astype(int)
+            lu = r % 15
+            idx = np.where(dep <= 0, 6, np.where(dep >= 3, 1, 3)) + 0
+            idx = np.where(lu >= 13, np.minimum(idx, 1), idx)
+            idx = np.where(lu == 0, idx + 1, idx)
+            cv.put(TEJA, idx)
+            return cv.out()
+        if mat == 'tile' and face == 'down':
+            g = wood_grain(w, h, 9950, 'y', period=False, pores=0.02)
+            idx = 3 + g
+            idx = np.where(cx % 8 == 0, 0, idx)
+            idx = np.where(cx % 8 == 1, idx + 1, idx)
+            cv.put(PINO, idx - 1)
+            cv.tint('#120c08', np.where(vnoise(w, h, max(1, w // 8), max(1, h // 8), 9951) > 0.6, 0.35, 0.1))
+            return cv.out()
+        if mat == 'tile':   # the lip / end faces: tile noses with the roll humps
+            dep = np.floor((ym - dy0 - y) * 2).astype(int) if face in ('north', 'south') else np.zeros((h, w), int)
+            lx = cx % 8
+            idx = np.where(dep <= 0, 7, np.where(dep == 1, 6, np.where(dep == 2, 4, 1)))
+            idx = idx + np.where((lx == 1) | (lx == 2), 1, 0) - np.where(lx == 0, 3, 0)
+            cv.put(TEJA, idx)
+            return cv.out()
+        if mat == 'render':
+            idx = render_idx(0, seed=200)
+            i, j = aligned_uv(part, face, w, h)
+            cv.put(RENDER_W, idx[j, i] - (face == 'down'))
+            if face in ('west', 'east', 'north', 'south'):
+                dep = (ym - y)
+                cv.tint('#24261c', np.where(dep > dy1 - 0.8, 0.25, 0))
+            return cv.out()
+        return pp_paint(WOOD_D, 3, seed=9960, chip=0.15)(face, w, h, part)
+
+    frm = (x0, ym - dy1, zm - L / 2)
+    to = (x1, ym - dy0, zm + L / 2)
+    return P(frm, to, p, rot=('x', ang, (8.0, ym, zm)), name=name or 'slope')
+
+
+def gable_fill(profile, wall='ladrillo', x0=0.0, x1=16.0):
+    """Wall triangle under the slope: one 1-unit column per z step, top = profile(k) (block space texture)."""
+    tex = T(wall, 0)
+    parts = []
+    for k in range(16):
+        top = profile(k)
+        if top <= 0.05:
+            continue
+        parts.append(P((x0, 0, k), (x1, top, k + 1), aligned(tex), faces=('west', 'east'), name='gable'))
+    return parts
+
+
+def gutter_parts(x0=0.0, x1=16.0, cap_l=False, cap_r=False):
+    """Half-round galvanised gutter hung on the fascia, in front of the eave (block-local coordinates of the eave
+    piece: the gutter hangs in the air block in front of the wall's top block). Its bottom is at y=-10.2, its axis at
+    z=-6.7 (local z 9.3 of that front block: the downpipe's swan neck starts there)."""
+    gz = pp_fn(gutter_paint)
+    parts = [
+        P((x0, -10.2, -8.8), (x1, -9.4, -4.8), gz, name='g_bottom'),
+        P((x0, -9.6, -9.4), (x1, -7.2, -8.8), gz, name='g_front'),
+        P((x0, -7.4, -9.7), (x1, -6.6, -8.7), gz, name='g_bead'),
+        P((x0, -9.6, -4.8), (x1, -6.2, -4.2), gz, name='g_back'),
+        PL((x0, -9.35, -8.8), (x1, -9.35, -4.8), pp_fn(gutter_muck), name='g_muck'),
+    ]
+    it = pp_iron(seed=9970, rust=0.45)
+    for xs in (3.0, 11.0):
+        if x0 <= xs < x1:
+            parts += [P((xs, -10.5, -9.0), (xs + 0.7, -10.2, -4.4), it, name='strap_b'),
+                      P((xs, -10.2, -9.9), (xs + 0.7, -6.6, -9.4), it, name='strap_f'),
+                      P((xs, -6.6, -9.9), (xs + 0.7, -6.2, -8.6), it, name='strap_hook')]
+    for on, xc in ((cap_l, x1 - 0.5), (cap_r, x0)):
+        if on:
+            parts.append(P((xc, -10.2, -9.4), (xc + 0.5, -6.6, -4.2), gz, name='g_cap'))
+    return parts
+
+
+def gutter_paint(face, w, h, part, cv):
+    """Old galvanised sheet: spangle mottle, dull grey, rust along seams and the bottom, a moss tuft on the bead."""
+    x, y, z = face_coords(part, face, w, h)
+    k = fkey(part, face)
+    n = vnoise(w, h, max(1, w // 4), max(1, h // 2), k) if w > 1 and h > 1 else np.full((h, w), 0.5)
+    idx = np.full((h, w), 4) + np.where(n > 0.65, 1, 0) - np.where(n < 0.3, 1, 0)
+    if face in ('north', 'south') and h > 2:
+        idx = np.where(np.arange(h)[:, None] == 0, idx + 2, idx)
+    if face == 'down':
+        idx = idx - 1
+    cv.put(GALV, idx)
+    seam = (np.floor(x * 2).astype(int) % 32 == 0) & (w > 2)
+    rs = seam | ((face == 'down') & (vnoise(w, h, max(1, w // 3), max(1, h // 2), k + 1) > 0.62))
+    rs |= (vnoise(w, h, max(1, w // 4), max(1, h), k + 2) > 0.88)
+    cv.put(RUST, np.full((h, w), 2) + (vnoise(w, h, max(1, w // 2), max(1, h), k + 3) > 0.6), rs)
+    if face == 'down':   # rust drips hanging under the seams
+        cv.put(RUST, np.full((h, w), 1), seam)
+
+
+def gutter_muck(face, w, h, part, cv):
+    """What sits in a gutter nobody cleaned in years: black silt, dead leaves, a tennis ball's worth of moss."""
+    x, y, z = face_coords(part, face, w, h)
+    n = vnoise(w, h, max(1, w // 3), max(1, h // 2), 9975)
+    cv.put(EARTH, np.full((h, w), 1) + (n > 0.5))
+    lv = vnoise(w, h, max(1, w // 2), max(1, h), 9976) > 0.62
+    cv.put(Ramp('#3a2410', '#5a3a18', '#7a5426'), np.full((h, w), 1) + (n > 0.7), lv)
+    cv.put(MOSS, np.full((h, w), 2), vnoise(w, h, max(1, w // 4), max(1, h // 2), 9977) > 0.74)
+
+
+def fascia_soffit(x0=0.0, x1=16.0):
+    wood = pp_paint(WOOD_D, 3, seed=9980, chip=0.18, along='x')
+    sof = pp_fn(lambda face, w, h, part, cv: cv.put(PINO, (3 + wood_grain(w, h, 9981, 'y', period=False) -
+                                                          (np.floor(face_coords(part, face, w, h)[0] * 2).astype(int) % 8 == 0) * 3)
+                                                         if face == 'down' else np.full((h, w), 2)))
+    return [P((x0, -7.6, -4.6), (x1, -3.4, -3.6), wood, name='fascia'),
+            P((x0, -7.4, -3.6), (x1, -6.8, 0.0), sof, name='soffit')]
+
+
+def roof_parts(kind='normal'):
+    return [slope_box(0, 0, 16, 16, kind=kind)]
+
+
+def eave_parts(kind='normal', x0=0.0, x1=16.0):
+    return [slope_box(-4, -4, 16, 16, x0=x0, x1=x1, kind=kind, name='slope_eave')] + fascia_soffit(x0, x1) + gutter_parts(x0, x1)
+
+
+def ridge_cap_parts(y0, x0=0.0, x1=16.0, end=None):
+    """Half-round ridge tiles on a mortar bed, with the overlapping socket every 8 units. y0 = the peak line."""
+    cap = pp_fn(ridge_paint)
+    mort = pp_fn(lambda face, w, h, part, cv: cv.put(MORTAR, np.full((h, w), 4) + (vnoise(w, h, max(1, w // 2), max(1, h // 2), 9990) > 0.55)
+                                                    - (vnoise(w, h, max(1, w // 3), max(1, h), 9991) > 0.75) * 2))
+    parts = [P((x0, y0 - 3.2, 5.2), (x1, y0 + 0.4, 10.8), mort, name='mortar'),
+             P((x0, y0 - 0.4, 4.6), (x1, y0 + 1.6, 11.4), cap, name='cap_lo'),
+             P((x0, y0 + 1.6, 5.4), (x1, y0 + 2.8, 10.6), cap, name='cap_mid'),
+             P((x0, y0 + 2.8, 6.6), (x1, y0 + 3.4, 9.4), cap, name='cap_top')]
+    if end is not None:   # the open end of the last ridge tile, filled with mortar
+        parts.append(P((end - 0.3, y0 - 0.2, 5.0), (end + 0.3, y0 + 2.6, 11.0), mort, name='cap_end'))
+    return parts
+
+
+def ridge_paint(face, w, h, part, cv):
+    x, y, z = face_coords(part, face, w, h)
+    xi = np.floor(x * 2).astype(int) % 16
+    idx = np.full((h, w), 5) + np.where(xi < 2, 2, 0) - np.where(xi == 15, 3, 0) - np.where(xi == 14, 1, 0)
+    n = vnoise(w, h, max(1, w // 4), max(1, h // 2) if h > 1 else 1, fkey(part, face))
+    idx = idx + np.where(n > 0.66, 1, 0) - np.where(n < 0.3, 1, 0)
+    if face == 'up':
+        idx = idx + 1
+    if face == 'down':
+        idx = idx - 2
+    cv.put(TEJA, idx)
+    cv.put(LICHEN, np.full((h, w), 2), (vnoise(w, h, max(1, w // 2), max(1, h // 2) if h > 1 else 1, 9995) > 0.8))
+
+
+def ridge_parts(kind='normal'):
+    return [slope_box(0, 0, 8, 8, kind=kind, name='slope_f'), slope_box(8, 8, 16, 0, kind=kind, mirror=True, name='slope_b')] + ridge_cap_parts(8.0)
+
+
+def gable_side(side, wall):
+    """x-range of the verge overhang + the outer cap position for an izq/der gable piece."""
+    if side == 'izq':
+        return (0.0, 17.5), 17.5
+    return (-1.5, 16.0), -1.5
+
+
+def verge_band(za, ya, zb, yb, xr, side):
+    """Plastered verge (bargeboard of render) under the overhanging tiles at a gable."""
+    x0, x1 = (16.0, 17.3) if side == 'izq' else (-1.3, 0.0)
+    return slope_box(za, ya, zb, yb, x0=x0, x1=x1, dy0=ROOF_T, dy1=ROOF_T + 2.6, mat='render', name='verge')
+
+
+def hastial_parts(side, wall, piece):
+    (vx0, vx1), cap = gable_side(side, wall)
+    if piece == 'techo':
+        parts = [slope_box(0, 0, 16, 16, x0=vx0, x1=vx1), verge_band(0, 0, 16, 16, None, side)]
+        parts += gable_fill(lambda k: k - 0.5, wall)
+    elif piece == 'alero':
+        parts = [slope_box(-4, -4, 16, 16, x0=vx0, x1=vx1, name='slope_eave'), verge_band(-4, -4, 16, 16, None, side)]
+        parts += fascia_soffit()
+        parts += gutter_parts(cap_l=(side == 'izq'), cap_r=(side == 'der'))
+        parts += gable_fill(lambda k: k - 0.5, wall)
+    else:
+        parts = [slope_box(0, 0, 8, 8, x0=vx0, x1=vx1, name='slope_f'),
+                 slope_box(8, 8, 16, 0, x0=vx0, x1=vx1, mirror=True, name='slope_b'),
+                 verge_band(0, 0, 8, 8, None, side), verge_band(8, 8, 16, 0, None, side)]
+        parts += ridge_cap_parts(8.0, x0=vx0, x1=vx1, end=cap)
+        parts += gable_fill(lambda k: min(k, 15 - k) - 0.5, wall)
+    return parts
+
+
+def downpipe_ring(y, rust=True):
+    it = pp_iron(seed=9996, rust=0.5 if rust else 0.1)
+    return [P((6.1, y, 11.7), (9.9, y + 0.8, 15.3), it, name='ring'), P((7.6, y, 15.3), (8.4, y + 0.8, 16.0), it, name='tab')]
+
+
+def pipe_seg(y0, y1, cz=13.5, r=1.5):
+    gz = pp_fn(gutter_paint)
+    return [P((8 - r * 0.8, y0, cz - r), (8 + r * 0.8, y1, cz + r), gz, name='pipe_a'),
+            P((8 - r, y0, cz - r * 0.8), (8 + r, y1, cz + r * 0.8), gz, name='pipe_b')]
+
+
+def downpipe_parts(piece):
+    """Galvanised downpipe hugging the wall behind (z=16), axis at z=13.5. 'codo' = the swan neck that sits under
+    the gutter (in the air block in front of the wall's top block, i.e. directly below the eave's overhang) and
+    brings the outlet (axis z=9.3) back to the wall; 'pie' = the shoe at the bottom that kicks the water out onto
+    a small cement splash block."""
+    gz = pp_fn(gutter_paint)
+    if piece == 'recta':
+        return pipe_seg(0, 16) + downpipe_ring(9.0) + [P((6.3, 15.0, 11.9), (9.7, 16.0, 15.1), gz, name='socket')]
+    if piece == 'codo':
+        L = 4.2 * R2 + 2.4
+        return ([P((6.6, 4.4, 7.9), (9.4, 6.0, 10.7), gz, name='outlet'),
+                 P((6.2, 5.8, 7.5), (9.8, 6.3, 11.1), gz, name='funnel'),
+                 P((6.8, 2.5 - 1.2, 11.4 - L / 2), (9.2, 2.5 + 1.2, 11.4 + L / 2), gz, rot=('x', 45, (8.0, 2.5, 11.4)), name='neck_a'),
+                 P((6.5, 2.5 - 0.9, 11.4 - L / 2 + 0.3), (9.5, 2.5 + 0.9, 11.4 + L / 2 - 0.3), gz, rot=('x', 45, (8.0, 2.5, 11.4)), name='neck_b')]
+                + pipe_seg(0, 1.2) + downpipe_ring(0.2))
+    # pie
+    L = 5.0
+    return (pipe_seg(4.0, 16) + downpipe_ring(11.0) +
+            [P((6.8, 2.2 - 1.2, 11.0 - L / 2), (9.2, 2.2 + 1.2, 11.0 + L / 2), gz, rot=('x', -45, (8.0, 2.2, 11.0)), name='shoe_a'),
+             P((6.5, 2.2 - 0.9, 11.0 - L / 2 + 0.2), (9.5, 2.2 + 0.9, 11.0 + L / 2 - 0.2), gz, rot=('x', -45, (8.0, 2.2, 11.0)), name='shoe_b'),
+             P((4.5, 0, 2.5), (11.5, 0.9, 13.0), pp_fn(splash_paint), name='splash')])
+
+
+def splash_paint(face, w, h, part, cv):
+    x, y, z = face_coords(part, face, w, h)
+    idx = np.full((h, w), 4) + (vnoise(w, h, max(1, w // 3), max(1, h // 3), 9997) > 0.6) - (face != 'up')
+    cv.put(CEMENT, idx)
+    if face == 'up':   # the dark wet tongue where the water lands, moss at the edge
+        wet = ((x - 8) ** 2 / 9.0 + (z - 7.5) ** 2 / 20.0) < 1
+        cv.tint('#141612', np.where(wet, 0.45, 0))
+        cv.put(MOSS, np.full((h, w), 2), wet & ~erode(wet, 1, False) & (vnoise(w, h, max(1, w // 2), max(1, h // 2), 9998) > 0.4))
+
+
+F('techo', 'Techo de tejas (faldón)', 'Tiled roof slope', roof_parts(), collision='full', sound='ceramic', render='solid')
+F('techo_musgo', 'Techo de tejas con musgo', 'Mossy tiled roof slope', roof_parts('musgo'), collision='full', sound='ceramic', render='solid')
+F('techo_roto', 'Techo de tejas (teja faltante)', 'Tiled roof slope with a missing tile', roof_parts('roto'), collision='full', sound='ceramic', render='solid')
+F('techo_alero', 'Alero con canaleta', 'Roof eave with gutter', eave_parts(), collision='full', sound='ceramic')
+F('techo_alero_musgo', 'Alero con canaleta (musgo)', 'Mossy roof eave with gutter', eave_parts('musgo'), collision='full', sound='ceramic')
+F('techo_cumbrera', 'Cumbrera del techo', 'Roof ridge', ridge_parts(), collision='full', sound='ceramic')
+F('cumbrera', 'Cumbrera (sobre bloque)', 'Ridge cap (on top of a block)', ridge_cap_parts(0.0), sound='ceramic', collision='none')
+for _w, _wn, _we in (('revoque_blanco', '', ''), ('ladrillo', '_ladrillo', ' (brick)')):
+    for _s, _sn in (('izq', 'izquierdo'), ('der', 'derecho')):
+        F(f'hastial{_wn}_{_s}', f'Hastial{" de ladrillo" if _wn else ""} bajo el techo ({_sn})', f'Gable under the roof slope{_we} ({_s})',
+          hastial_parts(_s, _w, 'techo'), collision='full', sound='ceramic')
+        F(f'hastial{_wn}_alero_{_s}', f'Hastial{" de ladrillo" if _wn else ""} con alero ({_sn})', f'Gable eave corner{_we} ({_s})',
+          hastial_parts(_s, _w, 'alero'), collision='full', sound='ceramic')
+        F(f'hastial{_wn}_cumbrera_{_s}', f'Hastial{" de ladrillo" if _wn else ""} en la cumbrera ({_sn})', f'Gable peak{_we} ({_s})',
+          hastial_parts(_s, _w, 'cumbrera'), collision='full', sound='ceramic')
+F('bajada', 'Caño de bajada', 'Downpipe', downpipe_parts('recta'), sound='metal')
+F('bajada_codo', 'Caño de bajada (cuello bajo la canaleta)', 'Downpipe swan neck (under the gutter)', downpipe_parts('codo'), sound='metal')
+F('bajada_pie', 'Caño de bajada (pie con desagüe)', 'Downpipe shoe with splash block', downpipe_parts('pie'), sound='metal')
+
+
+# =============================================================================================== DOORS
+# Real opening doors (vanilla door logic, 32 x 64 px: row 0 = top of the upper half). The handle side is drawn on the
+# RIGHT (x ~ 26); Minecraft mirrors the texture for left/right hinges.
+CEDRILLO = Ramp('#2a170c', '#3d2212', '#523019', '#683e21', '#7e4d2a', '#935d34', '#a66e40', '#b7804e', '#c6925f')
+PINK_FOAM = ['#e86a9a', '#f0a43a', '#6ac0e8', '#9a6ad8', '#e8d84a']
+GLASS_FROST = Ramp('#3a4446', '#566264', '#738082', '#8f9b9b', '#a7b1af', '#bcc4c1', '#ced5d1', '#dfe4e0')
+CREAM_EN = Ramp('#4e4836', '#6c654e', '#8a8268', '#a69e82', '#bdb59a', '#cfc8ae', '#ddd7bf', '#e8e3ce')    # ivory enamel
+DGREEN = Ramp('#0c140f', '#122019', '#182b21', '#1f372a', '#284434', '#32523f', '#3e624b')                # gate paint
+
+
+def drect(cv, x0, y0, x1, y1):
+    return (cv.X >= x0) & (cv.X <= x1) & (cv.Y >= y0) & (cv.Y <= y1)
+
+
+def door_frame_idx(X, Y, gv, gh, stile=4, top=4, bottom=9, base=4):
+    st = (X < stile) | (X >= 32 - stile)
+    idx = np.where(st, base + gv, base + gh)
+    idx = np.where((X == 0) | (X == 31) | (Y == 0) | (Y == 63), idx - 2, idx)
+    idx = np.where((X == 1) & (Y > 0) & (Y < 63), idx + 1, idx)
+    idx = np.where((Y == 1) & (X > 0) & (X < 31), idx + 1, idx)
+    return idx
+
+
+def knob(cv, x, y, ramp=BRASS):
+    """Round knob (pomo) on its rose, lit from the top-left, with the shadow it throws."""
+    X, Y = cv.X, cv.Y
+    rose = (X - x) ** 2 + (Y - y) ** 2 <= 5.0
+    cv.tint('#000000', np.where((Y == y + 3) & (np.abs(X - x) <= 1), 0.4, 0))
+    cv.put(ramp, np.full(X.shape, 2), rose)
+    k = (X - x) ** 2 + (Y - y) ** 2 <= 2.1
+    cv.put(ramp, np.full(X.shape, 5) + ((X <= x) & (Y <= y)) * 1 - ((X > x) & (Y > y)) * 2, k)
+    cv.put(ramp, np.full(X.shape, 7), (X == x - 1) & (Y == y - 1))
+
+
+def lever_plate(cv, x, y, ramp=CHROME, keyhole=True):
+    """Long rectangular escutcheon (bocallave) with a lever: the picaporte of every Argentine interior door."""
+    X, Y = cv.X, cv.Y
+    plate = drect(cv, x - 1, y - 4, x + 1, y + 9)
+    cv.tint('#000000', np.where(drect(cv, x + 2, y - 3, x + 2, y + 10) | drect(cv, x - 1, y + 10, x + 2, y + 10), 0.35, 0))
+    cv.put(ramp, np.full(X.shape, 4) + (X == x - 1) - (X == x + 1) + (Y == y - 4), plate)
+    lev = drect(cv, x - 6, y - 1, x, y)
+    cv.put(ramp, np.full(X.shape, 6) - (Y == y) * 2, lev)
+    cv.put(ramp, np.full(X.shape, 7), (X == x - 6) & (Y == y - 1))
+    cv.tint('#000000', np.where(drect(cv, x - 6, y + 1, x - 1, y + 1), 0.4, 0))
+    if keyhole:
+        cv.col('#0a0908', (X == x) & (Y >= y + 5) & (Y <= y + 6))
+        cv.col('#0a0908', (X == x) & (Y == y + 7) | False)
+
+
+def hand_grime(cv, x, y, r=5, amount=0.22, seed=0):
+    X, Y = cv.X, cv.Y
+    d = np.sqrt((X - x) ** 2 + ((Y - y) / 1.4) ** 2)
+    n = fbm(32, 64, 5900 + seed, cells=8, octaves=2)
+    cv.tint('#2a1e14', np.clip((r - d) / r, 0, 1) * amount * (0.6 + 0.8 * n))
+
+
+def kick_scuffs(cv, seed, y0=54, y1=62, n=7, color='#d8cbb4', amount=0.35):
+    rng = np.random.default_rng(seed)
+    X, Y = cv.X, cv.Y
+    for k in range(n):
+        x, y = int(rng.integers(3, 27)), int(rng.integers(y0, y1))
+        L = int(rng.integers(2, 6))
+        cv.tint(color, np.where((Y == y) & (X >= x) & (X < x + L), amount, 0))
+
+
+def veneer_idx(cv, seed, base=5):
+    """Rotary/flat-cut veneer: vertical grain with cathedral arches (nested parabolas) centred on the leaf."""
+    X, Y = cv.X, cv.Y
+    rng = np.random.default_rng(seed)
+    cx = 15.5 + rng.uniform(-2, 2)
+    w = (X - cx) / 16.0
+    f = (Y + 70 * w * w * (1 + 0.3 * np.sin(Y / 9.0))) / 5.5 + vnoise(32, 64, 4, 8, seed) * 2.2
+    band = np.floor(f).astype(int) % 4
+    g = np.where(band == 0, -1, np.where(band == 2, 1, 0))
+    fine = vnoise(32, 64, 16, 4, seed + 1)
+    g = g + np.where(fine > 0.78, 1, 0) - np.where(fine < 0.18, 1, 0)
+    return base + g
+
+
+def hammered_glass(cv, m, alpha=210, seed=0, ramp=GLASS_FROST):
+    """'Vidrio martillado': frosted glass with a dense pattern of round dimples (lit top-left, shaded bottom-right)."""
+    X, Y = cv.X, cv.Y
+    gx = (X + (Y // 3 % 2) * 1.5) % 3.0
+    gy = Y % 3.0
+    dx, dy = gx - 1.5, gy - 1.5
+    idx = np.full(X.shape, 4) + np.where((dx < -0.4) & (dy < -0.4), 1, 0) - np.where((dx > 0.4) & (dy > 0.4), 1, 0)
+    n = vnoise(32, 64, 4, 8, seed)
+    idx = idx + np.where(n > 0.7, 1, 0)
+    cv.put(ramp, idx, m, alpha)
+    ys = Y[m]
+    if ys.size:   # grime gathers at the bottom of the pane and in the corners
+        t = (Y - ys.min()) / max(1, ys.max() - ys.min())
+        gr = m & ((t * 0.8 + (vnoise(32, 64, 6, 10, seed + 1) - 0.5) * 0.5) > 0.7)
+        cv.tint('#4a4232', np.where(gr, 0.35, 0))
+
+
+def wired_glass(cv, m, alpha=200, seed=0):
+    """'Vidrio armado': greenish frosted glass with the square wire mesh."""
+    X, Y = cv.X, cv.Y
+    cv.put(GLASS_FROST, np.full(X.shape, 4) + (vnoise(32, 64, 4, 8, seed) > 0.6), m, alpha)
+    wire = m & ((X % 4 == 1) | (Y % 4 == 1))
+    cv.put(IRON, np.full(X.shape, 5), wire, 235)
+    cv.tint('#5a6a52', np.where(m, 0.12, 0))
+
+
+def paint_chips(cv, seed, under, under_idx=3, density=0.2, region=None):
+    """Chipped enamel: small flakes showing the wood (or primer) underneath, with a lit lower rim."""
+    X, Y = cv.X, cv.Y
+    n = vnoise(32, 64, 10, 20, seed)
+    n2 = vnoise(32, 64, 16, 32, seed + 1)
+    ch = (n > 1 - density) & (n2 > 0.45)
+    if region is not None:
+        ch &= region
+    cv.put(under, np.full(X.shape, under_idx) + (n2 > 0.75), ch)
+    r = rim(ch, wrap=False)
+    cv.tint('#ffffff', np.where(r['out_below'], 0.18, 0))
+    cv.tint('#000000', np.where(r['out_above'], 0.2, 0))
+
+
+def tape_px(cv, x, y, w=3, h=2):
+    cv.put(Ramp('#8a8166', '#b5ac8c', '#d2caa8'), np.full(cv.X.shape, 1) + (cv.Y == y), drect(cv, x, y, x + w - 1, y + h - 1))
+
+
+@painter('door_entrada')
+def p_door_entrada(v):
+    """Front door of the chalet: varnished cedar, a tall pane of hammered glass behind a wrought-iron grille
+    (bars, a pair of C-scrolls and a sunburst head), a lower raised panel with a diamond, brass knob and lock,
+    the bottom rail bleached and cracked by fifty summers of afternoon sun."""
+    cv = Cv(32, 64)
+    X, Y = cv.X, cv.Y
+    gv = wood_grain(32, 64, 4001, 'y', warp=1.4)
+    gh = wood_grain(32, 64, 4002, 'x', warp=1.4)
+    idx = door_frame_idx(X, Y, gv, gh, stile=5, top=5)
+    idx = np.where((Y >= 36) & (Y <= 40) & (X >= 5) & (X <= 26), 4 + gh, idx)          # lock rail
+    idx = frame_opening(idx, 5, 4, 26, 35)
+    gl = drect(cv, 6, 5, 25, 34)
+    idx = frame_opening(idx, 5, 41, 26, 58)
+    idx, field, ins = raised_panel(idx, 6, 42, 25, 57, 3, 4 + gv, hi=(2, 1), lo=(-2, -1))
+    dia = (np.abs(X - 15.5) / 7.0 + np.abs(Y - 49.5) / 4.0) <= 1.0
+    dia_e = dia & ~(np.abs(X - 15.5) / 6.0 + np.abs(Y - 49.5) / 3.0 <= 1.0)
+    idx = np.where(dia_e & (Y < 49.5), idx + 2, np.where(dia_e, idx - 2, idx))
+    cv.put(CEDRO, idx)
+    hammered_glass(cv, gl, alpha=225, seed=4003)
+    # wrought-iron grille in front of the glass
+    m = np.zeros((64, 32), bool)
+    m |= gl & ((X == 6) | (X == 25) | (Y == 5) | (Y == 34))
+    for xb in (10, 15, 16, 21):
+        m |= gl & (X == xb) & (Y >= 13)
+    m |= gl & (Y == 13)
+    m |= gl & (Y == 27)
+    for cx_, fl in ((11.5, False), (19.5, True)):
+        m |= scroll_mask(32, 64, cx_, 20.5, 4.0, turns=1.25, thick=0.55, flip=fl) & gl & (Y > 13) & (Y < 27)
+    r_ = np.sqrt((X + 0.5 - 16) ** 2 + (Y + 0.5 - 13) ** 2)
+    ang = np.degrees(np.arctan2(13 - (Y + 0.5), X + 0.5 - 16))
+    sun = gl & (Y < 13) & (((np.abs(r_ - 6.5) < 0.55)) | ((r_ < 6.5) & (r_ > 2) & (np.min([np.abs(ang - a) for a in (30, 60, 90, 120, 150)], 0) < 7)))
+    m |= sun | (gl & (r_ < 2.0) & (Y < 13))
+    lit = m & ~nb(m, 1, 0, False)
+    cv.put(IRON, np.full((64, 32), 3) + lit * 2, m)
+    cv.put(RUST, np.full((64, 32), 2), m & (vnoise(32, 64, 8, 16, 4004) > 0.78))
+    cv.tint('#000000', np.where(gl & ~m & nb(m, 1, 1, False), 0.35, 0))   # the grille's shadow on the glass
+    # sun damage on the lower rail and panel: bleached, crazed varnish
+    sunb = (Y > 52) & (vnoise(32, 64, 6, 12, 4005) > 0.35)
+    cv.tint('#b89a74', np.where(sunb, 0.25 * np.clip((Y - 52) / 10.0, 0, 1), 0))
+    craz = (Y > 56) & (((X * 3 + Y * 5) % 11 == 0) | ((X * 7 + Y) % 13 == 0)) & (X > 1) & (X < 30)
+    cv.tint('#24160c', np.where(craz, 0.4, 0))
+    hand_grime(cv, 26, 38, r=5, amount=0.3, seed=1)
+    knob(cv, 26, 38)
+    cv.put(BRASS, np.full((64, 32), 4) + (Y == 42), drect(cv, 25, 42, 27, 45))      # lock escutcheon
+    cv.col('#0a0806', (X == 26) & (Y >= 43) & (Y <= 44))
+    cv.put(BRASS, np.full((64, 32), 6), (X == 16) & (Y == 2) | (X == 15) & (Y == 2))  # the peephole
+    cv.col('#0a0806', (X == 15) & (Y == 2))
+    return cv.out()
+
+
+def flush_door(seed, white=False):
+    """Hollow-core flush door ('puerta placa'): cedar-look veneer, or white enamel over it."""
+    cv = Cv(32, 64)
+    X, Y = cv.X, cv.Y
+    if white:
+        idx = np.full((64, 32), 5) + np.where((X % 5 == 2) & (vnoise(32, 64, 6, 4, seed) > 0.55), 1, 0)
+        idx = idx - np.where(vnoise(32, 64, 4, 8, seed + 1) < 0.2, 1, 0)
+        idx = np.where((X == 0) | (X == 31) | (Y == 0) | (Y == 63), idx - 2, idx)
+        idx = np.where((X == 1) | (Y == 1), idx + 1, idx)
+        cv.put(ENAMEL_W, idx)
+        cv.tint('#a08a54', np.where(vnoise(32, 64, 2, 4, seed + 2) > 0.5, 0.12, 0.05))       # nicotine yellowing
+        # paint runs that dried decades ago
+        for x in (7, 19):
+            cv.tint('#ffffff', np.where((X == x) & (Y >= 20) & (Y <= 25 + x % 4), 0.12, 0))
+            cv.tint('#000000', np.where((X == x) & (Y == 26 + x % 4), 0.12, 0))
+        paint_chips(cv, seed + 3, CEDRILLO, 4, density=0.07, region=(Y > 55) | (X > 28) | (X < 2))
+    else:
+        idx = veneer_idx(cv, seed)
+        idx = np.where((X == 0) | (X == 31) | (Y == 0) | (Y == 63), idx - 2, idx)
+        idx = np.where((X == 1) | (Y == 1), idx + 1, idx)
+        cv.put(CEDRILLO, idx)
+        sheen = (np.abs((X - Y * 0.35) % 22 - 4) < 1.5)
+        cv.tint('#e8c898', np.where(sheen, 0.06, 0))
+    kick_scuffs(cv, seed + 4, color='#3a2a1c' if white else '#d8b88a', amount=0.3)
+    return cv
+
+
+@painter('door_placa')
+def p_door_placa(v):
+    """Interior hollow-core door with cedar-look veneer, chrome picaporte, hand grime, a crushed dent at kick
+    height where the cheap skin cracked."""
+    cv = flush_door(4100)
+    X, Y = cv.X, cv.Y
+    hand_grime(cv, 25, 37, r=6, amount=0.25, seed=2)
+    dent = ((X - 9) ** 2 / 6.0 + (Y - 52) ** 2 / 3.0) <= 1
+    cv.tint('#140c06', np.where(dent, 0.35, 0))
+    cv.put(CEDRILLO, np.full((64, 32), 7), dent & ~nb(dent, 1, 0, False))
+    crk = path_mask(line_px(6, 51, 12, 53), 32, 64, wrap=False)
+    cv.col('#1a0f08', crk)
+    lever_plate(cv, 26, 37)
+    return cv.out()
+
+
+@painter('door_placa_blanca')
+def p_door_placa_blanca(v):
+    """Interior flush door painted white enamel, yellowed, chipped along the lock edge, brass knob."""
+    cv = flush_door(4200, white=True)
+    hand_grime(cv, 26, 37, r=6, amount=0.3, seed=3)
+    knob(cv, 26, 37)
+    cv.col('#0a0908', (cv.X == 26) & (cv.Y >= 41) & (cv.Y <= 42))
+    cv.put(BRASS, np.full((64, 32), 3), drect(cv, 25, 40, 27, 40))
+    return cv.out()
+
+
+@painter('door_lucia')
+def p_door_lucia(v):
+    """Lucía's door: white flush door, foam letters L-U-C-I-A in five colours, stickers, and a child's crayon
+    drawing taped at her eye level: the family, Choripán... and a doll drawn bigger than everyone, with a red
+    stitched mouth. In the corner someone scribbled a tall black figure."""
+    cv = flush_door(4300, white=True)
+    X, Y = cv.X, cv.Y
+    word = 'LUCIA'
+    x = 3
+    for k, ch in enumerate(word):
+        g = text_mask(ch)[2:]
+        m = np.zeros((64, 32), bool)
+        dy = (-1, 1, 0, -1, 1)[k]
+        stamp(m, g, x, 4 + dy)
+        side = nb(m, 0, 1, False) & ~m                      # foam thickness on the right
+        cv.tint('#000000', np.where(nb(m | side, 1, 1, False) & ~(m | side), 0.35, 0))
+        cv.col(PINK_FOAM[k], side)
+        cv.mul(np.where(side, 0.62, 1.0))
+        cv.col(PINK_FOAM[k], m)
+        cv.tint('#ffffff', np.where(m & ~nb(m, 1, 0, False), 0.45, 0))
+        x += g.shape[1] + 1
+    # crayon drawing on a sheet of paper (A5-ish), slightly tilted by the tape
+    paper = drect(cv, 6, 17, 25, 33)
+    cv.tint('#000000', np.where(drect(cv, 7, 34, 26, 34) | drect(cv, 26, 18, 26, 34), 0.3, 0))
+    cv.put(Ramp('#b8b2a2', '#d6d1c3', '#ebe7dc', '#f4f1ea'), np.full((64, 32), 3) - (X == 6) - (Y == 33) + 0 * Y, paper)
+    def crayon(pts_rows, x0, y0, color):
+        mm = np.zeros((64, 32), bool)
+        stamp(mm, ascii_mask(pts_rows), x0, y0)
+        cv.col(color, mm & paper)
+    cv.col('#6aa0d8', paper & (Y == 18))                                # sky line
+    cv.col('#5a9a3a', paper & (Y == 32))                                # grass
+    cv.col('#e8b830', paper & ((X - 23) ** 2 + (Y - 20) ** 2 <= 2))      # sun
+    for k, (xx, tall, col) in enumerate(((8, 9, '#d84a7a'), (11, 10, '#3a5ad8'), (14, 6, '#e86a9a'), (17, 7, '#8a5ad8'))):
+        crayon(['.#.', '###', '.#.', '.#.', '#.#'][:2] + ['.#.'] * (tall - 5) + ['.#.', '#.#'], xx, 31 - tall, col)
+    crayon(['#..##', '#####', '.#.#.'], 19, 29, '#7a4a2a')              # Choripán, a sausage with legs
+    crayon(['.###.', '#####', '#.#.#', '#####', '.###.', '..#..', '.###.', '#.#.#', '..#..', '.#.#.'], 20, 21, '#e8d0b8')
+    cv.col('#c81818', paper & (Y == 24) & (X >= 21) & (X <= 23))         # the doll's red mouth, stitched
+    cv.col('#c81818', paper & ((X == 21) | (X == 23)) & (Y == 23))
+    cv.col('#1a1414', paper & (X == 21) & (Y == 22) | paper & (X == 23) & (Y == 22))
+    crayon(['.#', '##', '.#', '.#', '.#', '.#', '#.', '#.', '.#', '.#', '.#', '#.'], 23, 19, '#151212')   # tall black scribble
+    tape_px(cv, 5, 16)
+    tape_px(cv, 24, 16)
+    # stickers: a heart, a star, a peeled unicorn-ish horse
+    for rows, (sx, sy), col in ((HEART, (4, 40), '#d8486a'), (STAR, (11, 47), '#e8c23a'), (BUTTER, (18, 55), '#9a6ad8')):
+        mm = np.zeros((64, 32), bool)
+        stamp(mm, ascii_mask(rows), sx, sy)
+        cv.col('#f4eee6', dilate(mm, 1, False) & ~mm)
+        cv.col(col, mm)
+    hand_grime(cv, 26, 37, r=5, amount=0.25, seed=4)
+    knob(cv, 26, 37)
+    return cv.out()
+
+
+@painter('door_toti')
+def p_door_toti(v):
+    """Toti's door: veneer, a printed 'NO PASAR' sign, a skull sticker, and the cardboard hanger on the handle:
+    'EN RANKED' / 'NO MOLESTAR'."""
+    cv = flush_door(4400)
+    X, Y = cv.X, cv.Y
+    sign = drect(cv, 5, 6, 26, 16)
+    cv.tint('#000000', np.where(drect(cv, 6, 17, 27, 17) | drect(cv, 27, 7, 27, 17), 0.35, 0))
+    cv.put(Ramp('#8a1a14', '#b8261c', '#d63a2a'), np.full((64, 32), 1) + (Y == 6), sign)
+    cv.col('#f2ece0', sign & ((X == 5) | (X == 26) | (Y == 6) | (Y == 16)))
+    t1 = tiny_mask('NO PASAR')[1:]
+    tm = np.zeros((64, 32), bool)
+    stamp(tm, t1, 16 - t1.shape[1] // 2, 9)
+    cv.col('#f8f2e8', tm)
+    tape_px(cv, 4, 5, 2, 2)
+    tape_px(cv, 25, 5, 2, 2)
+    skull = ['.###.', '#####', '#.#.#', '#####', '.#.#.']
+    mm = np.zeros((64, 32), bool)
+    stamp(mm, ascii_mask(skull), 8, 22)
+    cv.col('#101010', dilate(mm, 1, False) & ~mm)
+    cv.col('#e8e8e0', mm)
+    bolt = ['..##', '.##.', '####', '.##.', '##..']
+    mm = np.zeros((64, 32), bool)
+    stamp(mm, ascii_mask(bolt), 15, 24)
+    cv.col('#1a1a1a', dilate(mm, 1, False) & ~mm)
+    cv.col('#f0e030', mm)
+    hand_grime(cv, 25, 37, r=6, amount=0.3, seed=5)
+    lever_plate(cv, 26, 37)
+    # door hanger hanging from the lever (cardboard, black with neon letters)
+    hang = drect(cv, 16, 39, 29, 60)
+    hole = (X - 22.5) ** 2 + (Y - 41) ** 2 <= 1.6
+    cv.tint('#000000', np.where(drect(cv, 17, 61, 30, 61) | drect(cv, 30, 40, 30, 61), 0.4, 0))
+    cv.put(Ramp('#0c0c12', '#16161f', '#22222e'), np.full((64, 32), 1) + (X == 16), hang & ~hole)
+    for tt, yy, col in (('EN', 43, '#5aff7a'), ('RAN', 49, '#ff3aa8'), ('KED', 55, '#ff3aa8')):
+        t_ = tiny_mask(tt)[1:]
+        mm = np.zeros((64, 32), bool)
+        stamp(mm, t_, 23 - t_.shape[1] // 2, yy)
+        cv.col(col, mm & hang)
+    return cv.out()
+
+
+@painter('door_bano')
+def p_door_bano(v):
+    """Bathroom door: white flush door with a small hand-painted ceramic oval 'BAÑO' (blue letters, two flowers),
+    the key left in the lock, damp swelling at the bottom (paint blistered)."""
+    cv = flush_door(4500, white=True)
+    X, Y = cv.X, cv.Y
+    ov = ((X - 15.5) / 14.0) ** 2 + ((Y - 12.0) / 7.0) ** 2 <= 1
+    cv.tint('#000000', np.where((((X - 16.5) / 14.0) ** 2 + ((Y - 13.0) / 7.0) ** 2 <= 1) & ~ov, 0.35, 0))
+    cv.put(Ramp('#8a8a84', '#c4c2ba', '#e4e2da', '#f4f2ec'), np.full((64, 32), 3) - (~erode(ov, 1, False) & ov) * 2, ov)
+    tm = np.zeros((64, 32), bool)
+    t = text_mask('BAÑO')
+    stamp(tm, t, 16 - t.shape[1] // 2, 5)
+    cv.col('#2a4a9a', tm & ov)
+    for fx in (6, 25):
+        cv.col('#d85a3a', (X == fx) & (Y == 11) | (X == fx - 1) & (Y == 12) | (X == fx + 1) & (Y == 12) | (X == fx) & (Y == 13))
+        cv.col('#e8c040', (X == fx) & (Y == 12))
+        cv.col('#4a8a3a', (X == fx) & (Y == 14))
+    knob(cv, 26, 37, ramp=CHROME)
+    cv.put(CHROME, np.full((64, 32), 5) + (Y == 41), drect(cv, 25, 41, 27, 42) | drect(cv, 26, 43, 26, 45))   # the key
+    bl = (Y > 56) & (vnoise(32, 64, 8, 16, 4501) > 0.55)
+    cv.tint('#6a5a3a', np.where(bl, 0.3, 0))
+    cv.tint('#ffffff', np.where(bl & ~nb(bl, 1, 0, False), 0.25, 0))
+    return cv.out()
+
+
+@painter('door_nona')
+def p_door_nona(v):
+    """The Nona's door, the original 1950s one: dark cedar with six raised panels, an old brass lever, a holy card
+    taped on the top panel and a dried olive sprig from Palm Sunday tucked behind it."""
+    cv = Cv(32, 64)
+    X, Y = cv.X, cv.Y
+    gv = wood_grain(32, 64, 4601, 'y', warp=1.8)
+    gh = wood_grain(32, 64, 4602, 'x', warp=1.8)
+    idx = door_frame_idx(X, Y, gv, gh, stile=4, base=3)
+    idx = np.where((X >= 15) & (X <= 16) & (Y > 3) & (Y < 60), 3 + gv, idx)
+    for (y0, y1) in ((4, 18), (22, 38), (42, 59)):
+        for (x0, x1) in ((4, 14), (17, 27)):
+            idx = frame_opening(idx, x0, y0, x1, y1)
+            idx, field, ins = raised_panel(idx, x0 + 1, y0 + 1, x1 - 1, y1 - 1, 2, 3 + gv, hi=(2, 1), lo=(-2, -1))
+    cv.put(CEDRO, idx)
+    cv.tint('#0a0604', np.where(vnoise(32, 64, 4, 8, 4603) > 0.6, 0.15, 0))
+    # holy card on the upper right panel: gold border, blue mantle, halo, pink face
+    card = drect(cv, 19, 6, 25, 15)
+    cv.tint('#000000', np.where(drect(cv, 20, 16, 26, 16) | drect(cv, 26, 7, 26, 16), 0.35, 0))
+    cv.put(Ramp('#7a6020', '#b08a30', '#d8b44a'), np.full((64, 32), 2), card)
+    inner = drect(cv, 20, 7, 24, 14)
+    cv.col('#d8d0b8', inner)
+    cv.col('#2a4a8a', inner & (Y >= 10) & ((X - 22) ** 2 / 6.0 + (Y - 14) ** 2 / 20.0 <= 1))
+    cv.col('#e8c040', inner & ((X - 22) ** 2 + (Y - 8.5) ** 2 <= 2.2))
+    cv.col('#d8a890', inner & (X == 22) & (Y == 9))
+    tape_px(cv, 21, 5, 3, 1)
+    # dried olive sprig (grey-green leaves) poking from behind the card
+    for (lx_, ly_) in ((18, 5), (17, 4), (16, 3), (18, 3), (17, 2), (19, 4)):
+        cv.col('#6a7454' if (lx_ + ly_) % 2 else '#4a5438', (X == lx_) & (Y == ly_))
+    cv.col('#3a2a1a', (X == 18) & (Y == 6))
+    hand_grime(cv, 25, 37, r=5, amount=0.25, seed=6)
+    lever_handle(cv, 27, 37)
+    return cv.out()
+
+
+@painter('door_cocina')
+def p_door_cocina(v):
+    """Kitchen door to the patio: ivory enamel over wood, six glazed lights with a red gingham half-curtain on the
+    lower two, two lower panels, chipped and sun-faded at the bottom, aluminium knob."""
+    cv = Cv(32, 64)
+    X, Y = cv.X, cv.Y
+    gv = wood_grain(32, 64, 4701, 'y', warp=1.0)
+    gh = wood_grain(32, 64, 4702, 'x', warp=1.0)
+    idx = door_frame_idx(X, Y, np.sign(gv) * 0, np.sign(gh) * 0, stile=4, base=5)
+    idx = frame_opening(idx, 4, 4, 27, 33)
+    gl = drect(cv, 5, 5, 26, 32)
+    mun = gl & (((X >= 15) & (X <= 16)) | (Y == 14) | (Y == 23))
+    idx = np.where(mun, 5 + (Y == 14) + (Y == 23), idx)
+    for (x0, x1) in ((4, 14), (17, 27)):
+        idx = frame_opening(idx, x0, 38, x1, 58)
+        idx, field, ins = raised_panel(idx, x0 + 1, 39, x1 - 1, 57, 2, np.full((64, 32), 5), hi=(1, 1), lo=(-2, -1))
+    cv.put(CREAM_EN, idx)
+    pane = gl & ~mun
+    door_glass(cv, pane, 4703, alpha=110)
+    cur = pane & (Y >= 24)
+    ging = ((X // 2 + Y // 2) % 2 == 0)
+    cv.put(Ramp('#7a1a14', '#a8281e', '#c83a2a', '#e8d8c8'), np.where(((X // 2) % 2 == 0) & ((Y // 2) % 2 == 0), 1, np.where(ging, 3, 2)), cur, 240)
+    cv.put(Ramp('#7a1a14', '#a8281e', '#c83a2a', '#e8d8c8'), np.full((64, 32), 0), cur & (Y == 24) & (X % 2 == 0), 240)
+    cv.put(CHROME, np.full((64, 32), 6), (Y == 24) & pane)       # the curtain wire
+    paint_chips(cv, 4704, PINO, 4, density=0.16, region=(Y > 46) | (X > 28))
+    cv.tint('#c8b890', np.where((Y > 50) & (vnoise(32, 64, 4, 8, 4705) > 0.4), 0.15, 0))
+    hand_grime(cv, 26, 36, r=6, amount=0.3, seed=7)
+    knob(cv, 26, 36, ramp=CHROME)
+    return cv.out()
+
+
+@painter('door_lavadero')
+def p_door_lavadero(v):
+    """Laundry door, 'puerta de chapa': pressed steel painted grey-green, wired glass in the top, two embossed
+    panels, a louvred vent at the bottom (the gas regulations), paint peeling to primer and rust at the foot."""
+    cv = Cv(32, 64)
+    X, Y = cv.X, cv.Y
+    LAVG = Ramp('#1a2220', '#26302d', '#323e3a', '#3f4c47', '#4d5b55', '#5c6a63', '#6c7a72', '#7e8b83')
+    idx = np.full((64, 32), 4) + (vnoise(32, 64, 4, 8, 4801) > 0.65) - (vnoise(32, 64, 4, 8, 4802) < 0.25)
+    idx = np.where((X <= 1) | (X >= 30) | (Y <= 1) | (Y >= 62), idx - 1, idx)
+    idx = np.where((X == 0) | (Y == 0), idx + 2, idx)
+    for (y0, y1) in ((30, 41), (44, 52)):
+        emb = drect(cv, 5, y0, 26, y1)
+        r_ = rim(emb, wrap=False)
+        idx = np.where(r_['in_top'] | r_['in_left'], idx + 2, idx)
+        idx = np.where(r_['in_bot'] | r_['in_right'], idx - 2, idx)
+    cv.put(LAVG, idx)
+    gl = drect(cv, 5, 5, 26, 25)
+    cv.put(LAVG, np.full((64, 32), 6), drect(cv, 4, 4, 27, 4) | drect(cv, 4, 4, 4, 26))
+    cv.put(LAVG, np.full((64, 32), 1), drect(cv, 4, 26, 27, 26) | drect(cv, 27, 4, 27, 26))
+    wired_glass(cv, gl, seed=4803)
+    # louvred vent: slots that are really open (see-through)
+    for k in range(3):
+        y = 55 + k * 2
+        slot = drect(cv, 9, y, 22, y)
+        cv.a = np.where(slot, 0, cv.a)
+        cv.put(LAVG, np.full((64, 32), 6), drect(cv, 9, y - 1, 22, y - 1))
+    paint_chips(cv, 4804, Ramp('#5a4a3a', '#7a6a52', '#9a8a6a', '#b0a080'), 2, density=0.22, region=(Y > 40) | (X < 3) | (X > 28))
+    rs = (Y > 57) & (vnoise(32, 64, 8, 8, 4805) > 0.35) | (vnoise(32, 64, 6, 12, 4806) > 0.9)
+    cv.put(RUST, np.full((64, 32), 2) + (vnoise(32, 64, 16, 16, 4807) > 0.6), rs & (cv.a > 0))
+    for (x, y) in ((12, 41), (20, 52), (7, 26)):
+        cv.put(RUST, np.full((64, 32), 1), (X == x) & (Y > y) & (Y < y + 5) & (cv.a > 0))
+    hand_grime(cv, 26, 35, r=5, amount=0.3, seed=8)
+    lever_plate(cv, 26, 35, ramp=IRON)
+    return cv.out()
+
+
+@painter('door_sotano')
+def p_door_sotano(v):
+    """Basement door: five old pine boards gone grey, real gaps between them (you see the dark through), a
+    Z-brace, hand-forged strap hinges, an open hasp with a padlock hanging, rusty nails, the foot rotted ragged."""
+    cv = Cv(32, 64)
+    X, Y = cv.X, cv.Y
+    board = X // 6.4
+    bx = (X % 6.4)
+    gap = (bx < 1.0) & (X > 0)
+    rc = np.random.default_rng(4901)
+    tone = rc.choice([-1, 0, 0, 1], 6)[board.astype(int)]
+    gvv = wood_grain(32, 64, 4902, 'y', warp=2.2, pores=0.06)
+    idx = 3 + tone + gvv
+    idx = np.where(bx < 1.8, idx - 1, idx)
+    idx = np.where((bx >= 5.4), idx + 1, idx)
+    for (y0, y1) in ((6, 10), (52, 56)):          # ledges
+        led = drect(cv, 1, y0, 30, y1)
+        idx = np.where(led, 4 + wood_grain(32, 64, 4903 + y0, 'x', warp=1.0), idx)
+        idx = np.where(led & (Y == y0), idx + 2, idx)
+        idx = np.where(led & (Y == y1), idx - 2, idx)
+        idx = np.where(drect(cv, 1, y1 + 1, 30, y1 + 1), idx - 2, idx)
+    dd = (X - 2) * (41.0 / 27.0) - (51 - Y)
+    brace = (np.abs(dd) < 2.4) & (Y > 10) & (Y < 52) & (X > 1) & (X < 30)
+    gb = wood_grain(32, 64, 4907, 'x', warp=0.6)
+    idx = np.where(brace, 5 + gb, idx)
+    idx = np.where(brace & (dd < -1.4), idx + 1, idx)
+    idx = np.where(brace & (dd > 1.4), idx - 2, idx)
+    idx = np.where(~brace & (dd > 2.4) & (dd < 3.6) & (Y > 10) & (Y < 52), idx - 2, idx)
+    cv.put(WEATHER, idx)
+    cv.a = np.where(gap & ~brace & ~(drect(cv, 1, 6, 30, 10) | drect(cv, 1, 52, 30, 56)), 0, cv.a)
+    # rotten foot
+    foot = (Y >= 61 - np.round(2 * vnoise(32, 1, 8, 1, 4904)[0] * 2).astype(int)[None, :].repeat(64, 0) * 0) & (Y >= 60)
+    ragged = (Y >= 60) & (vnoise(32, 64, 16, 8, 4905) > 0.55)
+    cv.a = np.where(ragged | (Y == 63) & (X % 3 != 1), 0, cv.a)
+    cv.tint('#1a1612', np.where((Y > 54) & (cv.a > 0), 0.35, 0))
+    # strap hinges (on the left, the hinge side is mirrored by Minecraft as needed)
+    for yc in (8, 54):
+        st = drect(cv, 0, yc - 1, 14, yc + 1) & ~((X > 10) & (np.abs(Y - yc) == 1))
+        cv.put(IRON, np.full((64, 32), 3) + (Y == yc - 1) * 2, st)
+        cv.put(RUST, np.full((64, 32), 3), st & (vnoise(32, 64, 16, 32, 4906) > 0.6))
+        for nx in (3, 8, 13):
+            cv.put(IRON, np.full((64, 32), 6), (X == nx) & (Y == yc))
+    for (nx, ny) in ((5, 8), (11, 8), (17, 8), (23, 8), (29, 8), (5, 54), (17, 54), (23, 54), (29, 54)):
+        cv.put(IRON, np.full((64, 32), 5), (X == nx) & (Y == ny))
+        cv.put(RUST, np.full((64, 32), 1), (X == nx) & (Y > ny) & (Y < ny + 4))
+    # hasp and padlock, open
+    cv.put(IRON, np.full((64, 32), 4) + (Y == 30), drect(cv, 24, 30, 30, 32))
+    lock = drect(cv, 25, 35, 28, 39)
+    cv.put(BRASS, np.full((64, 32), 3) + (Y == 35) - (Y == 39), lock)
+    cv.put(IRON, np.full((64, 32), 5), ((X == 25) & (Y >= 32) & (Y <= 34)) | ((X == 26) & (Y == 31)))
+    cv.col('#0a0806', (X == 26) & (Y == 37))
+    return cv.out()
+
+
+@painter('door_placard')
+def p_door_placard(v):
+    """Louvred wardrobe door (placard) in varnished pine: two louvre fields with see-through slits between the
+    slats (whatever hides inside glows through), a small brass knob. Place casa_placard_maletero above it."""
+    cv = Cv(32, 64)
+    X, Y = cv.X, cv.Y
+    gv = wood_grain(32, 64, 5001, 'y', warp=1.2)
+    gh = wood_grain(32, 64, 5002, 'x', warp=1.2)
+    idx = door_frame_idx(X, Y, gv, gh, stile=4, base=5)
+    idx = np.where((Y >= 30) & (Y <= 34), 5 + gh, idx)
+    open_ = np.zeros((64, 32), bool)
+    for (y0, y1) in ((4, 29), (35, 59)):
+        f = drect(cv, 4, y0, 27, y1)
+        ly = (Y - y0) % 3
+        idx = np.where(f, np.where(ly == 0, 7, np.where(ly == 1, 5, 2)) + np.sign(gh), idx)
+        idx = np.where(f & ((X == 4) | (X == 27)), 1, idx)
+        open_ |= f & (ly == 2) & (X > 4) & (X < 27)
+        idx = frame_opening(idx, 3, y0 - 1, 28, y1 + 1)
+    cv.put(PINO, idx)
+    cv.put(PINO, np.full((64, 32), 0), open_, 170)                 # slits: dark and half see-through
+    cv.a = np.where(open_ & ((X % 5) != 2), 0, cv.a)
+    hand_grime(cv, 26, 32, r=4, amount=0.3, seed=9)
+    knob(cv, 26, 32)
+    return cv.out()
+
+
+def gate_iron(cv, m, seed, ramp=DGREEN):
+    """Painted iron: lit top rim, dark bottom rim, rust where paint is gone."""
+    lit = m & ~nb(m, 1, 0, False)
+    dark = m & ~nb(m, -1, 0, False)
+    cv.put(ramp, np.full((64, 32), 4) + lit * 2 - dark * 2, m)
+    rs = m & (vnoise(32, 64, 8, 16, seed) > 0.72)
+    cv.put(RUST, np.full((64, 32), 2) + (vnoise(32, 64, 16, 32, seed + 1) > 0.6), rs)
+
+
+@painter('door_reja')
+def p_door_reja(v):
+    """Pedestrian gate of the front fence: dark-green iron frame, bars with a row of C-scrolls and little spear
+    finials, a sheet-metal lower half with a stamped diamond and the mailbox slot, the latch box."""
+    cv = Cv(32, 64)
+    X, Y = cv.X, cv.Y
+    m = np.zeros((64, 32), bool)
+    m |= (X <= 1) | (X >= 30) | (Y >= 62) | ((Y >= 4) & (Y <= 5)) | ((Y >= 34) & (Y <= 35))
+    for xb in range(5, 29, 4):
+        m |= (X == xb) & (Y >= 2) & (Y <= 34)
+        m |= (Y <= 2) & (np.abs(X - xb) <= (Y)) & (Y >= 0) & (np.abs(X - xb) <= 1) & ~((Y == 0) & (X != xb))
+    for cx_ in range(7, 29, 4):          # the welded rings between the bars, so typical of 1950s rejas
+        rr_ = np.sqrt((X + 0.5 - cx_) ** 2 + (Y + 0.5 - 10.5) ** 2)
+        m |= (np.abs(rr_ - 1.9) < 0.55) & (X > 1) & (X < 30)
+    m |= ((Y >= 14) & (Y <= 15)) & (X > 1) & (X < 30)
+    sheet = drect(cv, 2, 36, 29, 61)
+    cv.a = np.where(m | sheet, 255, 0)
+    gate_iron(cv, m & ~sheet, 5101)
+    sidx = np.full((64, 32), 4) + (vnoise(32, 64, 4, 8, 5102) > 0.6)
+    dia = (np.abs(X - 15.5) / 11.0 + np.abs(Y - 48.5) / 10.0) <= 1.0
+    de = dia & ~(np.abs(X - 15.5) / 9.5 + np.abs(Y - 48.5) / 8.5 <= 1.0)
+    sidx = np.where(de & (Y < 48.5), sidx + 2, np.where(de, sidx - 2, sidx))
+    cv.put(DGREEN, sidx, sheet)
+    slot = drect(cv, 10, 40, 21, 41)
+    cv.put(DGREEN, np.full((64, 32), 6), drect(cv, 9, 39, 22, 39))
+    cv.col('#060806', slot)
+    t = tiny_mask('CARTAS')[1:]
+    tm = np.zeros((64, 32), bool)
+    stamp(tm, t, 16 - t.shape[1] // 2, 43)
+    cv.col('#b8b090', tm & ~dia | tm & dia)
+    rs = sheet & ((Y > 56) & (vnoise(32, 64, 8, 8, 5103) > 0.35) | (vnoise(32, 64, 8, 16, 5104) > 0.86))
+    cv.put(RUST, np.full((64, 32), 2) + (vnoise(32, 64, 16, 16, 5105) > 0.6), rs)
+    lb = drect(cv, 24, 30, 29, 38)
+    cv.put(IRON, np.full((64, 32), 3) + (Y == 30) * 2 - (Y == 38), lb)
+    cv.a = np.where(lb, 255, cv.a)
+    cv.put(CHROME, np.full((64, 32), 5) - (Y == 33), drect(cv, 19, 32, 24, 33))
+    cv.a = np.where(drect(cv, 19, 32, 24, 33), 255, cv.a)
+    cv.col('#0a0806', (X == 27) & (Y >= 35) & (Y <= 36))
+    return cv.out()
+
+
+@painter('door_porton')
+def p_door_porton(v):
+    """Car gate leaf (portón): pressed sheet steel with vertical ribs, painted dark green, a band of bars with
+    arrow tips on top, a dent, rust running down from every rib and the bottom eaten through."""
+    cv = Cv(32, 64)
+    X, Y = cv.X, cv.Y
+    m = np.zeros((64, 32), bool)
+    m |= (X <= 1) | (X >= 30) | ((Y >= 10) & (Y <= 11))
+    for xb in range(4, 30, 4):
+        m |= (X == xb) & (Y >= 2) & (Y <= 10)
+        m |= (Y < 2) & (np.abs(X - xb) <= Y) & (np.abs(X - xb) <= 1)
+    sheet = (Y >= 12) & (X >= 2) & (X <= 29)
+    cv.a = np.where(m | sheet, 255, 0)
+    gate_iron(cv, m & ~sheet, 5201)
+    rib = (X % 4 == 1)
+    sidx = np.full((64, 32), 4) + rib * 2 - (X % 4 == 2) * 1 + (vnoise(32, 64, 4, 8, 5202) > 0.6)
+    sidx = np.where((Y == 12) | (Y == 36), sidx + 2, sidx)
+    sidx = np.where((Y == 13) | (Y == 37), sidx - 2, sidx)
+    dent = ((X - 9) ** 2 / 10.0 + (Y - 46) ** 2 / 6.0) <= 1
+    sidx = np.where(dent & (Y < 46), sidx - 1, np.where(dent, sidx + 1, sidx))
+    cv.put(DGREEN, sidx, sheet)
+    for xb in range(1, 30, 4):
+        L = 6 + (xb * 7) % 9
+        cv.put(RUST, np.full((64, 32), 1), sheet & (X == xb) & (Y > 37) & (Y < 37 + L))
+    rs = sheet & ((Y > 54) & (vnoise(32, 64, 8, 8, 5203) > 0.3) | (vnoise(32, 64, 6, 16, 5204) > 0.88))
+    cv.put(RUST, np.full((64, 32), 2) + (vnoise(32, 64, 16, 16, 5205) > 0.6), rs)
+    holes = (Y >= 61) & (vnoise(32, 64, 16, 8, 5206) > 0.6)
+    cv.a = np.where(holes & sheet, 0, cv.a)
+    cv.put(IRON, np.full((64, 32), 4) + (Y == 30) * 2, drect(cv, 27, 30, 29, 36))   # latch
+    return cv.out()
+
+
+DOORS = [
+    ('puerta_entrada', 'Puerta de entrada', 'Front door', 'entrada', 'translucent', 'wood'),
+    ('puerta_placa', 'Puerta placa', 'Flush interior door', 'placa', 'cutout', 'wood'),
+    ('puerta_placa_blanca', 'Puerta placa blanca', 'White flush door', 'placa_blanca', 'cutout', 'wood'),
+    ('puerta_lucia', 'Puerta del cuarto de Lucía', "Lucía's door", 'lucia', 'cutout', 'wood'),
+    ('puerta_toti', 'Puerta del cuarto de Toti', "Toti's door", 'toti', 'cutout', 'wood'),
+    ('puerta_bano', 'Puerta del baño', 'Bathroom door', 'bano', 'cutout', 'wood'),
+    ('puerta_nona', 'Puerta del cuarto de la Nona', "The Nona's door", 'nona', 'cutout', 'wood'),
+    ('puerta_cocina', 'Puerta de la cocina (al patio)', 'Kitchen door (to the patio)', 'cocina', 'translucent', 'wood'),
+    ('puerta_lavadero', 'Puerta de chapa del lavadero', 'Steel laundry door', 'lavadero', 'translucent', 'metal'),
+    ('puerta_sotano', 'Puerta del sótano', 'Basement plank door', 'sotano', 'cutout', 'wood'),
+    ('puerta_placard', 'Puerta de placard', 'Louvred wardrobe door', 'placard', 'cutout', 'wood'),
+    ('puerta_reja', 'Puerta de reja (vereda)', 'Front fence gate', 'reja', 'cutout', 'metal'),
+    ('porton', 'Portón de chapa', 'Sheet-steel car gate leaf', 'porton', 'cutout', 'metal'),
+]
+for _k, _es, _en, _p, _r, _snd in DOORS:
+    Door('casa_' + _k, _es, _en, door_mat((lambda name: (lambda: PAINTERS['door_' + name](0)))(_p)), kit=KIT, render=_r, sound=_snd)
+
+
+# =============================================================================================== WINDOWS
+# In-wall pieces: each REPLACES a wall block. 'facing' = the EXTERIOR (bars and roller blind outside, the casements
+# in the middle of the wall, the interior sill and the blind-box cover inside). Jambs, sill and lintel are white
+# lime render on the outside (a render surround that also reads well inside a brick facade) and white latex inside.
+# 2x2 window: inf (lower) / sup (upper) x izq / der, where izq/der = left/right of a viewer OUTSIDE looking at the
+# window (izq = authoring +x: its jamb is at x 14..16; der has its jamb at x 0..2). '_cerrada' = roller blind down.
+# Half-closed blind = sup_cerrada pieces over open inf pieces.
+WIN_FRAME_Z = (6.0, 8.5)
+
+
+def wall_face_painter(ext='revoque_blanco', inn='pared_bano', split=None):
+    """Faces of a wall chunk: north (exterior) = facade render, south (interior) = latex, reveal faces split at the
+    window frame (dark contact line where the frame sits)."""
+    split = split or WIN_FRAME_Z
+    pe, pi = aligned(T(ext)), aligned(T(inn))
+
+    def p(face, w, h, part):
+        if face == 'north':
+            return pe(face, w, h, part)
+        if face == 'south':
+            return pi(face, w, h, part)
+        x, y, z = face_coords(part, face, w, h)
+        a, b = pe(face, w, h, part), pi(face, w, h, part)
+        out = np.where((z < (split[0] + split[1]) / 2)[..., None], a, b).astype(float)
+        near = (np.abs(z - split[0]) < 0.6) | (np.abs(z - split[1]) < 0.6)
+        out[..., :3] *= np.where(near, 0.62, 1.0)[..., None]
+        edge = (z < 0.6)                                              # the arris at the facade catches light
+        out[..., :3] = np.where(edge[..., None], np.minimum(out[..., :3] * 1.08, 255), out[..., :3])
+        return out.round().astype(np.uint8)
+    return p
+
+
+def sill_paint(face, w, h, part, cv):
+    """Cement window sill: smooth, dirtier on top, drip groove under the nose, a crack, black run-off."""
+    x, y, z = face_coords(part, face, w, h)
+    idx = np.full((h, w), 5) + (vnoise(w, h, max(1, w // 4), max(1, h // 4), 8810) > 0.62) - (vnoise(w, h, max(1, w // 6), max(1, h // 3), 8811) < 0.25)
+    if face == 'up':
+        idx = idx - (z > 3)
+    if face == 'down':
+        idx = idx - 2
+    cv.put(CEMENT, idx + 1)
+    if face == 'up':
+        cv.tint('#3a3426', np.where(vnoise(w, h, max(1, w // 3), max(1, h // 2), 8812) > 0.5, 0.25, 0.08))
+    if face == 'north':
+        cv.tint('#1c1e16', np.where(vnoise(w, h, max(1, w // 2), 1, 8813) > 0.55, 0.3, 0))
+
+
+PERSIANA = Ramp('#1e150e', '#2e2116', '#43301f', '#5a4129', '#6f5134', '#836141', '#97734f', '#a9845e')   # sun-beaten varnish
+
+
+def persiana_painter(side='ext'):
+    """Wooden roller-blind slats (2 units each), weathered grey outside, honey pine inside; tiny light slits at the
+    joints (the house light leaks out through them at night). Rows aligned in block space across inf/sup."""
+    def p(face, w, h, part):
+        x, y, z = face_coords(part, face, w, h)
+        v = np.floor((16 - y) * 2).astype(int)
+        u = np.floor(x * 2).astype(int)
+        r = v % 4
+        slat = v // 4
+        tone = ((slat * 7) % 5 == 0) * -1 + ((slat * 3) % 7 == 0) * 1
+        idx = np.where(r == 0, 5, np.where(r == 3, 1, 3)) + tone
+        g = np.where((u * 5 + slat * 3) % 11 == 0, -1, 0) + np.where((u * 3 + slat) % 13 == 0, 1, 0)
+        idx = idx + np.where(r < 3, g, 0)
+        cv = Cv(w, h)
+        cv.put(PERSIANA if (side == 'ext' and face == 'north') else PINO, idx + (0 if face == 'north' else 1))
+        if face == 'north':
+            cv.tint('#2a2620', np.where(vnoise(w, h, max(1, w // 6), max(1, h // 8), 8820) > 0.62, 0.2, 0))
+        slit = (r == 3) & ((u + slat * 5) % 9 == 0)
+        cv.a = np.where(slit, 0, cv.a)
+        return cv.out()
+    return p
+
+
+def window_wood(seed):
+    return pp_paint(CREAM_EN, 5, seed=seed, chip=0.18)
+
+
+def reja_rings_painter(xw0):
+    """Cut-out band of welded rings between the bars (window-space x: xw = local x + xw0)."""
+    def p(face, w, h, part):
+        x, y, z = face_coords(part, face, w, h)
+        xw = x + xw0
+        cxr = np.floor(xw / 3.5) * 3.5 + 1.75
+        d = np.sqrt((xw - cxr) ** 2 + (y - 7.0) ** 2)
+        m = np.abs(d - 1.15) < 0.32
+        cv = Cv(w, h)
+        idx = np.full((h, w), 3) + (y > 7.0) * 2
+        cv.put(REJA_V, idx, m)
+        cv.put(RUST, np.full((h, w), 2), m & (vnoise(w, h, max(1, w // 3), max(1, h // 2), 8830) > 0.75))
+        return cv.out()
+    return p
+
+
+def window2_parts(piece, side, closed=False):
+    """2x2 casement window with reja and roller blind. piece 'inf'/'sup', side 'izq'/'der'."""
+    izq = side == 'izq'
+    xw0 = 14.0 if izq else -2.0                 # window-space x = local x + xw0 (0..28 between the jambs)
+    ox0, ox1 = (0.0, 14.0) if izq else (2.0, 16.0)       # the opening inside this block
+    wallp = wall_face_painter()
+    parts = []
+    jx = (14.0, 16.0) if izq else (0.0, 2.0)
+    parts.append(P((jx[0], 0, 0), (jx[1], 16, 16), wallp, name='jamb'))
+    wood = window_wood(8840 + (piece == 'sup') + 2 * izq)
+    it = pp_iron(seed=8850, rust=0.35)
+    rej = lambda frm, to, nm: P(frm, to, pp_fn(lambda face, w, h, part, cv: cv.put(REJA_V, np.full((h, w), 3) + (face == 'up') * 2 - (face == 'down') * 2
+                                                                                      + (vnoise(w, h, max(1, w // 2), max(1, h // 2), fkey(part, face)) > 0.7))), name=nm)
+    fz0, fz1 = WIN_FRAME_Z
+    # frame (marco) against the jamb and the leaves
+    fr_x = (12.6, 14.0) if izq else (2.0, 3.4)
+    ms_x = (0.0, 1.2) if izq else (14.8, 16.0)          # meeting stile at the centre seam
+    os_x = (11.4, 12.6) if izq else (3.4, 4.6)          # leaf outer stile
+    gx = (1.2, 11.4) if izq else (4.6, 14.8)
+    if piece == 'inf':
+        y0, y1 = 1.6, 16.0
+        parts += [P((ox0 - (0 if izq else 0), 0, -1.6), (ox1 + (1.5 if izq else 0) if izq else ox1, 1.6, 0.0), pp_fn(sill_paint), name='sill_nose'),
+                  P((ox0, 0, 0.0), (ox1, 1.6, fz0), pp_fn(sill_paint), name='sill'),
+                  P((ox0, 0, fz1), (ox1, 1.2, 16.6), pp_wood(CEDRO, 5, seed=8860, along='x'), name='sill_in'),
+                  P((ox0, 1.2, fz0), (ox1, 3.4, fz1), wood, name='rail_b'),
+                  P((ms_x[0], 3.4, 6.4), (ms_x[1], 16, 8.1), wood, name='meet'),
+                  P((os_x[0], 3.4, 6.4), (os_x[1], 16, 8.1), wood, name='stile'),
+                  P((gx[0], 9.6, 7.0), (gx[1], 10.4, 7.6), wood, name='bar')]
+        if not izq:   # the der sill nose also covers the left ear
+            parts[1] = P((-1.5, 0, -1.6), (16.0, 1.6, 0.0), pp_fn(sill_paint), name='sill_nose')
+        else:
+            parts[1] = P((0.0, 0, -1.6), (17.5, 1.6, 0.0), pp_fn(sill_paint), name='sill_nose')
+        gy = (3.4, 16.0)
+    else:
+        y0, y1 = 0.0, 11.4
+        parts += [P((ox0, 11.4, 0), (ox1, 16, 16), wall_face_painter(inn='pared_bano'), name='lintel'),
+                  P((ox0, 10.0, fz0), (ox1, 11.4, fz1), wood, name='head'),
+                  P((ox0, 8.6, 6.4), (ox1, 10.0, 8.1), wood, name='rail_t'),
+                  P((ms_x[0], 0, 6.4), (ms_x[1], 8.6, 8.1), wood, name='meet'),
+                  P((os_x[0], 0, 6.4), (os_x[1], 8.6, 8.1), wood, name='stile'),
+                  P((gx[0], 1.2, 7.0), (gx[1], 2.0, 7.6), wood, name='bar'),
+                  # blind-box cover inside (tapa del cajón de persiana): a painted board with a screwed lid
+                  P((ox0, 11.4, 16.0), (ox1, 16.0, 16.4), pp_paint(ENAMEL_W, 5, seed=8870, chip=0.1, along='x'), name='box_cover')]
+        gy = (0.0, 8.6)
+    parts.append(P((fr_x[0], y0, fz0), (fr_x[1], y1 if piece == 'inf' else 10.0, fz1), wood, name='frame'))
+    parts.append(PL((gx[0], gy[0], 7.3), (gx[1], gy[1], 7.3), pp_glass(seed=8880 + (piece == 'sup') + 2 * izq, alpha=88), name='glass'))
+    # roller blind: guides on the jamb, slats when closed, the bottom bar peeking out of the box when open
+    gdx = (13.2, 14.0) if izq else (2.0, 2.8)
+    parts.append(P((gdx[0], y0, 2.0), (gdx[1], y1, 4.4), pp_iron(seed=8890, rust=0.3), name='guide'))
+    sx0, sx1 = (0.0, 13.2) if izq else (2.8, 16.0)
+    if closed:
+        parts.append(P((sx0, y0, 2.6), (sx1, y1, 3.8), persiana_painter(), name='slats'))
+    elif piece == 'sup':
+        parts.append(P((sx0, 9.2, 2.4), (sx1, 11.4, 4.0), persiana_painter(), name='slat_bar'))
+    # reja: frame flat bars, vertical bars every 3.5 (window space), ring band in the upper piece
+    rz = (0.3, 1.3)
+    parts.append(rej(((13.0, y0, rz[0]) if izq else (2.0, y0, rz[0])), ((14.0, y1, rz[1]) if izq else (3.0, y1, rz[1])), 'reja_side'))
+    if piece == 'inf':
+        parts.append(rej((ox0, 1.6, rz[0]), (ox1, 2.6, rz[1]), 'reja_bottom'))
+    else:
+        parts.append(rej((ox0, 10.4, rz[0]), (ox1, 11.4, rz[1]), 'reja_top'))
+        parts.append(rej((ox0, 4.6, rz[0]), (ox1, 5.4, rz[1]), 'reja_r1'))
+        parts.append(rej((ox0, 8.6, rz[0]), (ox1, 9.4, rz[1]), 'reja_r2'))
+        parts.append(PL((ox0, 5.4, 0.8), (ox1, 8.6, 0.8), reja_rings_painter(xw0), name='rings'))
+    for k in range(1, 8):
+        xw = 3.5 * k
+        xl = xw - xw0
+        if ox0 - 0.01 <= xl <= ox1 + 0.01 and not (izq and abs(xw - 14.0) < 0.01):
+            parts.append(P((xl - 0.45, y0, 0.35), (xl + 0.45, y1, 1.25), it, name='bar_v'))
+    if izq:   # the strap of the roller blind and its winder, on the interior face of the jamb
+        if piece == 'inf':
+            parts.append(P((14.3, 6.0, 16.0), (15.8, 10.6, 16.35), pp_paint(ENAMEL_W, 5, seed=8895, chip=0.0), name='winder'))
+            parts.append(PL((14.85, 10.6, 16.1), (15.25, 16.0, 16.1), pp_fn(strap_paint), name='strap'))
+        else:
+            parts.append(PL((14.85, 0.0, 16.1), (15.25, 11.4, 16.1), pp_fn(strap_paint), name='strap'))
+    return parts
+
+
+def strap_paint(face, w, h, part, cv):
+    x, y, z = face_coords(part, face, w, h)
+    cv.put(Ramp('#3a3226', '#5a4e3a', '#7a6c52', '#948668'), np.full((h, w), 2) + (np.floor(y * 2).astype(int) % 3 == 0))
+
+
+def kitchen_window_parts(side, open_=False):
+    """Kitchen window over the counter (2 wide x 1 high, sill at the bottom of the block, lintel on top): a cream
+    painted IRON casement with 2x2 small panes per leaf, reja outside, no blind. '_abierta' = this leaf swung open
+    into the kitchen (Marta throws the chorizo through it)."""
+    izq = side == 'izq'
+    xw0 = 14.0 if izq else -2.0
+    ox0, ox1 = (0.0, 14.0) if izq else (2.0, 16.0)
+    jx = (14.0, 16.0) if izq else (0.0, 2.0)
+    wallp = wall_face_painter(inn='pared_cocina')
+    ironf = pp_paint(CREAM_EN, 5, seed=8900 + izq, chip=0.25)
+    parts = [P((jx[0], 0, 0), (jx[1], 16, 16), wallp, name='jamb'),
+             P((0.0 if izq else -1.5, 0, -1.6), (17.5 if izq else 16.0, 1.6, 0.0), pp_fn(sill_paint), name='sill_nose'),
+             P((ox0, 0, 0), (ox1, 1.6, 16.0), pp_fn(sill_paint), name='sill'),
+             P((ox0, 12.4, 0), (ox1, 16, 16), wall_face_painter(inn='pared_cocina'), name='lintel'),
+             P((ox0, 1.6, 6.0), (ox1, 2.4, 7.4), ironf, name='frame_b'),
+             P((ox0, 11.6, 6.0), (ox1, 12.4, 7.4), ironf, name='frame_t'),
+             P(((13.2, 1.6, 6.0) if izq else (2.0, 1.6, 6.0)), ((14.0, 12.4, 7.4) if izq else (2.8, 12.4, 7.4)), ironf, name='frame_s')]
+    # leaf (2x2 panes): x within the opening; hinge at the jamb side
+    lx0, lx1 = (0.0, 13.2) if izq else (2.8, 16.0)
+    leaf = [((lx0, 2.4), (lx1, 3.0)), ((lx0, 11.0), (lx1, 11.6)), ((lx0, 6.7), (lx1, 7.3))]
+    if not open_:
+        for (a, b) in leaf:
+            parts.append(P((a[0], a[1], 6.3), (b[0], b[1], 7.1), ironf, name='leaf_h'))
+        for xs in ((lx0, lx0 + 0.6), (lx1 - 0.6, lx1), ((lx0 + lx1) / 2 - 0.3, (lx0 + lx1) / 2 + 0.3)):
+            parts.append(P((xs[0], 3.0, 6.3), (xs[1], 11.0, 7.1), ironf, name='leaf_v'))
+        parts.append(PL((lx0, 2.4, 6.7), (lx1, 11.6, 6.7), pp_glass(seed=8910 + izq, alpha=90), name='glass'))
+    else:
+        hx = lx1 if izq else lx0          # hinge on the jamb side; the leaf points into the kitchen (+z)
+        sgn = -1 if izq else 1
+        L = lx1 - lx0
+        xa, xb = (hx - 0.8, hx) if izq else (hx, hx + 0.8)
+        for (a, b) in leaf:
+            parts.append(P((xa, a[1], 7.1), (xb, b[1], 7.1 + L), ironf, name='leaf_h'))
+        for zs in ((7.1, 7.7), (7.1 + L - 0.6, 7.1 + L), (7.1 + L / 2 - 0.3, 7.1 + L / 2 + 0.3)):
+            parts.append(P((xa, 3.0, zs[0]), (xb, 11.0, zs[1]), ironf, name='leaf_v'))
+        parts.append(PL(((xa + xb) / 2, 2.4, 7.1), ((xa + xb) / 2, 11.6, 7.1 + L), pp_glass(seed=8912 + izq, alpha=90), name='glass'))
+    it = pp_iron(seed=8920, rust=0.35)
+    rej = pp_fn(lambda face, w, h, part, cv: cv.put(REJA_V, np.full((h, w), 3) + (face == 'up') * 2 - (face == 'down') * 2))
+    parts += [P((ox0, 1.6, 0.3), (ox1, 2.4, 1.3), rej, name='reja_b'), P((ox0, 11.6, 0.3), (ox1, 12.4, 1.3), rej, name='reja_t'),
+              P(((13.0, 1.6, 0.3) if izq else (2.0, 1.6, 0.3)), ((14.0, 12.4, 1.3) if izq else (3.0, 12.4, 1.3)), rej, name='reja_s')]
+    for k in range(1, 8):
+        xw = 3.5 * k
+        xl = xw - xw0
+        if ox0 - 0.01 <= xl <= ox1 + 0.01 and not (izq and abs(xw - 14.0) < 0.01):
+            parts.append(P((xl - 0.45, 1.6, 0.35), (xl + 0.45, 12.4, 1.25), it, name='bar_v'))
+    return parts
+
+
+def bath_window_parts():
+    """Small high bathroom window (1 block): frosted tilting sash (banderola) open a crack, three bars outside."""
+    wallp = wall_face_painter(inn='pared_bano')
+    wood = window_wood(8930)
+    parts = [P((0, 0, 0), (3, 16, 16), wallp, name='jamb_r'), P((13, 0, 0), (16, 16, 16), wallp, name='jamb_l'),
+             P((3, 0, 0), (13, 4, 16), wallp, name='under'), P((3, 14, 0), (13, 16, 16), wallp, name='lintel'),
+             P((2.0, 2.8, -1.4), (14.0, 4.0, 0.0), pp_fn(sill_paint), name='sill_nose'),
+             P((3, 4, 6.0), (13, 4.8, 8.5), wood, name='frame_b'), P((3, 13.2, 6.0), (13, 14, 8.5), wood, name='frame_t'),
+             P((3, 4.8, 6.0), (3.8, 13.2, 8.5), wood, name='frame_l'), P((12.2, 4.8, 6.0), (13, 13.2, 8.5), wood, name='frame_r')]
+    rot = ('x', 22.5, (8.0, 4.8, 7.6))
+    sash = [P((3.9, 4.8, 7.0), (12.1, 5.6, 8.2), wood, rot=rot, name='sash_b'), P((3.9, 12.4, 7.0), (12.1, 13.1, 8.2), wood, rot=rot, name='sash_t'),
+            P((3.9, 5.6, 7.0), (4.6, 12.4, 8.2), wood, rot=rot, name='sash_l'), P((11.4, 5.6, 7.0), (12.1, 12.4, 8.2), wood, rot=rot, name='sash_r'),
+            PL((4.6, 5.6, 7.6), (11.4, 12.4, 7.6), pp_glass(seed=8935, frosted=True), rot=rot, name='glass')]
+    parts += sash
+    it = pp_iron(seed=8940, rust=0.4)
+    for x in (5.5, 8.0, 10.5):
+        parts.append(P((x - 0.45, 4.0, 0.4), (x + 0.45, 14.0, 1.3), it, name='bar'))
+    parts.append(P((3.0, 8.6, 0.3), (13.0, 9.4, 1.4), it, name='bar_h'))
+    return parts
+
+
+for _side in ('izq', 'der'):
+    for _pc, _pes in (('inf', 'abajo'), ('sup', 'arriba')):
+        F(f'ventana_{_pc}_{_side}', f'Ventana con reja y persiana ({_pes}, {_side})', f'Window with bars and roller blind ({_pc}, {_side})',
+          window2_parts(_pc, _side), render='translucent', sound='glass')
+        F(f'ventana_{_pc}_{_side}_cerrada', f'Ventana con persiana bajada ({_pes}, {_side})', f'Window with the blind down ({_pc}, {_side})',
+          window2_parts(_pc, _side, closed=True), render='translucent', sound='glass')
+    F(f'ventana_cocina_{_side}', f'Ventana de la cocina ({_side})', f'Kitchen window over the counter ({_side})',
+      kitchen_window_parts(_side), render='translucent', sound='glass')
+    F(f'ventana_cocina_{_side}_abierta', f'Ventana de la cocina abierta ({_side})', f'Kitchen window, leaf open ({_side})',
+      kitchen_window_parts(_side, open_=True), render='translucent', sound='glass')
+F('ventana_bano', 'Ventanita del baño (banderola)', 'Small bathroom tilt window', bath_window_parts(), render='translucent', sound='glass')
+
+
+# =============================================================================================== FRONT FENCE & STREET
+# Fence line along the sidewalk: casa_murito (low brick wall, 13.5/16 with its cement coping) carries casa_reja in
+# the block above (the railing reaches down onto the coping); casa_pilar / casa_pilar_remate are the brick piers
+# (corners, both sides of the gates); casa_pilar_luz is the electricity pier with the meter box facing the street.
+# The gates are the Door blocks casa_puerta_reja (pedestrian) and casa_porton (car gate leaves, place two or more).
+# Wall-mounted pieces (signs, meters, number, bell) sit against the wall behind them (z=16), front = facing.
+_IMG = {}
+
+
+def img_once(name, builder):
+    if name not in _IMG:
+        _IMG[name] = builder()
+    return _IMG[name]
+
+
+def plate_box(name, builder, x0, x1, y0, y1, z0, z1, back=GALV, back_idx=3):
+    """A thin plate whose front (north) face shows a composition image; back and edges are painted sheet metal.
+    Transparent image pixels are cut out on every face."""
+    def p(face, w, h, part):
+        img = img_once(name, builder)
+        H_, W_ = img.shape[:2]
+        x, y, z = face_coords(part, face, w, h)
+        col = np.clip(np.floor((x1 - x) / (x1 - x0) * W_).astype(int), 0, W_ - 1)
+        row = np.clip(np.floor((y1 - y) / (y1 - y0) * H_).astype(int), 0, H_ - 1)
+        a = img[row, col].astype(float)
+        if face == 'north':
+            return np.clip(a, 0, 255).round().astype(np.uint8)
+        cv = Cv(w, h)
+        cv.put(back, np.full((h, w), back_idx) + (vnoise(w, h, max(1, w // 3), max(1, h // 3), fkey(part, face)) > 0.6))
+        cv.put(RUST, np.full((h, w), 2), vnoise(w, h, max(1, w // 3), max(1, h // 3), fkey(part, face) + 1) > 0.7)
+        cv.a = np.where(a[..., 3] > 0, cv.a, 0)
+        return cv.out()
+    return P((x0, y0, z0), (x1, y1, z1), p, name=name)
+
+
+def brick_wall_painter(dirty_foot=True):
+    tex = T('ladrillo', 0)
+    base = aligned(tex)
+
+    def p(face, w, h, part):
+        a = base(face, w, h, part).astype(float)
+        x, y, z = face_coords(part, face, w, h)
+        if dirty_foot and face not in ('up', 'down'):
+            t = np.clip((4.5 - y) / 4.5, 0, 1) * 0.5
+            a[..., :3] = a[..., :3] * (1 - t[..., None]) + C('#2a2418') * t[..., None]
+            sp = (y < 2.0) & (vnoise(w, h, max(1, w // 2), max(1, h // 2), fkey(part, face)) > 0.55)
+            a[..., :3] = np.where(sp[..., None], EARTH[np.full((h, w), 3)], a[..., :3])
+        return np.clip(a, 0, 255).round().astype(np.uint8)
+    return p
+
+
+def coping_paint(face, w, h, part, cv):
+    x, y, z = face_coords(part, face, w, h)
+    k = fkey(part, face)
+    idx = np.full((h, w), 5) + (vnoise(w, h, max(1, w // 4), max(1, h // 4), k) > 0.62) - (vnoise(w, h, max(1, w // 6), max(1, h // 3), k + 1) < 0.25)
+    if face == 'down':
+        idx = idx - 2
+    if face in ('north', 'south', 'east', 'west') and h > 2:
+        idx = np.where(np.arange(h)[:, None] == 0, idx + 1, idx)
+    cv.put(CEMENT, idx)
+    cv.put(LICHEN, np.full((h, w), 1) + (vnoise(w, h, max(1, w // 2), max(1, h // 2), k + 2) > 0.8),
+           vnoise(w, h, max(1, w // 3), max(1, h // 3), k + 3) > 0.78)
+    if face == 'up':
+        cv.put(MOSS, np.full((h, w), 2), (vnoise(w, h, max(1, w // 2), max(1, h // 2), k + 4) > 0.8))
+        cm = path_mask(wander([(int(w * 0.6), 0), (int(w * 0.55), h // 2), (int(w * 0.62), h - 1)], k, amp=1.0), w, h, wrap=False)
+        cv.put(CEMENT, np.full((h, w), 1), cm)
+
+
+def murito_parts():
+    return [P((0, 0, 4), (16, 12, 12), brick_wall_painter(), name='wall'),
+            P((0, 12, 3), (16, 13.5, 13), pp_fn(coping_paint), name='coping')]
+
+
+def pilar_parts(top=False):
+    bw = brick_wall_painter()
+    if not top:
+        return [P((1, 0, 1), (15, 16, 15), bw, name='pier')]
+    cp = pp_fn(coping_paint)
+    return [P((1, 0, 1), (15, 10, 15), brick_wall_painter(False), name='pier'),
+            P((0, 10, 0), (16, 11.8, 16), cp, name='cap'),
+            P((1.5, 11.8, 1.5), (14.5, 12.8, 14.5), cp, name='step'),
+            P((4, 12.8, 4), (12, 14.0, 12), cp, name='pyr1'),
+            P((6, 14.0, 6), (10, 14.8, 10), cp, name='pyr2')]
+
+
+def reja_parts(sign=None):
+    """Railing on top of the low wall: square bars every 8/3 with spear tips, two rails, a band of welded rings,
+    the posts reach down onto the coping (y -2.5)."""
+    rp = pp_fn(lambda face, w, h, part, cv: (cv.put(REJA_V, np.full((h, w), 3) + (face == 'up') * 2 - (face == 'down') * 2
+                                                    + (vnoise(w, h, max(1, w // 2), max(1, h // 2), fkey(part, face)) > 0.7)),
+                                             cv.put(RUST, np.full((h, w), 2), vnoise(w, h, max(1, w // 2), max(1, h // 2), fkey(part, face) + 9) > 0.8)))
+    parts = [P((0, -2.5, 7.4), (16, -1.5, 8.6), rp, name='rail_b'), P((0, 11.0, 7.4), (16, 12.0, 8.6), rp, name='rail_t'),
+             P((0, 7.0, 7.4), (16, 7.8, 8.6), rp, name='rail_m'),
+             PL((0, 7.8, 8.0), (16, 11.0, 8.0), reja_band_painter(), name='rings')]
+    for k in range(6):
+        x = 1.333 + k * 2.667
+        parts.append(P((x - 0.5, -1.5, 7.5), (x + 0.5, 14.0, 8.5), rp, name='bar'))
+        parts.append(P((x - 0.85, 13.6, 7.65), (x + 0.85, 15.3, 8.35), rp, name='tip', rot=('z', 45, (x, 14.45, 8.0))))
+    if sign:
+        parts.append(plate_box(sign, SIGNS[sign], -2.0, 18.0, 0.5, 17.0 if 'nona' in sign else 12.5, 6.4, 6.9))
+        parts.append(P((2.0, 10.6, 6.9), (2.6, 11.4, 7.6), pp_iron(seed=7001, rust=0.6), name='wire_l'))
+        parts.append(P((13.4, 10.6, 6.9), (14.0, 11.4, 7.6), pp_iron(seed=7002, rust=0.6), name='wire_r'))
+    return parts
+
+
+def reja_band_painter():
+    def p(face, w, h, part):
+        x, y, z = face_coords(part, face, w, h)
+        cxr = np.floor(x / 2.667) * 2.667 + 1.333 + 1.333
+        cxr = np.where(cxr > 16, cxr - 2.667, cxr)
+        d = np.sqrt((x - (np.floor((x - 1.333) / 2.667) * 2.667 + 2.667)) ** 2 + (y - 9.4) ** 2)
+        m = np.abs(d - 1.05) < 0.32
+        cv = Cv(w, h)
+        cv.put(REJA_V, np.full((h, w), 3) + (y > 9.4) * 2, m)
+        return cv.out()
+    return p
+
+
+DOG = ['.#..#........', '.##.##.......', '.#####.......', '#######......', '##o#######...', '###########..',
+       '#######...##.', '######.v.v...', '#######......', '.######......', '..#####......']
+
+
+def dog_sign(nona=False):
+    """'CUIDADO CON EL PERRO' tin sign: red band, a snarling dog head, black letters on yellow. The Nona variant has
+    '...Y CON LA NONA!' added in black marker, a bit crooked."""
+    W_, H_ = 40, 33 if nona else 24
+    cv = Cv(W_, H_)
+    X, Y = cv.X, cv.Y
+    YEL = Ramp('#5a4410', '#8a6a18', '#b8901e', '#d8ac28', '#e8c040', '#f0d468')
+    cv.put(YEL, np.full((H_, W_), 4) - (vnoise(W_, H_, 6, 6, 7010) > 0.7) + (vnoise(W_, H_, 6, 6, 7011) > 0.75))
+    cv.put(Ramp('#5a0c0a', '#8a1612', '#b0201a'), np.full((H_, W_), 1) + (Y == 2), (Y >= 2) & (Y <= 8) & (X >= 2) & (X <= W_ - 3))
+    t = tiny_mask('CUIDADO')[1:]
+    m = np.zeros((H_, W_), bool)
+    stamp(m, t, (W_ - t.shape[1]) // 2, 3)
+    cv.col('#f4ece0', m)
+    dm = np.zeros((H_, W_), bool)
+    stamp(dm, ascii_mask(DOG, '#v'), 2, 11)
+    cv.col('#141210', dm)
+    eye = np.zeros((H_, W_), bool)
+    stamp(eye, ascii_mask(DOG, 'o'), 2, 11)
+    cv.col('#e8c040', eye)
+    teeth = np.zeros((H_, W_), bool)
+    stamp(teeth, ascii_mask(DOG, 'v'), 2, 11)
+    cv.col('#f4ece0', teeth)
+    for txt, yy in (('CON EL', 11), ('PERRO', 17)):
+        t = tiny_mask(txt)[1:]
+        m = np.zeros((H_, W_), bool)
+        stamp(m, t, 16 + (22 - t.shape[1]) // 2, yy)
+        cv.col('#141210', m)
+    if nona:   # marker, hand-written: each glyph nudged, rising to the right
+        x = 3
+        for line, y0 in (('...Y CON', 24), ('LA NONA!', 29)):
+            xx = 4 if y0 == 24 else 8
+            for k, ch in enumerate(line):
+                g = tiny_mask(ch)[1:] if ch not in '.!' else (np.array([[0], [0], [0], [0], [1]], bool) if ch == '.' else np.array([[1], [1], [1], [0], [1]], bool))
+                m = np.zeros((H_, W_), bool)
+                stamp(m, g, xx, y0 - (k // 3) + (k % 2) * 0)
+                cv.col('#121014', m)
+                xx += g.shape[1] + 1
+        cv.col('#121014', (Y == 31) & (X >= 9) & (X <= 33) & ((X % 7) != 3))      # underline, twice for emphasis
+    # border, rusty bent corner, two wire holes
+    bd = (X == 0) | (X == W_ - 1) | (Y == 0) | (Y == H_ - 1)
+    cv.col('#1a1612', bd)
+    edge = (X <= 1) | (X >= W_ - 2) | (Y <= 1) | (Y >= H_ - 2)
+    rs = (edge & (vnoise(W_, H_, 8, 8, 7012) > 0.5)) | ((X > W_ - 6) & (Y > H_ - 6) & (vnoise(W_, H_, 10, 10, 7013) > 0.4))
+    rs |= (X <= 3) & (Y >= 9) & (vnoise(W_, H_, 10, 10, 7015) > 0.6)
+    cv.put(RUST, np.full((H_, W_), 2) + (vnoise(W_, H_, 16, 16, 7014) > 0.6), rs)
+    cv.a = np.where((X >= W_ - 2) & (Y >= H_ - 2), 0, cv.a)
+    for hx_ in (8, W_ - 9):
+        cv.col('#0a0806', (X == hx_) & (Y == 1))
+    return cv.out()
+
+
+SIGNS = {'cartel_perro': lambda: dog_sign(False), 'cartel_perro_nona': lambda: dog_sign(True)}
+
+
+def wall_sign_parts(sign):
+    top = 17.0 if 'nona' in sign else 12.5
+    return [plate_box(sign, SIGNS[sign], -2.0, 18.0, top - (16.5 if 'nona' in sign else 12.0), top, 15.3, 15.8, back=GALV),
+            P((5.0, top - 2.0, 15.8), (6.0, top - 1.0, 16.0), pp_iron(seed=7003), name='screw_l'),
+            P((10.0, top - 2.0, 15.8), (11.0, top - 1.0, 16.0), pp_iron(seed=7004), name='screw_r')]
+
+
+# --- meters
+def meter_luz_img():
+    """Electricity meter box door: grey steel, a window onto the meter (dial, the spinning disc's slot, numbers),
+    'LUZ' stencil, a lead seal on a wire, a rusty hinge, a sticker of a phone number for a locksmith."""
+    W_, H_ = 20, 24
+    cv = Cv(W_, H_)
+    X, Y = cv.X, cv.Y
+    G = Ramp('#22262a', '#30353a', '#40464c', '#525960', '#656d74', '#7a838a', '#9099a0')
+    cv.put(G, np.full((H_, W_), 4) + (vnoise(W_, H_, 4, 4, 7020) > 0.65) - (vnoise(W_, H_, 6, 6, 7021) < 0.25))
+    win = (X >= 4) & (X <= 15) & (Y >= 3) & (Y <= 13)
+    cv.put(GLASS, np.full((H_, W_), 3), win)
+    face = (X >= 5) & (X <= 14) & (Y >= 4) & (Y <= 12)
+    cv.put(ENAMEL, np.full((H_, W_), 3), face)
+    cv.col('#1a1a1a', face & (Y == 6) & (X >= 6) & (X <= 13) & (X % 2 == 0))      # the counter digits
+    cv.col('#c81818', face & (Y == 6) & (X == 13))
+    cv.col('#2a2a2a', face & (Y == 10) & (X >= 6) & (X <= 13))                  # disc slot
+    cv.col('#c81818', face & (Y == 10) & (X == 9))                              # the red mark on the disc
+    cv.tint('#ffffff', np.where(win & ((X + Y) % 9 == 0), 0.35, 0))
+    cv.put(G, np.full((H_, W_), 6), (Y == 2) & (X >= 3) & (X <= 16) | (X == 3) & (Y >= 2) & (Y <= 14))
+    cv.put(G, np.full((H_, W_), 1), (Y == 14) & (X >= 3) & (X <= 16) | (X == 16) & (Y >= 2) & (Y <= 14))
+    t = tiny_mask('LUZ')[1:]
+    m = np.zeros((H_, W_), bool)
+    stamp(m, t, (W_ - t.shape[1]) // 2, 16)
+    cv.col('#d8d0b0', m)
+    cv.put(Ramp('#3a3a3a', '#6a6a6a', '#9a9a9a'), np.full((H_, W_), 2), (X == 17) & (Y >= 18) & (Y <= 19))   # lead seal
+    cv.col('#8a8a80', (X == 16) & (Y == 17))
+    cv.put(RUST, np.full((H_, W_), 2), (X <= 1) & ((Y == 4) | (Y == 5) | (Y == 18) | (Y == 19)))
+    cv.put(RUST, np.full((H_, W_), 1), (vnoise(W_, H_, 6, 6, 7022) > 0.8) | (Y >= H_ - 2) & (vnoise(W_, H_, 10, 4, 7023) > 0.4))
+    sticker = (X >= 4) & (X <= 11) & (Y >= 19) & (Y <= 21)
+    cv.col('#e8e0c8', sticker)
+    cv.col('#2a4a9a', sticker & (Y == 20) & (X % 2 == 1))
+    cv.col('#141414', (X == 0) | (X == W_ - 1) | (Y == 0) | (Y == H_ - 1))
+    return cv.out()
+
+
+def meter_gas_img():
+    """Gas meter cabinet door: yellow paint gone ochre, a grid of punched vent holes, 'GAS' stencil, padlock eye."""
+    W_, H_ = 24, 20
+    cv = Cv(W_, H_)
+    X, Y = cv.X, cv.Y
+    YEL = Ramp('#4a3a10', '#6a5418', '#8a6e20', '#a8882a', '#c09c36', '#d0b048')
+    cv.put(YEL, np.full((H_, W_), 4) + (vnoise(W_, H_, 4, 4, 7030) > 0.65) - (vnoise(W_, H_, 6, 6, 7031) < 0.3))
+    holes = (X >= 4) & (X <= 19) & (Y >= 3) & (Y <= 9) & (X % 3 == 1) & (Y % 3 == 0)
+    cv.col('#0e0c08', holes)
+    cv.put(YEL, np.full((H_, W_), 5), np.roll(holes, 1, 0))
+    t = tiny_mask('GAS')[1:]
+    m = np.zeros((H_, W_), bool)
+    stamp(m, t, (W_ - t.shape[1]) // 2, 12)
+    cv.col('#1a1610', m)
+    cv.put(IRON, np.full((H_, W_), 4), (X == 21) & (Y >= 9) & (Y <= 11))
+    cv.put(RUST, np.full((H_, W_), 2) + (vnoise(W_, H_, 8, 8, 7032) > 0.6),
+           (vnoise(W_, H_, 6, 6, 7033) > 0.78) | (Y >= H_ - 3) & (vnoise(W_, H_, 10, 4, 7034) > 0.3))
+    cv.col('#141414', (X == 0) | (X == W_ - 1) | (Y == 0) | (Y == H_ - 1))
+    return cv.out()
+
+
+_IMGB = {'medidor_luz': meter_luz_img, 'medidor_gas': meter_gas_img}
+
+
+def meter_box(name, x0, x1, y0, y1, z0, z1):
+    body = pp_fn(lambda face, w, h, part, cv: cv.put(Ramp('#22262a', '#30353a', '#40464c', '#525960', '#656d74'),
+                                                     np.full((h, w), 3) - (face == 'down') + (face == 'up')))
+    return [P((x0, y0, z0 + 0.4), (x1, y1, z1), body, name='body'),
+            plate_box(name, _IMGB[name], x0 - 0.2, x1 + 0.2, y0 - 0.2, y1 + 0.2, z0, z0 + 0.4, back=GALV)]
+
+
+def medidor_luz_parts():
+    """Wall-mounted electricity meter box with a conduit going up the wall."""
+    return meter_box('medidor_luz', 3, 13, 2, 14, 12.6, 16) + [P((7.2, 14, 13.8), (8.8, 16, 15.4), pp_fn(gutter_paint), name='conduit')]
+
+
+def medidor_gas_parts():
+    """Wall-mounted gas meter cabinet with the yellow supply pipe coming out of the floor."""
+    yp = pp_paint(Ramp('#4a3a10', '#6a5418', '#8a6e20', '#a8882a', '#c09c36', '#d0b048'), 4, seed=7035, chip=0.2)
+    return meter_box('medidor_gas', 2, 14, 3, 13, 12.0, 16) + [P((10.5, 0, 13.2), (12.0, 3, 14.7), yp, name='pipe'),
+                                                                P((10.2, 0, 12.9), (12.3, 0.6, 15.0), yp, name='flange')]
+
+
+def pilar_luz_parts():
+    """Electricity pier ('pilar de luz'): brick pier with the meter box set in its street face and the galvanised
+    mast with the cable inlet sticking up above (reaches into the block above)."""
+    bw = brick_wall_painter()
+    gz = pp_fn(gutter_paint)
+    return ([P((1, 0, 1), (15, 16, 15), bw, name='pier')] + meter_box('medidor_luz', 3, 13, 2, 14, 0.4, 1.0)
+            + [P((7.0, 16, 7.0), (9.0, 30, 9.0), gz, name='mast'), P((6.4, 29.0, 6.4), (9.6, 30.6, 9.6), gz, name='inlet'),
+               P((7.6, 30.6, 5.0), (8.4, 31.2, 9.0), gz, name='hook'), P((6.6, 16, 6.6), (9.4, 16.8, 9.4), gz, name='collar')])
+
+
+# --- street lamp
+def concrete_paint(face, w, h, part, cv):
+    """Precast concrete pole: grey with aggregate pits, the mould seam, rust from the rebar ties, grime at the foot."""
+    x, y, z = face_coords(part, face, w, h)
+    k = fkey(part, face)
+    idx = np.full((h, w), 4) + (vnoise(w, h, max(1, w // 3), max(1, h // 6), k) > 0.62) - (vnoise(w, h, max(1, w // 3), max(1, h // 4), k + 1) < 0.28)
+    cv.put(CEMENT, idx)
+    for (px_, py_) in poisson(k, max(1, w * h // 30), 2.0, w, h, wrap=False):
+        cv.put(CEMENT, np.full((h, w), 2), (cv.X == px_) & (cv.Y == py_))
+    if face in ('north', 'south', 'east', 'west'):
+        cv.put(CEMENT, np.full((h, w), 6), cv.X == w // 2)
+        tie = (np.floor(y * 2).astype(int) % 24 == 5)
+        cv.tint('#6a3a1a', np.where(tie & (vnoise(w, h, max(1, w // 2), 1, k + 2) > 0.3), 0.4, 0))
+        cv.tint('#6a3a1a', np.where((np.floor(y * 2).astype(int) % 24 > 5) & (np.floor(y * 2).astype(int) % 24 < 12) & (cv.X == 1), 0.25, 0))
+
+
+def poste_parts(foot=False, flyers=False):
+    cp = pp_fn(concrete_paint)
+    parts = [P((5.5, 0, 6.0), (10.5, 16, 10.0), cp, name='pole_a'), P((6.0, 0, 5.5), (10.0, 16, 10.5), cp, name='pole_b')]
+    if foot:
+        parts.append(P((4.5, 0, 4.5), (11.5, 1.2, 11.5), pp_fn(coping_paint), name='collar'))
+        parts.append(PL((5.49, 1.2, 6.0), (5.49, 5.0, 10.0), pp_fn(pee_stain), name='stain'))
+    if flyers:
+        parts.append(plate_box('afiche_vidente', flyer_vidente, 4.6, 11.4, 8.5, 15.5, 5.2, 5.5, back=Ramp('#c8c0a8', '#d8d0b8', '#e8e0c8'), back_idx=1))
+        parts.append(plate_box('afiche_fletes', flyer_fletes, 5.4, 10.6, 2.0, 8.0, 5.2, 5.45, back=Ramp('#c8c0a8', '#d8d0b8', '#e8e0c8'), back_idx=1))
+    return parts
+
+
+def pee_stain(face, w, h, part, cv):
+    x, y, z = face_coords(part, face, w, h)
+    t = np.clip((5.0 - y) / 4.0, 0, 1)
+    m = (vnoise(w, h, max(1, w // 2), max(1, h // 3), 7040) * t) > 0.25
+    cv.col('#2a2a1a', m, a=120)
+
+
+def flyer_vidente():
+    """Photocopied flyer: 'VIDENTE · TAROT · AMARRES' with a crude eye, and tear-off phone tabs (two torn off)."""
+    W_, H_ = 14, 14
+    cv = Cv(W_, H_)
+    X, Y = cv.X, cv.Y
+    cv.put(Ramp('#b8b098', '#d0c8b0', '#e4dcc8', '#eee8d8'), np.full((H_, W_), 2) + (vnoise(W_, H_, 4, 4, 7050) > 0.6))
+    for txt, yy in (('TAROT', 1),):
+        t = tiny_mask(txt)[1:]
+        m = np.zeros((H_, W_), bool)
+        stamp(m, t, (W_ - t.shape[1]) // 2, yy)
+        cv.col('#7a1a5a', m)
+    eye = ((X - 6.5) ** 2 / 9.0 + (Y - 8.5) ** 2 / 2.2) <= 1
+    cv.col('#1a1a1a', eye & ~(((X - 6.5) ** 2 / 6.0 + (Y - 8.5) ** 2 / 1.0) <= 1))
+    cv.col('#1a1a1a', (X >= 6) & (X <= 7) & (Y >= 8) & (Y <= 9))
+    tabs = (Y >= 11) & (X % 2 == 0)
+    cv.col('#2a2a2a', tabs & (Y == 12))
+    cv.a = np.where((Y >= 11) & ((X // 2) % 3 == 1), 0, cv.a)
+    return cv.out()
+
+
+def flyer_fletes():
+    W_, H_ = 10, 12
+    cv = Cv(W_, H_)
+    X, Y = cv.X, cv.Y
+    cv.put(Ramp('#a8b0c0', '#c0c8d8', '#d8e0ee'), np.full((H_, W_), 1) + (vnoise(W_, H_, 4, 4, 7051) > 0.6))
+    cv.col('#1a2a7a', (Y >= 1) & (Y <= 3) & (X >= 1) & (X <= 8))
+    truck = ascii_mask(['.....', '####.', '#####', '.#.#.'])
+    m = np.zeros((H_, W_), bool)
+    stamp(m, truck, 2, 5)
+    cv.col('#1a1a1a', m)
+    cv.col('#2a2a2a', (Y == 10) & (X % 2 == 1))
+    cv.tint('#6a5a3a', np.where(vnoise(W_, H_, 3, 3, 7052) > 0.6, 0.3, 0))
+    return cv.out()
+
+
+def farol_parts(lit=True):
+    """Street lamp head on the concrete pole: pole top, a curved iron arm reaching ~1 block over the street (towards
+    'facing'), a cobra-head luminaire with a refractor underneath (sodium orange when lit). The game flickers it by
+    swapping casa_farol / casa_farol_apagado."""
+    cp = pp_fn(concrete_paint)
+    it = pp_iron(seed=7060, rust=0.4)
+    shell = pp_fn(lambda face, w, h, part, cv: cv.put(Ramp('#2a2c2e', '#3c4044', '#52575c', '#6a7076', '#868c92'),
+                                                      np.full((h, w), 2) + (face == 'up') * 2 - (face == 'down')
+                                                      + (vnoise(w, h, max(1, w // 3), max(1, h // 3), fkey(part, face)) > 0.6)))
+
+    def lens(face, w, h, part, cv):
+        x, y, z = face_coords(part, face, w, h)
+        if lit:
+            cv.put(Ramp('#a85a14', '#d8801e', '#f0a83a', '#ffd070', '#fff0b8'), np.full((h, w), 2) + ((cv.X + cv.Y) % 3 == 0) + (np.abs(x - 8) < 1.5) * 2)
+        else:
+            cv.put(Ramp('#2a2a26', '#3a3a34', '#4e4c44', '#66625a'), np.full((h, w), 1) + ((cv.X + cv.Y) % 3 == 0))
+            cv.tint('#1a1408', np.where(vnoise(w, h, max(1, w // 2), max(1, h // 2), 7061) > 0.5, 0.4, 0))
+    parts = [P((5.5, 0, 6.0), (10.5, 11, 10.0), cp, name='pole_a'), P((6.0, 0, 5.5), (10.0, 11, 10.5), cp, name='pole_b'),
+             P((5.2, 11, 5.2), (10.8, 12.0, 10.8), cp, name='cap'),
+             P((7.2, 9.0, 4.0), (8.8, 13.0, 6.0), it, name='clamp'),
+             P((7.3, 12.0, 5.6), (8.7, 13.4, 9.0), it, name='arm_root'),
+             P((7.35, 11.2, -12.0), (8.65, 12.5, 6.0), it, rot=('x', 22.5, (8.0, 11.85, -3.0)), name='arm'),
+             P((5.0, 13.0, -15.8), (11.0, 15.4, -8.6), shell, name='shell'),
+             P((5.8, 15.4, -15.0), (10.2, 16.4, -9.6), shell, name='shell_top'),
+             P((7.4, 14.4, -8.8), (8.6, 15.4, -7.4), it, name='socket'),
+             P((5.6, 12.1, -15.2), (10.4, 13.0, -9.0), pp_fn(lens), shade=not lit, name='lens')]
+    return parts
+
+
+# --- house number, bell, street name
+def numero_img():
+    """Hand-painted azulejo with the house number 1961 in cobalt and a sprig of wisteria (glicinas)."""
+    W_, H_ = 22, 14
+    cv = Cv(W_, H_)
+    X, Y = cv.X, cv.Y
+    cv.put(Ramp('#9a978a', '#c8c4b4', '#e2ddcc', '#f0ece0'), np.full((H_, W_), 3) - (vnoise(W_, H_, 4, 4, 7070) > 0.75))
+    cv.put(Ramp('#1a2a6a', '#2a3e8a'), np.full((H_, W_), 1), (X == 1) | (X == W_ - 2) | (Y == 1) | (Y == H_ - 2))
+    t = text_mask('1961')[2:]
+    m = np.zeros((H_, W_), bool)
+    stamp(m, t, (W_ - t.shape[1]) // 2, 3)
+    cv.col('#1e3080', m)
+    for (lx_, ly_) in ((3, 4), (3, 6), (4, 5), (3, 8), (18, 9), (18, 7), (17, 8)):
+        cv.col('#8a6ab8', (X == lx_) & (Y == ly_))
+    cv.col('#4a7a3a', (X == 4) & (Y == 3) | (X == 17) & (Y == 10))
+    cv.tint('#6a5a3a', np.where(vnoise(W_, H_, 4, 4, 7071) > 0.7, 0.2, 0))
+    cv.col('#2a2826', (X == 0) | (X == W_ - 1) | (Y == 0) | (Y == H_ - 1))
+    cv.a = np.where((X == W_ - 1) & (Y <= 2), 0, cv.a)        # a chipped corner
+    return cv.out()
+
+
+def calle_img():
+    """Blue enamel street-name plate: 'PJE. LAS GLICINAS' and the numbering, white border, rust bursts."""
+    W_, H_ = 56, 14
+    cv = Cv(W_, H_)
+    X, Y = cv.X, cv.Y
+    cv.put(Ramp('#0e1a3a', '#16285a', '#1e3678', '#2a4690'), np.full((H_, W_), 2) + (vnoise(W_, H_, 8, 4, 7080) > 0.65))
+    cv.col('#e8e4d8', (X == 1) | (X == W_ - 2) | (Y == 1) | (Y == H_ - 2))
+    t = tiny_mask('PJE. LAS GLICINAS')[1:]
+    m = np.zeros((H_, W_), bool)
+    stamp(m, t, (W_ - t.shape[1]) // 2, 3)
+    cv.col('#f0ece0', m)
+    t = tiny_mask('1900 - 2000')[1:]
+    m = np.zeros((H_, W_), bool)
+    stamp(m, t, (W_ - t.shape[1]) // 2, 8)
+    cv.col('#c8c4b8', m)
+    rs = vnoise(W_, H_, 10, 4, 7081) > 0.8
+    cv.put(RUST, np.full((H_, W_), 2) + (vnoise(W_, H_, 20, 8, 7082) > 0.6), rs)
+    cv.col('#1a1a1a', rs & (vnoise(W_, H_, 20, 8, 7083) > 0.7))
+    cv.col('#141414', (X == 0) | (X == W_ - 1) | (Y == 0) | (Y == H_ - 1))
+    return cv.out()
+
+
+def timbre_parts():
+    """Doorbell on the wall: a little bakelite plate with the push button and a hand-written name card 'MORALES'."""
+    pl = pp_fn(lambda face, w, h, part, cv: cv.put(Ramp('#3a3226', '#5a4e3c', '#7a6c56', '#9a8c74', '#b8aa90'),
+                                                   np.full((h, w), 3) + (face == 'up') - (face == 'down')))
+    def card(face, w, h, part, cv):
+        cv.put(Ramp('#c8c0a8', '#e0d8c4', '#eee8d8'), np.full((h, w), 2))
+        t = tiny_mask('MORALES')[1:]
+        m = np.zeros((h, w), bool)
+        stamp(m, t, max(0, (w - t.shape[1]) // 2), max(0, (h - 5) // 2))
+        cv.col('#1a2a6a', m)
+    return [P((5, 9, 15.2), (11, 14, 16), pl, name='plate'), P((7.2, 12.0, 14.8), (8.8, 13.6, 15.2), pp_fn(lambda face, w, h, part, cv: cv.put(ENAMEL, np.full((h, w), 4) + (face == 'north'))), name='button'),
+            P((5.6, 9.4, 15.1), (10.4, 11.4, 15.2), pp_fn(card), name='card')]
+
+
+F('murito', 'Murito de ladrillo', 'Low brick front wall', murito_parts(), sound='stone')
+F('pilar', 'Pilar de ladrillo', 'Brick pier', pilar_parts(), sound='stone', collision='full')
+F('pilar_remate', 'Remate de pilar', 'Brick pier top with cap', pilar_parts(True), sound='stone')
+F('pilar_luz', 'Pilar de luz (con medidor)', 'Electricity pier with meter box', pilar_luz_parts(), sound='stone')
+F('reja', 'Reja del frente', 'Front railing (on the low wall)', reja_parts(), sound='metal')
+F('reja_cartel_perro', "Reja con cartel 'Cuidado con el perro'", "Railing with 'Beware of the dog' sign", reja_parts('cartel_perro'), sound='metal')
+F('reja_cartel_perro_nona', "Reja con cartel '...y con la nona'", "Railing with the dog sign ('...and the nona')", reja_parts('cartel_perro_nona'), sound='metal')
+F('cartel_perro', "Cartel 'Cuidado con el perro'", "'Beware of the dog' sign", wall_sign_parts('cartel_perro'), sound='metal', collision='none')
+F('cartel_perro_nona', "Cartel 'Cuidado con el perro... y con la nona'", "Dog sign with the marker scribble", wall_sign_parts('cartel_perro_nona'), sound='metal', collision='none')
+F('medidor_luz', 'Medidor de luz', 'Electricity meter box', medidor_luz_parts(), sound='metal')
+F('medidor_gas', 'Gabinete del medidor de gas', 'Gas meter cabinet', medidor_gas_parts(), sound='metal')
+F('poste', 'Columna de hormigón', 'Concrete lamp post', poste_parts(), sound='stone')
+F('poste_pie', 'Pie de columna de hormigón', 'Concrete lamp post foot', poste_parts(foot=True), sound='stone')
+F('poste_afiches', 'Columna con afiches', 'Concrete post with flyers', poste_parts(flyers=True), sound='stone')
+F('farol', 'Farol de la calle (encendido)', 'Street lamp (lit)', farol_parts(True), sound='metal', light=15)
+F('farol_apagado', 'Farol de la calle (apagado)', 'Street lamp (off)', farol_parts(False), sound='metal')
+F('poste_cartel_calle', "Columna con cartel 'Pje. Las Glicinas'", 'Concrete post with the street-name plate', poste_parts() +
+  [plate_box('cartel_calle', calle_img, -6.0, 22.0, 9.0, 16.0, 4.6, 5.0, back=Ramp('#0e1a3a', '#16285a', '#1e3678'), back_idx=1),
+   P((5.2, 10.0, 4.8), (10.8, 10.8, 11.2), pp_iron(seed=7090), name='strap1'), P((5.2, 14.0, 4.8), (10.8, 14.8, 11.2), pp_iron(seed=7091), name='strap2')],
+  sound='stone')
+F('numero_1961', 'Número de la casa (1961)', 'House number tile (1961)', [plate_box('numero', numero_img, 2.5, 13.5, 6.0, 13.0, 15.4, 16.0, back=CEMENT)],
+  sound='ceramic', collision='none')
+F('timbre', 'Timbre (Morales)', "Doorbell ('Morales')", timbre_parts(), sound='stone', collision='none')
+
+
+# =============================================================================================== INTERIOR TRIMS & FITTINGS
+# Wall pieces: back against the wall behind (z=16), front = facing (towards the room). Corner pieces
+# ('_esquina'): walls BEHIND and on the viewer's RIGHT (x=0) - rotate to fit the other three corners.
+# Door casings ('contramarco'): _izq goes in front of the wall block on the LEFT of the door's UPPER half (seen from
+# the room) and reaches down to the floor (so a carpet or skirting can share the floor-level block), _der likewise
+# on the right, _dintel in front of the wall block above the door (its mitred ears reach the side strips).
+def trim_wood(seed, ramp=CEDRO, base=4):
+    def p(face, w, h, part):
+        x, y, z = face_coords(part, face, w, h)
+        along = 'x' if (part.size()[0] >= part.size()[2] and face in ('north', 'south', 'up', 'down')) else ('y' if part.size()[1] > 4 else 'x')
+        idx = np.full((h, w), base) + wood_grain(w, h, seed + fkey(part, face), along, period=False, pores=0.02)
+        if face == 'up':
+            idx = idx + 1
+        if face == 'down':
+            idx = idx - 2
+        cv = Cv(w, h)
+        cv.put(ramp, idx)
+        if face == 'up':   # dust on every horizontal ledge
+            cv.tint('#8a826f', np.where(vnoise(w, h, max(1, w // 3), max(1, h // 2), seed + 7) > 0.45, 0.32, 0.12))
+        return cv.out()
+    return p
+
+
+def zocalo_parts(corner=False):
+    tw = trim_wood(7100)
+    parts = [P((0, 0, 15.0), (16, 3.2, 16), tw, name='board'), P((0, 3.2, 15.4), (16, 3.8, 16), tw, name='bead')]
+    if corner:
+        parts += [P((0, 0, 0), (1.0, 3.2, 15.0), tw, name='board_s'), P((0, 3.2, 0), (0.6, 3.8, 15.4), tw, name='bead_s')]
+    return parts
+
+
+def plaster_trim(seed):
+    def p(face, w, h, part):
+        cv = Cv(w, h)
+        idx = np.full((h, w), 6) + (vnoise(w, h, max(1, w // 4), max(1, h // 2), seed + fkey(part, face)) > 0.65) - (face == 'down') * 2
+        cv.put(WHITEP, idx)
+        cv.tint('#7a6a46', np.where(vnoise(w, h, max(1, w // 3), max(1, h // 2), seed + 3) > 0.55, 0.14, 0.05))
+        return cv.out()
+    return p
+
+
+def cornisa_parts(corner=False):
+    pt = plaster_trim(7110)
+    parts = [P((0, 14.4, 12.6), (16, 16, 16), pt, name='c0'), P((0, 12.8, 14.6), (16, 14.4, 16), pt, name='c1'),
+             P((0, 12.2, 15.4), (16, 12.8, 16), pt, name='bead'), P((0, 15.2, 11.6), (16, 16, 12.6), pt, name='lip')]
+    if corner:
+        parts += [P((0, 14.4, 0), (3.4, 16, 12.6), pt, name='c0s'), P((0, 12.8, 0), (1.4, 14.4, 14.6), pt, name='c1s'),
+                  P((0, 12.2, 0), (0.6, 12.8, 15.4), pt, name='beads'), P((3.4, 15.2, 0), (4.4, 16, 11.6), pt, name='lips')]
+    return parts
+
+
+def roseton_parts():
+    """Plaster ceiling rose: three stepped rings with a ring of leaves, the cable hole in the boss."""
+    def rose(face, w, h, part):
+        x, y, z = face_coords(part, face, w, h)
+        cv = Cv(w, h)
+        r = np.sqrt((x - 8) ** 2 + (z - 8) ** 2)
+        ang = np.arctan2(z - 8, x - 8)
+        idx = np.full((h, w), 6)
+        if face == 'down':
+            leaf = (np.cos(ang * 12) > 0.2) & (r > 3.8) & (r < 6.4)
+            idx = np.where(leaf, 7, 5) - (np.abs(r - 6.6) < 0.4) * 2 - (np.abs(r - 3.6) < 0.4) * 2
+            idx = np.where(r < 0.9, 1, idx)
+        cv.put(WHITEP, idx)
+        cv.tint('#6a5a3a', np.where(r < 2.5, 0.2, 0.06))
+        return cv.out()
+    pr = pp_fn(lambda face, w, h, part, cv: cv.put(WHITEP, np.full((h, w), 5)))
+    parts = []
+    for (r_, y0) in ((7.0, 15.4), (4.2, 14.8), (1.8, 14.0)):
+        parts.append(P((8 - r_, y0, 8 - r_ * 0.42), (8 + r_, 16 if y0 == 15.4 else (15.4 if y0 == 14.8 else 14.8), 8 + r_ * 0.42), rose, name='ring_a'))
+        parts.append(P((8 - r_ * 0.42, y0, 8 - r_), (8 + r_ * 0.42, 16 if y0 == 15.4 else (15.4 if y0 == 14.8 else 14.8), 8 + r_), rose, name='ring_b'))
+        parts.append(P((8 - r_ * 0.78, y0 - 0.01, 8 - r_ * 0.78), (8 + r_ * 0.78, (16 if y0 == 15.4 else (15.4 if y0 == 14.8 else 14.8)) - 0.01, 8 + r_ * 0.78), rose, name='ring_c'))
+    return parts
+
+
+def contramarco_parts(kind):
+    tw = trim_wood(7120, CEDRO, 4)
+    if kind == 'izq':
+        return [P((0, -12.0, 15.0), (1.6, 16, 16), tw, name='strip'), P((1.6, -16.0, 15.5), (2.0, 16, 16), tw, name='step'),
+                P((0, -16.0, 14.6), (2.0, -12.0, 16), tw, name='plinth')]
+    if kind == 'der':
+        return [P((14.4, -12.0, 15.0), (16, 16, 16), tw, name='strip'), P((14.0, -16.0, 15.5), (14.4, 16, 16), tw, name='step'),
+                P((14.0, -16.0, 14.6), (16, -12.0, 16), tw, name='plinth')]
+    return [P((-1.6, 0, 15.0), (17.6, 1.6, 16), tw, name='head'), P((-1.6, 1.6, 15.2), (17.6, 2.0, 16), tw, name='cap'),
+            P((0, -0.01, 15.5), (16, 0.4, 16), tw, name='step')]
+
+
+def switch_parts(kind):
+    """'llave' = bakelite light switch (two toggles, the plate greyed by fingers); 'enchufe' = outlet with the
+    three flat V pins of the Argentine plug; 'rejilla' = louvred ventilation grille (gas safety vent)."""
+    bak = Ramp('#3a3226', '#5c5040', '#7e705a', '#a09078', '#bfb096', '#d4c6aa')
+    if kind == 'llave':
+        def plate(face, w, h, part, cv):
+            cv.put(bak, np.full((h, w), 4) + (face == 'up') - (face == 'down'))
+            if face == 'north':
+                X, Y = cv.X, cv.Y
+                for tx in (w // 3, 2 * w // 3):
+                    cv.put(bak, np.full((h, w), 1), (X == tx) & (Y >= h // 2 - 2) & (Y <= h // 2 + 1))
+                    cv.put(bak, np.full((h, w), 5), (X == tx) & (Y == h // 2 - 2))
+                cv.tint('#2a2014', np.clip(1 - np.sqrt((X - w / 2) ** 2 + (Y - h / 2) ** 2) / (w * 0.6), 0, 1) * 0.35)
+        return [P((5.8, 3.0, 15.4), (10.2, 9.0, 16), pp_fn(plate), name='plate')]
+    if kind == 'enchufe':
+        def plate(face, w, h, part, cv):
+            cv.put(bak, np.full((h, w), 4) + (face == 'up') - (face == 'down'))
+            if face == 'north':
+                X, Y = cv.X, cv.Y
+                cv.col('#1a1610', ((X == w // 2 - 2) & (Y == h // 2 - 1)) | ((X == w // 2 - 1) & (Y == h // 2)))
+                cv.col('#1a1610', ((X == w // 2 + 2) & (Y == h // 2 - 1)) | ((X == w // 2 + 1) & (Y == h // 2)))
+                cv.col('#1a1610', (X == w // 2) & (Y >= h // 2 + 2) & (Y <= h // 2 + 3))
+                cv.tint('#1a1410', np.where(Y < 2, 0.3, 0))      # scorch over the outlet
+        return [P((5.8, 3.0, 15.4), (10.2, 8.4, 16), pp_fn(plate), name='plate')]
+
+    def grille(face, w, h, part, cv):
+        x, y, z = face_coords(part, face, w, h)
+        cv.put(Ramp('#3a3c3e', '#5a5d60', '#7c8084', '#a0a4a8', '#bfc2c4'), np.full((h, w), 3) + (face == 'up') - (face == 'down'))
+        if face == 'north':
+            X, Y = cv.X, cv.Y
+            sl = (Y % 3 == 1) & (X > 1) & (X < w - 2) & (Y > 1) & (Y < h - 2)
+            cv.col('#0c0c0c', sl)
+            cv.put(Ramp('#3a3c3e', '#5a5d60', '#7c8084', '#a0a4a8', '#bfc2c4'), np.full((h, w), 4), np.roll(sl, -1, 0) & ~sl & (Y > 1))
+            cv.tint('#1a1410', np.where(vnoise(w, h, max(1, w // 3), max(1, h // 3), 7130) > 0.55, 0.3, 0))
+    return [P((3.5, 4.0, 15.3), (12.5, 13.0, 16), pp_fn(grille), name='grille'),
+            PL((5.0, 0.5, 15.99), (11.0, 4.0, 15.99), pp_fn(lambda face, w, h, part, cv: cv.col('#3a2a1a', vnoise(w, h, max(1, w // 2), max(1, h // 2), 7131) * (face_coords(part, face, w, h)[1] / 4.0) > 0.3, a=110)), name='streak')]
+
+
+@painter('piso_bano')
+def p_piso_bano(v):
+    """Bathroom floor: white octagon tiles with little black square 'tacos' at the corners (the classic 1950s
+    pattern), 4 octagons per block side. v1 dirty grout + rust ring from a can, v2 a cracked octagon, v3 a missing
+    taco and a chipped edge."""
+    cv = Cv()
+    X, Y = cv.X, cv.Y
+    lx, ly = X % 8, Y % 8
+    cut = np.minimum(lx, 7 - lx) + np.minimum(ly, 7 - ly)
+    taco = cut <= 1
+    joint = (lx == 0) | (ly == 0)
+    oct_ = ~taco & ~joint
+    idx = np.full((N, N), 6) + (vnoise(N, N, 4, 4, 8950 + v) > 0.7) - (vnoise(N, N, 8, 8, 8951) < 0.2)
+    idx = np.where(oct_ & ((lx == 1) | (ly == 1)) & (cut > 2), idx + 1, idx)
+    idx = np.where(oct_ & ((lx == 7) | (ly == 7)), idx - 1, idx)
+    cv.put(WHITEP, idx, oct_)
+    cv.put(Ramp('#0a0a0c', '#16161a', '#24242a', '#34343c'), np.full((N, N), 2) + ((lx + ly) % 7 == 2), taco & ~joint)
+    cv.put(GROUT, np.full((N, N), 4) - (v == 1) * 2, joint)
+    if v == 1:
+        d = np.sqrt((X - 20.5) ** 2 + (Y - 12.5) ** 2)
+        cv.tint('#6a3a1a', np.where(np.abs(d - 4.5) < 0.8, 0.45, 0))
+    if v == 2:
+        cm = path_mask(wander([(9, 9), (12, 12), (14, 14)], 8952, amp=0.7), wrap=False) & oct_
+        cv.col('#2a2826', cm)
+    if v == 3:
+        cv.put(CEMENT, np.full((N, N), 3), taco & (X >= 15) & (X <= 17) & (Y >= 15) & (Y <= 17))
+        cv.put(CEMENT, np.full((N, N), 4), oct_ & (X >= 24) & (X <= 26) & (Y >= 1) & (Y <= 2))
+    return cv.out()
+
+
+@painter('madera_escalera')
+def p_madera_escalera(v):
+    """Pinotea stair/landing boards: long dense boards along x with resin streaks, varnish worn pale in the middle."""
+    cv = Cv()
+    X, Y = cv.X, cv.Y
+    lab = Y // 8
+    g = wood_grain(N, N, 8960 + v, 'x', warp=1.2, pores=0.03, tones=(-1, 0, 0, 1, 1))
+    rc = np.random.default_rng(8961)
+    idx = 5 + rc.choice([-1, 0, 1], 4)[lab] + g
+    idx = np.where(Y % 8 == 0, 1, idx)
+    idx = np.where(Y % 8 == 1, idx + 1, idx)
+    idx = np.where((X == (7 + lab * 11) % 32) & (Y % 8 != 0), 1, idx)       # board end joints, staggered
+    cv.put(CEDRO, idx)
+    worn = (np.abs(X - 16) < 9) & (vnoise(N, N, 4, 2, 8962 + v) > 0.35)
+    cv.tint('#a08a68', np.where(worn & (Y % 8 != 0), 0.25, 0))
+    return cv.out()
+
+
+def step_parts(material='madera'):
+    """A furniture stair block (two 8/16 steps), front = facing = the LOW side; you walk up away from 'facing'.
+    Wood: pinotea treads with a rounded nosing overhang and cream painted risers scuffed by shoes. Cement: the
+    basement steps, edges worn round, damp at the foot."""
+    if material == 'madera':
+        tread = pp_fn(lambda face, w, h, part, cv: cv.put(CEDRO, (np.full((h, w), 5) + wood_grain(w, h, 8970 + fkey(part, face), 'x', period=False)
+                                                                  - (face == 'down') * 2 + ((face == 'north') & (np.arange(h)[:, None] == 0)) * 2)) or
+                      (face == 'up' and cv.tint('#a08a68', np.where(np.abs(face_coords(part, face, w, h)[0] - 8) < 4.5, 0.22, 0))))
+
+        def riser(face, w, h, part, cv):
+            cv.put(CREAM_EN, np.full((h, w), 5) + (vnoise(w, h, max(1, w // 4), max(1, h // 2), 8971) > 0.7))
+            if face == 'north':
+                X, Y = cv.X, cv.Y
+                cv.tint('#000000', np.where(Y == 0, 0.45, np.where(Y == 1, 0.2, 0)))
+                rng = np.random.default_rng(8972 + fkey(part, face))
+                for k in range(6):
+                    x_, y_ = int(rng.integers(2, max(3, w - 4))), int(rng.integers(h // 2, max(h // 2 + 1, h - 1)))
+                    cv.tint('#2a2420', np.where((Y == y_) & (X >= x_) & (X < x_ + 3), 0.4, 0))
+            else:
+                cv.put(CEDRO, np.full((h, w), 3) + wood_grain(w, h, 8973, 'x', period=False))
+        rp = pp_fn(riser)
+        return [P((0, 0, 0.4), (16, 7, 16), rp, name='riser_lo'), P((0, 7, -0.8), (16, 8, 16), tread, name='tread_lo'),
+                P((0, 8, 8.4), (16, 15, 16), rp, name='riser_hi'), P((0, 15, 7.2), (16, 16, 16), tread, name='tread_hi')]
+
+    def cem(face, w, h, part, cv):
+        x, y, z = face_coords(part, face, w, h)
+        idx = np.full((h, w), 4) + (vnoise(w, h, max(1, w // 4), max(1, h // 4), 8980 + fkey(part, face)) > 0.62) \
+            - (vnoise(w, h, max(1, w // 4), max(1, h // 4), 8981 + fkey(part, face)) < 0.25)
+        if face == 'up':
+            idx = idx + 1 - (np.abs(x - 8) < 4)
+        cv.put(CEMENT, idx)
+        if face in ('north', 'up'):
+            edge = (cv.Y == 0) if face == 'north' else (cv.Y == 0)
+            cv.put(CEMENT, np.full((h, w), 6) - (vnoise(w, h, max(1, w // 2), 1, 8982) > 0.6) * 3, edge)
+        if face == 'north':
+            cv.tint('#1e2218', np.clip((y - (part.frm[1] + 3)) * -0.15, 0, 0.4))
+    cp = pp_fn(cem)
+    return [P((0, 0, 0), (16, 8, 16), cp, name='step_lo'), P((0, 8, 8), (16, 16, 16), cp, name='step_hi')]
+
+
+def baranda_iron():
+    return pp_fn(lambda face, w, h, part, cv: (cv.put(IRON, np.full((h, w), 3) + (face == 'up') * 2 - (face == 'down') + (cv.X == 0) * 1),
+                                               cv.put(RUST, np.full((h, w), 2), vnoise(w, h, max(1, w // 2), max(1, h // 2), fkey(part, face)) > 0.82)))
+
+
+def baranda_parts(kind='recta', side='izq'):
+    """Simple 1950s balustrade: square black iron balusters, a flat bar at the foot, a cedar handrail. 'recta' for a
+    landing/upper-hall edge; 'escalera' goes in the block ABOVE a stair block (balusters reach down onto both
+    treads; side izq = on the viewer's left when looking up the stair from the bottom, x 14; der = x 2);
+    'poste' = the newel post."""
+    it = baranda_iron()
+    rail = trim_wood(7140, CEDRO, 5)
+    if kind == 'recta':
+        parts = [P((0, 0, 7.4), (16, 0.8, 8.6), it, name='foot'), P((0, 14.2, 6.6), (16, 15.6, 9.4), rail, name='rail'),
+                 P((0, 13.6, 7.3), (16, 14.2, 8.7), it, name='rail_bar')]
+        for x in (2, 6, 10, 14):
+            parts.append(P((x - 0.5, 0.8, 7.5), (x + 0.5, 13.6, 8.5), it, name='baluster'))
+        return parts
+    if kind == 'poste':
+        return [P((5, 0, 5), (11, 15, 11), trim_wood(7141, CEDRO, 4), name='post'), P((4.4, 15, 4.4), (11.6, 16.4, 11.6), rail, name='cap'),
+                P((6, 16.4, 6), (10, 17.4, 10), rail, name='knob')]
+    x = 14.0 if side == 'izq' else 2.0
+    parts = []
+    for z, tread in ((2.5, -8.0), (6.0, -8.0), (10.5, 0.0), (14.0, 0.0)):
+        top = z + 4.2
+        parts.append(P((x - 0.5, tread, z - 0.5), (x + 0.5, top, z + 0.5), it, name='baluster'))
+    L = 16 * R2 + 1.0
+    parts.append(P((x - 1.4, 5.0 + 8 - 0.7, 8 - L / 2), (x + 1.4, 5.0 + 8 + 0.7, 8 + L / 2), rail, rot=('x', -45, (x, 13.0, 8.0)), name='rail'))
+    parts.append(P((x - 0.7, 5.0 + 8 - 1.3, 8 - L / 2), (x + 0.7, 5.0 + 8 - 0.7, 8 + L / 2), it, rot=('x', -45, (x, 13.0, 8.0)), name='rail_bar'))
+    return parts
+
+
+def pasamanos_parts(side):
+    """Galvanised pipe handrail fixed to the side wall of the basement stair on iron brackets. Placed in the block
+    ABOVE a stair block, rising away from 'facing'. izq: the wall is on the viewer's left (x=16), der: right (x=0)."""
+    gz = pp_fn(gutter_paint)
+    xw = 16.0 if side == 'izq' else 0.0
+    xr = 13.2 if side == 'izq' else 2.8
+    L = 16 * R2 + 0.5
+    parts = [P((xr - 0.8, 12.2, 8 - L / 2), (xr + 0.8, 13.8, 8 + L / 2), gz, rot=('x', -45, (xr, 13.0, 8.0)), name='pipe')]
+    bx0, bx1 = (xr, xw) if side == 'izq' else (xw, xr)
+    for zc in (3.0, 13.0):
+        yc = 13.0 + (zc - 8.0) - 1.2
+        parts.append(P((bx0, yc - 0.4, zc - 0.4), (bx1, yc + 0.4, zc + 0.4), pp_iron(seed=7150, rust=0.5), name='bracket'))
+    return parts
+
+
+# --- carpet runner for the upstairs hall
+RUN_RED = Ramp('#1e0606', '#2e0a0a', '#420f0e', '#561613', '#6a1e18', '#7e281e', '#923426')
+RUN_NAVY = Ramp('#0a0e1a', '#121a2c', '#1a263e', '#243450')
+RUN_CREAM = Ramp('#6a5e46', '#8a7c5e', '#a89a78', '#c2b490', '#d6c9a6')
+RUN_OCHRE = Ramp('#4a3010', '#6a4618', '#8a5e22', '#a8782e')
+
+
+def runner_img(width_units=13.0, xw0=0.0, total=13.0):
+    """The runner pattern as a function painter: window-space x (0..total units across the runner), z along."""
+    def p(face, w, h, part):
+        x, y, z = face_coords(part, face, w, h)
+        cv = Cv(w, h)
+        if face != 'up':
+            cv.put(RUN_RED, np.full((h, w), 1))
+            if face in ('north', 'south'):
+                cv.put(RUN_CREAM, np.full((h, w), 1), np.zeros((h, w), bool))
+            return cv.out()
+        xw = x + xw0
+        d_edge = np.minimum(xw, total - xw)
+        zz = z % 16
+        idx = np.full((h, w), 4) + (vnoise(w, h, max(1, w // 4), max(1, h // 4), 7160) > 0.65)
+        cv.put(RUN_RED, idx)
+        border = d_edge < 2.2
+        cv.put(RUN_NAVY, np.full((h, w), 2) + ((np.floor(z * 2).astype(int) % 4) == 0), border)
+        cv.put(RUN_CREAM, np.full((h, w), 3), (np.abs(d_edge - 0.6) < 0.35) | (np.abs(d_edge - 2.4) < 0.3))
+        # zigzag in the border band
+        zig = border & (np.abs(d_edge - (1.0 + 0.6 * np.abs(((z * 2) % 4) - 2) / 2)) < 0.3)
+        cv.put(RUN_OCHRE, np.full((h, w), 3), zig)
+        # central medallion each block: a stepped diamond in ochre/navy with a cream heart
+        cx = total / 2
+        dd = np.abs(xw - cx) / 4.6 + np.abs(zz - 8) / 6.0
+        cv.put(RUN_OCHRE, np.full((h, w), 2), (dd <= 1.0) & (dd > 0.78))
+        cv.put(RUN_NAVY, np.full((h, w), 3), (dd <= 0.78) & (dd > 0.5))
+        cv.put(RUN_CREAM, np.full((h, w), 2), (dd <= 0.5) & (dd > 0.3))
+        cv.put(RUN_RED, np.full((h, w), 6), dd <= 0.3)
+        # little crosses between medallions
+        cr = ((np.abs(xw - cx) < 0.35) & (np.abs(zz) < 1.3)) | ((np.abs(zz) < 0.35) & (np.abs(xw - cx) < 1.3))
+        cv.put(RUN_CREAM, np.full((h, w), 2), cr & ~border)
+        # pile texture + the walking path worn flat and grey in the middle
+        cv.mul(np.where((cv.X + cv.Y * 2) % 5 == 0, 0.9, 1.0))
+        worn = (np.abs(xw - cx) < total * 0.22) & (vnoise(w, h, max(1, w // 6), max(1, h // 4), 7161) > 0.35)
+        cv.tint('#6a5a50', np.where(worn, 0.2, 0))
+        return cv.out()
+    return p
+
+
+def fringe_paint(face, w, h, part, cv):
+    x, y, z = face_coords(part, face, w, h)
+    cv.put(RUN_CREAM, np.full((h, w), 3) - (np.floor(x * 2).astype(int) % 2))
+    cv.a = np.where((np.floor(x * 2).astype(int) % 2 == 1) & (face == 'up'), 0, cv.a)
+
+
+def alfombra_parts(kind='1', end=False, stain=False):
+    """Runner pieces, long axis along z (lay them along the corridor). kind '1' = one block wide (x 1.5..14.5);
+    'izq'/'der' = the two halves of a runner covering a 2-wide corridor (x 4..28 of the pair; izq = viewer's left
+    looking along 'facing'... i.e. authoring +x half). '_punta' pieces end with the fringe at the FRONT (z=0)."""
+    if kind == '1':
+        x0, x1, xw0, total = 1.5, 14.5, -1.5, 13.0
+    elif kind == 'der':
+        x0, x1, xw0, total = 4.0, 16.0, -4.0, 24.0
+    else:
+        x0, x1, xw0, total = 0.0, 12.0, 12.0, 24.0
+    z0 = 2.0 if end else 0.0
+    parts = [P((x0, 0, z0), (x1, 0.5, 16), runner_img(total=total, xw0=xw0), name='runner')]
+    if end:
+        parts.append(P((x0 + (0.4 if kind != 'izq' else 0), 0, 0.2), (x1 - (0.4 if kind != 'der' else 0), 0.25, 2.0), pp_fn(fringe_paint), name='fringe'))
+    if stain:
+        def st(face, w, h, part, cv):
+            x, y, z = face_coords(part, face, w, h)
+            m = ((x - 9) ** 2 / 14.0 + (z - 7) ** 2 / 9.0 + (vnoise(w, h, max(1, w // 3), max(1, h // 3), 7170) - 0.5) * 0.8) < 1
+            cv.col('#140806', m, a=150)
+            cv.col('#0c0404', m & ~erode(m, 1, False), a=190)
+        parts.append(PL((x0, 0.52, 0.0), (x1, 0.52, 16), pp_fn(st), name='stain'))
+    return parts
+
+
+def maletero_parts():
+    """Top cupboard over the placard (the wardrobe is 3 blocks tall: door + this). Place with the SAME facing as the
+    placard door below: like the door, its doors sit at z 13..16 and face +z (the room the door was placed from)."""
+    gv = trim_wood(7180, PINO, 5)
+
+    def lou(face, w, h, part, cv):
+        x, y, z = face_coords(part, face, w, h)
+        cv.put(PINO, np.full((h, w), 5) + wood_grain(w, h, 7181, 'x', period=False) * 0)
+        if face == 'south':
+            v = np.floor((16 - y) * 2).astype(int) % 3
+            xi = np.floor(x * 2).astype(int)
+            inner = (xi % 16 > 2) & (xi % 16 < 13) & (y > 2.5) & (y < 14)
+            cv.put(PINO, np.where(v == 0, 7, np.where(v == 1, 5, 2)), inner)
+            cv.put(PINO, np.full((h, w), 3), (xi % 16 == 15) | (xi % 16 == 0))
+            cv.put(BRASS, np.full((h, w), 5), ((xi == 13) | (xi == 18)) & (np.abs(y - 4) < 0.6))
+    return [P((0, 0, 13), (16, 16, 16), pp_fn(lou), name='doors'), P((0, 15, 12.6), (16, 16, 16), gv, name='top')]
+
+
+F('zocalo', 'Zócalo de madera', 'Wooden skirting board', zocalo_parts(), collision='none')
+F('zocalo_esquina', 'Zócalo de madera (rincón)', 'Wooden skirting (inner corner)', zocalo_parts(True), collision='none')
+F('cornisa', 'Cornisa de yeso', 'Plaster cornice', cornisa_parts(), collision='none', sound='plaster')
+F('cornisa_esquina', 'Cornisa de yeso (rincón)', 'Plaster cornice (inner corner)', cornisa_parts(True), collision='none', sound='plaster')
+F('roseton', 'Rosetón de yeso del techo', 'Plaster ceiling rose', roseton_parts(), directional=False, collision='none', sound='plaster')
+for _k in ('izq', 'der', 'dintel'):
+    F(f'contramarco_{_k}', f'Contramarco de puerta ({_k})', f'Door casing ({_k})', contramarco_parts(_k), collision='none')
+F('llave_luz', 'Llave de luz de baquelita', 'Bakelite light switch', switch_parts('llave'), collision='none', sound='stone')
+F('enchufe', 'Tomacorriente', 'Wall outlet', switch_parts('enchufe'), collision='none', sound='stone')
+F('rejilla', 'Rejilla de ventilación', 'Ventilation grille', switch_parts('rejilla'), collision='none', sound='metal')
+F('escalon_madera', 'Escalón de madera', 'Wooden stair step (furniture)', step_parts('madera'))
+F('escalon_cemento', 'Escalón de cemento (sótano)', 'Cement basement step', step_parts('cemento'), sound='stone')
+F('baranda', 'Baranda', 'Balustrade', baranda_parts('recta'), sound='metal')
+F('baranda_poste', 'Poste de baranda', 'Newel post', baranda_parts('poste'))
+F('baranda_escalera_izq', 'Baranda de escalera (izquierda)', 'Stair balustrade (left)', baranda_parts('escalera', 'izq'), sound='metal', collision='none')
+F('baranda_escalera_der', 'Baranda de escalera (derecha)', 'Stair balustrade (right)', baranda_parts('escalera', 'der'), sound='metal', collision='none')
+F('pasamanos_izq', 'Pasamanos de caño (pared a la izquierda)', 'Pipe handrail (wall on the left)', pasamanos_parts('izq'), sound='metal', collision='none')
+F('pasamanos_der', 'Pasamanos de caño (pared a la derecha)', 'Pipe handrail (wall on the right)', pasamanos_parts('der'), sound='metal', collision='none')
+for _k, _es in (('1', ''), ('izq', ' (mitad izquierda)'), ('der', ' (mitad derecha)')):
+    _sfx = '' if _k == '1' else '_' + _k
+    F(f'alfombra{_sfx}', f'Alfombra de pasillo{_es}', f'Hall runner{_es}', alfombra_parts(_k), collision='none', sound='cloth')
+    F(f'alfombra_punta{_sfx}', f'Alfombra de pasillo, punta con flecos{_es}', f'Hall runner end with fringe{_es}', alfombra_parts(_k, end=True), collision='none', sound='cloth')
+F('alfombra_mancha', 'Alfombra de pasillo con mancha', 'Hall runner with a stain', alfombra_parts('1', stain=True), collision='none', sound='cloth')
+F('placard_maletero', 'Maletero del placard', 'Wardrobe top cupboard', maletero_parts())
+PISO_BANO = cube('piso_bano', 'Piso del baño (octógonos)', 'Bathroom octagon floor tiles', 'piso_bano', 4, sound='tile')
+MADERA_ESC = cube('madera_escalera', 'Madera de pinotea (escalera)', 'Pitch-pine stair boards', 'madera_escalera', 2, sound='wood')
+Stairs('casa_escalera_madera', 'Escalera de pinotea', 'Pitch-pine stairs', of=MADERA_ESC, kit=KIT, sound='wood')
+Slab('casa_escalera_madera_losa', 'Losa de pinotea (descanso)', 'Pitch-pine slab (landing)', of=MADERA_ESC, kit=KIT, sound='wood')
+import bkit as _bkit  # noqa: E402  (the registry, to reuse the cement floor cube for the basement stairs)
+_CEM = next(b for b in _bkit.REGISTRY if b.key == 'casa_cemento_piso')
+Stairs('casa_escalera_cemento', 'Escalera de cemento (sótano)', 'Cement stairs (basement)', of=_CEM, kit=KIT, sound='stone')
+Slab('casa_escalera_cemento_losa', 'Losa de cemento', 'Cement slab', of=_CEM, kit=KIT, sound='stone')

@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "deadline:block/casa_telefono"
+  },
+  "facing=east": {
+   "model": "deadline:block/casa_telefono",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "deadline:block/casa_telefono",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "deadline:block/casa_telefono",
+   "y": 270
+  }
+ }
+}

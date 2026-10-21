@@ -1,0 +1,86 @@
+{
+ "parent": "minecraft:block/block",
+ "textures": {
+  "t": "deadline:block/casa_techo",
+  "particle": "deadline:block/casa_techo"
+ },
+ "elements": [
+  {
+   "from": [
+    0.0,
+    6.0,
+    -3.3137
+   ],
+   "to": [
+    16.0,
+    8.0,
+    19.3137
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      0.0,
+      0.0,
+      8.0,
+      1.0
+     ],
+     "texture": "#t"
+    },
+    "south": {
+     "uv": [
+      8.0,
+      0.0,
+      16.0,
+      1.0
+     ],
+     "texture": "#t"
+    },
+    "west": {
+     "uv": [
+      0.0,
+      1.0,
+      11.25,
+      2.0
+     ],
+     "texture": "#t"
+    },
+    "east": {
+     "uv": [
+      0.0,
+      2.0,
+      11.25,
+      3.0
+     ],
+     "texture": "#t"
+    },
+    "up": {
+     "uv": [
+      0.0,
+      3.0,
+      8.0,
+      14.25
+     ],
+     "texture": "#t"
+    },
+    "down": {
+     "uv": [
+      8.0,
+      3.0,
+      16.0,
+      14.25
+     ],
+     "texture": "#t"
+    }
+   },
+   "rotation": {
+    "angle": -45,
+    "axis": "x",
+    "origin": [
+     8.0,
+     8.0,
+     8.0
+    ]
+   }
+  }
+ ]
+}

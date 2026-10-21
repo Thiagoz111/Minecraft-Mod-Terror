@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "deadline:block/casa_perchero_bata"
+  },
+  "facing=east": {
+   "model": "deadline:block/casa_perchero_bata",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "deadline:block/casa_perchero_bata",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "deadline:block/casa_perchero_bata",
+   "y": 270
+  }
+ }
+}

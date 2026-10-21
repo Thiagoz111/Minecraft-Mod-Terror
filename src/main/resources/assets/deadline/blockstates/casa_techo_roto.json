@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "deadline:block/casa_techo_roto"
+  },
+  "facing=east": {
+   "model": "deadline:block/casa_techo_roto",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "deadline:block/casa_techo_roto",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "deadline:block/casa_techo_roto",
+   "y": 270
+  }
+ }
+}

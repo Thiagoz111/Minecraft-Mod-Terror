@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "deadline:block/casa_escritorio_lucia_apagada"
+  },
+  "facing=east": {
+   "model": "deadline:block/casa_escritorio_lucia_apagada",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "deadline:block/casa_escritorio_lucia_apagada",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "deadline:block/casa_escritorio_lucia_apagada",
+   "y": 270
+  }
+ }
+}

@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "deadline:block/casa_tapado_espejo"
+  },
+  "facing=east": {
+   "model": "deadline:block/casa_tapado_espejo",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "deadline:block/casa_tapado_espejo",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "deadline:block/casa_tapado_espejo",
+   "y": 270
+  }
+ }
+}

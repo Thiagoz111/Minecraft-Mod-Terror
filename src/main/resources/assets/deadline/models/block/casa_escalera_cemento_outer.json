@@ -1,0 +1,8 @@
+{
+ "parent": "minecraft:block/outer_stairs",
+ "textures": {
+  "bottom": "deadline:block/casa_cemento_piso_0",
+  "top": "deadline:block/casa_cemento_piso_0",
+  "side": "deadline:block/casa_cemento_piso_0"
+ }
+}

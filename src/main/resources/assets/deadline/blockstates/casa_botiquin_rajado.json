@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "deadline:block/casa_botiquin_rajado"
+  },
+  "facing=east": {
+   "model": "deadline:block/casa_botiquin_rajado",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "deadline:block/casa_botiquin_rajado",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "deadline:block/casa_botiquin_rajado",
+   "y": 270
+  }
+ }
+}

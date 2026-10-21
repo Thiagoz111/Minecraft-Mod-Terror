@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "deadline:block/casa_ducha"
+  },
+  "facing=east": {
+   "model": "deadline:block/casa_ducha",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "deadline:block/casa_ducha",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "deadline:block/casa_ducha",
+   "y": 270
+  }
+ }
+}

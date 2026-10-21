@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "deadline:block/casa_pileta_lavar"
+  },
+  "facing=east": {
+   "model": "deadline:block/casa_pileta_lavar",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "deadline:block/casa_pileta_lavar",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "deadline:block/casa_pileta_lavar",
+   "y": 270
+  }
+ }
+}

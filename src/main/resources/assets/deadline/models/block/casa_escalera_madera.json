@@ -1,0 +1,8 @@
+{
+ "parent": "minecraft:block/stairs",
+ "textures": {
+  "bottom": "deadline:block/casa_madera_escalera_0",
+  "top": "deadline:block/casa_madera_escalera_0",
+  "side": "deadline:block/casa_madera_escalera_0"
+ }
+}

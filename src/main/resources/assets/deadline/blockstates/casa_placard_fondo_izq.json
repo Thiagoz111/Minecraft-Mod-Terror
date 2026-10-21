@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "deadline:block/casa_placard_fondo_izq"
+  },
+  "facing=east": {
+   "model": "deadline:block/casa_placard_fondo_izq",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "deadline:block/casa_placard_fondo_izq",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "deadline:block/casa_placard_fondo_izq",
+   "y": 270
+  }
+ }
+}

@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "deadline:block/casa_damajuana"
+  },
+  "facing=east": {
+   "model": "deadline:block/casa_damajuana",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "deadline:block/casa_damajuana",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "deadline:block/casa_damajuana",
+   "y": 270
+  }
+ }
+}

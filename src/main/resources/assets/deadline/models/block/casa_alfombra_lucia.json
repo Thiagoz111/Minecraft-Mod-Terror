@@ -1,0 +1,77 @@
+{
+ "parent": "minecraft:block/block",
+ "textures": {
+  "t": "deadline:block/casa_alfombra_lucia",
+  "particle": "deadline:block/casa_alfombra_lucia"
+ },
+ "elements": [
+  {
+   "from": [
+    0.4,
+    0.0,
+    0.4
+   ],
+   "to": [
+    16.0,
+    0.5,
+    16.0
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      0.0,
+      0.0,
+      7.75,
+      0.25
+     ],
+     "texture": "#t"
+    },
+    "south": {
+     "uv": [
+      7.75,
+      0.0,
+      15.5,
+      0.25
+     ],
+     "texture": "#t"
+    },
+    "west": {
+     "uv": [
+      0.0,
+      0.25,
+      7.75,
+      0.5
+     ],
+     "texture": "#t"
+    },
+    "east": {
+     "uv": [
+      7.75,
+      0.25,
+      15.5,
+      0.5
+     ],
+     "texture": "#t"
+    },
+    "up": {
+     "uv": [
+      0.0,
+      0.5,
+      7.75,
+      8.25
+     ],
+     "texture": "#t"
+    },
+    "down": {
+     "uv": [
+      7.75,
+      0.5,
+      15.5,
+      8.25
+     ],
+     "texture": "#t"
+    }
+   }
+  }
+ ]
+}

@@ -1,0 +1,13 @@
+{
+ "variants": {
+  "type=bottom": {
+   "model": "deadline:block/casa_escalera_cemento_losa"
+  },
+  "type=top": {
+   "model": "deadline:block/casa_escalera_cemento_losa_top"
+  },
+  "type=double": {
+   "model": "deadline:block/casa_cemento_piso_0"
+  }
+ }
+}

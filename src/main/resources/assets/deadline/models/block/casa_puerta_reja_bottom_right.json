@@ -1,0 +1,7 @@
+{
+ "parent": "minecraft:block/door_bottom_right",
+ "textures": {
+  "bottom": "deadline:block/casa_puerta_reja_bottom",
+  "top": "deadline:block/casa_puerta_reja_top"
+ }
+}

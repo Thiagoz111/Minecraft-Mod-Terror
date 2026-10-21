@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "deadline:block/casa_escritorio_pc_der_apagado"
+  },
+  "facing=east": {
+   "model": "deadline:block/casa_escritorio_pc_der_apagado",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "deadline:block/casa_escritorio_pc_der_apagado",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "deadline:block/casa_escritorio_pc_der_apagado",
+   "y": 270
+  }
+ }
+}
