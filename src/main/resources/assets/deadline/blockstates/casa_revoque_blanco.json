@@ -1,0 +1,18 @@
+{
+ "variants": {
+  "": [
+   {
+    "model": "deadline:block/casa_revoque_blanco_0"
+   },
+   {
+    "model": "deadline:block/casa_revoque_blanco_1"
+   },
+   {
+    "model": "deadline:block/casa_revoque_blanco_2"
+   },
+   {
+    "model": "deadline:block/casa_revoque_blanco_3"
+   }
+  ]
+ }
+}

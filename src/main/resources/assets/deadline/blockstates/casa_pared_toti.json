@@ -1,0 +1,18 @@
+{
+ "variants": {
+  "": [
+   {
+    "model": "deadline:block/casa_pared_toti_0"
+   },
+   {
+    "model": "deadline:block/casa_pared_toti_1"
+   },
+   {
+    "model": "deadline:block/casa_pared_toti_2"
+   },
+   {
+    "model": "deadline:block/casa_pared_toti_3"
+   }
+  ]
+ }
+}

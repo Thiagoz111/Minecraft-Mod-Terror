@@ -1,0 +1,15 @@
+{
+ "variants": {
+  "": [
+   {
+    "model": "deadline:block/casa_asfalto_0"
+   },
+   {
+    "model": "deadline:block/casa_asfalto_1"
+   },
+   {
+    "model": "deadline:block/casa_asfalto_2"
+   }
+  ]
+ }
+}

@@ -1,0 +1,12 @@
+{
+ "parent": "minecraft:block/cube",
+ "textures": {
+  "particle": "deadline:block/casa_arena_2",
+  "north": "deadline:block/casa_arena_2",
+  "south": "deadline:block/casa_arena_2",
+  "east": "deadline:block/casa_arena_2",
+  "west": "deadline:block/casa_arena_2",
+  "up": "deadline:block/casa_arena_2",
+  "down": "deadline:block/casa_arena_2"
+ }
+}

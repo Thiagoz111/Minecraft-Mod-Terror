@@ -1,0 +1,15 @@
+{
+ "variants": {
+  "": [
+   {
+    "model": "deadline:block/casa_pared_lucia_stickers_0"
+   },
+   {
+    "model": "deadline:block/casa_pared_lucia_stickers_1"
+   },
+   {
+    "model": "deadline:block/casa_pared_lucia_stickers_2"
+   }
+  ]
+ }
+}

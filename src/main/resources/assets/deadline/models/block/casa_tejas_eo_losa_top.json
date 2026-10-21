@@ -1,0 +1,8 @@
+{
+ "parent": "minecraft:block/slab_top",
+ "textures": {
+  "bottom": "deadline:block/casa_tejas_eo_0_down",
+  "top": "deadline:block/casa_tejas_eo_0_up",
+  "side": "deadline:block/casa_tejas_eo_0_north"
+ }
+}

@@ -1,0 +1,18 @@
+{
+ "variants": {
+  "": [
+   {
+    "model": "deadline:block/casa_tejas_eo_0"
+   },
+   {
+    "model": "deadline:block/casa_tejas_eo_1"
+   },
+   {
+    "model": "deadline:block/casa_tejas_eo_2"
+   },
+   {
+    "model": "deadline:block/casa_tejas_eo_3"
+   }
+  ]
+ }
+}

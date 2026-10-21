@@ -1,0 +1,18 @@
+{
+ "variants": {
+  "": [
+   {
+    "model": "deadline:block/casa_ladrillo_visto_0"
+   },
+   {
+    "model": "deadline:block/casa_ladrillo_visto_1"
+   },
+   {
+    "model": "deadline:block/casa_ladrillo_visto_2"
+   },
+   {
+    "model": "deadline:block/casa_ladrillo_visto_3"
+   }
+  ]
+ }
+}

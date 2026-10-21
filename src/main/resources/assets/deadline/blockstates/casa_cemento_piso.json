@@ -1,0 +1,18 @@
+{
+ "variants": {
+  "": [
+   {
+    "model": "deadline:block/casa_cemento_piso_0"
+   },
+   {
+    "model": "deadline:block/casa_cemento_piso_1"
+   },
+   {
+    "model": "deadline:block/casa_cemento_piso_2"
+   },
+   {
+    "model": "deadline:block/casa_cemento_piso_3"
+   }
+  ]
+ }
+}

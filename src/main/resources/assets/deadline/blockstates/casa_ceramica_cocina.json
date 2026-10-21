@@ -1,0 +1,15 @@
+{
+ "variants": {
+  "": [
+   {
+    "model": "deadline:block/casa_ceramica_cocina_0"
+   },
+   {
+    "model": "deadline:block/casa_ceramica_cocina_1"
+   },
+   {
+    "model": "deadline:block/casa_ceramica_cocina_2"
+   }
+  ]
+ }
+}

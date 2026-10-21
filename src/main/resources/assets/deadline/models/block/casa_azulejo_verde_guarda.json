@@ -1,0 +1,12 @@
+{
+ "parent": "minecraft:block/cube",
+ "textures": {
+  "particle": "deadline:block/casa_azulejo_verde_guarda_north",
+  "north": "deadline:block/casa_azulejo_verde_guarda_north",
+  "south": "deadline:block/casa_azulejo_verde_guarda_north",
+  "east": "deadline:block/casa_azulejo_verde_guarda_north",
+  "west": "deadline:block/casa_azulejo_verde_guarda_north",
+  "up": "deadline:block/casa_azulejo_verde_guarda_up",
+  "down": "deadline:block/casa_azulejo_verde_guarda_up"
+ }
+}

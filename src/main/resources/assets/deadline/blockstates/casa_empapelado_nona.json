@@ -1,0 +1,18 @@
+{
+ "variants": {
+  "": [
+   {
+    "model": "deadline:block/casa_empapelado_nona_0"
+   },
+   {
+    "model": "deadline:block/casa_empapelado_nona_1"
+   },
+   {
+    "model": "deadline:block/casa_empapelado_nona_2"
+   },
+   {
+    "model": "deadline:block/casa_empapelado_nona_3"
+   }
+  ]
+ }
+}

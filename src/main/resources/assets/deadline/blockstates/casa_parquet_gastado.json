@@ -1,0 +1,15 @@
+{
+ "variants": {
+  "": [
+   {
+    "model": "deadline:block/casa_parquet_gastado_0"
+   },
+   {
+    "model": "deadline:block/casa_parquet_gastado_1"
+   },
+   {
+    "model": "deadline:block/casa_parquet_gastado_2"
+   }
+  ]
+ }
+}

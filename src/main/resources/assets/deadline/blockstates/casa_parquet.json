@@ -1,0 +1,15 @@
+{
+ "variants": {
+  "": [
+   {
+    "model": "deadline:block/casa_parquet_0"
+   },
+   {
+    "model": "deadline:block/casa_parquet_1"
+   },
+   {
+    "model": "deadline:block/casa_parquet_2"
+   }
+  ]
+ }
+}

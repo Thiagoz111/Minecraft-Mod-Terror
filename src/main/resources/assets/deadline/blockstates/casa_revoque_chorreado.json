@@ -1,0 +1,12 @@
+{
+ "variants": {
+  "": [
+   {
+    "model": "deadline:block/casa_revoque_chorreado_0"
+   },
+   {
+    "model": "deadline:block/casa_revoque_chorreado_1"
+   }
+  ]
+ }
+}

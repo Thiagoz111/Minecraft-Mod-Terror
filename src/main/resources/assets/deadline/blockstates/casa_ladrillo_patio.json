@@ -1,0 +1,15 @@
+{
+ "variants": {
+  "": [
+   {
+    "model": "deadline:block/casa_ladrillo_patio_0"
+   },
+   {
+    "model": "deadline:block/casa_ladrillo_patio_1"
+   },
+   {
+    "model": "deadline:block/casa_ladrillo_patio_2"
+   }
+  ]
+ }
+}

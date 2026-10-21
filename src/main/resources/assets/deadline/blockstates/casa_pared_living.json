@@ -1,0 +1,18 @@
+{
+ "variants": {
+  "": [
+   {
+    "model": "deadline:block/casa_pared_living_0"
+   },
+   {
+    "model": "deadline:block/casa_pared_living_1"
+   },
+   {
+    "model": "deadline:block/casa_pared_living_2"
+   },
+   {
+    "model": "deadline:block/casa_pared_living_3"
+   }
+  ]
+ }
+}

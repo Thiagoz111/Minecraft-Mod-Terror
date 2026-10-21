@@ -1,0 +1,18 @@
+{
+ "variants": {
+  "": [
+   {
+    "model": "deadline:block/casa_medianera_0"
+   },
+   {
+    "model": "deadline:block/casa_medianera_1"
+   },
+   {
+    "model": "deadline:block/casa_medianera_2"
+   },
+   {
+    "model": "deadline:block/casa_medianera_3"
+   }
+  ]
+ }
+}

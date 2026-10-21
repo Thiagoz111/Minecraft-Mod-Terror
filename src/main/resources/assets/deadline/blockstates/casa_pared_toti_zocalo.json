@@ -1,0 +1,12 @@
+{
+ "variants": {
+  "": [
+   {
+    "model": "deadline:block/casa_pared_toti_zocalo_0"
+   },
+   {
+    "model": "deadline:block/casa_pared_toti_zocalo_1"
+   }
+  ]
+ }
+}

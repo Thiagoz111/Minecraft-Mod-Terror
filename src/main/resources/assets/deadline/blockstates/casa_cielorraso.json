@@ -1,0 +1,18 @@
+{
+ "variants": {
+  "": [
+   {
+    "model": "deadline:block/casa_cielorraso_0"
+   },
+   {
+    "model": "deadline:block/casa_cielorraso_1"
+   },
+   {
+    "model": "deadline:block/casa_cielorraso_2"
+   },
+   {
+    "model": "deadline:block/casa_cielorraso_3"
+   }
+  ]
+ }
+}

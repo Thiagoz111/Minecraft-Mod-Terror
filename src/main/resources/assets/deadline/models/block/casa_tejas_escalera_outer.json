@@ -1,0 +1,8 @@
+{
+ "parent": "minecraft:block/outer_stairs",
+ "textures": {
+  "bottom": "deadline:block/casa_tejas_0_down",
+  "top": "deadline:block/casa_tejas_0_up",
+  "side": "deadline:block/casa_tejas_0_north"
+ }
+}

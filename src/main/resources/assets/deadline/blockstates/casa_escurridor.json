@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "deadline:block/casa_escurridor"
+  },
+  "facing=east": {
+   "model": "deadline:block/casa_escurridor",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "deadline:block/casa_escurridor",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "deadline:block/casa_escurridor",
+   "y": 270
+  }
+ }
+}

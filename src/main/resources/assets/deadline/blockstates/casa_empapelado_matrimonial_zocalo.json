@@ -1,0 +1,12 @@
+{
+ "variants": {
+  "": [
+   {
+    "model": "deadline:block/casa_empapelado_matrimonial_zocalo_0"
+   },
+   {
+    "model": "deadline:block/casa_empapelado_matrimonial_zocalo_1"
+   }
+  ]
+ }
+}

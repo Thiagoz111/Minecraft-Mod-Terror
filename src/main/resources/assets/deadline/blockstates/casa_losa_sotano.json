@@ -1,0 +1,15 @@
+{
+ "variants": {
+  "": [
+   {
+    "model": "deadline:block/casa_losa_sotano_0"
+   },
+   {
+    "model": "deadline:block/casa_losa_sotano_1"
+   },
+   {
+    "model": "deadline:block/casa_losa_sotano_2"
+   }
+  ]
+ }
+}

@@ -1,0 +1,18 @@
+{
+ "variants": {
+  "": [
+   {
+    "model": "deadline:block/casa_arena_0"
+   },
+   {
+    "model": "deadline:block/casa_arena_1"
+   },
+   {
+    "model": "deadline:block/casa_arena_2"
+   },
+   {
+    "model": "deadline:block/casa_arena_3"
+   }
+  ]
+ }
+}

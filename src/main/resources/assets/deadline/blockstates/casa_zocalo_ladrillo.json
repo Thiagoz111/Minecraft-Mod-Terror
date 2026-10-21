@@ -1,0 +1,12 @@
+{
+ "variants": {
+  "": [
+   {
+    "model": "deadline:block/casa_zocalo_ladrillo_0"
+   },
+   {
+    "model": "deadline:block/casa_zocalo_ladrillo_1"
+   }
+  ]
+ }
+}

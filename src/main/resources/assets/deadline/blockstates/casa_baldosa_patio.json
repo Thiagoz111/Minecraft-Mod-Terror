@@ -1,0 +1,18 @@
+{
+ "variants": {
+  "": [
+   {
+    "model": "deadline:block/casa_baldosa_patio_0"
+   },
+   {
+    "model": "deadline:block/casa_baldosa_patio_1"
+   },
+   {
+    "model": "deadline:block/casa_baldosa_patio_2"
+   },
+   {
+    "model": "deadline:block/casa_baldosa_patio_3"
+   }
+  ]
+ }
+}

@@ -1,0 +1,15 @@
+{
+ "variants": {
+  "": [
+   {
+    "model": "deadline:block/casa_cielorraso_humedad_0"
+   },
+   {
+    "model": "deadline:block/casa_cielorraso_humedad_1"
+   },
+   {
+    "model": "deadline:block/casa_cielorraso_humedad_2"
+   }
+  ]
+ }
+}

@@ -607,72 +607,91 @@ def only(face_tones, default):
 
 
 # ------------------------------------------------------------------------------------------------ textile patterns
-def _rose(lu, lv, r=3.6):
-    """Rose motif at local (lu, lv) from its centre -> ROSE step or None."""
-    d = math.hypot(lu, lv)
+def _rose(du, dv, r):
+    """Cabbage-rose motif (du, dv from its centre) -> ROSE step or None: dark rim, spiral petal edges, lit top-left."""
+    d = math.hypot(du, dv)
     if d > r:
         return None
-    a = math.atan2(lv, lu)
-    spiral = (d * 1.25 + a / (2 * math.pi) * 2.2) % 1.0
-    if d < 0.9:
+    if d > r - 0.85:
         return 1
-    k = 4 if spiral > 0.38 else 2
-    if d > r - 0.8:
-        k = 3 if spiral > 0.3 else 2
-    if lv < -0.6 and lu < 0.4 and spiral > 0.5:
-        k += 2                                            # light from the top-left on the petals
+    a = math.atan2(dv, du)
+    q = (d / r * 2.6 + (a / (2 * math.pi))) % 1.0
+    light = -(du + dv) / (r * 1.414)
+    k = 3 + (1 if light > 0.15 else 0) + (1 if q > 0.55 else 0)
+    if q < 0.17:
+        k = 2 if d > r * 0.4 else 1
+    if d < r * 0.22:
+        k = 2
+    if light > 0.55 and q > 0.55:
+        k = 6
     return k
 
 
+def _leaf(du, dv, ang, ln, wd):
+    """Pointed leaf from its base: -> LEAF step or None."""
+    ca, sa = math.cos(ang), math.sin(ang)
+    x, y = du * ca + dv * sa, -du * sa + dv * ca
+    if x < 0 or x > ln:
+        return None
+    w = wd * math.sin(math.pi * x / ln) ** 0.8
+    if abs(y) > w:
+        return None
+    if abs(y) > w - 0.7:
+        return 1
+    if abs(y) < 0.45:
+        return 2
+    return 5 if y < 0 else 4
+
+
+ROSES = ((9.0, 10.0, 6.4), (25.0, 25.5, 4.4), (25.5, 6.0, 2.4), (5.0, 26.5, 2.2))
+LEAVES = ((9.0, 10.0, -0.35, 11.5, 2.3), (9.0, 10.0, 2.55, 10.5, 2.1), (9.0, 10.0, 1.2, 9.5, 1.9),
+          (25.0, 25.5, 3.6, 8.0, 1.8), (25.0, 25.5, 0.6, 7.5, 1.7), (25.5, 6.0, 1.9, 5.0, 1.2), (5.0, 26.5, -1.0, 5.0, 1.2))
+
+
 def floral(seed=0, off=(0, 0, 0), fade=0.0):
-    """70s floral upholstery: beige ground with a woven texture, half-drop rust roses with olive leaves and small
-    cream blossoms; 16 px repeat continuous across blocks (pass off = block offset). fade: worn/faded areas."""
+    """70s floral upholstery: cream-beige twill ground, big rust cabbage roses with olive pointed leaves, buds and
+    tiny cream sprigs; 32 px repeat laid out in block space (pass off = block offset so sofas continue the print)."""
     def t(ctx):
         u, v = uv2(ctx, off)
-        k = 4
-        if (int(u) + int(v) * 3) % 4 == 0:
-            k -= 1                                         # weave
-        if (int(u) * 3 + int(v)) % 7 == 0:
-            k += 1
+        iu, iv = int(math.floor(u)), int(math.floor(v))
+        k = 5
+        if (iu + iv) % 3 == 0:
+            k -= 1                                         # twill diagonal
         res = (FLORAL_BG, k)
-        cu, cv = math.floor(u / 16.0), math.floor(v / 16.0)
-        lu, lv = u - cu * 16.0, v - cv * 16.0
-        # main rose at (5, 5); a second, smaller one on the half-drop at (13, 13)
-        for (rx, ry, rr, big) in ((5.0, 5.0, 3.7, True), (13.0, 13.0, 2.5, False)):
+        lu, lv = u % 32.0, v % 32.0
+        hit = False
+        for (rx, ry, rr) in ROSES:
             du, dv = lu - rx, lv - ry
-            du -= round(du / 16.0) * 16.0
-            dv -= round(dv / 16.0) * 16.0
+            du -= round(du / 32.0) * 32.0
+            dv -= round(dv / 32.0) * 32.0
             rk = _rose(du, dv, rr)
             if rk is not None:
-                res = (ROSE, rk + (0 if big else 1))
+                res = (ROSE, rk + (1 if rr < 3 else 0))
+                hit = True
                 break
-            # leaves: two ellipses hugging the rose
-            for (lx, ly, ang) in ((rr + 1.4, -1.6, -0.6), (-rr - 0.6, 2.0, 0.9)):
-                if not big:
-                    lx, ly = lx * 0.8, ly * 0.8
-                ex, ey = du - lx, dv - ly
-                ca, sa = math.cos(ang), math.sin(ang)
-                qx, qy = ex * ca + ey * sa, -ex * sa + ey * ca
-                ln = 2.4 if big else 1.8
-                if (qx / ln) ** 2 + (qy / 1.05) ** 2 <= 1.0:
-                    res = (LEAF, 3 if abs(qy) < 0.45 else (5 if qy < 0 else 4))
+        if not hit:
+            for (rx, ry, ang, ln, wd) in LEAVES:
+                du, dv = lu - rx, lv - ry
+                du -= round(du / 32.0) * 32.0
+                dv -= round(dv / 32.0) * 32.0
+                lk = _leaf(du, dv, ang, ln, wd)
+                if lk is not None:
+                    res = (LEAF, lk + 1)
+                    hit = True
                     break
-        else:
-            # cream blossoms (5 dots) at (12, 4) and (4, 12)
-            for (bx, by) in ((12.0, 4.0), (4.0, 12.5)):
+        if not hit:
+            for (bx, by) in ((18.0, 14.5), (15.5, 29.0), (30.5, 16.0)):
                 du, dv = lu - bx, lv - by
                 d = math.hypot(du, dv)
-                if d < 0.75:
-                    res = (ROSE, 6)
-                elif d < 1.9 and (math.atan2(dv, du) * 5 / (2 * math.pi)) % 1.0 < 0.62:
-                    res = (CROCHET, 5)
+                if d < 0.7:
+                    res = (YELLOWP, 5)
+                elif d < 1.8 and (math.atan2(dv, du) * 5 / (2 * math.pi)) % 1.0 < 0.6:
+                    res = (CROCHET, 6)
         pl, kk = res
         if fade:
-            fv = vn(u / 6.0, v / 6.0, seed * 0.3, seed + 7)
+            fv = vn(u / 7.0, v / 7.0, seed * 0.3, seed + 7)
             if fv > 1 - fade * 0.5:
                 kk += 1
-                if pl is ROSE and kk < 6:
-                    pl, kk = (ROSE, kk + 1)
         return (pl, kk)
     return t
 
@@ -724,6 +743,11 @@ def doily_tone(shape='disc', seed=0):
             q = _C()
             q.i, q.j = (ctx.i + 0.5) / sx - 0.5, ctx.j
             c = crochet_disc(q, h / 2.0, h / 2.0, h / 2.0, seed)
+        elif shape == 'drape_top':                              # far half of the disc, squashed onto a top face
+            R = w / 2.0
+            q = _Q()
+            q.i, q.j = ctx.i, (h - 1 - ctx.j) * R / max(1.0, h) * 0.9
+            c = crochet_disc(q, w / 2.0, -0.5, R, seed)
         else:                                                   # drape: disc centred at the top edge
             R = w / 2.0
             c = crochet_disc(ctx, w / 2.0, -R * 0.35, R, seed)
@@ -1227,3 +1251,1371 @@ M_BRASS = fin(brass(seed=5, base=4), dust=0.6)
 M_CHROME = fin(brass(NICKEL, seed=7, base=5, tarnish=0.2), dust=0.5)
 M_CAOBA = fin(lustre(CAOBA, seed=11, worn_pal=RAW, wear=0.35))
 M_DARK = fin(flat(BAKE, 1), ao=0, dust=0)
+
+
+# ============================================================================================ LIVING
+def seat_wear(tone, cx=8.0, cz=7.0, rx=5.0, rz=4.0, seed=0):
+    """Wrap an upholstery tone: the place where someone always sits is darker and shinier on the top face."""
+    def t(ctx):
+        r = tone(ctx)
+        if r is None or ctx.face != 'up' or type(r[0]) is not list:
+            return r
+        d = ((ctx.pos[0] - cx) / rx) ** 2 + ((ctx.pos[2] - cz) / rz) ** 2
+        if d < 1.0 and hh(ctx.i, ctx.j, seed) < 0.75 - d * 0.5:
+            return (r[0], r[1] - 1)
+        return r
+    return t
+
+
+def doily_drape(x0, x1, ytop, z, depth=2.4, hang=3.0, seed=0, top=True):
+    """Crocheted doily laid over the top of a backrest (top plane) and hanging down its front (drape plane at z)."""
+    P = [plane((x0, ytop - hang, z - 0.05), (x1, ytop + 0.05, z - 0.05), fin(doily_tone('drape', seed), ao=0, dust=0.3),
+               faces=('north', 'south'))]
+    if top:
+        P.append(plane((x0, ytop + 0.05, z - 0.05), (x1, ytop + 0.05, z + depth),
+                       fin(doily_tone('drape_top', seed), ao=0, dust=0.4), faces=('up', 'down')))
+    return P
+
+
+def sofa_parts(arms, off, doily=True, seed=0):
+    """Floral 70s sofa segment. arms: subset of ('w', 'e') = armrest at x=0 / x=16 side. Sitter looks north."""
+    up = lambda sd, fade=0.0: fin(outline(floral(seed + sd, off, fade)))
+    mBase = up(1)
+    mSeat = fin(outline(seat_wear(floral(seed + 2, off, 0.5), cx=8.0, cz=6.0, seed=seed + 3)))
+    mBack = up(4, 0.2)
+    mArm = up(5, 0.8)
+    mFoot = fin(outline(lustre(CAOBA, base=3, seed=seed + 7, axis=1)))
+    xa = 2.8 if 'w' in arms else 0.0
+    xb = 13.2 if 'e' in arms else 16.0
+    ga = 0.15 if 'w' not in arms else 0.0      # tiny gap at block seams so the cushions read separately
+    gb = 0.15 if 'e' not in arms else 0.0
+    P = [
+        box((0 if 'w' not in arms else 0.4, 1.6, 1.4), (16 if 'e' not in arms else 15.6, 5.2, 15.6), mBase),   # base / skirt
+        box((xa + ga, 5.2, 1.6), (xb - gb, 8.0, 12.4), mSeat),                                                # seat cushion
+        box((xa + ga, 5.5, 1.0), (xb - gb, 7.7, 1.6), mSeat),                                                 # rounded front
+        box((0 if 'w' not in arms else 0.4, 5.2, 13.0), (16 if 'e' not in arms else 15.6, 13.4, 15.6), mBack),  # back frame
+        box((xa + ga, 8.0, 10.6), (xb - gb, 13.6, 13.0), mBack),                                              # back cushion
+        box((xa + ga + 0.3, 13.6, 11.0), (xb - gb - 0.3, 14.2, 12.8), mBack),                                 # cushion top roll
+    ]
+    for side in arms:
+        x0 = 0.0 if side == 'w' else 13.2
+        P += [box((x0 + 0.2, 1.6, 1.0), (x0 + 2.6, 10.2, 15.6), mArm),                                       # armrest
+              box((x0 - 0.1 if side == 'w' else x0 + 0.1, 10.2, 0.8), (x0 + 2.7 if side == 'w' else x0 + 2.9, 11.8, 15.6), mArm),  # roll
+              box((x0 + 0.5, 0.0, 1.8), (x0 + 1.9, 1.6, 3.2), mFoot), box((x0 + 0.5, 0.0, 13.6), (x0 + 1.9, 1.6, 15.0), mFoot)]
+    if doily:
+        P += doily_drape(4.0, 12.0, 14.2, 11.0, depth=1.8, hang=3.6, seed=seed + 9)
+    return P
+
+
+def armchair_parts(seed=31, doilies=True):
+    P = sofa_parts(('w', 'e'), (48, 0, 0), doily=doilies, seed=seed)
+    if doilies:
+        for x0 in (0.0, 13.2):
+            P.append(plane((x0 - 0.05, 11.85, 1.2), (x0 + 2.85, 11.85, 5.2), fin(doily_tone('oval', seed + int(x0)), ao=0, dust=0.3),
+                           faces=('up', 'down')))
+            P.append(plane((x0 - 0.05, 9.4, 0.75), (x0 + 2.85, 11.8, 0.75), fin(doily_tone('drape', seed + 3 + int(x0)), ao=0, dust=0),
+                           faces=('north', 'south')))
+    return P
+
+
+def magazine_tone(col, seed=0):
+    """Magazine / book stack sides: page edges; covers with a title band and a photo block."""
+    def t(ctx):
+        if ctx.face in ('north', 'south', 'west', 'east'):
+            return (PAPER, 6 if ctx.j % 2 else 5)
+        i, j, w, h = ctx.i, ctx.j, ctx.w, ctx.h
+        if j < 2:
+            return (col, 2) if i % 4 else (PAPER, 7)
+        if 2 < j < h - 2 and 1 < i < w - 2:
+            return (SKIN, 4) if (i + j) % 5 else (HAIR, 3)
+        return (col, 4)
+    return t
+
+
+def mesa_ratona_parts():
+    """70s coffee table in lustred wood: tapered legs, magazine shelf, doily with a glass candy dish and the remote."""
+    mTop = fin(lustre(CAOBA, base=4, seed=101, boards=(2, 12), worn_pal=RAW, wear=0.3))
+    mW = fin(lustre(CAOBA, base=4, seed=103))
+    mL = fin(outline(lustre(CAOBA, base=3, seed=105, axis=1)))
+    P = [box((0.8, 7.0, 2.6), (15.2, 8.0, 13.4), mTop),
+         box((1.6, 6.0, 3.4), (14.4, 7.0, 4.0), mW), box((1.6, 6.0, 12.0), (14.4, 7.0, 12.6), mW),
+         box((1.6, 6.0, 4.0), (2.2, 7.0, 12.0), mW), box((13.8, 6.0, 4.0), (14.4, 7.0, 12.0), mW),
+         box((2.2, 1.8, 3.6), (13.8, 2.4, 12.4), mW)]                                                  # shelf
+    for (x, z) in ((1.6, 3.4), (13.2, 3.4), (1.6, 11.4), (13.2, 11.4)):
+        P += [box((x, 2.4, z), (x + 1.2, 6.0, z + 1.2), mL), box((x + 0.15, 0.0, z + 0.15), (x + 1.05, 2.4, z + 1.05), mL)]
+    for n, col in enumerate((REDP, CELESTE, YELLOWP)):                                                 # magazines
+        P.append(box((3.0 + n * 0.5, 2.4 + n * 0.3, 4.6 + n * 0.3), (9.0 + n * 0.4, 2.7 + n * 0.3, 11.0 - n * 0.2),
+                     fin(magazine_tone(col, n), ao=0.6, dust=0.6)))
+    P.append(plane((3.6, 8.03, 4.2), (12.4, 8.03, 11.8), fin(doily_tone('disc', 107), ao=0, dust=0.4), faces=('up',)))
+    mGl = fin(lambda c: (GLASS_J, 5 if c.face == 'up' else (6 if c.i == 1 else 4)), ao=0.2, dust=0.3)
+    P += [box((6.0, 8.05, 6.2), (10.0, 8.6, 10.2), mGl), box((5.4, 8.6, 5.6), (10.6, 9.6, 10.8), mGl),    # candy dish
+          box((6.2, 9.0, 6.6), (7.8, 9.8, 7.8), fin(flat(REDP, 6), ao=0)), box((8.2, 9.0, 8.4), (9.6, 9.8, 9.6), fin(flat(YELLOWP, 5), ao=0)),
+          box((7.2, 9.0, 8.0), (8.4, 9.9, 9.0), fin(flat(CELESTE, 4), ao=0))]
+    mR = fin(lambda c: (BLACKP, 3) if c.face != 'up' else ((REDP, 5) if (c.j == 1 and c.i == 1) else
+                                                            ((GRAPH, 6) if (c.j % 2 == 1 and c.i % 2 == 1) else (BLACKP, 4))), ao=0.4)
+    P.append(box((11.6, 8.0, 9.0), (13.0, 8.6, 13.2), mR, rot=('y', 22.5, (12.3, 8.0, 11.1))))       # remote
+    return P
+
+
+# ------------------------------------------------------------------------------------------------ CRT TV
+def tv_novela():
+    """22x19 telenovela frame: a woman with big hair confronting a mustached man, warm drawing-room light."""
+    cv = Canvas(22, 19, hx('#5a3424'))
+    for y in range(19):
+        for x in range(22):
+            c = mix(hx('#7a4a2c'), hx('#2c1812'), y / 19.0 * 0.6 + abs(x - 6) / 22.0 * 0.5)
+            if 13 <= x <= 20 and 1 <= y <= 9:
+                c = mix(hx('#d8a868'), hx('#8a5a34'), (y - 1) / 8.0)        # lamp-lit curtain behind him
+            cv.set(x, y, c)
+    sk, skd = hx('#e0a888'), hx('#a8705a')
+    # her: big dark hair, red lips, gold earring (left)
+    cv.ellipse(6.0, 7.5, 5.2, 6.2, hx('#1c0f0c'))
+    cv.ellipse(6.6, 9.2, 3.0, 4.2, sk)
+    cv.rect(4, 13, 10, 19, hx('#9a1e2a'))              # red dress
+    cv.rect(5, 12, 9, 14, sk)
+    cv.set(5, 8, hx('#1a1010'))
+    cv.set(8, 8, hx('#1a1010'))
+    cv.set(5, 7, hx('#3a2018'))
+    cv.set(8, 7, hx('#3a2018'))
+    cv.rect(6, 11, 8, 12, hx('#c0202c'))               # lips
+    cv.set(3, 10, hx('#e8c050'))                       # earring
+    cv.set(7, 10, skd)
+    # him: profile on the right, mustache, slicked hair, dark suit
+    cv.ellipse(16.2, 8.5, 2.8, 3.6, sk)
+    cv.ellipse(16.8, 6.0, 3.0, 2.0, hx('#120a08'))
+    cv.rect(14, 10, 16, 11, hx('#2a1810'))             # mustache
+    cv.set(14, 8, hx('#1a1010'))
+    cv.rect(12, 13, 22, 19, hx('#1a1a22'))             # suit
+    cv.rect(15, 12, 18, 14, hx('#e8e4dc'))             # shirt collar
+    cv.set(16, 14, hx('#7a1a1a'))
+    cv.text(F35, '9', 19, 1, hx('#f0f0f0'))           # channel bug
+    for y in range(19):
+        for x in range(22):
+            c = cv.px[y][x]
+            if y % 2:
+                c = mix(c, hx('#000000'), 0.18)        # scanlines
+            v = ((x - 10.5) / 11.0) ** 2 + ((y - 9) / 9.5) ** 2
+            c = mix(c, hx('#000000'), max(0.0, v - 0.55) * 0.6)
+            if x + y < 7 and (x + y) % 2 == 0:
+                c = mix(c, hx('#ffffff'), 0.22)        # glass glare
+            cv.px[y][x] = c
+    return cv
+
+
+def tv_static(seed=3):
+    """Snow: random grey per pixel, rolling bright band, a face that is almost there."""
+    cv = Canvas(22, 19, hx('#808080'))
+    for y in range(19):
+        band = 0.25 if 7 <= y <= 9 else 0.0
+        for x in range(22):
+            v = hh(x, y, seed)
+            v = v * 0.85 + band + (hh(y, seed, 5) - 0.5) * 0.15
+            # the faint face of a porcelain doll: two dark eyes and a stitched mouth
+            fx, fy = (x - 11) / 4.5, (y - 9.5) / 5.5
+            if fx * fx + fy * fy < 1.0:
+                v = v * 0.75 + 0.22
+            if (x in (9, 13) and y == 8) or (y == 12 and 9 <= x <= 13 and x % 2):
+                v *= 0.35
+            g = int(max(0, min(1, v)) * 235 + 10)
+            c = (g, g, int(g * 1.04) if g < 245 else g, 255)
+            if y % 2:
+                c = mix(c, hx('#000000'), 0.15)
+            cv.px[y][x] = c
+    return cv
+
+
+def tv_off():
+    cv = Canvas(22, 19, hx('#1c211f'))
+    for y in range(19):
+        for x in range(22):
+            v = ((x - 10.5) / 11.0) ** 2 + ((y - 9) / 9.5) ** 2
+            c = mix(hx('#2c3532'), hx('#0e1110'), min(1.0, v * 0.9))
+            if 2 <= x + y * 0.5 <= 4 and y < 9:
+                c = mix(c, hx('#7c8a86'), 0.45)        # window reflection on the curved glass
+            if hh(x, y, 9) < 0.05:
+                c = mix(c, hx('#8a8478'), 0.4)         # dust
+            cv.px[y][x] = c
+    return cv
+
+
+def tv_parts(state):
+    """CRT 21" with rabbit-ear antenna and a doily + porcelain poodle on top, on a lustred low cabinet with a
+    cable box. state: 'novela' | 'estatica' | 'apagada'. The screen is emissive when on."""
+    mCab = fin(panels(lustre(CAOBA, base=4, seed=121, axis=1), lustre(CAOBA, base=4, seed=122), rects=((2, 2, -2, -2),),
+                      faces=('north',)))
+    mTop = fin(lustre(CAOBA, base=4, seed=123, boards=(2, 14)), dust=0.8)
+    mW = fin(lustre(CAOBA, base=3, seed=124))
+    mP = fin(smooth(GRAPH, base=3, seed=125, grime=0.0), dust=1.2)
+
+    def bezel(ctx):
+        if ctx.face == 'north' and ctx.j >= ctx.h - 4:
+            i = ctx.i
+            if ctx.j in (ctx.h - 3, ctx.h - 2) and i > ctx.w - 8 and i % 2 == 0:
+                return (NICKEL, 5)                                  # buttons
+            if ctx.j == ctx.h - 3 and i == ctx.w - 10:
+                return hx('#40e060') if state != 'apagada' else hx('#a02020')   # power LED
+            if ctx.j in (ctx.h - 3, ctx.h - 2) and 3 <= i < 13 and i % 2:
+                return (BLACKP, 1)                                  # speaker slots
+            return (GRAPH, 4)
+        if ctx.face in ('west', 'east') and ctx.j % 3 == 0 and 3 < ctx.i < ctx.w - 3 and ctx.j < ctx.h * 0.6:
+            return (BLACKP, 2)                                      # vents
+        return smooth(GRAPH, base=3, seed=126, grime=0.0)(ctx)
+    mBz = fin(bezel, dust=1.2)
+    cv = {'novela': tv_novela, 'estatica': tv_static, 'apagada': tv_off}[state]()
+    on = state != 'apagada'
+    mScr = fin(canvas_tone(cv, other=lambda c: (BLACKP, 2)), ao=0, dust=0 if on else 0.6)
+    P = [
+        box((0.4, 0.0, 2.4), (15.6, 1.0, 15.2), mW),                                    # plinth
+        box((0.6, 1.0, 2.0), (15.4, 8.4, 15.4), mCab),                                  # cabinet carcass
+        box((0.2, 8.4, 1.6), (15.8, 9.2, 15.6), mTop),                                  # top board
+        box((1.0, 1.4, 1.6), (5.6, 8.0, 2.0), mCab), box((10.4, 1.4, 1.6), (15.0, 8.0, 2.0), mCab),   # doors
+        box((5.6, 1.4, 2.0), (10.4, 8.0, 2.05), M_DARK, faces=('north',)),             # open middle bay (dark)
+        box((5.9, 4.6, 2.2), (10.1, 5.6, 7.0), fin(lambda c: (BLACKP, 3) if not (c.face == 'north' and c.j == 1 and c.i in (2, 3))
+                                                   else hx('#4cff70'), ao=0.5)),           # cable box with a green LED
+        box((6.0, 1.4, 2.4), (10.0, 4.4, 6.0), fin(magazine_tone(DENIM, 2), ao=0.6)),   # DVDs / VHS
+        box((4.8, 4.4, 1.3), (5.2, 5.6, 1.6), M_BRASS), box((10.8, 4.4, 1.3), (11.2, 5.6, 1.6), M_BRASS),   # knobs
+        # the set
+        box((1.6, 9.2, 3.2), (14.4, 21.2, 12.0), mBz),                                  # cabinet of the CRT
+        box((3.4, 10.0, 12.0), (12.6, 19.6, 14.0), mP), box((5.0, 11.4, 14.0), (11.0, 18.0, 15.2), mP),   # tube neck
+        box((2.6, 11.4, 2.9), (13.4, 20.4, 3.2), mScr, faces=('north',), shade=not on),  # screen
+        box((1.6, 20.4, 2.8), (14.4, 21.2, 3.2), mBz), box((1.6, 9.2, 2.8), (14.4, 11.4, 3.2), mBz),     # bezel
+        box((1.6, 11.4, 2.8), (2.6, 20.4, 3.2), mBz), box((13.4, 11.4, 2.8), (14.4, 20.4, 3.2), mBz),
+        plane((2.8, 21.24, 4.0), (11.2, 21.24, 11.4), fin(doily_tone('disc', 127), ao=0, dust=0.5), faces=('up',)),
+        # rabbit ears
+        box((5.6, 21.2, 6.4), (9.0, 22.2, 9.4), fin(smooth(BLACKP, base=3, seed=128), dust=1.0)),
+        box((7.05, 22.2, 7.65), (7.55, 31.4, 8.15), M_CHROME, rot=('z', 22.5, (7.3, 22.2, 7.9))),
+        box((7.05, 22.2, 7.65), (7.55, 30.2, 8.15), M_CHROME, rot=('z', -45, (7.3, 22.2, 7.9))),
+    ]
+    # porcelain poodle on the doily
+    mPo = fin(lambda c: (PORCELAIN, 6 if c.face == 'up' else 5), ao=0.5, dust=0.6)
+    P += [box((10.2, 21.2, 7.0), (12.6, 22.4, 8.2), mPo), box((10.4, 22.4, 7.2), (11.4, 23.8, 8.0), mPo),
+          box((10.0, 23.6, 6.9), (11.6, 24.8, 8.3), mPo), box((12.2, 22.4, 7.3), (12.8, 23.4, 7.9), mPo),
+          box((10.4, 21.2, 7.0), (10.9, 21.2, 8.2), mPo, faces=('up',)),
+          box((10.1, 24.0, 6.85), (10.4, 24.4, 7.1), fin(flat(BAKE, 1), ao=0)), box((11.2, 24.0, 6.85), (11.5, 24.4, 7.1), fin(flat(BAKE, 1), ao=0))]
+    return P
+
+
+# ------------------------------------------------------------------------------------------------ standing lamp
+def shade_tone(lit, seed=0, p_off=SHADE_L, p_on=SHADE_LIT):
+    """Pleated fabric lampshade: vertical pleats, a darker band at the rims, scorch spot; lit = warm glow."""
+    def t(ctx):
+        if ctx.face in ('up', 'down'):
+            return (p_on, 2) if lit else (p_off, 2)
+        pl = ctx.i % 3
+        k = (5 if lit else 5) + (1 if pl == 0 else (-1 if pl == 2 else 0))
+        if ctx.j <= 0 or ctx.j >= ctx.h - 1:
+            k -= 2
+        if lit:
+            k += 1 if ctx.t > 0.55 else 0
+        if not lit and vn(ctx.i / 3.0, ctx.j / 3.0, FI[ctx.face], seed) > 0.72:
+            k -= 1                                              # yellowed / scorched patches
+        return (p_on if lit else p_off, k)
+    return t
+
+
+def lamp_shade(x0, x1, z0, z1, y0, y1, lit, seed=0, taper=1.0, th=0.35):
+    """Open lampshade: four thin walls in two tiers (tapering) so the bulb is seen from below."""
+    m = fin(shade_tone(lit, seed), ao=0, dust=0 if lit else 0.8)
+    P = []
+    ym = (y0 + y1) / 2
+    for n, (a, b, ins) in enumerate(((y0, ym, 0.0), (ym, y1, taper))):
+        xa, xb, za, zb = x0 + ins, x1 - ins, z0 + ins, z1 - ins
+        P += [box((xa, a, za), (xb, b, za + th), m, shade=not lit), box((xa, a, zb - th), (xb, b, zb), m, shade=not lit),
+              box((xa, a, za + th), (xa + th, b, zb - th), m, shade=not lit), box((xb - th, a, za + th), (xb, b, zb - th), m, shade=not lit)]
+    return P
+
+
+def bulb_parts(x, y, z, lit, r=1.0, h=2.2):
+    mB = fin(lambda c: (OPAL_LIT, 6 + (c.edge() > 0)) if lit else (OPAL, 5 + (c.edge() > 0)), ao=0, dust=0 if lit else 0.5)
+    mS = fin(brass(NICKEL, base=4, seed=17), ao=0)
+    return [box((x - r, y, z - r), (x + r, y + h, z + r), mB, shade=not lit),
+            box((x - r * 0.6, y + h, z - r * 0.6), (x + r * 0.6, y + h + 1.0, z + r * 0.6), mS)]
+
+
+def lampara_pie_parts(lit):
+    mB = fin(brass(seed=131, base=4, tarnish=0.5), dust=0.6)
+    P = [box((4.6, 0.0, 4.6), (11.4, 0.6, 11.4), mB), box((5.8, 0.6, 5.8), (10.2, 1.4, 10.2), mB),
+         box((7.4, 1.4, 7.4), (8.6, 22.6, 8.6), mB), box((7.0, 11.0, 7.0), (9.0, 12.4, 9.0), mB),       # pole + knop
+         box((7.0, 22.6, 7.0), (9.0, 23.4, 9.0), mB)]
+    P += bulb_parts(8.0, 23.4, 8.0, lit, r=1.1, h=2.4)
+    P += lamp_shade(2.6, 13.4, 2.6, 13.4, 21.6, 30.4, lit, seed=133, taper=1.4)
+    P += [box((8.8, 21.0, 7.8), (9.1, 23.4, 8.1), M_BRASS), box((8.6, 20.4, 7.6), (9.3, 21.0, 8.3), M_BRASS)]   # pull chain
+    return P
+
+
+# ------------------------------------------------------------------------------------------------ Nona's rocking chair
+def mecedora_parts():
+    """The Nona's rocking chair: light oak, curved rockers, spindle back reclined 22.5 deg, knitted red cushion and a
+    granny-square blanket folded over the left arm. The sitter looks north."""
+    mW = fin(outline(wood(ROBLE_CL, seed=141, base=4, worn_pal=RAW, wear=0.6)))
+    mT = fin(wood(ROBLE_CL, seed=143, base=5))
+    mK = fin(knit(WOOL_R, base=5, seed=145), dust=0.3)
+    mG = fin(granny(147, size=6), dust=0.4)
+    P = []
+    for x in (2.2, 12.6):
+        P += [box((x, 0.0, 2.6), (x + 1.2, 1.2, 13.4), mT),                                              # rocker
+              box((x, 0.0, -2.0), (x + 1.2, 1.2, 2.8), mT, rot=('x', 22.5, (x + 0.6, 0.6, 2.8))),
+              box((x, 0.0, 13.2), (x + 1.2, 1.2, 17.6), mT, rot=('x', -22.5, (x + 0.6, 0.6, 13.2))),
+              box((x + 0.1, 1.2, 3.2), (x + 1.1, 15.6, 4.4), mW),                                         # front post up to the arm
+              box((x + 0.1, 1.2, 11.8), (x + 1.1, 9.0, 13.0), mW),                                        # back leg
+              box((x - 0.5, 15.0, 1.8), (x + 1.7, 16.0, 13.4), mT),                                       # arm
+              box((x + 0.2, 3.0, 4.4), (x + 1.0, 3.8, 11.8), mW)]                                         # side stretcher
+    P += [box((3.4, 8.4, 2.8), (12.6, 9.4, 13.0), mW),                                                    # seat
+          box((3.6, 9.4, 3.2), (12.4, 10.8, 12.4), mK),                                                   # knitted cushion
+          box((4.2, 10.8, 3.8), (11.8, 11.2, 11.8), mK),
+          box((3.4, 3.0, 3.6), (12.6, 3.8, 4.2), mW)]                                                     # front stretcher
+    org = (8.0, 9.4, 12.4)
+    rot = ('x', 22.5, org)
+    P += [box((2.3, 9.4, 11.8), (3.5, 26.4, 13.0), mW, rot=rot), box((12.5, 9.4, 11.8), (13.7, 26.4, 13.0), mW, rot=rot),
+          box((2.0, 26.4, 11.6), (3.8, 27.4, 13.2), mT, rot=rot), box((12.2, 26.4, 11.6), (14.0, 27.4, 13.2), mT, rot=rot),
+          box((3.5, 22.4, 11.9), (12.5, 25.6, 12.9), fin(panels(wood(ROBLE_CL, seed=149, base=4, axis=0), rects=((1, 1, -1, -1),),
+                                                                faces=('north', 'south'), bevel=0)), rot=rot),   # crest rail
+          box((3.5, 12.6, 11.9), (12.5, 13.6, 12.9), mW, rot=rot),
+          box((4.2, 13.6, 11.0), (11.8, 20.0, 11.9), mK, rot=rot)]                                        # knitted back pad
+    for x in (5.0, 7.6, 10.2):
+        P.append(box((x, 13.6, 12.05), (x + 0.8, 22.4, 12.75), mW, rot=rot))                             # spindles
+    # granny blanket folded over the (sitter's) left arm = x small side
+    P += [box((1.5, 16.0, 4.2), (3.9, 16.4, 10.8), mG), box((1.1, 8.8, 4.2), (1.5, 16.4, 10.8), mG),
+          box((3.9, 13.2, 4.2), (4.3, 16.4, 10.8), mG), box((1.1, 8.2, 4.6), (1.5, 8.8, 10.4), mG)]
+    return P
+
+
+# ------------------------------------------------------------------------------------------------ doilies, vase (sobre mesa)
+def carpetita_parts(florero=False):
+    P = [plane((2.6, -3.96, 2.6), (13.4, -3.96, 13.4), fin(doily_tone('disc', 151), ao=0, dust=0.4), faces=('up',))]
+    if florero:
+        mGl = fin(lambda c: (GLASS_J, 4 + (c.i % 3 == 1) + (c.face == 'up')), ao=0, dust=0.4)
+        P += [box((6.6, -4.0, 6.6), (9.4, -3.5, 9.4), mGl), box((7.0, -3.5, 7.0), (9.0, 0.2, 9.0), mGl),
+              box((6.7, 0.2, 6.7), (9.3, 0.7, 9.3), mGl)]
+        mSt = fin(flat(LEAF, 3), ao=0)
+        for n, (dx, dz, ht, col) in enumerate(((-1.4, 0.4, 3.6, GERAN), (1.2, -0.6, 4.6, PINK), (0.2, 1.2, 3.0, YELLOWP),
+                                               (-0.4, -1.2, 5.2, ROSE))):
+            x, z = 8.0 + dx, 8.0 + dz
+            P += [box((x - 0.12, 0.7, z - 0.12), (x + 0.12, 0.7 + ht, z + 0.12), mSt),
+                  box((x - 0.7, 0.7 + ht - 0.2, z - 0.7), (x + 0.7, 0.7 + ht + 0.9, z + 0.7),
+                      fin(lambda c, col=col: (col, 4 + ((c.i + c.j) % 2) + (c.face == 'up')), ao=0, dust=0.2))]
+        P += [box((7.9, 1.6, 7.0), (10.0, 1.8, 7.5), fin(flat(LEAF, 4), ao=0), rot=('z', 22.5, (7.9, 1.6, 7.3))),
+              box((6.0, 2.2, 8.6), (7.9, 2.4, 9.1), fin(flat(LEAF, 5), ao=0), rot=('z', -22.5, (7.9, 2.2, 8.8)))]
+    return P
+
+
+# ------------------------------------------------------------------------------------------------ family photos
+PH_SKIN = [hx('#8a5a4a'), hx('#b98470'), hx('#d8a891'), hx('#ebc6b0')]
+
+
+FAM = {
+    'jorge': (['..hhh..', '.hssss.', '.sesse.', '.smmms.', '..sss..', 'kKkKkKk', 'kKkKkKk', 'KkKkKkK', 'KkKkKkK', '.kKkKk.',
+               '.ppppp.', '.pp.pp.', '.pp.pp.', '.pp.pp.', '.ff.ff.'],
+              {'h': hx('#2a1a14'), 's': PH_SKIN[2], 'e': hx('#1a1010'), 'm': hx('#2a1a14'), 'k': hx('#8ab8dc'), 'K': hx('#eef2f4'),
+               'p': hx('#3a3a48'), 'f': hx('#1a1414')}),
+    'marta': (['.rhrh.', 'rhhhhr', '.sess.', '.ssss.', '..ll..', '.BBBB.', 'BBBBBB', 'BBwwBB', 'BBBBBB', '.BBBB.', '.BBBB.',
+               '..ss..', '..pp..'],
+              {'r': hx('#f080a8'), 'h': hx('#5a3020'), 's': PH_SKIN[2], 'e': hx('#1a1010'), 'l': hx('#b04050'), 'B': hx('#e8a0b8'),
+               'w': hx('#c87890'), 'p': hx('#f0c0d0')}),
+    'nona': (['..oo..', '.hhhh.', '.gsgs.', '.ssss.', '..ss..', '.CCCC.', 'CvvvvC', 'CvvvvC', '.vvvv.', '.vvvv.', '..ss..',
+              '..dd..'],
+             {'o': hx('#b8b4ae'), 'h': hx('#a8a49e'), 'g': hx('#ffffff'), 's': PH_SKIN[3], 'C': hx('#6a1424'),
+              'v': hx('#7a8a5a'), 'd': hx('#5a4a40')}),
+    'lucia': (['.hhh.', 'hssh.', 'hesh.'[:5], '.ss..', 'RRRR.', 'RRRR.', 'RRRR.', '.ss..', '.pp..'],
+              {'h': hx('#5a3a22'), 's': PH_SKIN[2], 'e': hx('#1a1010'), 'R': hx('#c42a2a'), 'p': hx('#e0a0c0')}),
+    'toti': (['.hhhh.', 'hhhhhh', '.sess.', '.ssss.', '.g..n.', 'HHHHHH', 'HHHHHH', 'HHHHHH', 'HHHHHH', '.jjjj.', '.jj.jj',
+              '.jj.jj', '.jj.jj', '.ww.ww'],
+             {'h': hx('#1a1210'), 's': PH_SKIN[1], 'e': hx('#1a1010'), 'g': hx('#30ff80'), 'n': hx('#ff30c0'), 'H': hx('#202024'),
+              'j': hx('#34466a'), 'w': hx('#f0f0f0')}),
+}
+
+
+def draw_chori(cv, x, y, stare=True):
+    """Choripan, the dachshund: long and low, red sweater with a white C, ears, two catch-light eyes AT THE CAMERA."""
+    rows = ['..ee......',
+            '.eHHe.....',
+            'oHwHwo....',
+            '.HnnHSSSSSS.',
+            '..HHSCSSSSSt',
+            '...SSSSSSS.t',
+            '...l.l..l.l.']
+    pal_ = {'e': hx('#4a2414'), 'H': hx('#8a4a24'), 'o': hx('#4a2414'), 'w': hx('#f8f8f0') if stare else hx('#3a2010'),
+            'n': hx('#140a08'), 'S': hx('#c42a2a'), 'C': hx('#f0f0f0'), 't': hx('#8a4a24'), 'l': hx('#6a3418')}
+    cv.ascii(x, y, rows, pal_)
+
+
+def draw_ofelia(cv, x, y):
+    rows = ['.hhh.', 'hppph', 'hepeh', '.prp.', 'WWWWW', 'WWWWW', '.WWW.', '.p.p.']
+    cv.ascii(x, y, rows, {'h': hx('#120c0a'), 'p': hx('#f0e6dc'), 'e': hx('#2a2a40'), 'r': hx('#c01818'), 'W': hx('#ece6da')})
+
+
+def photo_grade(c, kind='color'):
+    r, g, b = c[0], c[1], c[2]
+    if kind == 'sepia':
+        l = (r * 0.3 + g * 0.55 + b * 0.15)
+        return (min(255, int(l * 0.95 + 38)), min(255, int(l * 0.82 + 26)), min(255, int(l * 0.6 + 14)), 255)
+    if kind == 'bw':
+        l = int(r * 0.3 + g * 0.55 + b * 0.15)
+        return (min(255, int(l * 0.9 + 18)), min(255, int(l * 0.9 + 18)), min(255, int(l * 0.88 + 20)), 255)
+    if kind == 'faded':
+        return (min(255, int(r * 0.8 + 50)), min(255, int(g * 0.76 + 40)), min(255, int(b * 0.7 + 42)), 255)
+    return (min(255, int(r * 0.95 + 8)), min(255, int(g * 0.95 + 6)), min(255, int(b * 0.92 + 8)), 255)
+
+
+def finish_photo(cv, kind='color', seed=0, border=0):
+    for y in range(cv.h):
+        for x in range(cv.w):
+            if border and (x < border or y < border or x >= cv.w - border or y >= cv.h - border):
+                continue
+            c = photo_grade(cv.px[y][x], kind)
+            v = ((x - cv.w / 2) / (cv.w / 2)) ** 2 + ((y - cv.h / 2) / (cv.h / 2)) ** 2
+            if v > 0.7:
+                c = mix(c, hx('#3a2a20'), (v - 0.7) * 0.3)
+            if hh(x, y, seed) < 0.008:
+                c = mix(c, hx('#ffffff'), 0.4)
+            cv.px[y][x] = c
+    return cv
+
+
+def photo_canvas(kind):
+    if kind in ('familia', 'familia_ofelia'):
+        cv = Canvas(40, 24, hx('#c8b898'))
+        for y in range(24):
+            for x in range(40):
+                c = hx('#d6c8a6') if y < 15 else hx('#7a6a54')
+                if y < 15 and (x // 5 + y // 5) % 2 == 0:
+                    c = mix(c, hx('#c4b490'), 0.5)                 # living-room wallpaper behind them
+                if 26 <= x <= 37 and 2 <= y <= 11:
+                    c = hx('#8aa8c0') if (x + y) % 7 else hx('#9ab8cc')   # window
+                cv.set(x, y, c)
+        for x in range(2, 38):
+            for y in range(13, 17):
+                cv.set(x, y, mix(hx('#a85a3a'), hx('#c0784a'), ((x // 3 + y) % 3) / 3.0))   # the floral sofa
+        order = [('toti', 2, 2), ('jorge', 9, 3), ('nona', 17, 9), ('marta', 24, 6), ('lucia', 31, 11)]
+        for name, x, y in order:
+            rows, pl = FAM[name]
+            cv.ascii(x, y, rows, pl)
+        draw_chori(cv, 14, 17)
+        if kind == 'familia_ofelia':
+            draw_ofelia(cv, 26, 15)                               # she sits next to the next host
+        cv.text(F35, '2025', 23, 18, hx('#f0a040'))               # camera date stamp
+        return finish_photo(cv, 'color', 11)
+    if kind == 'cumple':
+        cv = Canvas(28, 22, hx('#e0c8a0'))
+        for y in range(22):
+            for x in range(28):
+                cv.set(x, y, hx('#e8d4a8') if y < 11 else hx('#d8d0c0'))
+        for (x, y, c) in ((3, 2, hx('#f04060')), (9, 1, hx('#40a0f0')), (19, 2, hx('#f0d040')), (24, 1, hx('#60d060'))):
+            cv.ellipse(x, y + 1.5, 1.6, 2.0, c)                   # balloons
+            cv.line(x, y + 3, x, y + 7, hx('#a0a0a0'))
+        cv.rect(4, 12, 24, 16, hx('#f0f0f0'))                     # table cloth
+        cv.rect(10, 9, 18, 12, hx('#f4e0e8'))                     # cake
+        cv.rect(10, 9, 18, 10, hx('#e070a0'))
+        for x in (11, 13, 15, 17):
+            cv.set(x, 8, hx('#f0f0f0'))
+            cv.set(x, 7, hx('#ffc040'))
+        cv.text(F35, '8', 13, 9, hx('#c02060'))
+        # family seen from behind / side, all looking at the cake
+        backs = [(1, 5, hx('#2a1a14'), hx('#eef2f4')), (6, 4, hx('#5a3020'), hx('#e8a0b8')), (19, 5, hx('#1a1210'), hx('#202024')),
+                 (23, 6, hx('#a8a49e'), hx('#6a1424'))]
+        for (x, y, hc, bc) in backs:
+            cv.rect(x, y, x + 4, y + 3, hc)
+            cv.rect(x - 1, y + 3, x + 5, y + 9, bc)
+        cv.rect(12, 4, 16, 7, hx('#5a3a22'))                      # Lucia behind the cake, eyes closed blowing
+        cv.rect(12, 6, 16, 8, PH_SKIN[2])
+        cv.set(13, 6, hx('#3a2020'))
+        cv.set(15, 6, hx('#3a2020'))
+        draw_chori(cv, 2, 14)                                     # the dog looks at YOU
+        return finish_photo(cv, 'color', 12)
+    if kind == 'choripan':
+        cv = Canvas(18, 22, hx('#7a9a5a'))
+        for y in range(22):
+            for x in range(18):
+                cv.set(x, y, mix(hx('#86a868'), hx('#4a6a3a'), y / 22.0) if (x * 3 + y) % 5 else hx('#5a7a44'))
+        rows = ['....ee..ee....',
+                '...eeHHHHee...',
+                '..eeHHHHHHee..',
+                '..eHHwHHwHHe..',
+                '..eHHHHHHHHe..',
+                '...eHHnnHHe...',
+                '....HHHHHH....',
+                '....HmmmmH....',
+                '...SSScSSSS...',
+                '..SSSCCCSSSS..',
+                '..SSSSCSSSSS..',
+                '..SSSSSSSSSS..',
+                '..SSSSSSSSSS..',
+                '...HH....HH...']
+        cv.ascii(2, 4, rows, {'e': hx('#4a2414'), 'H': hx('#8a4a24'), 'w': hx('#ffffff'), 'n': hx('#140a08'),
+                              'm': hx('#c06070'), 'S': hx('#c42a2a'), 'C': hx('#f0f0f0'), 'c': hx('#80c8e8')})
+        cv.set(7, 7, hx('#140a08'))
+        cv.set(10, 7, hx('#140a08'))
+        return finish_photo(cv, 'color', 13)
+    if kind == 'casamiento':
+        cv = Canvas(20, 26, hx('#c8c0b0'))
+        for y in range(26):
+            for x in range(20):
+                cv.set(x, y, mix(hx('#d8d0c0'), hx('#9a9080'), abs(x - 10) / 12.0))
+        cv.ascii(3, 3, ['.hhh.', 'hssh.', '.ses.', '.ss..', 'DDDD.', 'DwDD.', 'DDDD.', 'DDDD.', 'DDDD.', '.DD..', '.DD..', '.DD..',
+                        '.DD..', '.ff..'],
+                 {'h': hx('#2a1a14'), 's': PH_SKIN[2], 'e': hx('#1a1010'), 'D': hx('#202028'), 'w': hx('#f0f0f0'), 'f': hx('#101010')})
+        cv.ascii(10, 4, ['.hhhh.', 'hssssh', 'hesesh', '.ssss.', 'hh..hh', 'WWWWWW', 'WWWWWW', 'WWrWWW', 'WWWWWWW', 'WWWWWWWW',
+                         'WWWWWWWW', 'WWWWWWWWW', 'WWWWWWWWW', 'WWWWWWWWW', 'WWWWWWWWWW'],
+                 {'h': hx('#5a3020'), 's': PH_SKIN[2], 'e': hx('#1a1010'), 'W': hx('#f4f2ee'), 'r': hx('#e07090')})
+        for y in range(26):
+            for x in range(20):
+                if hh(x, y, 4) < 0.02:
+                    cv.set(x, y, hx('#ffffff'))
+        return finish_photo(cv, 'faded', 14)
+    if kind == 'nona_joven':
+        cv = Canvas(18, 24, hx('#a8a8a0'))
+        for y in range(24):
+            for x in range(18):
+                cv.set(x, y, mix(hx('#c0c0b8'), hx('#686860'), ((x - 9) ** 2 + (y - 10) ** 2) / 200.0))
+        cv.ascii(5, 3, ['..hhh..', '.hhhhh.', 'hhsssh.', 'hseses.'[:7], '.sssss.', '..sms..', '..sss..', '.DDDDD.', 'DDDDDDD',
+                        'DDDpDDD', 'DDDDDDD', 'DDDDDDD', '.DDDDD.', '.DDDDD.'],
+                 {'h': hx('#201814'), 's': hx('#e0c8b0'), 'e': hx('#201010'), 'm': hx('#7a3030'), 'D': hx('#3a3a44'), 'p': hx('#e8e8e0')})
+        return finish_photo(cv, 'bw', 15)
+    if kind == 'nelida':
+        # 1960: a little girl in a white dress holding the doll Ofelia (mouth sewn with red thread), sepia print with
+        # a fountain-pen caption on the white border (cursive "Nelida y Ofelia" + a legible 1960).
+        cv = Canvas(20, 30, hx('#efe6d2'))
+        img = Canvas(16, 18, hx('#b8a888'))
+        for y in range(18):
+            for x in range(16):
+                img.set(x, y, hx('#c8b898') if y < 12 else hx('#8a7a60'))
+                if y < 12 and x % 4 == 0:
+                    img.set(x, y, hx('#b4a484'))
+        img.ascii(3, 1, ['..hhhh..', '.hhhhhh.', 'hhsssshh', 'h.esse.h', '..ssss..', '...ss...', '.WWWWWW.', 'WWWWWWWW',
+                         'WsWWWWsW', 'WWOOOOWW', 'WWOooOWW', '.WOooOW.', '.WWOOWW.', '.WWWWWW.', '..s..s..', '..b..b..'],
+                  {'h': hx('#2a1c14'), 's': hx('#e8d0b8'), 'e': hx('#201010'), 'W': hx('#f4f0e8'), 'O': hx('#1a1210'),
+                   'o': hx('#f4ece4'), 'b': hx('#201010')})
+        img.set(7, 11, hx('#a01818'))
+        img.set(8, 11, hx('#a01818'))
+        finish_photo(img, 'sepia', 16)
+        for y in range(18):
+            for x in range(16):
+                cv.set(x + 2, y + 2, img.px[y][x])
+        ink = hx('#2a2a6a')
+        for x in range(2, 18):                                            # cursive "Nelida y Ofelia"
+            y = 22 + int(round(math.sin(x * 1.9) * 1.0 + (0.6 if x % 5 == 0 else 0)))
+            cv.set(x, y, ink)
+            if x % 4 == 1:
+                cv.set(x, y - 1, ink)
+        cv.text(F35, '1960', 3, 24, ink)
+        for y in range(30):
+            for x in range(20):
+                if x + y < 5 or hh(x, y, 9) < 0.01:
+                    cv.set(x, y, lambda c: mix(c, hx('#b89a60'), 0.35))
+        return cv
+    raise ValueError(kind)
+
+
+PHOTO_FRAMES = {   # kind -> (centre x, bottom y of the print, frame width, frame style); print size = canvas px / 2
+    'familia': (8.0, 4.0, 1.0, 'dorado'),
+    'familia_ofelia': (8.0, 4.0, 1.0, 'dorado'),
+    'cumple': (8.0, 5.0, 0.8, 'blanco'),
+    'choripan': (8.0, 3.0, 0.8, 'madera'),
+    'casamiento': (8.0, 2.0, 1.0, 'plata'),
+    'nona_joven': (8.0, 3.0, 1.1, 'oscuro'),
+    'nelida': (8.0, 1.0, 0.9, 'oscuro'),
+}
+
+
+def photo_parts(kind):
+    """Framed photo hanging on the wall (back of the frame against the wall opposite to facing)."""
+    cx, y0, fw, style = PHOTO_FRAMES[kind]
+    cv = photo_canvas(kind)
+    x0, x1 = cx - cv.w / 4.0, cx + cv.w / 4.0
+    y1 = y0 + cv.h / 2.0
+    mFr = {'dorado': fin(brass(GOLD, base=4, seed=161, tarnish=0.4), dust=0.6),
+           'blanco': fin(smooth(PLAST_W, base=6, seed=162), dust=0.6),
+           'madera': fin(outline(wood(ROBLE, seed=163, base=4)), dust=0.6),
+           'plata': fin(brass(NICKEL, base=5, seed=164, tarnish=0.5), dust=0.6),
+           'oscuro': fin(outline(lustre(CAOBA, seed=165, base=3)), dust=0.6)}[style]
+    mPh = fin(canvas_tone(cv, other=lambda c: (PAPER, 6)), ao=0, dust=0.15)
+    zb = 15.0
+    return [box((x0, y0, 15.45), (x1, y1, 15.55), mPh, faces=('north',)),
+            box((x0 - fw, y0 - fw, zb), (x1 + fw, y0, 16.0), mFr), box((x0 - fw, y1, zb), (x1 + fw, y1 + fw, 16.0), mFr),
+            box((x0 - fw, y0, zb), (x0, y1, 16.0), mFr), box((x1, y0, zb), (x1 + fw, y1, 16.0), mFr),
+            box((x0, y0, 15.55), (x1, y1, 16.0), fin(flat(CARTON, 3), ao=0), faces=('south',))]
+
+
+# ------------------------------------------------------------------------------------------------ gas wall heater
+def heater_front_tone(lit):
+    def t(ctx):
+        i, j, w, h = ctx.i, ctx.j, ctx.w, ctx.h
+        if ctx.face == 'up':
+            if j % 2 == 0 and 2 <= i < w - 2 and j < h - 3:
+                return (BAKE, 3)                                   # top grille slots
+            return (ENAMEL, 5)
+        if ctx.face != 'north':
+            return smooth(ENAMEL, base=5, seed=171)(ctx)
+        if j < 6 and 2 <= i < w - 2:
+            if j % 2 == 1:
+                return (BAKE, 2 + (j == 1))                        # louvres
+            return (ENAMEL, 6 if hh(i, j) > 0.1 else 3)
+        cx = w / 2
+        if abs(i + 0.5 - cx) < 4.5 and h - 11 <= j < h - 4:     # mirilla (window) with the burner behind
+            ii, jj = i + 0.5 - cx, j - (h - 11)
+            if abs(ii) > 3.6 or jj in (0, 6):
+                return (NICKEL, 5)
+            if lit:
+                if jj >= 4:
+                    return T(FLAME_B, 4 + (abs(ii) < 1.5))
+                if hh(i, j, 3) < 0.7:
+                    return T(EMBER, 5 + (jj > 2) + (abs(ii) < 1.4))
+                return T(EMBER, 4)
+            if jj >= 4 and abs(ii) < 0.8:
+                return T(FLAME_B, 5)                              # pilot only
+            return (BAKE, 2)
+        if j == h - 2 and i in (3, 4):
+            return (BLACKP, 2)
+        if 6 <= j <= 7 and w - 8 <= i < w - 3:
+            return (NICKEL, 6) if j == 6 else (NICKEL, 4)         # name plate
+        k = 5
+        if j > h - 3:
+            k -= 1
+        if hh(i, j, 172) < 0.03:
+            k -= 1
+        return (ENAMEL, k)
+    return t
+
+
+def soot_stain_tone(seed=0, strength=1.0):
+    """Dithered dark stain (cutout) rising from a heater/parrilla onto the wall."""
+    def t(ctx):
+        u = ctx.s * 2 - 1
+        v = 1 - ctx.t
+        d = abs(u) * 1.2 + v * 0.9 - 0.15 + (vn(ctx.i / 3.0, ctx.j / 3.0, 0.5, seed) - 0.5) * 0.5
+        a = (1 - d) * strength
+        if a <= 0 or bay(ctx.i, ctx.j) > a:
+            return None
+        return mix(hx('#2a2420'), hx('#4a4038'), 0.5 - a * 0.4)
+    return t
+
+
+def estufa_parts(lit):
+    mB = fin(heater_front_tone(lit), ao=0.6, dust=0.8)
+    mS = fin(smooth(ENAMEL, base=5, seed=173), dust=0.8)
+    P = [box((2.0, 1.2, 10.4), (14.0, 13.6, 15.8), mB),
+         box((2.6, 0.0, 11.0), (4.0, 1.2, 15.0), M_CHROME), box((12.0, 0.0, 11.0), (13.4, 1.2, 15.0), M_CHROME),
+         box((12.0, 13.6, 13.0), (13.4, 14.4, 14.4), fin(smooth(BLACKP, base=3, seed=174))),          # knob
+         box((10.0, 13.6, 13.4), (11.0, 14.0, 14.2), fin(flat(REDP, 5), ao=0)),                     # piezo button
+         box((4.0, 13.6, 15.0), (6.0, 14.6, 16.0), mS),                                              # gas pipe to the wall
+         plane((1.0, 13.6, 15.95), (15.0, 26.0, 15.95), fin(soot_stain_tone(175, 0.8), ao=0, dust=0), faces=('north',))]
+    return P
+
+
+# ============================================================================================ register: living
+F('sillon_der', 'Sillón floreado (derecha)', 'Floral sofa (right end)', sofa_parts(('w',), (0, 0, 0), seed=11), sound='wool')
+F('sillon_centro', 'Sillón floreado (centro)', 'Floral sofa (middle)', sofa_parts((), (16, 0, 0), seed=13), sound='wool')
+F('sillon_izq', 'Sillón floreado (izquierda)', 'Floral sofa (left end)', sofa_parts(('e',), (32, 0, 0), seed=15), sound='wool')
+F('sillon_individual', 'Sillón individual floreado', 'Floral armchair', armchair_parts(), sound='wool')
+F('mesa_ratona', 'Mesa ratona con carpetita', 'Coffee table with a doily', mesa_ratona_parts())
+F('tele_vieja', 'Tele vieja (telenovela)', 'Old CRT TV (soap opera)', tv_parts('novela'), light=6, sound='metal')
+F('tele_vieja_estatica', 'Tele vieja (estática)', 'Old CRT TV (static)', tv_parts('estatica'), light=6, sound='metal')
+F('tele_vieja_apagada', 'Tele vieja (apagada)', 'Old CRT TV (off)', tv_parts('apagada'), sound='metal')
+F('lampara_pie', 'Lámpara de pie (encendida)', 'Standing lamp (lit)', lampara_pie_parts(True), light=12, directional=False)
+F('lampara_pie_apagada', 'Lámpara de pie (apagada)', 'Standing lamp (off)', lampara_pie_parts(False), directional=False)
+F('mecedora', 'Mecedora de la Nona', "Nona's rocking chair", mecedora_parts())
+F('carpetita', 'Carpetita tejida (sobre mesa)', 'Crocheted doily (on a table)', carpetita_parts(), collision='none', sound='wool')
+F('carpetita_florero', 'Carpetita con florero (sobre mesa)', 'Doily with a vase of plastic flowers (on a table)',
+  carpetita_parts(True), collision='none', sound='glass')
+for _k, _es, _en in (('familia', 'Foto de la familia Morales', 'Morales family photo'),
+                     ('familia_ofelia', 'Foto de la familia (con Ofelia)', 'Family photo (Ofelia in it)'),
+                     ('cumple', 'Foto del cumple de Lucía', "Photo of Lucia's birthday"),
+                     ('choripan', 'Foto de Choripán', 'Photo of Choripan'),
+                     ('casamiento', 'Foto del casamiento de Marta y Jorge', "Marta and Jorge's wedding photo"),
+                     ('nona_joven', 'Foto de la Nona de joven', 'Photo of young Nona'),
+                     ('nelida', 'Foto "Nélida y Ofelia, 1960"', 'Photo "Nelida and Ofelia, 1960"')):
+    F(f'foto_{_k}', _es, _en, photo_parts(_k), env=('wall',), collision='none', sound='paper')
+F('estufa', 'Estufa de tiro balanceado (prendida)', 'Balanced-flue gas heater (on)', estufa_parts(True), env=('wall',),
+  light=6, sound='metal')
+F('estufa_apagada', 'Estufa de tiro balanceado (piloto)', 'Balanced-flue gas heater (pilot only)', estufa_parts(False),
+  env=('wall',), sound='metal')
+
+
+# ============================================================================================ DINING
+def turned_leg(x, z, y0, y1, m, w=1.4, rings=(0.25, 0.62)):
+    """Square leg with turned rings (lathe beads) at fractions of its height."""
+    P = [box((x, y0, z), (x + w, y1, z + w), m)]
+    for f in rings:
+        y = y0 + (y1 - y0) * f
+        P.append(box((x - 0.2, y, z - 0.2), (x + w + 0.2, y + 0.8, z + w + 0.2), m))
+    return P
+
+
+def runner_tone(seed=0):
+    """Crocheted table runner (cutout): open filet mesh with solid diamonds and a scalloped long edge."""
+    def t(ctx):
+        i, j, w, h = ctx.i, ctx.j, ctx.w, ctx.h
+        if j < 1 or j >= h - 1:
+            return T(CROCHET, 5) if i % 3 != 2 else None
+        cx = (i % 10) - 4.5
+        cy = j - h / 2 + 0.5
+        dia = abs(cx) + abs(cy) * 1.4 < 4.0
+        if dia:
+            return T(CROCHET, 6 if (i + j) % 2 else 5)
+        if (i % 2 == 0) or (j % 2 == 0):
+            return T(CROCHET, 5)
+        return None
+    return t
+
+
+def mesa_comedor_parts(kind):
+    """Long lustred dining table (long axis = x, top at 12/16). kind 'extremo' (turned legs at the x=0 end) | 'centro'
+    (with the crocheted runner). Three blocks: extremo + centro + extremo turned 180."""
+    off = (0, 0, 0) if kind == 'extremo' else (16, 0, 0)
+    mTop = fin(lustre(CAOBA, base=4, seed=201, axis=0, boards=(2, 10), off=off, worn_pal=RAW, wear=0.3))
+    mW = fin(lustre(CAOBA, base=3, seed=203, off=off))
+    mL = fin(outline(lustre(CAOBA, base=3, seed=205, axis=1)))
+    x0 = 0.4 if kind == 'extremo' else 0.0
+    P = [box((x0, 11.0, 0.6), (16, 12.0, 15.4), mTop),
+         box((x0 + 1.0, 9.0, 1.6), (16, 11.0, 2.2), mW), box((x0 + 1.0, 9.0, 13.8), (16, 11.0, 14.4), mW)]
+    if kind == 'extremo':
+        P.append(box((1.4, 9.0, 2.2), (2.0, 11.0, 13.8), mW))
+        for z in (1.4, 13.2):
+            P += turned_leg(1.4, z, 0.0, 11.0, mL)
+        P.append(box((1.8, 2.2, 2.8), (2.4, 2.9, 13.2), mW))                                  # H stretcher
+        P.append(box((2.4, 2.2, 7.6), (16.0, 2.9, 8.4), mW))
+    else:
+        P.append(box((0.0, 2.2, 7.6), (16.0, 2.9, 8.4), mW))
+        P.append(plane((0.0, 12.04, 5.6), (16.0, 12.04, 10.4), fin(runner_tone(207), ao=0, dust=0.3), faces=('up',)))
+        P += [box((6.6, 12.0, 6.6), (9.4, 12.5, 9.4), fin(lambda c: (PORC, 6), ao=0.3)),       # fruit bowl
+              box((6.0, 12.5, 6.0), (10.0, 13.6, 10.0), fin(lambda c: (PORC, 6 if c.face != 'up' else 3), ao=0.3))]
+        for n, (dx, dz, col) in enumerate(((-0.8, -0.6, LEMON), (0.9, 0.2, REDP), (-0.2, 1.0, LEMON), (0.4, -1.0, GERAN))):
+            P.append(box((8 + dx - 0.9, 13.0, 8 + dz - 0.9), (8 + dx + 0.9, 14.6, 8 + dz + 0.9),
+                         fin(lambda c, col=col: (col, 5 + (c.face == 'up') - (c.edge() == 0)), ao=0.4)))
+    return P
+
+
+def leatherette(p=REDP, base=4, seed=0, buttons=False):
+    """Cuerina (vinyl) upholstery: smooth with a fine pebble grain, cracked and paler where it is worn."""
+    def t(ctx):
+        P = tp(ctx)
+        k = base + (1 if hh(int(P[0]), int(P[1]), int(P[2]), seed) < 0.12 else 0)
+        n = vn(P[0] / 4.0, P[1] / 4.0, P[2] / 4.0, seed + 5)
+        if ctx.face == 'up' and n > 0.68:
+            k += 1
+            if hh(ctx.i, ctx.j, seed) < 0.25:
+                return (CROCHET, 3)                                 # cracks showing the fabric backing
+        if ctx.edge() == 0:
+            k -= 1
+        if buttons and ctx.face == 'up' and (ctx.i % 8, ctx.j % 8) == (4, 4):
+            k -= 2
+        return (p, k)
+    return t
+
+
+def silla_comedor_parts():
+    """Dining chair matching the table: lustred frame, turned front legs, bordo cuerina seat, carved back splat.
+    The sitter looks north (front = north)."""
+    mW = fin(outline(lustre(CAOBA, base=4, seed=211, worn_pal=RAW, wear=0.45)))
+    mS = fin(leatherette(REDP, base=4, seed=213))
+    P = []
+    for x in (3.0, 11.6):
+        P += turned_leg(x, 3.0, 0.0, 7.0, mW, w=1.3, rings=(0.3,))
+        P.append(box((x, 0.0, 12.0), (x + 1.3, 22.0, 13.3), mW))                             # back legs / stiles
+        P.append(box((x + 0.2, 2.4, 4.3), (x + 1.1, 3.0, 12.0), mW))
+    P += [box((2.8, 6.0, 2.8), (13.2, 7.0, 13.4), mW),                                        # seat frame
+          box((3.0, 7.0, 2.6), (13.0, 8.4, 12.6), mS),                                        # upholstered seat
+          box((4.3, 19.4, 12.2), (11.6, 21.6, 13.1), fin(panels(lustre(CAOBA, base=4, seed=215, axis=0), rects=((1, 1, -1, -1),),
+                                                                faces=('north', 'south'), bevel=0))),   # top rail
+          box((6.6, 9.0, 12.4), (9.4, 19.4, 12.9), fin(panels(lustre(CAOBA, base=4, seed=217, axis=1), rects=((1, 2, -1, -2),),
+                                                              faces=('north', 'south'), bevel=1))),     # splat
+          box((4.3, 9.0, 12.3), (11.6, 9.8, 13.0), mW)]
+    return P
+
+
+def tip_back(parts, pivot_z=14.0, lift=-4.0):
+    """Turn axis-aligned parts 90 deg about the x axis so the piece lies on its back (its back toward +z)."""
+    out = []
+    for p in parts:
+        (x1, y1, z1), (x2, y2, z2) = p.frm, p.to
+        ny1, ny2 = pivot_z - z2, pivot_z - z1
+        nz1, nz2 = y1 + lift, y2 + lift
+        fmap = {'up': 'south', 'south': 'down', 'down': 'north', 'north': 'up', 'west': 'west', 'east': 'east'}
+        q = type(p)((x1, ny1, nz1), (x2, ny2, nz2), p.mat, faces=tuple(fmap[f] for f in p.faces), shade=p.shade,
+                    name=p.name, cull=p.cull)
+        out.append(q)
+    return out
+
+
+def aparador_parts(side):
+    """Sideboard 2 blocks wide (viewer's left = '_izq' = +x half): drawers over panelled doors, a back hutch with a
+    plate rail of standing decorative plates, a doily, a sugar bowl and (der) a bottle and the house keys."""
+    off = (0, 0, 0) if side == 'der' else (16, 0, 0)
+    wd = lambda sd, **kw: lustre(CAOBA, seed=221 + sd, off=off, **kw)
+    mC = fin(wd(0, base=3, axis=1))
+    mDr = fin(panels(wd(1, base=4, axis=0), rects=((1, 1, -1, -1),), faces=('north',), bevel=0))
+    mDo = fin(panels(wd(2, base=4, axis=1), wd(3, base=4, axis=1), rects=((2, 2, -2, -2),), faces=('north',)))
+    mTop = fin(wd(4, base=4, axis=0, boards=(2, 10), worn_pal=RAW, wear=0.3), dust=1.2)
+    mBk = fin(panels(wd(5, base=3, axis=0), rects=((2, 2, -2, -2),), faces=('north',), bevel=1))
+    xe = 0.4 if side == 'der' else 0.0
+    xf = 16.0 if side == 'der' else 15.6
+    P = [box((xe + 0.4, 0.0, 3.4), (xf - 0.4, 1.2, 15.0), mC),
+         box((xe + 0.2, 1.2, 3.0), (xf - 0.2, 12.6, 15.6), mC),
+         box((xe, 12.6, 2.4), (xf, 13.6, 15.8), mTop)]
+    xa, xb = xe + 0.8, xf - 0.8
+    xm = (xa + xb) / 2
+    P += [box((xa, 9.8, 2.6), (xb, 12.2, 3.0), mDr),
+          box((xa, 1.6, 2.6), (xm - 0.1, 9.4, 3.0), mDo), box((xm + 0.1, 1.6, 2.6), (xb, 9.4, 3.0), mDo),
+          box((xm - 1.0, 10.7, 2.2), (xm + 1.0, 11.3, 2.6), M_BRASS),
+          box((xm - 0.9, 5.0, 2.2), (xm - 0.4, 6.4, 2.6), M_BRASS), box((xm + 0.4, 5.0, 2.2), (xm + 0.9, 6.4, 2.6), M_BRASS)]
+    # hutch back with plate rail
+    P += [box((xe, 13.6, 14.6), (xf, 27.0, 15.8), mBk),
+          box((xe, 27.0, 14.0), (xf, 28.0, 16.0), mTop),
+          box((xe, 20.0, 12.6), (xf, 20.6, 14.6), mTop),                                       # shelf
+          box((xe, 21.4, 12.6), (xf, 21.8, 12.9), mC)]                                         # plate rail
+    mPl = lambda sd: fin(plate_face_tone(sd), ao=0.3, dust=0.5)
+    for n, x in enumerate((2.8, 9.0) if side == 'der' else (1.4, 7.6)):
+        P.append(box((x, 20.6, 13.0), (x + 5.2, 25.8, 13.5), mPl(n + (0 if side == 'der' else 2)), rot=('x', 22.5, (x, 20.6, 13.0))))
+    P.append(plane((xe + 0.6, 13.64, 4.0), (xf - 0.6, 13.64, 12.0), fin(runner_tone(229 + (side == 'izq')), ao=0, dust=0.5),
+                   faces=('up',)))
+    if side == 'izq':
+        mSu = fin(lambda c: (PORC, 6 - (c.edge() == 0)) if c.j > 1 or c.face == 'up' else (CELESTE, 3), ao=0.4)
+        P += [box((9.0, 13.6, 7.0), (12.0, 16.0, 10.0), mSu), box((9.6, 16.0, 7.6), (11.4, 16.6, 9.4), mSu),
+              box((10.2, 16.6, 8.2), (10.8, 17.2, 8.8), mSu)]                                   # sugar bowl
+    else:
+        mBo = fin(lambda c: (BLACKP, 3 + (c.i == 1)) if c.j > 2 else (BLACKP, 2), ao=0.3)
+        mLb = fin(lambda c: (CROCHET, 6) if c.face in ('north', 'west', 'east', 'south') and 2 < c.j < 7 else (BLACKP, 3), ao=0.3)
+        P += [box((3.0, 13.6, 7.6), (5.0, 20.0, 9.6), mLb), box((3.5, 20.0, 8.1), (4.5, 22.6, 9.1), mBo),
+              box((3.4, 22.6, 8.0), (4.6, 23.2, 9.2), fin(flat(GOLD, 5), ao=0))]                # bottle
+        P += [box((9.0, 13.6, 5.0), (11.6, 13.9, 6.0), fin(brass(BRASS, base=5, seed=231), ao=0)),   # keys on a ring
+              box((10.4, 13.6, 5.8), (11.0, 13.9, 7.8), fin(brass(NICKEL, base=5, seed=232), ao=0))]
+    return P
+
+
+def plate_face_tone(seed=0, faces=('north', 'south')):
+    """Decorative plate seen from the front (cutout disc): white porcelain, blue rim band, a painted flower."""
+    def t(ctx):
+        if ctx.face not in faces:
+            return (PORC, 5)
+        w, h = ctx.w, ctx.h
+        x, y = (ctx.i + 0.5) / w * 2 - 1, (ctx.j + 0.5) / h * 2 - 1
+        r = math.hypot(x, y)
+        if r > 1.0:
+            return None
+        if ctx.face == faces[1]:
+            return (PORC, 4)
+        if r > 0.86:
+            return (PORC, 5)
+        if r > 0.7:
+            return (CELESTE, 2 + (int((math.atan2(y, x) + 4) * 6) % 2)) if seed % 2 else (GOLD, 5)
+        if r < 0.32:
+            a = (math.atan2(y, x) / (2 * math.pi) * 5) % 1.0
+            return (ROSE, 5) if a < 0.6 else (LEAF, 4)
+        return (PORC, 7 if hh(ctx.i, ctx.j, seed) > 0.05 else 5)
+    return t
+
+
+def lampara_comedor_parts(lit):
+    """70s brass three-arm ceiling lamp with frosted amber tulips (hangs from the ceiling above the table)."""
+    mB = fin(brass(seed=241, base=4, tarnish=0.5), dust=0.6)
+
+    def tulip(lit_):
+        def t(ctx):
+            if ctx.face == 'down':
+                return (OPAL_LIT, 6) if lit_ else (OPAL, 4)
+            k = 3 + int((1 - ctx.t) * 3) + (ctx.i % 3 == 1)
+            return (OPAL_LIT, k + 1) if lit_ else (OPAL, k - 1 if ctx.j > ctx.h - 2 else k)
+        return t
+    mT = fin(tulip(lit), ao=0, dust=0 if lit else 0.5)
+    P = [box((7.2, 3.4, 7.2), (8.8, 9.6, 8.8), mB), box((6.4, 3.0, 6.4), (9.6, 4.2, 9.6), mB),
+         box((7.4, 9.6, 7.4), (8.6, 15.0, 8.6), mB), box((6.0, 15.0, 6.0), (10.0, 16.0, 10.0), mB)]   # stem + canopy
+    for (dx, dz) in ((5.2, 0.0), (-2.6, 4.5), (-2.6, -4.5)):
+        x, z = 8 + dx, 8 + dz
+        P += [box((min(8, x) - 0.3 if dx < 0 else 8.0, 4.0, z - 0.3) if dz == 0 else (min(8.0, x), 4.0, min(8.0, z)),
+                  (max(8.0, x) + 0.3, 4.6, z + 0.3) if dz == 0 else (max(8.0, x), 4.6, max(8.0, z)), mB),
+              box((x - 0.4, 4.6, z - 0.4), (x + 0.4, 6.0, z + 0.4), mB),
+              box((x - 1.6, 1.2, z - 1.6), (x + 1.6, 4.0, z + 1.6), mT, shade=not lit),          # tulip (opening down)
+              box((x - 1.2, 0.4, z - 1.2), (x + 1.2, 1.2, z + 1.2), mT, shade=not lit),
+              box((x - 1.0, 4.0, z - 1.0), (x + 1.0, 4.6, z + 1.0), mB)]
+    return P
+
+
+# ============================================================================================ KITCHEN
+def cream_door(seed=0, knob=True):
+    """Painted kitchen cabinet door: cream enamel paint, a routed rectangle, grime around the handle, chips."""
+    base = smooth(ENAMEL, base=6, seed=seed, grime=0.3, edge=0, mottle=0.12)
+
+    def t(ctx):
+        P = tp(ctx)
+        if ctx.edge() == 0 and vn(P[0] / 1.5, P[1] / 1.5, P[2] / 1.5, seed + 3) > 0.72:
+            return (PINO, 4)                                        # chipped paint on the edges
+        pl, k = base(ctx)
+        if ctx.face == 'north' and 0.1 < ctx.t < 0.5 and hh(ctx.i // 2, ctx.j // 2, seed) < 0.06:
+            k -= 1                                                  # finger marks near the handle
+        return (pl, k)
+    return panels(t, rects=((2, 2, -2, -2),), faces=('north',), bevel=1, groove=True)
+
+
+def granite_tone(seed=0):
+    """Polished 'granito gris mara' counter top: black/grey/white speckle, slight sheen band."""
+    def t(ctx):
+        P = tp(ctx)
+        hv = hh(int(P[0]), int(P[1]), int(P[2]), seed)
+        k = 5 + (1 if vn(P[0] / 5.0, P[1] / 5.0, P[2] / 5.0, seed) > 0.6 else 0)
+        if hv < 0.10:
+            k = 2
+        elif hv < 0.2:
+            k = 3
+        elif hv > 0.94:
+            k = 7
+        if ctx.face == 'up' and 0.45 < (ctx.s * 0.6 + ctx.t * 0.4) < 0.5:
+            k += 1
+        return (GRANITO, k)
+    return t
+
+
+def mesada_parts(kind='lisa'):
+    """Kitchen counter (top at 14/16): cream painted base cabinet, granite top with a front lip, a strip of green 70s
+    tiles on the back. kind: 'lisa' (two doors) | 'cajones' (three drawers) | 'pileta' (stainless sink, tap, sponge,
+    detergent, dish cloth) | 'esquina' (corner, fronts on north and east)."""
+    mBody = fin(painted(ENAMEL, base=5, seed=301, grime=0.4))
+    mPl = fin(flat(BAKE, 2), ao=0.4)
+    mTop = fin(granite_tone(303), dust=0.4)
+    mTile = fin(tiles(TILE_G, base=5, size=8, seed=305), dust=0.3)
+    P = [box((0.0, 1.2, 1.6), (16.0, 13.2, 16.0), mBody, faces=('north', 'south', 'west', 'east', 'down') if kind == 'pileta'
+             else None),
+         box((0.0, 0.0, 2.6), (16.0, 1.2, 16.0), mPl)]                                      # recessed plinth
+    if kind == 'esquina':
+        P[0] = box((0.0, 1.2, 1.6), (14.4, 13.2, 16.0), mBody)
+        P[1] = box((0.0, 0.0, 2.6), (13.4, 1.2, 16.0), mPl)
+    if kind == 'pileta':
+        P += [box((0.0, 13.2, 1.0), (2.2, 14.2, 15.4), mTop), box((13.8, 13.2, 1.0), (16.0, 14.2, 15.4), mTop),
+              box((2.2, 13.2, 1.0), (13.8, 14.2, 2.4), mTop), box((2.2, 13.2, 12.6), (13.8, 14.2, 15.4), mTop)]
+        mSt = fin(brass(STEEL, base=5, seed=307, sheen=False, tarnish=0.1), dust=0)
+        P += [box((2.2, 8.6, 2.4), (13.8, 13.2, 2.8), mSt), box((2.2, 8.6, 12.2), (13.8, 13.2, 12.6), mSt),
+              box((2.2, 8.6, 2.8), (2.6, 13.2, 12.2), mSt), box((13.4, 8.6, 2.8), (13.8, 13.2, 12.2), mSt),
+              box((2.6, 8.6, 2.8), (13.4, 9.0, 12.2), fin(lambda c: (STEEL, 2) if (abs(c.s - 0.5) < 0.08 and abs(c.t - 0.5) < 0.1)
+                                                          else (STEEL, 4 + (hh(c.i, c.j) > 0.85)), ao=0.8, dust=0))]   # basin
+        mCh = fin(brass(NICKEL, base=6, seed=309, tarnish=0.25), dust=0)
+        P += [box((7.4, 14.2, 13.2), (8.6, 17.2, 14.4), mCh), box((7.6, 16.4, 9.6), (8.4, 17.2, 13.2), mCh),
+              box((7.5, 15.4, 9.4), (8.5, 16.6, 10.2), mCh)]                                  # tap
+        for x in (5.2, 10.0):
+            P += [box((x, 14.2, 13.4), (x + 0.8, 15.2, 14.2), mCh), box((x - 0.6, 15.2, 13.6), (x + 1.4, 15.6, 14.0), mCh),
+                  box((x + 0.2, 15.2, 13.0), (x + 0.6, 15.6, 14.6), mCh)]
+        P += [box((2.6, 14.2, 13.0), (4.4, 18.6, 14.6), fin(lambda c: (YELLOWP, 5 + (c.i == 1)) if c.j > 3 else (GREENP, 5), ao=0.4)),
+              box((3.1, 18.6, 13.5), (3.9, 19.4, 14.1), fin(flat(GREENP, 6), ao=0)),          # detergent bottle
+              box((11.4, 14.2, 13.2), (13.4, 15.2, 14.6), fin(lambda c: (GREENP, 5) if c.j < 2 else (YELLOWP, 6), ao=0.4))]   # sponge
+        # rejilla (dish cloth) over the cabinet door
+        P.append(box((6.0, 6.4, 1.2), (10.0, 12.8, 1.6), fin(cloth(LINEN, base=5, seed=311, folds=0.4, stains=0.5,
+                                                                    stain_col=hx('#7a6a40')), ao=0.4)))
+        P.append(box((6.0, 12.8, 1.2), (10.0, 13.2, 3.0), fin(cloth(LINEN, base=5, seed=312, folds=0.2, stains=0.4), ao=0.4)))
+    else:
+        P += [box((0.0, 13.2, 1.0), (16.0, 14.2, 16.0), mTop)]
+    P.append(box((0.0, 14.2, 15.4), (16.0, 17.4, 16.0), mTile, faces=('north', 'up', 'west', 'east')))  # tile upstand
+    if kind in ('lisa', 'pileta'):
+        P += [box((0.6, 1.6, 1.2), (7.9, 12.8, 1.6), fin(cream_door(313))), box((8.1, 1.6, 1.2), (15.4, 12.8, 1.6), fin(cream_door(314)))]
+        P += [box((6.6, 9.6, 0.6), (7.2, 11.6, 1.2), M_CHROME), box((8.8, 9.6, 0.6), (9.4, 11.6, 1.2), M_CHROME)]
+    elif kind == 'cajones':
+        for n, (a, b) in enumerate(((1.6, 5.2), (5.4, 9.0), (9.2, 12.8))):
+            P += [box((0.6, a, 1.2), (15.4, b, 1.6), fin(cream_door(315 + n))),
+                  box((6.4, (a + b) / 2 - 0.3, 0.6), (9.6, (a + b) / 2 + 0.3, 1.2), M_CHROME)]
+    elif kind == 'esquina':
+        P += [box((0.6, 1.6, 1.2), (13.8, 12.8, 1.6), fin(cream_door(318))),
+              box((11.4, 9.6, 0.6), (12.0, 11.6, 1.2), M_CHROME),
+              box((14.4, 1.6, 1.6), (14.8, 12.8, 16.0), fin(lambda c: (ENAMEL, 5), ao=0.5), faces=('east',))]
+        P[-1] = box((14.4, 1.2, 1.6), (14.8, 13.2, 16.0), mBody)
+    return P
+
+
+def stove_top_tone(ctx):
+    """Enamel hob: four burners (black grate rings + caps), drip stains and burnt rings around them."""
+    if ctx.face != 'up':
+        return (ENAMEL, 5)
+    x, z = ctx.pos[0], ctx.pos[2]
+    for (cx, cz, r) in ((4.5, 5.0, 2.6), (11.5, 5.0, 2.2), (4.5, 11.0, 2.2), (11.5, 11.0, 2.6)):
+        d = math.hypot(x - cx, z - cz)
+        if d < r * 0.45:
+            return (BAKE, 2)
+        if d < r:
+            return (BAKE, 4)
+        if d < r + 0.9 and hh(ctx.i, ctx.j, 3) < 0.6:
+            return (ENAMEL, 2)                                      # scorched halo
+    if hh(ctx.i // 2, ctx.j // 2, 5) < 0.04:
+        return (CARTON, 4)                                          # old drips
+    return (ENAMEL, 6)
+
+
+def oven_door_tone(ctx):
+    if ctx.face != 'north':
+        return (ENAMEL, 5)
+    i, j, w, h = ctx.i, ctx.j, ctx.w, ctx.h
+    if 4 <= i < w - 4 and 5 <= j < h - 4:
+        if i in (4, w - 5) or j in (5, h - 5):
+            return (NICKEL, 4)
+        return (BAKE, 2 if (i + j) % 7 else 4)                       # dark oven window
+    if j < 3:
+        return (ENAMEL, 6)
+    return (ENAMEL, 6 if hh(i, j, 7) > 0.04 else 4)
+
+
+def cocina_gas_parts(pava=False):
+    mE = fin(smooth(ENAMEL, base=6, seed=321, grime=0.3), dust=0.4)
+    mTop = fin(stove_top_tone, ao=0.3, dust=0.3)
+    mDoor = fin(oven_door_tone, ao=0.4)
+    mG = fin(iron(seed=323, rust=0.15), dust=0)
+    P = [box((0.6, 1.2, 1.8), (15.4, 13.0, 15.2), mE),
+         box((1.0, 0.0, 2.4), (2.4, 1.2, 3.8), M_CHROME), box((13.6, 0.0, 2.4), (15.0, 1.2, 3.8), M_CHROME),
+         box((1.0, 0.0, 13.0), (2.4, 1.2, 14.4), M_CHROME), box((13.6, 0.0, 13.0), (15.0, 1.2, 14.4), M_CHROME),
+         box((0.6, 13.0, 1.6), (15.4, 13.6, 15.2), mTop),
+         box((0.6, 13.6, 14.4), (15.4, 18.0, 15.4), mE),                                          # back guard
+         box((1.4, 2.2, 1.4), (14.6, 9.4, 1.8), mDoor),
+         box((3.0, 8.4, 0.6), (13.0, 9.0, 1.4), M_CHROME), box((3.0, 8.4, 1.0), (3.6, 9.0, 1.4), M_CHROME),
+         box((0.6, 9.8, 1.4), (15.4, 12.6, 1.8), fin(lambda c: (NICKEL, 5 if c.j else 6), ao=0.3))]   # control strip
+    for n, x in enumerate((2.4, 5.0, 7.6, 10.2, 12.8)):
+        P += [box((x - 0.7, 10.4, 0.8), (x + 0.7, 11.8, 1.4), fin(smooth(BAKE, base=4, seed=325 + n), ao=0)),
+              box((x - 0.15, 11.2, 0.6), (x + 0.15, 11.8, 0.8), fin(flat(ENAMEL, 7), ao=0))]
+    for (cx, cz, r) in ((4.5, 5.0, 2.6), (11.5, 5.0, 2.2), (4.5, 11.0, 2.2), (11.5, 11.0, 2.6)):   # grates
+        P += [box((cx - r, 13.6, cz - 0.25), (cx + r, 14.2, cz + 0.25), mG), box((cx - 0.25, 13.6, cz - r), (cx + 0.25, 14.2, cz + r), mG)]
+    if pava:
+        P += flame_parts(4.5, 11.0 - 1.0, 13.7, h=0.9, w=1.2, p=FLAME_B) + flame_parts(4.5, 12.0, 13.7, h=0.9, w=1.2, p=FLAME_B)
+        P += shift(pava_parts(), dx=-3.5, dy=16.2 - 2.0, dz=3.0)
+    return P
+
+
+def pava_parts():
+    """Aluminium kettle (pava) with a black bakelite handle, dented and blackened at the bottom ('sobre mesada')."""
+    y = -2.0
+    mA = fin(brass(ALU, base=4, seed=331, tarnish=0.4), dust=0.3)
+    mS = fin(lambda c: (BAKE, 3) if c.j > c.h - 3 else brass(ALU, base=4, seed=332, tarnish=0.4)(c), dust=0.2)
+    mH = fin(smooth(BLACKP, base=3, seed=333))
+    return [box((5.0, y, 5.0), (11.0, y + 3.6, 11.0), mS), box((5.6, y + 3.6, 5.6), (10.4, y + 4.4, 10.4), mA),
+            box((6.8, y + 4.4, 6.8), (9.2, y + 4.8, 9.2), mA), box((7.6, y + 4.8, 7.6), (8.4, y + 5.4, 8.4), mH),
+            box((10.8, y + 1.0, 7.4), (12.4, y + 2.0, 8.6), mA, rot=('z', 45, (10.8, y + 1.0, 8.0))),     # spout
+            box((7.6, y + 4.4, 5.6), (8.4, y + 7.4, 6.4), mH), box((7.6, y + 4.4, 9.6), (8.4, y + 7.4, 10.4), mH),
+            box((7.6, y + 7.4, 5.6), (8.4, y + 8.2, 10.4), mH)]
+
+
+def heladera_tone(ctx, yoff=0.0):
+    """Rounded 60s fridge: cream enamel, rust blooming at the bottom edge of the cabinet."""
+    P = tp(ctx, (0, yoff, 0))
+    k = 6
+    n = vn(P[0] / 6.0, P[1] / 6.0, P[2] / 6.0, 341)
+    if n > 0.7:
+        k -= 1
+    if ctx.face != 'up' and P[1] < 4 and vn(P[0] / 2.0, P[1] / 2.0, P[2] / 2.0, 342) > 0.6 - (4 - P[1]) * 0.08:
+        return (RUST, 3 + (hh(*P) > 0.6))
+    if ctx.edge() == 0 and ctx.w > 3 and ctx.h > 3:
+        k -= 1
+    return (ENAMEL, k)
+
+
+def fridge_drawing_canvas():
+    """Lucia's crayon drawing held by magnets: the family holding hands, the dog, and a tall black figure."""
+    cv = Canvas(14, 12, hx('#f4f2ea'))
+    crayon = {'r': hx('#d02a2a'), 'b': hx('#2a4ad0'), 'y': hx('#e8c020'), 'g': hx('#30a040'), 'k': hx('#141414'),
+              'p': hx('#e070b0'), 'n': hx('#8a4a24')}
+    cv.ascii(0, 0, ['y.............', '.y............', '..............', '..r..b..p.k...', '.rrr.b..p.kk..',
+                    '..r.bbb.p.k...', '.r.r.b.ppp.k..', '.r.r.b.p.p.k..', '.............', 'nnnn......k...',
+                    'n..n......kk..', 'gggggggggggggg'], crayon)
+    cv.ascii(9, 0, ['..k..', '.kkk.', 'k.k.k'], crayon)
+    return cv
+
+
+def heladera_parts(half):
+    """Old rounded fridge, 2 blocks tall ('abajo' / 'arriba'): cream enamel, chrome lever handle and script plate
+    'AURORA', kick grille, Lucia's drawing and a pizzeria magnet on the door."""
+    yo = 0.0 if half == 'abajo' else 16.0
+    mB = fin(lambda c: heladera_tone(c, yo), dust=0.6)
+    mD = mB
+    P = []
+    if half == 'abajo':
+        P += [box((1.0, 0.0, 2.0), (15.0, 2.0, 15.4), fin(lambda c: (BAKE, 2) if (c.face == 'north' and c.j % 2 == 0 and 1 < c.i < c.w - 2)
+                                                          else (NICKEL, 4), ao=0.4)),
+              box((1.0, 2.0, 2.0), (15.0, 16.0, 15.4), mB),
+              box((1.4, 2.4, 1.4), (14.6, 16.0, 2.0), mD),
+              box((1.0, 2.0, 1.6), (15.0, 2.4, 2.0), fin(flat(GRAPH, 3), ao=0))]
+        cv = fridge_drawing_canvas()
+        P += [box((4.0, 8.0, 1.3), (11.0, 14.0, 1.4), fin(canvas_tone(cv), ao=0, dust=0), faces=('north',)),
+              box((4.4, 13.4, 1.0), (5.6, 14.4, 1.3), fin(flat(REDP, 5), ao=0)),
+              box((9.4, 13.4, 1.0), (10.6, 14.4, 1.3), fin(flat(CELESTE, 4), ao=0)),
+              box((10.6, 4.6, 1.0), (13.0, 6.4, 1.3), fin(lambda c: (YELLOWP, 6) if c.j < 2 else (REDP, 4), ao=0))]   # pizza magnet
+    else:
+        P += [box((1.0, 0.0, 2.0), (15.0, 8.6, 15.4), mB),
+              box((1.6, 8.6, 2.6), (14.4, 9.6, 15.0), mB),                                       # rounded top
+              box((2.6, 9.6, 3.6), (13.4, 10.0, 14.0), mB),
+              box((1.4, 0.0, 1.4), (14.6, 8.2, 2.0), mD),
+              box((2.0, 8.2, 1.8), (14.0, 8.8, 2.4), mD)]
+        mCh = fin(brass(NICKEL, base=6, seed=345, tarnish=0.3), dust=0.3)
+        P += [box((12.0, 0.0, 0.6), (13.2, 5.2, 1.4), mCh), box((12.2, 4.4, 1.0), (13.0, 5.0, 1.4), mCh),
+              box((12.2, 0.0, 1.0), (13.0, 0.6, 1.4), mCh)]                                      # lever handle
+        def plate(c):
+            if c.face != 'north':
+                return (NICKEL, 5)
+            pts = set(draw_text(F35, 'AURORA', 1, 1, sp=1))
+            return (BAKE, 3) if (c.i, c.j) in pts else (NICKEL, 6 if c.edge() else 4)
+        P.append(box((4.6, 4.6, 1.2), (11.4, 6.2, 1.4), fin(plate, ao=0, dust=0.2)))
+        P.append(box((3.0, 10.0, 6.0), (9.0, 10.6, 11.0), fin(lambda c: (CARTON, 5) if c.face == 'up' else (CARTON, 3), ao=0.5)))  # box on top
+    return P
+
+
+def alacena_parts(kind):
+    """Wall cupboard, cream painted. Place it TWO blocks above the floor (over the counter's prop block): the model
+    hangs 8/16 below its block so it spans 1.5 m .. 2.5 m. kind: 'cerrada' (two doors) | 'abierta' (doors swung
+    open: plates, cups and the yerba/azucar/cafe canisters inside) | 'cuerpo' (no doors, for the trapdoor door)."""
+    mBody = fin(painted(ENAMEL, base=5, seed=351, grime=0.0))
+    mIn = fin(painted(ENAMEL, base=3, seed=352, grime=0.0), dust=0.8)
+    P = [box((0.4, 1.0, 10.6), (15.6, 1.8, 16.0), mBody), box((0.4, 14.6, 10.6), (15.6, 15.4, 16.0), mBody),
+         box((0.4, 1.8, 10.6), (1.2, 14.6, 16.0), mBody), box((14.8, 1.8, 10.6), (15.6, 14.6, 16.0), mBody),
+         box((1.2, 1.8, 15.4), (14.8, 14.6, 16.0), mIn), box((1.2, 7.8, 10.8), (14.8, 8.4, 15.4), mIn)]
+    if kind == 'cerrada':
+        P += [box((0.6, 1.2, 10.2), (7.9, 15.2, 10.6), fin(cream_door(353))),
+              box((8.1, 1.2, 10.2), (15.4, 15.2, 10.6), fin(cream_door(354))),
+              box((6.8, 2.2, 9.6), (7.4, 4.2, 10.2), M_CHROME), box((8.6, 2.2, 9.6), (9.2, 4.2, 10.2), M_CHROME)]
+        return shift(P, dy=-8.0)
+    if kind == 'abierta':
+        P += [box((0.6, 1.2, 2.8), (1.0, 15.2, 10.2), fin(cream_door(355))),
+              box((15.0, 1.2, 2.8), (15.4, 15.2, 10.2), fin(cream_door(356))),
+              box((1.0, 2.2, 3.2), (1.6, 4.2, 3.8), M_CHROME), box((14.4, 2.2, 3.2), (15.0, 4.2, 3.8), M_CHROME)]
+    # contents: plates stacked, cups, the yerbera set
+    mPl = fin(lambda c: (PORC, 6 - (c.j % 2)) if c.face != 'up' else (PORC, 7), ao=0.6, dust=0.5)
+    P += [box((2.0, 1.8, 11.4), (6.6, 4.6, 15.2), mPl)]
+    for n, x in enumerate((8.0, 10.4, 12.8)):
+        col = (REDP, CELESTE, YELLOWP)[n]
+        P += [box((x - 0.9, 1.8, 12.2), (x + 0.9, 3.8, 14.0), fin(lambda c, col=col: (col, 5 if c.face != 'up' else 2), ao=0.5)),
+              box((x + 0.9, 2.4, 12.8), (x + 1.3, 3.4, 13.4), fin(flat(col, 4), ao=0))]
+    for n, (x, word, col) in enumerate(((2.0, 'YERBA', REDP), (6.4, 'AZUCAR', REDP), (10.8, 'CAFE', REDP))):
+        def lab(c, word=word, col=col):
+            if c.face == 'north':
+                pts = set(draw_text(F35, word[:3], 1, 2))
+                return (col, 3) if (c.i, c.j) in pts else (ENAMEL, 6)
+            return (ENAMEL, 5 if c.face != 'up' else 3)
+        P.append(box((x, 8.4, 11.6), (x + 3.4, 13.0, 14.6), fin(lab, ao=0.5, dust=0.6)))
+    return shift(P, dy=-8.0)
+
+
+def alacena_puerta_tone(ctx):
+    """32x32 trapdoor face: cream painted cupboard door with a routed panel and a chrome knob."""
+    i, j = ctx.i, ctx.j
+    if i in (0, 31) or j in (0, 31):
+        return (ENAMEL, 3)
+    if 13 <= i <= 18 and 25 <= j <= 27:
+        return (NICKEL, 6 if j == 25 else 4)
+    if (i in (4, 27) and 4 <= j <= 27) or (j in (4, 27) and 4 <= i <= 27):
+        return (ENAMEL, 4)
+    if (i == 5 and 5 <= j <= 26) or (j == 5 and 5 <= i <= 26):
+        return (ENAMEL, 7)
+    k = 6 - (1 if hh(i // 2, j // 2, 411) < 0.05 else 0)
+    if 20 <= j and 10 <= i <= 21 and hh(i, j, 412) < 0.12:
+        k -= 1
+    return (ENAMEL, k)
+
+
+def panera_parts():
+    """Tin bread box with a roll-top ('sobre mesada'): cream enamel, red PAN lettering, half a baguette poking out."""
+    y = -2.0
+    def front(c):
+        if c.face == 'north':
+            pts = set((x, yy) for (x, yy) in draw_text(F57, 'PAN', 3, 2, sp=1))
+            return (REDP, 4) if (c.i, c.j) in pts else (ENAMEL, 6 - (c.edge() == 0))
+        return (ENAMEL, 5)
+    mB = fin(front, dust=0.6)
+    mR = fin(lambda c: (ENAMEL, 5 + (c.j % 2)), dust=0.6)
+    mBread = fin(lambda c: (CARTON, 6 if c.face == 'up' else 5) if hh(c.i, c.j) > 0.15 else (CARTON, 7), ao=0.4)
+    return [box((2.4, y, 4.0), (13.6, y + 5.6, 12.8), mB),
+            box((2.6, y + 5.6, 5.0), (13.4, y + 6.6, 12.8), mR),
+            box((2.6, y + 6.6, 7.0), (13.4, y + 7.2, 12.4), mR),
+            box((5.4, y + 4.0, 3.0), (6.4, y + 4.6, 4.0), M_CHROME), box((9.6, y + 4.0, 3.0), (10.6, y + 4.6, 4.0), M_CHROME),
+            box((13.6, y + 1.2, 6.0), (16.4, y + 3.0, 7.8), mBread)]
+
+
+def mate_parts(y=-2.0):
+    """Mate (calabaza with an alpaca rim and the bombilla), red thermos with chrome cup, yerba package."""
+    mG = fin(painted(pal('#2a1a0e', '#3e2814', '#56381c', '#6e4a26', '#8a5e32'), base=2, seed=361, wear=0.3), dust=0.4)
+    mN = fin(brass(NICKEL, base=5, seed=363), dust=0.3)
+    mY = fin(lambda c: (pal('#2e3a14', '#46561e', '#5e7028', '#7a8a38'), 1 + (hh(c.i, c.j) > 0.5)), ao=0, dust=0)
+    mT = fin(painted(pal('#3a0a0a', '#5a1010', '#7a1a16', '#9a2a20', '#b84030'), base=3, seed=365, wear=0.3), dust=0.5)
+    P = [box((3.2, y, 6.2), (6.8, y + 2.6, 9.8), mG),
+         box((2.8, y + 0.6, 6.6), (7.2, y + 2.2, 9.4), mG), box((3.6, y + 0.6, 5.8), (6.4, y + 2.2, 10.2), mG),
+         box((3.5, y + 2.6, 6.5), (6.5, y + 3.2, 9.5), mN),
+         box((3.9, y + 3.0, 6.9), (6.1, y + 3.1, 9.1), mY, faces=('up',)),
+         box((5.0, y + 2.6, 7.8), (5.4, y + 6.4, 8.2), mN, rot=('z', -22.5, (5.2, y + 2.6, 8.0))),
+         box((9.2, y, 7.4), (12.0, y + 6.6, 10.2), mT),
+         box((9.0, y + 6.6, 7.2), (12.2, y + 8.6, 10.4), mN),
+         box((9.4, y + 8.6, 7.6), (11.8, y + 9.0, 10.0), mN),
+         box((12.0, y + 2.0, 8.4), (12.6, y + 5.0, 9.2), mT),
+         box((9.2, y + 3.0, 7.3), (12.0, y + 3.4, 7.4), mN, faces=('north',)),
+         box((7.4, y, 11.2), (10.6, y + 4.2, 13.2), fin(lambda c: (PAPER, 6) if c.j < 3 or c.face == 'up' else
+                                                       ((GREENP, 6) if (c.i + c.j) % 7 else (YELLOWP, 5)), dust=0.6))]
+    return P
+
+
+def escurridor_parts():
+    """Chrome-wire dish rack ('sobre mesada') with plates, two glasses and a cup."""
+    y = -2.0
+    mW = fin(brass(NICKEL, base=5, seed=371, tarnish=0.4), dust=0)
+    P = [box((1.6, y, 3.6), (14.4, y + 0.4, 12.4), fin(lambda c: (NICKEL, 4) if (c.i % 3 == 0 or c.face != 'up') else None, ao=0))]
+    for x in (1.6, 14.0):
+        P.append(box((x, y + 0.4, 3.6), (x + 0.4, y + 3.0, 12.4), fin(lambda c: (NICKEL, 5) if c.j % 3 == 0 or c.i % 4 == 0 else None, ao=0)))
+    for n in range(5):
+        x = 3.0 + n * 1.4
+        P.append(box((x, y + 0.4, 4.4), (x + 0.3, y + 6.4, 11.6), fin(plate_face_tone(n, ('west', 'east')), ao=0.2),
+                     rot=('z', -22.5, (x, y + 0.4, 8.0)), faces=('west', 'east')))
+    mGl = fin(lambda c: (GLASS_J, 6 if c.i == 1 else 5), ao=0)
+    P += [box((10.4, y + 0.4, 4.6), (12.0, y + 3.4, 6.2), mGl), box((10.4, y + 0.4, 9.0), (12.0, y + 3.0, 10.6), mGl),
+          box((10.2, y + 0.4, 6.8), (12.4, y + 2.4, 8.6), fin(lambda c: (CELESTE, 5) if c.face != 'up' else (CELESTE, 1), ao=0.3))]
+    return P
+
+
+def clock_face(hour, minute, red=True):
+    def t(ctx):
+        w, h = ctx.w, ctx.h
+        x, y = (ctx.i + 0.5) / w * 2 - 1, (ctx.j + 0.5) / h * 2 - 1
+        r = math.hypot(x, y)
+        if ctx.face != 'north':
+            return (REDP, 4) if red else (NICKEL, 4)
+        if r > 1.0:
+            return None
+        if r > 0.84:
+            return (REDP, 4 + (y < 0)) if red else (NICKEL, 5)
+        a = math.atan2(x, -y)                                   # 0 at 12, clockwise
+        ah = (hour % 12 + minute / 60.0) / 12.0 * 2 * math.pi
+        am = minute / 60.0 * 2 * math.pi
+        def on_hand(ang, ln, wd):
+            hx_, hy_ = math.sin(ang), -math.cos(ang)
+            proj = x * hx_ + y * hy_
+            perp = abs(x * hy_ - y * hx_)
+            return -0.08 < proj < ln and perp < wd
+        if on_hand(am, 0.74, 0.07):
+            return T(BAKE, 1)
+        if on_hand(ah, 0.48, 0.1):
+            return T(BAKE, 1)
+        if r < 0.1:
+            return T(REDP, 4)
+        tick = (a / (2 * math.pi) * 12) % 1.0
+        if r > 0.68 and (tick < 0.09 or tick > 0.91):
+            return T(BAKE, 2)
+        return T(CROCHET, 7)
+    return t
+
+
+def reloj_parts(hour, minute):
+    m = fin(clock_face(hour, minute), ao=0, dust=0.2)
+    return [box((3.0, 4.0, 14.6), (13.0, 14.0, 15.6), m),
+            box((7.6, 13.6, 15.6), (8.4, 14.6, 16.0), M_IRON)]
+
+
+def tubo_parts(lit):
+    """Kitchen fluorescent fixture on the ceiling: white steel tray, one tube, yellowed end caps, dead flies."""
+    mT = fin(smooth(PLAST_W, base=6, seed=381, grime=0.0), dust=0.4)
+    mTube = fin(lambda c: (OPAL_LIT, 7) if lit else ((OPAL, 4) if (c.i > 3 and c.i < c.w - 4) else (OPAL, 2)), ao=0, dust=0 if lit else 0.3)
+    return [box((0.6, 14.4, 6.4), (15.4, 16.0, 9.6), mT),
+            box((1.0, 13.4, 7.2), (15.0, 14.4, 8.8), mTube, shade=not lit),
+            box((0.6, 13.2, 6.8), (1.6, 14.4, 9.2), fin(flat(PLAST_W, 3), ao=0)),
+            box((14.4, 13.2, 6.8), (15.4, 14.4, 9.2), fin(flat(PLAST_W, 3), ao=0))]
+
+
+def hule_tone(seed=0):
+    """Oilcloth (hule) on the kitchen table: red-and-white gingham with little cherries, shiny, a burn mark."""
+    def t(ctx):
+        u, v = uv2(ctx)
+        if ctx.face in ('up', 'down'):
+            x, y, z = tp(ctx)
+            u, v = x, z
+        a = int(math.floor(u / 3.0)) % 2
+        b = int(math.floor(v / 3.0)) % 2
+        if a and b:
+            c = (REDP, 5)
+        elif a or b:
+            c = (REDP, 7)
+        else:
+            c = (CROCHET, 7)
+        if ctx.face == 'up' and math.hypot(u - 20, v - 12) < 1.6:
+            return (BAKE, 3)                                     # cigarette burn
+        return c
+    return t
+
+
+def mesa_cocina_parts():
+    """Kitchen table: oilcloth (red gingham) over a formica top, chrome tube legs."""
+    mH = fin(hule_tone(391), dust=0.2)
+    mCh = fin(brass(NICKEL, base=5, seed=393, tarnish=0.3), dust=0.3)
+    P = [box((0.6, 11.2, 0.6), (15.4, 12.0, 15.4), mH),
+         box((0.4, 9.6, 0.4), (15.6, 11.2, 0.8), mH), box((0.4, 9.6, 15.2), (15.6, 11.2, 15.6), mH),
+         box((0.4, 9.6, 0.8), (0.8, 11.2, 15.2), mH), box((15.2, 9.6, 0.8), (15.6, 11.2, 15.2), mH)]
+    for (x, z) in ((2.0, 2.0), (13.0, 2.0), (2.0, 13.0), (13.0, 13.0)):
+        P += [box((x, 0.6, z), (x + 1.0, 11.2, z + 1.0), mCh), box((x - 0.2, 0.0, z - 0.2), (x + 1.2, 0.6, z + 1.2), fin(flat(BLACKP, 3)))]
+    return P
+
+
+def silla_cocina_parts():
+    """Chrome tube kitchen chair with a red vinyl seat and backrest (sitter looks north)."""
+    mCh = fin(brass(NICKEL, base=5, seed=395, tarnish=0.3), dust=0.3)
+    mV = fin(leatherette(REDP, base=5, seed=397))
+    P = []
+    for x in (3.2, 12.0):
+        P += [box((x, 0.0, 3.2), (x + 0.8, 7.0, 4.0), mCh), box((x, 0.0, 12.0), (x + 0.8, 18.0, 12.8), mCh),
+              box((x, 0.0, 4.0), (x + 0.8, 0.6, 12.0), mCh)]
+    P += [box((2.8, 7.0, 2.8), (13.2, 8.6, 13.0), mV), box((3.4, 12.0, 12.6), (12.6, 17.2, 13.6), mV),
+          box((4.0, 6.4, 3.4), (12.0, 7.0, 4.0), mCh)]
+    return P
+
+
+def desayuno_parts():
+    """Breakfast ('sobre mesa'): plate of medialunas, two cups of cafe con leche, sugar bowl and a spoon."""
+    y = -4.0
+    mPl = fin(lambda c: (PORC, 7 if c.face == 'up' else 5), ao=0.3, dust=0)
+    mM = fin(lambda c: (CARTON, 7 if (c.i + c.j) % 3 else 6) if c.face == 'up' else (CARTON, 5), ao=0.4, dust=0)
+    P = [box((2.0, y, 2.4), (9.0, y + 0.4, 9.4), mPl)]
+    for (x, z, rot) in ((2.8, 3.4, 22.5), (4.6, 6.0, -22.5), (5.4, 3.0, 0)):
+        P += [box((x, y + 0.4, z), (x + 3.4, y + 1.6, z + 1.4), mM, rot=('y', rot, (x + 1.7, y, z + 0.7)) if rot else None)]
+    for (x, z) in ((10.4, 3.0), (10.0, 10.0)):
+        P += [box((x - 1.4, y, z - 1.4), (x + 2.4, y + 0.3, z + 2.4), mPl),
+              box((x - 0.6, y + 0.3, z - 0.6), (x + 1.6, y + 2.6, z + 1.6),
+                  fin(lambda c: (CARTON, 6) if c.face == 'up' else (PORC, 6), ao=0.3, dust=0)),
+              box((x + 1.6, y + 1.0, z + 0.2), (x + 2.2, y + 2.0, z + 0.8), fin(flat(PORC, 6), ao=0))]
+    P += [box((3.6, y, 11.0), (6.4, y + 2.2, 13.8), fin(lambda c: (PORC, 6) if c.face != 'up' else (PORC, 4), ao=0.3, dust=0))]
+    return P
+
+
+def tacho_parts():
+    """Pedal bin: cream enamel body, chrome lid, black pedal; a plastic bag hem showing under the lid."""
+    m = fin(smooth(ENAMEL, base=5, seed=401, grime=0.5), dust=0.6)
+    return [box((4.0, 0.4, 4.0), (12.0, 10.4, 12.0), m), box((3.8, 10.4, 3.8), (12.2, 11.4, 12.2), M_CHROME),
+            box((3.6, 10.2, 3.6), (12.4, 10.6, 12.4), fin(flat(GRAPH, 4), ao=0)),
+            box((6.4, 0.0, 2.4), (9.6, 0.8, 4.0), fin(flat(BLACKP, 3))), box((4.2, 0.0, 4.2), (11.8, 0.4, 11.8), fin(flat(BLACKP, 2)))]
+
+
+# ============================================================================================ register: dining + kitchen
+F('mesa_comedor_extremo', 'Mesa del comedor (extremo)', 'Dining table (end)', mesa_comedor_parts('extremo'))
+F('mesa_comedor_centro', 'Mesa del comedor (centro, con camino tejido)', 'Dining table (middle, crocheted runner)',
+  mesa_comedor_parts('centro'))
+F('silla_comedor', 'Silla del comedor', 'Dining chair', silla_comedor_parts())
+F('silla_comedor_volcada', 'Silla del comedor tirada', 'Dining chair knocked over', tip_back(silla_comedor_parts()))
+F('aparador_izq', 'Aparador con platos (izquierda)', 'Sideboard with plates (left)', aparador_parts('izq'))
+F('aparador_der', 'Aparador con platos (derecha)', 'Sideboard with plates (right)', aparador_parts('der'))
+F('lampara_comedor', 'Lámpara del comedor (encendida)', 'Dining room ceiling lamp (lit)', lampara_comedor_parts(True),
+  env=('ceil',), light=13, collision='none', directional=False, sound='metal')
+F('lampara_comedor_apagada', 'Lámpara del comedor (apagada)', 'Dining room ceiling lamp (off)', lampara_comedor_parts(False),
+  env=('ceil',), collision='none', directional=False, sound='metal')
+F('mesada', 'Mesada con bajo mesada', 'Kitchen counter', mesada_parts('lisa'), sound='stone')
+F('mesada_cajones', 'Mesada con cajones', 'Kitchen counter with drawers', mesada_parts('cajones'), sound='stone')
+F('mesada_pileta', 'Mesada con pileta de cocina', 'Kitchen counter with sink', mesada_parts('pileta'), sound='stone')
+F('mesada_esquina', 'Mesada (esquina)', 'Kitchen counter (corner)', mesada_parts('esquina'), sound='stone')
+F('cocina_gas', 'Cocina a gas con horno', 'Gas stove with oven', cocina_gas_parts(), sound='metal')
+F('cocina_gas_pava', 'Cocina a gas con la pava en el fuego', 'Gas stove with the kettle on', cocina_gas_parts(True), light=3,
+  sound='metal')
+F('heladera_abajo', 'Heladera vieja (abajo)', 'Old rounded fridge (bottom)', heladera_parts('abajo'), sound='metal')
+F('heladera_arriba', 'Heladera vieja (arriba)', 'Old rounded fridge (top)', heladera_parts('arriba'), sound='metal', env=())
+F('alacena', 'Alacena cerrada', 'Wall cupboard (closed)', alacena_parts('cerrada'), env=('wall',))
+F('alacena_abierta', 'Alacena abierta', 'Wall cupboard (doors open)', alacena_parts('abierta'), env=('wall',))
+F('alacena_cuerpo', 'Alacena sin puertas (para la puerta trampilla)', 'Wall cupboard body (for the hatch door)',
+  alacena_parts('cuerpo'), env=('wall',))
+Trapdoor('casa_alacena_puerta', 'Puerta de alacena', 'Cupboard door (opens)', fin(alacena_puerta_tone, ao=0, dust=0), kit=KIT,
+         sound='wood')
+F('panera', 'Panera (sobre mesada)', 'Bread box (on the counter)', panera_parts(), collision='none', sound='metal')
+F('mate_termo', 'Mate y termo (sobre mesada)', 'Mate and thermos (on the counter)', mate_parts(-2.0), collision='none')
+F('mate_termo_mesa', 'Mate y termo (sobre mesa)', 'Mate and thermos (on a table)', mate_parts(-4.0), collision='none')
+F('pava', 'Pava (sobre mesada)', 'Kettle (on the counter)', pava_parts(), collision='none', sound='metal')
+F('escurridor', 'Escurridor de platos (sobre mesada)', 'Dish rack (on the counter)', escurridor_parts(), collision='none',
+  sound='metal')
+F('reloj_cocina', 'Reloj de cocina', 'Kitchen wall clock', reloj_parts(10, 10), env=('wall',), collision='none')
+F('reloj_cocina_333', 'Reloj de cocina (3:33)', 'Kitchen wall clock (3:33)', reloj_parts(3, 33), env=('wall',), collision='none')
+F('tubo', 'Tubo fluorescente (encendido)', 'Fluorescent tube (lit)', tubo_parts(True), env=('ceil',), light=14, collision='none',
+  sound='glass')
+F('tubo_apagado', 'Tubo fluorescente (apagado)', 'Fluorescent tube (off)', tubo_parts(False), env=('ceil',), collision='none',
+  sound='glass')
+F('mesa_cocina', 'Mesa de cocina con hule', 'Kitchen table with oilcloth', mesa_cocina_parts())
+F('silla_cocina', 'Silla de cocina cromada', 'Chrome kitchen chair', silla_cocina_parts(), sound='metal')
+F('desayuno', 'Desayuno con medialunas (sobre mesa)', 'Breakfast with croissants (on a table)', desayuno_parts(), collision='none',
+  sound='stone')
+F('tacho_basura', 'Tacho de basura a pedal', 'Pedal bin', tacho_parts(), sound='metal')

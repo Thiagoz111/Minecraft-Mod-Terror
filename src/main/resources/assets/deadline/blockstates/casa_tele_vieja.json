@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "deadline:block/casa_tele_vieja"
+  },
+  "facing=east": {
+   "model": "deadline:block/casa_tele_vieja",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "deadline:block/casa_tele_vieja",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "deadline:block/casa_tele_vieja",
+   "y": 270
+  }
+ }
+}

@@ -1,0 +1,12 @@
+{
+ "parent": "minecraft:block/cube",
+ "textures": {
+  "particle": "deadline:block/casa_ladrillo_visto_0",
+  "north": "deadline:block/casa_ladrillo_visto_0",
+  "south": "deadline:block/casa_ladrillo_visto_0",
+  "east": "deadline:block/casa_ladrillo_visto_0",
+  "west": "deadline:block/casa_ladrillo_visto_0",
+  "up": "deadline:block/casa_ladrillo_visto_0",
+  "down": "deadline:block/casa_ladrillo_visto_0"
+ }
+}

@@ -1,0 +1,18 @@
+{
+ "variants": {
+  "": [
+   {
+    "model": "deadline:block/casa_pared_cocina_0"
+   },
+   {
+    "model": "deadline:block/casa_pared_cocina_1"
+   },
+   {
+    "model": "deadline:block/casa_pared_cocina_2"
+   },
+   {
+    "model": "deadline:block/casa_pared_cocina_3"
+   }
+  ]
+ }
+}

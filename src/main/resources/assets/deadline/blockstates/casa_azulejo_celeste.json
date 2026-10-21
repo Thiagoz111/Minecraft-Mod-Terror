@@ -1,0 +1,18 @@
+{
+ "variants": {
+  "": [
+   {
+    "model": "deadline:block/casa_azulejo_celeste_0"
+   },
+   {
+    "model": "deadline:block/casa_azulejo_celeste_1"
+   },
+   {
+    "model": "deadline:block/casa_azulejo_celeste_2"
+   },
+   {
+    "model": "deadline:block/casa_azulejo_celeste_3"
+   }
+  ]
+ }
+}

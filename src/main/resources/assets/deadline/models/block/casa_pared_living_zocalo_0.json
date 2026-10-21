@@ -1,0 +1,12 @@
+{
+ "parent": "minecraft:block/cube",
+ "textures": {
+  "particle": "deadline:block/casa_pared_living_zocalo_0_north",
+  "north": "deadline:block/casa_pared_living_zocalo_0_north",
+  "south": "deadline:block/casa_pared_living_zocalo_0_north",
+  "east": "deadline:block/casa_pared_living_zocalo_0_north",
+  "west": "deadline:block/casa_pared_living_zocalo_0_north",
+  "up": "deadline:block/casa_pared_living_zocalo_0_up",
+  "down": "deadline:block/casa_pared_living_zocalo_0_up"
+ }
+}

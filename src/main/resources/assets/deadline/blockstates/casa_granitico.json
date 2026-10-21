@@ -1,0 +1,15 @@
+{
+ "variants": {
+  "": [
+   {
+    "model": "deadline:block/casa_granitico_0"
+   },
+   {
+    "model": "deadline:block/casa_granitico_1"
+   },
+   {
+    "model": "deadline:block/casa_granitico_2"
+   }
+  ]
+ }
+}

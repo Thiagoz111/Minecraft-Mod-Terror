@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "deadline:block/casa_carpetita"
+  },
+  "facing=east": {
+   "model": "deadline:block/casa_carpetita",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "deadline:block/casa_carpetita",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "deadline:block/casa_carpetita",
+   "y": 270
+  }
+ }
+}

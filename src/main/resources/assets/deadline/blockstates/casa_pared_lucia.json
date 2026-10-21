@@ -1,0 +1,18 @@
+{
+ "variants": {
+  "": [
+   {
+    "model": "deadline:block/casa_pared_lucia_0"
+   },
+   {
+    "model": "deadline:block/casa_pared_lucia_1"
+   },
+   {
+    "model": "deadline:block/casa_pared_lucia_2"
+   },
+   {
+    "model": "deadline:block/casa_pared_lucia_3"
+   }
+  ]
+ }
+}

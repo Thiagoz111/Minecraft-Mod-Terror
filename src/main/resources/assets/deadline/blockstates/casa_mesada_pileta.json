@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "deadline:block/casa_mesada_pileta"
+  },
+  "facing=east": {
+   "model": "deadline:block/casa_mesada_pileta",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "deadline:block/casa_mesada_pileta",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "deadline:block/casa_mesada_pileta",
+   "y": 270
+  }
+ }
+}

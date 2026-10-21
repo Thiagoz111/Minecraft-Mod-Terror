@@ -1,0 +1,15 @@
+{
+ "variants": {
+  "": [
+   {
+    "model": "deadline:block/casa_empapelado_matrimonial_0"
+   },
+   {
+    "model": "deadline:block/casa_empapelado_matrimonial_1"
+   },
+   {
+    "model": "deadline:block/casa_empapelado_matrimonial_2"
+   }
+  ]
+ }
+}

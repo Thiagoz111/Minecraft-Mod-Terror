@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "deadline:block/casa_silla_comedor_volcada"
+  },
+  "facing=east": {
+   "model": "deadline:block/casa_silla_comedor_volcada",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "deadline:block/casa_silla_comedor_volcada",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "deadline:block/casa_silla_comedor_volcada",
+   "y": 270
+  }
+ }
+}
