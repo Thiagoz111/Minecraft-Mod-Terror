@@ -4,6 +4,7 @@
 	"package": "com.deadline.client.mixin",
 	"compatibilityLevel": "JAVA_21",
 	"client": [
+		"AvatarRendererMixin",
 		"CameraMixin",
 		"GameRendererAccessor"
 	],

@@ -397,6 +397,15 @@ def armour_textures():
     return Image.fromarray(hum, 'RGBA'), Image.fromarray(leg, 'RGBA')
 
 
+def sleeve_texture():
+    """First-person cassock sleeves, painted on the 64x64 player-skin layout (right arm 40,16; left arm 32,48) so the
+    client can draw them over the vanilla first-person arm (FirstPersonSleeve)."""
+    sl = np.zeros((64 * K, 64 * K, 4), np.uint8)
+    paint_box(sl, 'arm', (40, 16), (-8, 0, -2), (4, 12, 4), cassock_arm)
+    paint_box(sl, 'arm', (32, 48), (4, 0, -2), (4, 12, 4), cassock_arm)
+    return Image.fromarray(sl, 'RGBA')
+
+
 # ------------------------------------------------------------------------------------------------ 3D hat (item model)
 FELT = [hx(c) for c in ('#060508', '#0b0a0e', '#111015', '#17151c', '#1e1b24', '#26222d', '#302b38', '#3c3646')]
 
@@ -719,6 +728,7 @@ def main():
     os.makedirs(os.path.join(eq, 'humanoid_leggings'), exist_ok=True)
     hum.save(os.path.join(eq, 'humanoid', 'exorcista.png'))
     leg.save(os.path.join(eq, 'humanoid_leggings', 'exorcista.png'))
+    sleeve_texture().save(os.path.join(ASSETS, 'textures/entity', 'exorcist_sleeve.png'))
     write_json(os.path.join(ASSETS, 'equipment', 'exorcista.json'),
                {'layers': {'humanoid': [{'texture': 'deadline:exorcista'}], 'humanoid_leggings': [{'texture': 'deadline:exorcista'}]}})
     model, hat_tex, els = export_hat()
