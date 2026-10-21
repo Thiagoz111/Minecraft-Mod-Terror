@@ -106,6 +106,7 @@ public final class Voice {
 					r.inc("voice_ticks");
 					if (s.db - s.base > 12F) {
 						r.post("shout");
+						r.post("shout:" + p.getUUID());
 					}
 				}
 			}

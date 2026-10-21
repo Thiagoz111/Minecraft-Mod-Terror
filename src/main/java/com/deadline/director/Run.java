@@ -124,7 +124,20 @@ public final class Run {
 		events.addAll(nextEvents);
 		nextEvents.clear();
 		List<ServerPlayer> hunters = hunters();
-		if (!hunters.isEmpty()) {
+		if (hunters.isEmpty()) {
+			return; // paused: nobody is here (logged out, dead, in another dimension)
+		}
+		for (Entity a : actors.values()) {
+			if (a != null && a.getRemovalReason() == Entity.RemovalReason.UNLOADED_TO_CHUNK) {
+				// a scene lost its actor to a chunk unload: replay the chapter from its checkpoint
+				ServerPlayer s0 = star();
+				if (s0 != null) {
+					checkpoint(s0);
+				}
+				return;
+			}
+		}
+		{
 			for (Beat b : compiled.beats) {
 				if (!eligible(b)) {
 					continue;
@@ -248,12 +261,17 @@ public final class Run {
 		}
 		if (!fromCheckpoint) {
 			flagsAtStart.put(n, new HashSet<>(flags));
+		} else {
+			flagsAtStart.putIfAbsent(n, new HashSet<>(flags));  // a run restored after a restart
 		}
 		chapterFlags = new HashSet<>(flags);
 		chapter = n;
 		chapterStart = now();
 		hintShown = false;
 		done.clear();
+		// chapter progress (candles lit, prayer seconds, silence, answers...) starts over; reprimands and their cooldowns stay
+		counters.keySet().removeIf(k -> !k.startsWith("conduct:"));
+		vars.keySet().removeIf(k -> !k.startsWith("stampcd:"));
 		for (ServerPlayer p : hunters()) {
 			HunterData d = ModAttachments.get(p);
 			d.active.stage = n;
@@ -282,7 +300,7 @@ public final class Run {
 	public void jump(int n, ServerPlayer p) {
 		// a retake: flags as they were when chapter n first started, and this chapter's and every later chapter's beats
 		// forgotten, so the story replays from here (a jump ahead keeps the current flags)
-		Set<String> snap = flagsAtStart.get(n);
+		Set<String> snap = flagsAtStart.getOrDefault(n, n <= chapter ? Set.of() : null);
 		if (snap != null) {
 			flags.clear();
 			flags.addAll(snap);
@@ -509,7 +527,7 @@ public final class Run {
 		for (ServerPlayer p : hunters()) {
 			if (s != null) {
 				if (at == null) {
-					Fx.soundAt(p, s, p.getEyePosition(), 1.0F);
+					Fx.voice(p, s, 1.0F);
 				}
 			}
 			Fx.subtitle(p, "deadline.speaker." + speaker, "deadline.line." + lineId, ticks + 30);
@@ -528,7 +546,7 @@ public final class Run {
 			if (s.equals("alumnas")) {
 				return "coro";
 			}
-			if (s.equals("mate")) {
+			if (s.equals("mate") || s.equals("mimic")) {
 				return "tu";
 			}
 			return s;

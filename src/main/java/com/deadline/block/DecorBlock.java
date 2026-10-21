@@ -9,6 +9,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.HorizontalDirectionalBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.pathfinder.PathComputationType;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
@@ -75,5 +76,11 @@ public class DecorBlock extends HorizontalDirectionalBlock {
 	protected VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext ctx) {
 		// props without collision still get their boxes as the outline, so they can be aimed at and clicked
 		return this.hasCollision ? shapes[state.getValue(FACING).get2DDataValue()] : Shapes.empty();
+	}
+
+	/** Solid furniture is not floor: mobs path around beds, trunks and lecterns instead of into them. */
+	@Override
+	protected boolean isPathfindable(BlockState state, PathComputationType type) {
+		return type == PathComputationType.LAND ? !this.hasCollision : super.isPathfindable(state, type);
 	}
 }

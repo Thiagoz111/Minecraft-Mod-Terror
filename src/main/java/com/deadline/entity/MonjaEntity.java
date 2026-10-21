@@ -73,7 +73,20 @@ public class MonjaEntity extends HauntEntity {
 	@Override
 	public void tick() {
 		super.tick();
-		if (HauntEntity.SHOWCASE || this.scripted) {
+		if (HauntEntity.SHOWCASE) {
+			return;
+		}
+		if (this.scripted) {
+			// the script took her mid-burn or mid-sink: make her whole again where it put her
+			if (sinkTicks > 0 || burnTicks > 0) {
+				sinkTicks = 0;
+				burnTicks = 0;
+				this.setInvisible(false);
+				this.noPhysics = false;
+			}
+			bellTicks = 0;
+			behindTarget = null;
+			noiseMark = null;
 			return;
 		}
 		if (!(this.level() instanceof ServerLevel level) || this.isWeakened()) {
@@ -189,7 +202,13 @@ public class MonjaEntity extends HauntEntity {
 	private void teleportBehindIfQuiet(ServerLevel level) {
 		if (bellTicks > 0) {
 			if (--bellTicks == 0 && behindTarget != null && !behindTarget.isRemoved()) {
-				if (this.teleportBehind(behindTarget, 3.0)) {
+				Vec3 from = this.position();
+				boolean there = this.teleportBehind(behindTarget, 3.0);
+				if (there && !this.canWalkTo(behindTarget)) {
+					this.teleportTo(from.x, from.y, from.z);  // behind a wall or on a roof: not worth the scream
+					there = false;
+				}
+				if (there) {
 					level.playSound(null, this.getX(), this.getY(), this.getZ(), ModSounds.MONJA_SCREAM, SoundSource.HOSTILE, 2.0F, 1.0F);
 					Fx.shake(behindTarget, 0.6F, 12);
 					this.setTarget(behindTarget);
@@ -253,11 +272,17 @@ public class MonjaEntity extends HauntEntity {
 			}
 		}
 		Vec3 center = near != null ? near.position() : this.position();
-		for (int i = 0; i < 20; i++) {
-			if (this.teleportNear(center, 10.0, 18.0) && lightAt(level, this.blockPosition()) < 6
-					&& (near == null || !this.isWatchedBy(near, 0.2))) {
-				break;
-			}
+		Vec3 home = this.position();
+		boolean found = false;
+		for (int i = 0; i < 20 && !found; i++) {
+			found = this.teleportNear(center, 10.0, 18.0) && lightAt(level, this.blockPosition()) < 6
+					&& (near == null || !this.isWatchedBy(near, 0.2)) && this.canWalkTo(near);
+		}
+		if (!found) {
+			// nowhere dark and connected: stay sunk a little longer and try again
+			this.teleportTo(home.x, home.y, home.z);
+			sinkTicks = 20;
+			return;
 		}
 		this.setInvisible(false);
 		this.noPhysics = false;

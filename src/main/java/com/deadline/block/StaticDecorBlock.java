@@ -5,6 +5,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.pathfinder.PathComputationType;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
@@ -26,5 +27,11 @@ public class StaticDecorBlock extends Block {
 	@Override
 	protected VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext ctx) {
 		return this.hasCollision ? shape : Shapes.empty();
+	}
+
+	/** Solid furniture is not floor: mobs path around beds, trunks and lecterns instead of into them. */
+	@Override
+	protected boolean isPathfindable(BlockState state, PathComputationType type) {
+		return type == PathComputationType.LAND ? !this.hasCollision : super.isPathfindable(state, type);
 	}
 }

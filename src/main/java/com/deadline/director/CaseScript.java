@@ -14,4 +14,8 @@ public abstract class CaseScript {
 	/** Called when a hunter (re)enters the case at a chapter checkpoint. */
 	public void onCheckpoint(Run run, net.minecraft.server.level.ServerPlayer p) {
 	}
+
+	/** Called when a hunter leaves the case (solved, abandoned or sent home). */
+	public void onLeave(Run run, net.minecraft.server.level.ServerPlayer p) {
+	}
 }

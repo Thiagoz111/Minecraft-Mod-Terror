@@ -108,6 +108,12 @@ public final class Fx {
 		send(p, FxPayload.SOUND_AT, volume, 0, pos.x, pos.y, pos.z, BuiltInRegistries.SOUND_EVENT.getKey(sound).toString());
 	}
 
+	/** A voice heard in the head (phone, PA, thoughts): follows the player, no random pitch. */
+	public static void voice(ServerPlayer p, SoundEvent sound, float volume) {
+		Vec3 pos = p.getEyePosition();
+		send(p, FxPayload.SOUND_AT, volume, 1, pos.x, pos.y, pos.z, BuiltInRegistries.SOUND_EVENT.getKey(sound).toString());
+	}
+
 	/**
 	 * Distance-inverted sound: the farther the source is the closer it sounds, and when it is near
 	 * it seems to come from far away.

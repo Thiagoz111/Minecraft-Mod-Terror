@@ -40,6 +40,8 @@ public abstract class HauntEntity extends Monster {
 	public static boolean SHOWCASE = false;
 	/** Driven by a director beat: no AI of its own (the script moves it and sets its pose). */
 	public boolean scripted;
+	/** Spawned by a case director: never written to disk (the director respawns its actors on a checkpoint). */
+	public boolean directorActor;
 
 	private static final EntityDataAccessor<Boolean> WEAKENED = SynchedEntityData.defineId(HauntEntity.class, EntityDataSerializers.BOOLEAN);
 	private static final EntityDataAccessor<Boolean> ANCHORED = SynchedEntityData.defineId(HauntEntity.class, EntityDataSerializers.BOOLEAN);
@@ -161,7 +163,9 @@ public abstract class HauntEntity extends Monster {
 			this.getNavigation().stop();
 			this.setDeltaMovement(this.getDeltaMovement().multiply(0.2, 1.0, 0.2));
 			if (stun == 1 && this.stunSetNoAi) {
-				this.setNoAi(false);
+				if (!this.scripted) {
+					this.setNoAi(false);
+				}
 				this.stunSetNoAi = false;
 			}
 		}
@@ -304,6 +308,20 @@ public abstract class HauntEntity extends Monster {
 			}
 		}
 		return false;
+	}
+
+	/** True when the navigation finds a complete walking path from here to the target (null: any spot does). */
+	protected boolean canWalkTo(Entity target) {
+		if (target == null) {
+			return true;
+		}
+		net.minecraft.world.level.pathfinder.Path path = this.getNavigation().createPath(target, 1);
+		return path != null && path.canReach();
+	}
+
+	@Override
+	public boolean shouldBeSaved() {
+		return !this.directorActor && super.shouldBeSaved();
 	}
 
 	/** Teleports behind a target, outside its view. */

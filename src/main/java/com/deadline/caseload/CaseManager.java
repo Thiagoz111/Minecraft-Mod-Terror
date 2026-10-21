@@ -134,21 +134,51 @@ public final class CaseManager {
 		}
 	}
 
+	/**
+	 * A killing blow in a scripted case: instead of dying (and dropping the phone, the suit and the story items) the
+	 * hunter goes back to the chapter checkpoint with full health. Returns false when the death should go ahead.
+	 */
+	public static boolean failForward(ServerPlayer p) {
+		HunterData d = ModAttachments.get(p);
+		if (d.active == null || !d.active.type.scripted() || com.deadline.director.Director.get(d.active.type, d.active.site) == null) {
+			return false;
+		}
+		ActiveCase ac = d.active;
+		p.setHealth(p.getMaxHealth());
+		p.clearFire();
+		p.removeAllEffects();
+		d.sanity = Math.max(d.sanity, 60.0F);
+		Fx.sanity(p, d.sanity);
+		Fx.redFlash(p, 1.0F);
+		Fx.fade(p, 40);
+		// not from inside the blow: the checkpoint removes the actors, maybe the very nun that is hitting
+		com.deadline.director.Director.later(() -> {
+			if (ModAttachments.get(p).active == ac) {
+				checkpoint(p, ac);
+			}
+		});
+		return true;
+	}
+
+	/** Death never fails a scripted case: back to the chapter checkpoint (fail forward). */
+	private static boolean checkpoint(ServerPlayer p, ActiveCase ac) {
+		ServerLevel level = p.level().getServer().getLevel(ac.type.levelKey());
+		com.deadline.director.Run run = com.deadline.director.Director.get(ac.type, ac.site);
+		if (level == null || run == null) {
+			return false;
+		}
+		p.teleport(new TeleportTransition(level, run.at("spawn"), Vec3.ZERO, run.yaw("spawn"), 0.0F, TeleportTransition.DO_NOTHING));
+		run.checkpoint(p);
+		run.say("operadora.muerte", null);
+		return true;
+	}
+
 	public static void onRespawn(ServerPlayer p, boolean alive) {
 		HunterData d = ModAttachments.get(p);
 		d.sanity = Math.max(d.sanity, 60.0F);
 		Fx.sanity(p, d.sanity);
-		if (!alive && d.active != null && d.active.type.scripted()) {
-			// death never fails a scripted case: back to the chapter checkpoint (fail forward)
-			ActiveCase ac = d.active;
-			ServerLevel level = p.level().getServer().getLevel(ac.type.levelKey());
-			com.deadline.director.Run run = com.deadline.director.Director.get(ac.type, ac.site);
-			if (level != null && run != null) {
-				p.teleport(new TeleportTransition(level, run.at("spawn"), Vec3.ZERO, run.yaw("spawn"), 0.0F, TeleportTransition.DO_NOTHING));
-				run.checkpoint(p);
-				run.say("operadora.muerte", null);
-				return;
-			}
+		if (!alive && d.active != null && d.active.type.scripted() && checkpoint(p, d.active)) {
+			return;
 		}
 		if (!alive && d.active != null) {
 			ActiveCase ac = d.active;
@@ -370,6 +400,12 @@ public final class CaseManager {
 		ServerLevel home = server.getLevel(ResourceKey.create(Registries.DIMENSION, ac.returnDim));
 		if (home == null) {
 			home = server.overworld();
+		}
+		if (ac.type.scripted()) {
+			com.deadline.director.Run run = com.deadline.director.Director.get(ac.type, ac.site);
+			if (run != null) {
+				ac.type.script().onLeave(run, p);  // give back what the story took (swapped items, drained batteries)
+			}
 		}
 		if (!solved) {
 			cleanupSite(server, ac);

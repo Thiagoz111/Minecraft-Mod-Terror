@@ -473,7 +473,7 @@ def build():
         K(s, 5, r, 26, f'confesionario_centro_{rn}', 'east')
         K(s, 5, r, 27, f'confesionario_der_{rn}', 'east')
     s.point('confesionario', 5, 1, 26)
-    s.point('confesionario_cara', 6, 0, 25.6, 'south')
+    s.point('confesionario_cara', 5, 0, 26, 'east')  # in the priest's booth, behind the grille
     s.area('confesionario_in', 6, 0, 26, 6, 2, 28)
     # upper choir over the entrance: floor at y=5, balustrade, 8 lecterns, a harmonium, stairs along the west wall
     for x in range(5, 16):
@@ -495,7 +495,7 @@ def build():
     K(s, 14, 6, 16, 'armonio_izq', 'north')
     K(s, 15, 6, 16, 'armonio_der', 'north')
     s.point('coro_alto', 10, 6, 16, 'north')
-    s.point('coro_monja', 10, 6, 17.5, 'south')
+    s.point('coro_monja', 10, 6, 17.5, 'north')
     s.point('capilla_puerta', 10, 0, 10, 'north')
     s.area('capilla', 5, 0, 13, 15, 10, 37)
     s.area('coro_alto', 5, 6, 13, 15, 9, 18)
@@ -597,13 +597,13 @@ def build():
         K(s, x, 6, 44, 'lavatorio', 'south')
     K(s, -15, 6, 39, 'grafiti_sor_agonia', 'east')  # only on this side of the mirror
     K(s, -9, 6, 39, 'grafiti_tere_coro', 'west')
-    s.light(-12, 8, 47, 4, 'espejo_luz')
+    s.light(-12, 8, 46, 9, 'espejo_luz')
     s.write('diario_espejo', -12, 7, 50, 'north', width=4.0)
     s.point('espejo', -12, 7, 43)
-    s.point('espejo_cara', -11, 6, 44.4, 'south')  # between the mirrored sinks
-    s.point('espejo_detras', -12, 6, 47, 'south')
+    s.point('espejo_cara', -11, 6, 44.4, 'north')  # between the mirrored sinks
+    s.point('espejo_detras', -12, 6, 47, 'north')
     for i, x in enumerate((-14, -10)):
-        s.point(f'espejo_nena_{i}', x, 6, 45, 'south')
+        s.point(f'espejo_nena_{i}', x, 6, 45, 'north')
     s.area('banos', -15, 6, 36, -9, 9, 42)
 
     # ------------------------------------------------------------ the Silence Room (a cupboard next to the sacristy)
@@ -627,7 +627,7 @@ def build():
     # stairs down from the sacristy (east), through the chapel's east wall
     for k in range(6):
         x = 20 - k
-        stairs(s, x, -k - 1, 30, 'cripta_escalera', 'west')
+        stairs(s, x, -k - 1, 30, 'cripta_escalera', 'east')  # rises toward the sacristy
         for y in range(-k, -k + 3):
             s.set(x, y, 30, 'minecraft:air')
     # niches on the long walls (Sister Maria's stands empty), the foundress' tomb in the middle
@@ -653,9 +653,11 @@ def build():
         K(s, x, -6, 36, 'silla_escolar', 'north')
         s.point(f'silla7_{i}', x, -6, 36.2, 'north')
     islas = []
-    for (x, z) in ((10, 31), (13, 26), (8, 23), (14, 21)):
-        K(s, x, -6, z, 'velas_apagadas', 'north')
-        islas.append([x, -6, z])
+    # lit in this order by the girls as they run ahead: along the way out (tomb, stair foot, sacristy), never
+    # within 4 blocks of the wall-to-tomb line where she starts
+    for (x, y, z) in ((13, -6, 27), (14, -6, 32), (18, 0, 29), (19, 0, 33)):
+        K(s, x, y, z, 'velas_apagadas', 'north')
+        islas.append([x, y, z])
     s.markers['groups']['cripta_islas'] = islas
     s.area('cripta', 5, -6, 21, 15, -2, 37)
     s.point('regla_spawn', 10, -5, 28)

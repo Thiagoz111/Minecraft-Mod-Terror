@@ -50,7 +50,8 @@ final class SvcBackend implements VoiceBackend {
 		final long deadline;
 		final List<short[]> pcm = new ArrayList<>();
 		int silentFrames;
-		boolean started;
+		volatile boolean started;
+		volatile long lastMs;
 
 		Capture(String tag, long deadline) {
 			this.tag = tag;
@@ -82,6 +83,11 @@ final class SvcBackend implements VoiceBackend {
 		UUID id = c.getPlayer().getUuid();
 		byte[] opus = e.getPacket().getOpusEncodedData();
 		if (opus == null || opus.length == 0) {
+			// push-to-talk released: the utterance is over
+			Capture c0 = b.captures.get(id);
+			if (c0 != null && c0.started) {
+				b.finish(id, c0);
+			}
 			return;
 		}
 		short[] pcm;
@@ -111,9 +117,22 @@ final class SvcBackend implements VoiceBackend {
 			}
 			cap.started = true;
 		}
-		cap.pcm.add(pcm.clone());
-		cap.silentFrames = voiced ? 0 : cap.silentFrames + 1;
+		synchronized (cap) {
+			cap.pcm.add(pcm.clone());
+			cap.silentFrames = voiced ? 0 : cap.silentFrames + 1;
+			cap.lastMs = now;
+		}
 		if (cap.silentFrames > 15 || cap.pcm.size() > 200) {
+			finish(id, cap);
+		}
+	}
+
+	/** Closes a capture into a clip (end of speech, push-to-talk released, or packets stopped); only once. */
+	private void finish(UUID id, Capture cap) {
+		if (!captures.remove(id, cap)) {
+			return;
+		}
+		synchronized (cap) {
 			int n = cap.pcm.size() - Math.min(cap.silentFrames, 10);
 			short[] all = new short[Math.max(0, n) * FRAME];
 			for (int i = 0; i < n; i++) {
@@ -121,7 +140,6 @@ final class SvcBackend implements VoiceBackend {
 				System.arraycopy(f, 0, all, i * FRAME, Math.min(FRAME, f.length));
 			}
 			clips.computeIfAbsent(id, k -> new ConcurrentHashMap<>()).put(cap.tag, all);
-			captures.remove(id);
 			DeadLine.LOGGER.info("Voice clip '{}' captured ({} ms)", cap.tag, n * 20);
 		}
 	}
@@ -137,6 +155,13 @@ final class SvcBackend implements VoiceBackend {
 
 	@Override
 	public List<Frame> drain() {
+		// no packets for 300 ms after speaking (push-to-talk with no end packet): close the clip
+		long now = System.currentTimeMillis();
+		captures.forEach((id, c) -> {
+			if (c.started && now - c.lastMs > 300) {
+				finish(id, c);
+			}
+		});
 		List<Frame> out = new ArrayList<>();
 		Frame f;
 		while ((f = frames.poll()) != null) {

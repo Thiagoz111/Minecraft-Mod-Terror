@@ -86,6 +86,7 @@ LINES = {
         es='Se solicita al alumno nuevo en Dirección. Inmediatamente.', en='The new student is wanted in the Principal\'s office. Immediately.'),
     'colegio.mate.lavado1': dict(speaker='tu', voice=None, es='Está lavado.', en="It's washed out."),
     'colegio.mate.lavado2': dict(speaker='tu', voice=None, es='Sigue lavado. Desde 1984.', en='Still washed out. Since 1984.'),
+    'colegio.mimic.presente': dict(speaker='tu', voice=None, es='(una voz igual a la tuya) ...Presente.', en='(a voice just like yours) ...Present.'),
     'colegio.clara.1984': dict(
         speaker='clara', voice='clara84', fx='phone',
         es='¿Hay alguien? ...Por favor... les dije que me llevaran a mí... a mí...',

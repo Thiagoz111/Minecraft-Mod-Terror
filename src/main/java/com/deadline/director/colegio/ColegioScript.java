@@ -3,6 +3,7 @@ package com.deadline.director.colegio;
 import static com.deadline.director.Steps.*;
 import static com.deadline.director.Triggers.*;
 
+import com.deadline.DeadLine;
 import com.deadline.director.CaseScript;
 import com.deadline.director.Props;
 import com.deadline.director.Run;
@@ -19,10 +20,18 @@ import com.deadline.sanity.SanityManager;
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.util.Brightness;
+import net.minecraft.world.entity.Display;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.phys.Vec3;
 
 /**
@@ -78,12 +87,31 @@ public class ColegioScript extends CaseScript {
 				.setup(lights("capilla_lampara", true), door("capilla", true, false));
 		s.chapter(6, "dormitorio_puerta").objectives("dormitorio", "espejo", "silencio").hint("dormitorio")
 				.setup(lights("hall_arana", false), lights("pasillo_pb", false), lights("dormitorio_luna", true),
-						door("dormitorio", true, false), door("banos", true, false), door("cuarto_silencio", false, false));
+						door("dormitorio", true, false), door("banos", true, false), door("cuarto_silencio", false, false),
+						run(e -> moveChair(e.run, 0)));
 		s.chapter(7, "sacristia").objectives("regla", "volver").hint("regla")
 				.setup(lights("capilla_lampara", true), lights("cripta_islas", false), door("sacristia", true, false),
-						run(e -> flashlights(e.run, false)));
+						run(e -> {
+							flashlights(e.run, false);
+							swapHolyWater(e.run, false);
+							// a replay starts with the 1984 wall standing again
+							for (BlockPos rel : e.run.def.group("cripta_muro")) {
+								BlockState st = e.run.authored(rel);
+								if (st != null) {
+									e.run.setBlock(e.run.origin.offset(rel), st);
+								}
+							}
+						}));
 		s.chapter(8, "coro_alto").objectives("velas", "rezar", "romper").hint("velas")
-				.setup(lights("coro_velas", false), lights("capilla_lampara", false), run(e -> flashlights(e.run, true)));
+				.setup(lights("coro_velas", false), lights("capilla_lampara", false), run(e -> {
+					flashlights(e.run, true);
+					// the ruler is needed to end it: back in hand after a retake or a death that dropped it
+					for (ServerPlayer p : e.run.hunters()) {
+						if (!p.getInventory().contains(new ItemStack(ModItems.REGLA_QUEBRACHO))) {
+							p.getInventory().add(new ItemStack(ModItems.REGLA_QUEBRACHO));
+						}
+					}
+				}));
 		s.chapter(9, "coro_alto").noCard().objectives("volver_casa");
 	}
 
@@ -120,17 +148,19 @@ public class ColegioScript extends CaseScript {
 						com.deadline.voice.Voice.tagNext(p, "presente", 6000);
 					}
 				}),
-				say("colegio.madre.usted", "aula_frente"),
 				run(e -> e.run.counters.remove("voice_seen")),
 				loop(e -> {
-					// raising your hand (sneak) answers too: no microphone, or a muted one
+					// she asks, and listens from the first word: raising your hand (sneak) answers too
+					if (e.t == 0) {
+						e.n = e.run.say("colegio.madre.usted", e.run.at("aula_frente"));
+					}
 					ServerPlayer p = e.target();
 					boolean hand = p != null && p.isShiftKeyDown();
 					if (e.run.event("voice") || hand) {
 						e.run.counters.put("voice_seen", 1);
 						return true;
 					}
-					return e.t >= 80;
+					return e.t >= e.n + 80;
 				}),
 				run(e -> {
 					ServerPlayer p = e.target();
@@ -416,6 +446,11 @@ public class ColegioScript extends CaseScript {
 					e.run.vars.put("echo", p != null && com.deadline.voice.Voice.play(p, p, "presente",
 							com.deadline.voice.VoiceBackend.Effect.PHONE, null) ? 1 : 0);
 				}),
+				run(e -> {
+					if (!Integer.valueOf(1).equals(e.run.vars.get("echo"))) {
+						e.run.say("colegio.mimic.presente", null);  // no recording: a voice like yours, in words
+					}
+				}),
 				delay(40),
 				run(e -> {
 					ServerPlayer p = e.target();
@@ -440,10 +475,15 @@ public class ColegioScript extends CaseScript {
 
 	// ================================================================== 5. compline: confession and the upper choir
 	private void compline(Script s) {
-		s.beat("confesionario").chapter(5).when(crouch("confesionario_in", 40)).then(
+		s.beat("confesionario").chapter(5).when(crouch("confesionario_in", 40).or(event("use:confesionario"))).then(
 				say("colegio.cura.ave", "confesionario"),
 				// he listens for 4-8 s of your voice (6 s without a microphone)
-				waitUntil(e -> e.run.count("voice_ticks") >= 80 || e.t >= 120),
+				run(e -> e.run.counters.remove("voice_ticks")),
+				waitUntil(e -> {
+					ServerPlayer p = e.target();
+					boolean mic = p != null && com.deadline.voice.Voice.enabled(p);
+					return mic ? e.run.count("voice_ticks") >= 80 || e.t >= 160 : e.t >= 120;
+				}),
 				run(e -> e.run.say("colegio.cura.r" + (1 + e.run.level.random.nextInt(4)), e.run.at("confesionario"))),
 				delay(70),
 				say("colegio.cura.corre", "confesionario"),
@@ -556,7 +596,7 @@ public class ColegioScript extends CaseScript {
 					boolean moved = p != null && before != null && (p.position().distanceTo(before) > 1.2
 							|| com.deadline.voice.NoiseMeter.get(p) > 40F);
 					int i = Math.min(4, (Integer) e.run.vars.getOrDefault("silla", 0) + 1);
-					e.run.vars.put("silla", i);
+					moveChair(e.run, i);
 					if (!e.run.has("persigue")) {
 						Props.place(e.run, NUN, "dorm_silla_" + i, true);
 						e.run.sound(ModSounds.SILLA_ARRASTRA, e.run.at("dorm_silla_" + i), 1.4F, 0.9F);
@@ -568,7 +608,8 @@ public class ColegioScript extends CaseScript {
 				lights("dormitorio_luna", true));
 
 		// the tap-water gag: the "holy water" Paloma gave you does nothing
-		s.beat("canilla").chapter(6).when(event("item:deadline:agua_canilla")).then(
+		s.beat("canilla").chapter(6).requires("nubes").unless("dormitorio_hecho")
+				.when(event("item:deadline:agua_canilla").and((r, p) -> r.actor(NUN) != null && r.actor(NUN).distanceTo(p) < 12)).then(
 				run(e -> {
 					Entity nun = e.run.actor(NUN);
 					if (nun != null) {
@@ -576,6 +617,8 @@ public class ColegioScript extends CaseScript {
 						if (nun instanceof MonjaEntity m) {
 							m.scripted = true;
 							m.setNoAi(true);
+							m.setTarget(null);
+							m.getNavigation().stop();
 							m.setAction(MonjaEntity.ACT_WET);
 						}
 						e.run.level.sendParticles(net.minecraft.core.particles.ParticleTypes.SPLASH, nun.getX(), nun.getY() + 1.4, nun.getZ(), 40, 0.3, 0.5, 0.3, 0.1);
@@ -608,6 +651,7 @@ public class ColegioScript extends CaseScript {
 				run(e -> {
 					e.run.unflag("persigue");
 					e.run.despawn(NUN);
+					swapHolyWater(e.run, false);
 				}));
 
 		// the diary only reads the right way round in the mirror; then she is behind the reflection
@@ -620,7 +664,11 @@ public class ColegioScript extends CaseScript {
 							g.setAction(ApparitionEntity.POSE_STAND);
 						}
 					}
-					Props.write(e.run, "diario_espejo", Props.chalk("21/6. Las escucho cantar al revés.\nLo hicieron sin mí.\nEran siete.\nEL LIBRO DICE OCHO."), 1.0F);
+					Display.TextDisplay td = Props.write(e.run, "diario_espejo",
+							Props.chalk("21/6. Las escucho cantar al revés.\nLo hicieron sin mí.\nEran siete.\nEL LIBRO DICE OCHO."), 1.0F);
+					if (td != null) {
+						td.setBrightnessOverride(new Brightness(12, 0));
+					}
 				}),
 				bigText("deadline.text.colegio.diario", 140),
 				delay(120),
@@ -651,28 +699,7 @@ public class ColegioScript extends CaseScript {
 		s.beat("cuarto_silencio").chapter(6).requires("encerrado").when(enter("cuarto_silencio")).then(
 				delay(30),
 				say("colegio.madre.pensa", null),
-				loop(e -> {
-					ServerPlayer p = e.target();
-					if (p == null) {
-						return true;
-					}
-					Vec3 last = (Vec3) e.run.vars.get("quieto_pos");
-					boolean noisy = com.deadline.voice.Voice.enabled(p)
-							? com.deadline.voice.Voice.speaking(p, e.run.now())
-							: last != null && p.position().distanceTo(last) > 0.08;
-					e.run.vars.put("quieto_pos", p.position());
-					int n = noisy ? 0 : e.run.count("silencio") + 1;
-					e.run.counters.put("silencio", n);
-					if (e.t % 4 == 0) {
-						Fx.bigText(p, "deadline.text.colegio.silencio", 12, n / 300F);
-					}
-					if (e.t == 120) {
-						e.run.say("colegio.paloma.chiste1", e.run.at("rendija"));
-					} else if (e.t == 420) {
-						e.run.say("colegio.paloma.chiste2", e.run.at("rendija"));
-					}
-					return n >= 300;
-				}),
+				silence(),
 				run(e -> {
 					ServerPlayer p = e.target();
 					if (p != null) {
@@ -794,6 +821,9 @@ public class ColegioScript extends CaseScript {
 							e.run.flag("velas");
 						}
 					}));
+			// a candle she blew out during the prayer can be lit again
+			s.beat("revela_" + i).chapter(8).requires("velas").repeat(10).when(event("use:vela_" + i)).then(
+					run(e -> e.run.light("coro_velas", k, true)));
 		}
 		s.beat("rezar").chapter(8).requires("velas").when(enter("atril8")).then(
 				prayer(1), flash(0.8F), sound(ModSounds.CORO_AVE_DERECHO_1, "coro_alto", 2.0F), run(e -> wave(e.run)), delay(20 * 12), run(e -> Props.burnAway(e.run, NUN)),
@@ -868,7 +898,12 @@ public class ColegioScript extends CaseScript {
 						Entity g = e.run.actor("alumna_" + i);
 						Entity m = e.run.actor("madre");
 						if (g != null && m != null) {
-							g.setYRot(Props.yawTowards(g.position(), m.position()));
+							float yaw = Props.yawTowards(g.position(), m.position());
+							g.setYRot(yaw);
+							if (g instanceof net.minecraft.world.entity.LivingEntity l) {
+								l.setYBodyRot(yaw);
+								l.setYHeadRot(yaw);
+							}
 						}
 					}
 				}),
@@ -905,6 +940,76 @@ public class ColegioScript extends CaseScript {
 		}
 	}
 
+	/** 15 seconds of silence (voice) or stillness (no microphone) in the Silence Room; Paloma tries to make you laugh. */
+	static Step silence() {
+		return loop(e -> {
+			ServerPlayer p = e.target();
+			if (p == null) {
+				return true;
+			}
+			if (e.t == 0) {
+				e.run.counters.remove("silencio");
+				e.run.vars.remove("quieto_pos");
+			}
+			Vec3 last = (Vec3) e.run.vars.get("quieto_pos");
+			boolean noisy = com.deadline.voice.Voice.enabled(p)
+					? com.deadline.voice.Voice.speaking(p, e.run.now())
+					: last != null && p.position().distanceTo(last) > 0.08;
+			e.run.vars.put("quieto_pos", p.position());
+			int n = noisy ? 0 : e.run.count("silencio") + 1;
+			e.run.counters.put("silencio", n);
+			if (e.t % 4 == 0) {
+				Fx.bigText(p, "deadline.text.colegio.silencio", 24, n / 300F);
+			}
+			if (e.t == 120) {
+				e.run.say("colegio.paloma.chiste1", e.run.at("rendija"));
+			} else if (e.t == 420) {
+				e.run.say("colegio.paloma.chiste2", e.run.at("rendija"));
+			}
+			return n >= 300;
+		});
+	}
+
+	/**
+	 * The 15th reprimand: when she catches a hunter with 15 or more she does not hit, she takes them to the Silence Room
+	 * (chapters 6-7, while she is loose). Out again after 15 s of silence, with the tally back at 10.
+	 */
+	static void capture(Run r, ServerPlayer p) {
+		r.flag("captura");
+		r.unflag("persigue");
+		r.vars.remove("despierta_hasta");
+		if (r.chapter() == 6 && r.actor(NUN) instanceof MonjaEntity m) {
+			// the dormitory still needs her on her chair
+			m.scripted = true;
+			m.setNoAi(true);
+			m.setTarget(null);
+			m.getNavigation().stop();
+			m.setAction(MonjaEntity.ACT_SIT);
+			Props.place(r, NUN, "dorm_silla_" + r.vars.getOrDefault("silla", 0), true);
+		} else {
+			Props.burnAway(r, NUN);
+		}
+		r.start("captura", p, List.of(
+				say("colegio.monja.a_la_pared", null),
+				jumpscare("monja"),
+				fade(60),
+				delay(30),
+				teleport("cuarto_silencio"),
+				door("cuarto_silencio", false, true),
+				delay(30),
+				say("colegio.madre.pensa", null),
+				silence(),
+				run(e -> {
+					ServerPlayer q = e.target();
+					if (q != null) {
+						e.run.counters.put("conduct:" + q.getUUID(), 10);
+						Props.commend(e.run, q);
+					}
+				}),
+				door("cuarto_silencio", true, false),
+				unflag("captura")));
+	}
+
 	/** One prayer phrase: speak it aloud (Simple Voice Chat) or hold the ritual book still; 6 s of progress. */
 	static Step prayer(int n) {
 		return e -> {
@@ -913,17 +1018,15 @@ public class ColegioScript extends CaseScript {
 				return true;
 			}
 			String key = "rezo" + n;
-			boolean praying;
-			if (com.deadline.voice.Voice.enabled(p)) {
-				praying = com.deadline.voice.Voice.speaking(p, e.run.now()) && com.deadline.voice.Voice.relative(p) > -8F;
-			} else {
-				praying = p.getMainHandItem().is(ModItems.RITUAL_BOOK) || p.getOffhandItem().is(ModItems.RITUAL_BOOK)
-						|| p.isShiftKeyDown();
-			}
+			// out loud (Simple Voice Chat), kneeling (crouch) or holding the ritual book: any of them counts
+			boolean voice = com.deadline.voice.Voice.enabled(p) && com.deadline.voice.Voice.speaking(p, e.run.now())
+					&& com.deadline.voice.Voice.relative(p) > -8F;
+			boolean praying = voice || p.isShiftKeyDown() || p.getMainHandItem().is(ModItems.RITUAL_BOOK)
+					|| p.getOffhandItem().is(ModItems.RITUAL_BOOK);
 			int v = Math.max(0, e.run.count(key) + (praying ? 2 : (e.t % 2 == 0 ? -1 : 0)));
 			e.run.counters.put(key, v);
 			if (e.t % 3 == 0) {
-				Fx.bigText(p, "deadline.text.colegio.oracion." + n, 10, Math.min(1F, v / 240F));
+				Fx.bigText(p, "deadline.text.colegio.oracion." + n, 20, Math.min(1F, v / 240F));
 			}
 			return v >= 240;
 		};
@@ -960,6 +1063,44 @@ public class ColegioScript extends CaseScript {
 		}
 	}
 
+	/** The warden's chair in the dormitory aisle: only one stands, at dorm_silla_<to>; the others are bare floor. */
+	static void moveChair(Run r, int to) {
+		Block chair = BuiltInRegistries.BLOCK.getOptional(DeadLine.id("colegio_silla_monja")).orElse(null);
+		if (chair == null) {
+			return;
+		}
+		for (int i = 0; i <= 4; i++) {
+			BlockPos pos = r.block("dorm_silla_" + i);
+			boolean here = r.level.getBlockState(pos).is(chair);
+			if (i == to && !here) {
+				r.setBlock(pos, chair.defaultBlockState().setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.NORTH));
+			} else if (i != to && here) {
+				r.setBlock(pos, Blocks.AIR.defaultBlockState());
+			}
+		}
+		r.vars.put("silla", to);
+	}
+
+	@Override
+	public void onLeave(Run r, ServerPlayer p) {
+		// whatever Paloma and the great silence took from you comes back when you leave the school
+		var inv = p.getInventory();
+		for (int i = 0; i < inv.getContainerSize(); i++) {
+			ItemStack st = inv.getItem(i);
+			if (st.is(ModItems.AGUA_CANILLA)) {
+				inv.setItem(i, new ItemStack(ModItems.HOLY_WATER, st.getCount()));
+			}
+		}
+		if (r.chapter() == 6 || r.chapter() == 7) {
+			for (int i = 0; i < inv.getContainerSize(); i++) {
+				ItemStack st = inv.getItem(i);
+				if (st.is(ModItems.FLASHLIGHT)) {
+					st.setDamageValue(0);
+				}
+			}
+		}
+	}
+
 	/** Paloma's trick: every holy water becomes tap water (true) and back (false). */
 	static void swapHolyWater(Run r, boolean toTap) {
 		for (ServerPlayer p : r.hunters()) {
@@ -974,6 +1115,9 @@ public class ColegioScript extends CaseScript {
 			}
 			if (!toTap && !inv.contains(new ItemStack(ModItems.HOLY_WATER))) {
 				inv.add(new ItemStack(ModItems.HOLY_WATER, 2));
+			}
+			if (toTap && !inv.contains(new ItemStack(ModItems.AGUA_CANILLA))) {
+				inv.add(new ItemStack(ModItems.AGUA_CANILLA, 1));  // the gag needs a bottle even if you used yours up
 			}
 		}
 	}
@@ -999,6 +1143,16 @@ public class ColegioScript extends CaseScript {
 
 	@Override
 	public void tick(Run r) {
+		// 15 reprimands and she is on you: the Silence Room instead of a hit
+		if ((r.chapter() == 6 || r.chapter() == 7) && !r.has("captura") && !r.has("encerrado")
+				&& r.actor(NUN) instanceof MonjaEntity nun && !nun.scripted && nun.isAlive()) {
+			for (ServerPlayer p : r.hunters()) {
+				if (Props.conduct(r, p) >= 15 && nun.distanceTo(p) < 2.0) {
+					capture(r, p);
+					break;
+				}
+			}
+		}
 		// a woken nun sits back down after a while (dormitory)
 		Object until = r.vars.get("despierta_hasta");
 		if (until instanceof Long t && r.now() > t && r.chapter() == 6) {
@@ -1008,6 +1162,8 @@ public class ColegioScript extends CaseScript {
 				m.scripted = true;
 				m.setNoAi(true);
 				m.setTarget(null);
+				m.getNavigation().stop();
+				m.setDeltaMovement(Vec3.ZERO);
 				m.setAction(MonjaEntity.ACT_SIT);
 				Props.place(r, NUN, "dorm_silla_" + r.vars.getOrDefault("silla", 0), true);
 			}
@@ -1016,7 +1172,7 @@ public class ColegioScript extends CaseScript {
 
 	// ================================================================== the corridor rule (all chapters)
 	private void corridorRule(Script s) {
-		s.beat("grito").from(2).repeat(20 * 20).when(event("shout")).then(
+		s.beat("grito").from(2).repeat(20 * 20).when((r, p) -> r.event("shout:" + p.getUUID())).then(
 				run(e -> {
 					ServerPlayer p = e.target();
 					if (p != null) {

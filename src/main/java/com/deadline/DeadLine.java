@@ -62,6 +62,8 @@ public class DeadLine implements ModInitializer {
 		ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> CaseManager.onJoin(handler.getPlayer()));
 		ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> FlashlightLights.clear(handler.getPlayer()));
 		ServerPlayerEvents.AFTER_RESPAWN.register((oldPlayer, newPlayer, alive) -> CaseManager.onRespawn(newPlayer, alive));
+		net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents.ALLOW_DEATH.register((entity, source, amount) ->
+				!(entity instanceof net.minecraft.server.level.ServerPlayer p) || !CaseManager.failForward(p));
 
 		LOGGER.info("DEAD LINE: la línea está abierta...");
 	}

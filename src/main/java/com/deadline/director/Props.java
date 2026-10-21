@@ -31,6 +31,9 @@ import org.joml.Vector3f;
 
 /** Shared stagecraft for scripts: actors, chalk writing, furniture that turns, the flashlight beam, reprimands. */
 public final class Props {
+	/** Tag on the director's text displays: one loaded back from disk (after a crash) is an orphan and is removed. */
+	public static final String ACTOR_TAG = "deadline_director";
+
 	private Props() {
 	}
 
@@ -56,6 +59,7 @@ public final class Props {
 			h.setInvulnerable(true);
 			h.setSiteIndex(r.site);
 			h.setPersistenceRequired();
+			h.directorActor = true;
 		}
 		r.level.addFreshEntity(e);
 		r.actor(actor, e);
@@ -148,11 +152,12 @@ public final class Props {
 			td.snapTo(v.x, v.y, v.z, f.toYRot(), 0F);
 			td.setBillboardConstraints(Display.BillboardConstraints.FIXED);
 			td.setBackgroundColor(0);
-			td.setLineWidth(220);
+			td.addTag(ACTOR_TAG);
 			r.level.addFreshEntity(td);
 			r.actor(actor, td);
 		}
 		td.setTransformation(new Transformation(new Vector3f(), new Quaternionf(), new Vector3f(scale, scale, scale), new Quaternionf()));
+		td.setLineWidth(Math.max(60, Math.round(w.width() * 40 / scale)));  // wrap at the board's width (40 px a block)
 		td.setText(text);
 		return td;
 	}

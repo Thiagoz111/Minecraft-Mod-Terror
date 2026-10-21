@@ -49,7 +49,11 @@ public final class ClientFx {
 			case FxPayload.SOUND_AT -> {
 				SoundEvent ev = BuiltInRegistries.SOUND_EVENT.getValue(Identifier.parse(p.s()));
 				if (ev != null && mc.level != null) {
-					mc.level.playLocalSound(p.x(), p.y(), p.z(), ev, SoundSource.HOSTILE, p.a(), 0.9F + RNG.nextFloat() * 0.2F, false);
+					if (p.b() == 1) {  // a voice in the head: steady pitch, stays with the player
+						mc.getSoundManager().play(SimpleSoundInstance.forUI(ev, 1.0F, p.a()));
+					} else {
+						mc.level.playLocalSound(p.x(), p.y(), p.z(), ev, SoundSource.HOSTILE, p.a(), 0.9F + RNG.nextFloat() * 0.2F, false);
+					}
 				}
 			}
 			case FxPayload.TITLE -> {
@@ -87,8 +91,15 @@ public final class ClientFx {
 				com.deadline.client.hud.StoryHud.noiseTicks = 40;
 			}
 			case FxPayload.BIG_TEXT -> {
-				com.deadline.client.hud.StoryHud.bigKey = p.s();
-				com.deadline.client.hud.StoryHud.bigTicks = com.deadline.client.hud.StoryHud.bigTotal = Math.max(0, p.b());
+				int t = Math.max(0, p.b());
+				if (p.s().equals(com.deadline.client.hud.StoryHud.bigKey) && com.deadline.client.hud.StoryHud.bigTicks > 0 && t > 0) {
+					// a refresh of the same text (prayer, silence): keep its fade-in, just extend it
+					com.deadline.client.hud.StoryHud.bigTotal += t - com.deadline.client.hud.StoryHud.bigTicks;
+					com.deadline.client.hud.StoryHud.bigTicks = t;
+				} else {
+					com.deadline.client.hud.StoryHud.bigKey = p.s();
+					com.deadline.client.hud.StoryHud.bigTicks = com.deadline.client.hud.StoryHud.bigTotal = t;
+				}
 				com.deadline.client.hud.StoryHud.bigProgress = p.a();
 			}
 			case FxPayload.CHAPTER -> {

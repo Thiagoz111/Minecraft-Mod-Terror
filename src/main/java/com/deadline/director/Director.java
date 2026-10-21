@@ -23,11 +23,19 @@ import net.minecraft.world.InteractionResult;
 /** Keeps one {@link Run} per active scripted site and feeds it ticks and player events. */
 public final class Director {
 	private static final Map<String, Run> RUNS = new HashMap<>();
+	private static final List<Runnable> LATER = new ArrayList<>();
+	/** Director-tagged entities that just loaded; the ones no run claims by the next tick are leftovers from disk. */
+	private static final List<net.minecraft.world.entity.Entity> LOADED = new ArrayList<>();
 
 	private Director() {
 	}
 
 	public static void register() {
+		net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents.ENTITY_LOAD.register((entity, world) -> {
+			if (entity.getTags().contains(Props.ACTOR_TAG)) {
+				LOADED.add(entity);
+			}
+		});
 		UseBlockCallback.EVENT.register((player, world, hand, hit) -> {
 			if (player instanceof ServerPlayer sp) {
 				Run r = of(sp);
@@ -117,7 +125,25 @@ public final class Director {
 		}
 	}
 
+	/** Runs a task at the start of the next server tick. */
+	public static void later(Runnable task) {
+		LATER.add(task);
+	}
+
 	public static void tick(MinecraftServer server) {
+		if (!LATER.isEmpty()) {
+			List<Runnable> now = new ArrayList<>(LATER);
+			LATER.clear();
+			now.forEach(Runnable::run);
+		}
+		if (!LOADED.isEmpty()) {
+			for (net.minecraft.world.entity.Entity e : LOADED) {
+				if (!e.isRemoved() && RUNS.values().stream().noneMatch(r -> r.actors.containsValue(e))) {
+					e.discard();
+				}
+			}
+			LOADED.clear();
+		}
 		for (ServerPlayer p : server.getPlayerList().getPlayers()) {
 			of(p); // lazily restores runs after a restart
 		}
