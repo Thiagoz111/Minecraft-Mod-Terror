@@ -36,6 +36,8 @@ PALETTE = Palette({
     'flagstone': 'colegio_patio_lajas',
     'new_brick': ['colegio_muro_ladrillo'] * 4 + ['colegio_muro_ladrillo_grieta'],
 })
+# story points nobody walks to: the sealed mirrored bathroom, the PA speaker, the 7 chairs behind the 1984 wall
+SEALED = ('espejo_cara', 'espejo_detras', 'espejo_nena_', 'megafono', 'silla7_')
 PLASTER = ('deadline:colegio_revoque', 'deadline:colegio_crema', 'deadline:colegio_azulejo', 'deadline:colegio_sillar')
 
 
