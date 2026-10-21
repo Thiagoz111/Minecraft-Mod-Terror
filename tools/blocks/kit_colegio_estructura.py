@@ -852,7 +852,7 @@ def p_revoque_marcas(v):
         hdr = (Y >= 4) & (Y <= 12) & (X >= 6) & (X <= 23) & m
         cv.put(Ramp('#5e1e1a', '#7a2a22', '#93392c'), np.full((N, N), 1) + (Y == 4), hdr)
         tm = np.zeros((N, N), bool)
-        stamp(tm, text_mask('KERM'), 7, 3)
+        stamp(tm, text_mask('9/7'), 7, 3)
         cv.put(Ramp('#d8c9a6', '#e6d8b6'), np.full((N, N), 1), tm & hdr)
         for y in (14, 16, 18):
             cv.col('#6b604d', (Y == y) & (X >= 7) & (X < 22 - (y == 18) * 6) & m & ((X * 7 + y) % 5 != 0))
@@ -3718,7 +3718,7 @@ def rayuela_comp(label, cielo=False):
         m |= (border_dist(W, W) == 1)
         t = text_mask(label, scale_x=2, scale_y=2)[4:, :]
         stamp(m, t, (W - t.shape[1]) // 2, (W - t.shape[0]) // 2)
-    n = vnoise(W, W, 10, 10, hash(label) & 0xffff)
+    n = vnoise(W, W, 10, 10, shash(label))
     keep = m & (n > 0.18)
     out = np.zeros((W, W, 4))
     out[keep, :3] = np.where((n[keep] > 0.6)[:, None], C('#efeee6'), C('#d9d8cf'))
