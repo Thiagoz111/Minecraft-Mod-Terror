@@ -235,6 +235,46 @@ public final class ClientSmoke {
 		});
 	}
 
+	/** Teleports to a position relative to the case site's origin. */
+	private static void atSite(Minecraft mc, double x, double y, double z, float yaw, float pitch) {
+		server(mc, p -> {
+			com.deadline.director.Run r = com.deadline.director.Director.of(p);
+			if (r != null) {
+				p.teleportTo((ServerLevel) p.level(), r.origin.getX() + x, r.origin.getY() + y, r.origin.getZ() + z, Set.of(), yaw, pitch, false);
+			}
+		});
+	}
+
+	/** Architecture pass: every room of the Colegio with night vision and no HUD (to check the building kit in game). */
+	private static void colegioRooms() {
+		step(1, mc -> {
+			mc.options.hideGui = true;
+			server(mc, p -> p.addEffect(new MobEffectInstance(MobEffects.NIGHT_VISION, 20 * 60, 0, false, false)));
+		});
+		Object[][] views = {
+				{"colegio_room_portico", 0.5, 0.0, -17.5, 0F, -14F},
+				{"colegio_room_hall", -4.5, 0.0, 1.5, -55F, -18F},
+				{"colegio_room_aula", -7.5, 0.0, 6.5, 115F, 6F},
+				{"colegio_room_direccion", 11.5, 0.0, 7.3, 180F, 8F},
+				{"colegio_room_pasillo", 18.5, 0.0, 10.5, 90F, 0F},
+				{"colegio_room_refectorio", -12.0, 0.0, 13.6, 0F, 14F},
+				{"colegio_room_cocina", -19.6, 0.0, 19.4, 125F, 12F},
+				{"colegio_room_capilla", 10.5, 0.0, 19.5, 0F, -4F},
+				{"colegio_room_coro", 10.5, 0.0, 26.5, 180F, -26F},
+				{"colegio_room_dormitorio", -11.5, 6.0, 13.5, 0F, 6F},
+				{"colegio_room_banos", -11.5, 6.0, 37.5, 0F, 0F},
+				{"colegio_room_cripta", 10.5, -6.0, 21.5, 0F, 2F},
+		};
+		for (Object[] v : views) {
+			step(1, mc -> atSite(mc, (double) v[1], (double) v[2], (double) v[3], (float) v[4], (float) v[5]));
+			shot(25, (String) v[0]);
+		}
+		step(1, mc -> {
+			mc.options.hideGui = false;
+			server(mc, p -> p.removeEffect(MobEffects.NIGHT_VISION));
+		});
+	}
+
 	/** Walks the scripted Colegio case through its first set pieces and screenshots each one. */
 	private static void colegioTour() {
 		step(10, mc -> cmd(mc, "deadline start colegio " + mc.player.getName().getString()));
@@ -281,6 +321,7 @@ public final class ClientSmoke {
 			}
 		}));
 		shot(30, "colegio_6_choir_loft");
+		colegioRooms();
 		step(1, mc -> cmd(mc, "deadline home " + mc.player.getName().getString()));
 		step(40, mc -> {
 		});
