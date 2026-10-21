@@ -1,47 +1,51 @@
 """Clara -- the freed soul of Sor Maria de la Agonia (DEAD LINE, case 'convento', ending).
 
 Authored at 2x texel density (model.scale = 0.5).  +Y down, ground y = 24, faces -Z, right_* on -X.  Centred on
-x = 0, z = 0.  Veil top y = -51, lowest light streamer y ~ 23.
+x = 0, z = 0.  Veil top y = -55, lowest light streamer y ~ 23 (she floats: no feet, the robe ends in light).
+Everything above the waist is authored at its original heights and lifted by TY = -3 (a slimmer, taller figure).
 
 Design
 ------
 Clara Ines Bustos, 33, the nun the demon wore.  The same habit as Sor Agonia but CLEAN and whole: starched white
-coif and rounded guimpe, black veil, black wool habit with wide bell sleeves, a black cincture and a plain wooden
+coif and rounded guimpe, black veil, black wool habit with wide bell sleeves, a leather cincture and a plain walnut
 rosary -- and the pectoral cross is upright again.  She is not scary: beautiful and sad, rising in the chapel at
 dawn with her arms open.
 
-Silhouette: a calm, slender column.  Black veil framing a white oval (coif) that pours into the white guimpe on the
-shoulders, a slim black bodice, long arms in bell sleeves, and a robe that flares a little and, from the thigh down,
-DISSOLVES INTO LIGHT: the wool burns away in an organic dissolve with a gold-white rim, turns into warm luminous
-mist and trails off as twelve light streamers that never touch the floor.
+Silhouette: a calm, slender A-shape.  A soft rounded veil crown, the veil falling away from the white oval of the
+coif onto the shoulders, the white guimpe, a slim black bodice, long arms in bell sleeves and an eight-panel robe
+that flares a little and, from the thigh down, DISSOLVES INTO LIGHT: the wool burns away in pointed tatters with a
+gold-white rim, embers lift off the cloth, warm mist hangs below and twelve light streamers trail off without ever
+touching the floor.
 
-Face (15 x 17, hand-placed pixel art projected onto layered face cubes: skull, brow ridge, nose, lips+chin):
-luminous warm skin in broad soft planes, brows tilted up at the inner ends (sad), big warm-brown eyes with a
-shadowed upper sclera, a dark top-lash line with a little wing and one catchlight, a small nose, rose lips with a
-faint, tired smile, soft blush and ONE tear glinting on her left cheek.  The closed state is a separate bone,
-`eyelids`: two zero-thickness lid planes with peaceful closed-eye lash curves that sit just in front of the open
-eyes.  She starts with them visible (eyes closed) and Java opens her eyes by hiding / folding them.
+Face (15 x 17, hand-placed pixel art over layered face cubes: skull, two brow pads, nose): luminous peach skin in
+broad soft planes, thin brows lifted at the inner ends (sad), big warm-brown eyes (3-wide iris, amber lower half,
+one catchlight), a small nose, small rose lips with corners turned up (a faint, tired smile), blush and ONE tear on
+her left cheek.  The closed state is the `eyelids` bone: two zero-thickness lid planes with peaceful U-shaped lash
+curves just in front of the open eyes.  She starts with them visible (eyes closed); Java opens her eyes by
+folding / scaling / hiding that bone.  A `mouth` bone holds an open-mouth plane tucked behind the face for
+speech (she says goodbye).
 
-Colour: violet-black wool with a warm gold rim light and gold sheen on the fold ridges; cream linen with lavender
-shadows; peach-rose skin pushed toward light; gold-white light for everything that dissolves.  Translucent
-(entityTranslucentEmissive), alpha baked per material (skin 242, linen 238, veil 230, habit 222, fading to 0 in the
-light); faces that are never seen are cut out so nothing ghosts through.  The emissive 'eyes' layer carries the
-soft glow: catchlights, the tear, the lit planes of the face and linen, the hands and the burning dissolve rim.
+Colour: violet-black wool with a warm gold rim light and sheen; cream linen with lavender shadows; peach skin
+pushed toward light; gold-white light for everything that dissolves.  Translucent (entityTranslucentEmissive), with
+alpha baked per material (skin 244, linen 240, veil 244, habit 226, fading to 0 in the light); faces that are never
+seen are cut out so nothing ghosts through.  The emissive 'eyes' layer carries the soft glow: the tear, the lit
+planes of the face and linen, the hands, the warm rim on the silhouette edges, the burning rim of the robe, the
+embers and the streamers -- never the eyes, so nothing glows through the closed lids.
 """
 import math
 
-from mcmodel import Model, fbm, vnoise, hash3, face_light, pick
+from mcmodel import Model, vnoise, hash3, face_light, pick
 from rig import Rig
 from paint import hx, mix, pixelart, chain
 
 RIG = None
 
 # ------------------------------------------------------------------ translucency (alpha baked per material)
-A_SKIN = 242
-A_LINEN = 238
-A_VEIL = 230
-A_HABIT = 222
-A_WOOD = 236
+A_SKIN = 244
+A_LINEN = 240
+A_VEIL = 244
+A_HABIT = 226
+A_WOOD = 238
 
 
 def A(c, a):
@@ -54,34 +58,34 @@ def pal(*h):
 
 # ------------------------------------------------------------------ palettes (dark -> light, hue shifted)
 # luminous warm skin: rose-violet shadows (light under the skin), peach mids, cream lights
-SKIN = pal('#3d2230', '#5e3340', '#82494f', '#a6635d', '#c4826f', '#dba287', '#ecbea2', '#f6d6bf', '#fde9d9',
+SKIN = pal('#3d2230', '#5e3340', '#82494f', '#a6635d', '#c4826f', '#dca58b', '#ecc0a5', '#f6d8c2', '#fde9db',
            '#fff6ee')
 # starched linen: lavender shadows -> warm cream lights
 LINEN = pal('#3a3150', '#574d6c', '#776d8a', '#978ea6', '#b6adbf', '#cfc6d3', '#e3dbe0', '#f1ebea', '#faf6f1',
             '#ffffff')
-# habit wool: violet blacks
-HABIT = pal('#060409', '#0c0812', '#140e1c', '#1d1527', '#271d33', '#332641', '#413150', '#533f62', '#6a5276')
-VEILC = pal('#040307', '#09060d', '#100b16', '#181120', '#21182b', '#2c2038', '#3a2b48', '#4d3a5c')
+# habit wool: violet blacks (a touch lifted: she is light now, not shadow)
+HABIT = pal('#0a0710', '#120d19', '#1b1424', '#251c30', '#30253d', '#3c2f4b', '#4a3b5a', '#5b4a6a', '#715d7e')
+VEILC = pal('#05040a', '#0b0810', '#120c19', '#1a1222', '#23192d', '#2e2239', '#3c2d49', '#4f3d5d')
 # the light she dissolves into: gold -> cream -> white
 LIGHT = pal('#5a3820', '#8a5a2e', '#b7843f', '#d9aa58', '#efc979', '#f9e0a2', '#fdefca', '#fff8e8', '#ffffff')
 RIM = hx('#f3cf86')
-SHEEN = hx('#a57f86')
+SHEEN = hx('#a8848c')
 WOOD = pal('#1e110a', '#341f12', '#4f311c', '#6c4528', '#8a5c35', '#a97746', '#c79a62')
 LEATHER = pal('#060406', '#0e090c', '#181014', '#22181c', '#2f2226', '#3e2e31')
-NAIL = hx('#f5c9bf')
+NAIL = hx('#f7cfc5')
 
 # face details
 LASH = hx('#2a1712')
-LASH2 = hx('#5e3b31')
-BROW = pal('#5a3829', '#7a5038', '#9c6e52')
-SCLERA = hx('#f4e8e0')
-SCLERA_D = hx('#c9b3b0')
-IRIS = pal('#24120a', '#4a2914', '#764421', '#a8682f')
-CATCH = hx('#fffaf0')
-LIPC = pal('#8d4651', '#b45f63', '#cf7d78', '#e7a395')
-BLUSH = hx('#eda294')
+LASH2 = hx('#6a4436')
+BROW = pal('#5a3829', '#7a5038', '#a07558')
+SCLERA = hx('#f7ece4')
+SCLERA_D = hx('#d6c0bb')
+IRIS = pal('#2a140b', '#5a3118', '#8a5226', '#b97a3a')
+CATCH = hx('#fffcf4')
+LIPC = pal('#9a4d57', '#bf6668', '#d6857d', '#eaa898')
+BLUSH = hx('#f0a596')
 TEAR = hx('#ffffff')
-TEAR2 = hx('#d8ecf4')
+TEAR2 = hx('#dcefF6')
 
 GLOW = {}          # (u, v) -> rgba of the emissive layer, recorded while the base texture is painted
 MODEL = None
@@ -104,14 +108,6 @@ def local(ctx):
     if f == 'top':
         return s * w, 0.0, (1 - t) * d
     return s * w, float(h), (1 - t) * d
-
-
-def apos(ctx):
-    """Texel centre in absolute rest (unrotated) rig coordinates."""
-    p = RIG.abs_pivot[ctx.bone.name]
-    o = ctx.cube.origin
-    lx, ly, lz = local(ctx)
-    return p[0] + o[0] + lx, p[1] + o[1] + ly, p[2] + o[2] + lz
 
 
 def tag(ctx):
@@ -198,33 +194,60 @@ def soft_fold(u, y, seed, period=7.0):
     return -0.11
 
 
-def dissolve(ctx, ay, ax, az, y0=-2.0, y1=14.0):
-    """Organic burn-into-light dissolve.  Returns ('cloth', k) | ('rim', k) | ('light', k, s) | None."""
-    k = clamp((ay - y0) / (y1 - y0))
-    if k <= 0.0:
-        return ('cloth', 0.0)
-    n = fbm(ax * 0.26 + 3.1, ay * 0.1, az * 0.26 - 7.0, 3, 5)
-    thr = k * 1.25 - 0.18
-    if n > thr + 0.075:
-        return ('cloth', k)
-    if n > thr:
-        return ('rim', k)
-    s = vnoise(ax * 0.7 + az * 0.7, ay * 0.07, 2.0, 9)
-    return ('light', k, s, thr - n)
+def hem_at(u):
+    """Height (texels, +Y down) where the wool ends at arc position u: a slow wave plus pointed tatters."""
+    w = 3.4
+    i = math.floor(u / w)
+    f = u / w - i
+    L = 1.5 + hash3(i, 7, 0, 41) * 7.5
+    tri = 1.0 - abs(2.0 * f - 1.0)
+    return 2.5 + vnoise(u * 0.16, 0.5, 0.5, 43) * 5.5 + L * tri ** 1.4
 
 
 HIDDEN = {
     # tag -> faces never seen (cut out so nothing ghosts through the translucency)
-    'bodice': ('top', 'bottom'), 'hips': ('top', 'bottom'),
+    'bodice': ('top', 'bottom'), 'core': ('bottom',),
     'sleeve_up': ('top',), 'forearm': ('top', 'bottom'),
-    'crown': (), 'veil_side': ('top',), 'nape': ('front', 'top'), 'veil_back': ('top',),
+    'crown': (), 'cap': ('bottom',), 'veil_side': ('top',), 'nape': ('front', 'top'), 'veil_back': ('top',),
 }
-PANELS = ('panel',)
+VEIL_TAGS = ('crown', 'cap', 'veil_side', 'nape', 'veil_back')
+
+
+def robe_light(ctx, c, a):
+    """The robe panels: wool -> warming wool -> embers -> gold-white burning rim -> warm light fading out."""
+    x, y, z = ctx.pos
+    u = math.atan2(x, -z) * 9.0                              # arc length around the robe (continuous)
+    hem = hem_at(u + 40.0)
+    dist = hem - y                                           # > 0: still cloth
+    if dist > 0:
+        warm = clamp((y + 6.0) / (hem + 6.0))                # the wool warms toward the hem
+        c = mix(c, LIGHT[1], warm * warm * 0.35)
+        if dist < 1.0:
+            emit(ctx, (230, 196, 128))
+            return A(LIGHT[8] if hash3(int(u * 3), int(y), 1, 5) > 0.5 else LIGHT[7], 252)
+        if dist < 2.0:
+            emit(ctx, (170, 120, 60))
+            return A(LIGHT[5], 246)
+        if dist < 4.5:
+            c = mix(c, LIGHT[2], (4.5 - dist) / 2.5 * 0.55)
+            a = a - (4.5 - dist) * 6
+        if dist < 9.0 and hash3(int(u * 2.0), int(y * 2.0), 3, 71) > 0.975 - (9.0 - dist) * 0.002:
+            emit(ctx, (220, 180, 110))
+            return A(LIGHT[6], 250)                          # embers lifting off the cloth
+        return A(c, a)
+    depth = -dist
+    s = vnoise(u * 0.55, y * 0.05, 2.0, 9)                   # vertical shafts in the mist
+    lum = clamp(0.86 - depth * 0.05 + (s - 0.5) * 0.3)
+    al = 215 * (1 - depth / 8.5) * (0.45 + s * 0.7)
+    if al < 26:                                             # MC's translucent pipeline cuts alpha < 0.1
+        return None
+    emit(ctx, (150, 116, 66), clamp(al / 215))
+    return A(pick(LIGHT, lum), al)
 
 
 def habit_mat(ctx):
-    """Clean black wool: long soft folds, warm gold sheen on the ridges, warm rim light on the silhouette edges, and
-    from the thigh down an organic dissolve into light."""
+    """Clean black wool: long soft folds, warm sheen on the ridges, warm rim light on the silhouette edges, and on
+    the robe panels the dissolve into light."""
     t = tag(ctx)
     f = ctx.face
     if f in HIDDEN.get(t, ()):
@@ -233,39 +256,45 @@ def habit_mat(ctx):
         return None
     lx, ly, lz = local(ctx)
     w, h, d = ctx.cube.size
-    ax, ay, az = apos(ctx)
     k = cseed(ctx)
     side = f in ('front', 'back', 'west', 'east')
-    veil = t in ('crown', 'veil_side', 'nape', 'veil_back')
+    veil = t in VEIL_TAGS
     ramp = VEILC if veil else HABIT
     a = A_VEIL if veil else A_HABIT
+    if t == 'veil_back':
+        a = A_VEIL - 6
     v = 0.45 + face_light(ctx) * 1.05
     if side:
-        big = max(ctx.w, ctx.h) > 3
-        if big and t not in ('belt',):
-            v += soft_fold(around(ctx), ay, k % 13, 6.0 if t in ('panel', 'veil_back') else 5.0)
+        big = max(ctx.w, ctx.h) > 3 and min(ctx.w, ctx.h) > 2
+        if big:
+            if t in ('panel', 'veil_back', 'veil_side'):
+                v += soft_fold(around(ctx), ctx.y, k % 13, 6.0)
+            else:                                           # fitted parts: broad, quiet folds (no pinstripes)
+                v += soft_fold(around(ctx), ctx.y, k % 13, 8.5) * 0.55
         if edge(ctx) == 0 and min(ctx.w, ctx.h) > 2:
             v -= 0.06
     if t == 'cuff':
         if f == 'bottom':
             cx = abs(lx - w / 2) / (w / 2)
             cz = abs(lz - d / 2) / (d / 2)
-            if max(cx, cz) > 0.72:
-                return A(pick(ramp, 0.5), a)                # rolled rim of the bell
-            return A(pick(LINEN, 0.22 + (1 - max(cx, cz)) * 0.2), 250)   # white undercuff deep inside
+            if max(cx, cz) > 0.74:
+                return A(pick(ramp, 0.55), a)                # rolled rim of the bell
+            return A(pick(LINEN, 0.2 + (1 - max(cx, cz)) * 0.25), 250)   # white undercuff deep inside
         if side and h - ly < 1.0:
-            v += 0.14                                       # rolled edge of the bell catches the light
-    if t == 'crown':
+            v += 0.16                                       # rolled edge of the bell catches the light
+    if t in ('crown', 'cap'):
         if f == 'top':
-            v -= 0.04
-            if ctx.j in (0, ctx.h - 1) or ctx.i in (0, ctx.w - 1):
-                v += 0.12
-        elif f == 'front' and ctx.j == ctx.h - 1:
-            v += 0.16                                       # brim edge over the white band
+            # cloth over a round skull: lit in the middle, rolling off toward the edges, folds running back
+            rx = abs(lx - w / 2) / (w / 2)
+            rz = abs(lz - d / 2) / (d / 2)
+            v += 0.08 - (rx * rx + rz * rz) * 0.16
+            v += soft_fold(lx * 1.3, lz, 5, 6.0) * 0.5
+            if ctx.j == ctx.h - 1:
+                v += 0.1                                    # front edge catches the light
+        elif t == 'crown' and f == 'front' and ctx.j == ctx.h - 1:
+            v += 0.18                                       # brim edge over the white band
         elif f == 'bottom':
             v -= 0.15
-    if t == 'veil_side' and f in ('west', 'east') and side:
-        pass
     if t == 'veil_back' and side:
         cx = abs(lx - w / 2) / (w / 2) if f in ('front', 'back') else 1.0
         cut = h - 3.0 * cx ** 2
@@ -273,43 +302,25 @@ def habit_mat(ctx):
             return None                                     # the veil hangs lower in the middle: rounded hem
         if cut - ly < 1.0:
             v += 0.12
+    if t == 'veil_side' and side and h - ly < 1.0:
+        v += 0.12
     c = pick(ramp, v)
     if side and v > 0.58:
         c = mix(c, SHEEN, 0.22)                             # warm sheen on the lit ridges
     # warm rim light along the silhouette edges (backlit by her own glow)
-    if side and t not in ('belt',):
+    if side:
         rim = 0.0
         if f in ('west', 'east'):
-            rim = 0.18
+            rim = 0.16
         if ctx.i == 0 or ctx.i == ctx.w - 1:
-            rim += 0.32 if f in ('front', 'back') else 0.15
+            rim += 0.42 if f in ('front', 'back') else 0.14
+        elif ctx.w > 4 and (ctx.i == 1 or ctx.i == ctx.w - 2) and f in ('front', 'back'):
+            rim += 0.14
         if rim:
-            c = mix(c, RIM, rim * (0.55 if veil else 0.45))
-    # dissolve into light (robe panels, and a little at the bottom of the bell sleeves never)
-    if t in PANELS and f != 'top':
-        r = dissolve(ctx, ay, ax, az)
-        if r[0] == 'cloth':
-            kk = r[1]
-            if kk > 0:
-                c = mix(c, LIGHT[2], kk * 0.45)             # the wool already warms and thins toward the rim
-                a = a - kk * 40
-                if hash3(int(ax * 2), int(ay * 2), int(az * 2), 71) > 0.985:
-                    c = LIGHT[7]                            # sparks lifting off the cloth
-                    emit(ctx, (220, 190, 130))
-        elif r[0] == 'rim':
-            c = LIGHT[7] if r[1] < 0.75 else LIGHT[6]
-            a = 250
-            emit(ctx, (210, 170, 100))
-        else:
-            kk, s, depth = r[1], r[2], r[3]
-            if kk > 0.97 or depth > 0.55:
-                return None
-            lum = clamp(0.62 + s * 0.35 - depth * 0.6)
-            c = pick(LIGHT, lum)
-            a = (205 - kk * 150) * (1 - depth * 1.4) * (0.65 + s * 0.45)
-            if a < 26:
-                return None
-            emit(ctx, (120, 92, 52), clamp(a / 210))
+            c = mix(c, RIM, rim * (0.5 if veil else 0.48))
+            emit(ctx, (64, 48, 26), rim)                    # the backlit edge glows a little in game
+    if t == 'panel' and f != 'top':
+        return robe_light(ctx, c, a)
     return A(c, a)
 
 
@@ -322,7 +333,7 @@ def belt_mat(ctx):
         v -= 0.18
     if ctx.j == ctx.h // 2 and ctx.i % 3 == 1:
         v += 0.16                                           # stitch line
-    return A(pick(LEATHER, v), A_HABIT + 12)
+    return A(pick(LEATHER, v), A_HABIT + 14)
 
 
 def bib_half(ly, w, h):
@@ -348,7 +359,7 @@ def linen_mat(ctx):
         return None
     if t == 'guimpe' and f in ('back', 'bottom'):
         return None
-    v = 0.76 + face_light(ctx) * 0.8
+    v = 0.78 + face_light(ctx) * 0.8
     if f in ('west', 'east'):
         v -= 0.12
     elif f == 'back':
@@ -411,17 +422,16 @@ def linen_mat(ctx):
         if hw - 2.0 < cx < hw - 1.0 and ly > 1.0:
             c = mix(c, LINEN[4], 0.5)                       # stitched hem a texel inside the edge
         # the cross hangs on a thin dark cord from the neck: two converging lines
-        cord = 4.0 - (ly - 0.0) * 0.55
+        cord = 4.0 - ly * 0.55
         if 0.5 < ly < 4.5 and abs(cx - max(0.0, cord)) < 0.5 and cx > 0.6:
             c = mix(c, LEATHER[3], 0.75)
-    if side and v > 0.8 and f == 'front':
-        emit(ctx, (34, 28, 22))
+    if side and v > 0.78:
+        emit(ctx, (46, 38, 28) if f == 'front' else (26, 21, 15))
     return A(c, A_LINEN)
 
 
 # ------------------------------------------------------------------ flesh
-SKIN_HIDDEN = {'skull': ('top', 'west', 'east', 'back', 'bottom'), 'muzzle': ('back', 'top'),
-               'nose': ('back',), 'brow': ('back',)}
+SKIN_HIDDEN = {'skull': ('top', 'west', 'east', 'back', 'bottom'), 'nose': ('back',), 'brow': ('back',)}
 
 
 def skin_mat(ctx):
@@ -432,30 +442,30 @@ def skin_mat(ctx):
         return None
     lx, ly, lz = local(ctx)
     w, h, d = ctx.cube.size
-    v = 0.7 + face_light(ctx) * 0.7
+    v = 0.72 + face_light(ctx) * 0.7
     if f in ('west', 'east'):
-        v -= 0.14
+        v -= 0.12
     if t == 'nose' and f == 'bottom':
         cx = lx - w / 2
         if abs(cx) > 0.5 and lz < d - 0.4:
-            return A(SKIN[3], A_SKIN)                       # nostrils
-        return A(SKIN[5], A_SKIN)
+            return A(SKIN[4], A_SKIN)                       # nostrils
+        return A(SKIN[6], A_SKIN)
     if t == 'brow' and f == 'bottom':
-        return A(SKIN[4], A_SKIN)                           # brow ridge shadow over the lids
-    if t == 'muzzle' and f == 'bottom':
-        return A(SKIN[4], A_SKIN)
+        return A(SKIN[5], A_SKIN)                           # soft shadow over the lids
+    if t == 'brow' and f == 'top':
+        return A(SKIN[7], A_SKIN)
     return A(pick(SKIN, v), A_SKIN)
 
 
 def hand_mat(ctx):
-    """Slender luminous hands: soft knuckle creases, finger splits, rose-pink nails, glowing fingertips."""
+    """Slender luminous hands: soft knuckle creases, rose-pink nails, glowing fingertips."""
     t = tag(ctx)
     f = ctx.face
     lx, ly, lz = local(ctx)
     w, h, d = ctx.cube.size
-    v = 0.7 + face_light(ctx) * 0.8
+    v = 0.74 + face_light(ctx) * 0.8
     if f in ('west', 'east', 'front', 'back') and edge(ctx) == 0 and min(ctx.w, ctx.h) > 2:
-        v -= 0.06
+        v -= 0.05
     if t == 'palm':
         if ly < 1.0 and f != 'bottom':
             v -= 0.12                                       # shadow under the cuff
@@ -466,13 +476,13 @@ def hand_mat(ctx):
             v -= 0.1
         if ly > h - 1.0 and f != 'top':
             c = NAIL if f != 'bottom' else SKIN[8]
-            emit(ctx, (110, 84, 60))
+            emit(ctx, (120, 92, 66))
             return A(c, A_SKIN)
         if abs(ly - h * 0.45) < 0.5:
-            v -= 0.08                                       # joint crease
+            v -= 0.07                                       # joint crease
     c = pick(SKIN, v)
-    if v > 0.72:
-        emit(ctx, (48, 36, 26))
+    if v > 0.66:
+        emit(ctx, (66, 50, 34))
     return A(c, A_SKIN)
 
 
@@ -508,85 +518,100 @@ def lid_mat(ctx):
 
 def light_mat(ctx):
     """Light streamers below the dissolving robe: a bright core, gold edges, slow vertical shimmer, fading out."""
-    if ctx.face != 'front' and ctx.face != 'west':
+    if ctx.face != 'front':
         return None
     lx, ly, lz = local(ctx)
     w, h, d = ctx.cube.size
     k = cseed(ctx)
-    across = lx if w > 0 else lz
-    width = w if w > 0 else d
-    cx = abs(across + 0.5 - width / 2 - 0.5) / max(1.0, width / 2)
-    tip = h - 0.5 - hash3(int(across), k, 0, 31) * 3.5
+    cx = abs(lx - w / 2) / max(1.0, w / 2)
+    tip = h - 0.5 - hash3(int(lx), k, 0, 31) * 3.0 - cx * 3.0
     if ly > tip:
         return None
     tfade = ly / max(1.0, tip)
-    s = vnoise(across * 0.8, ly * 0.12, k, 33)
-    lum = clamp(0.92 - cx * 0.35 - tfade * 0.25 + (s - 0.5) * 0.25)
+    s = vnoise(lx * 0.8, ly * 0.12, k, 33)
+    lum = clamp(0.95 - cx * 0.4 - tfade * 0.3 + (s - 0.5) * 0.25)
     c = pick(LIGHT, lum)
-    top_in = clamp(ly / 4.0)
-    a = 200 * top_in * (1 - tfade) ** 1.1 * (0.75 + s * 0.35)
-    if a < 18:
+    top_in = clamp((ly + 1.0) / 4.0)
+    a = 190 * top_in * (1 - tfade) ** 1.2 * (0.7 + s * 0.4) * (1 - cx * 0.35)
+    if a < 26:
         return None
-    emit(ctx, (140, 110, 64), clamp(a / 200))
+    emit(ctx, (150, 116, 66), clamp(a / 190))
     return A(c, a)
 
 
 # ------------------------------------------------------------------ the face mask
-# 15 columns (x -7.5..7.5, col c <-> x = c - 7), 17 rows (row r <-> y = -45 + r, y -45..-28).
-GX0, GY0 = -7.5, -45
+# 15 columns (x -7.5..7.5, col c <-> x = c - 7), 17 rows (row r <-> y = -48 + r, y -48..-31: the face
+# window lifted by TY = -3).
+GX0, GY0 = -7.5, -48
 FACE = [
     # 012345678901234
-    "c3445555554443c",   # r0  y-45 shadow under the coif band
-    "c4566777766654c",   # r1  y-44 forehead
-    "4567bb787bb7654",   # r2  y-43 brows: inner ends lifted (sad)
-    "4Bbb6677766bbB4",   # r3  y-42 brow tails
-    "45qqq56755qqq54",   # r4  y-41 lid crease (under the brow ridge)
-    "5kKKKK675KKKKk5",   # r5  y-40 upper lash line with a little wing
-    "56vGIv674vGIv65",   # r6  y-39 shadowed upper sclera, catchlight, pupil
-    "56wjiw674wjiw65",   # r7  y-38 warm amber lower iris
-    "566qq67846qq665",   # r8  y-37 soft lower lid
-    "56rr7768477rr65",   # r9  y-36 blush, nose
-    "56777659467T765",   # r10 y-35 nose tip; the tear starts on her left cheek
-    "566666n5n566t65",   # r11 y-34 nostrils
-    "456665uUu5666T4",   # r12 y-33 upper lip
-    "45665lLLLl56654",   # r13 y-32 mouth line, corners soft
-    "456665pPp566654",   # r14 y-31 lower lip
-    "c4566665666654c",   # r15 y-30 chin
-    "cc45567765544cc",   # r16 y-29 chin underside, the coif wraps round
+    "c4556666666554c",   # r0  y-48 soft shadow under the coif band
+    "c5667777777665c",   # r1  y-47 forehead
+    "5677hb777bh7765",   # r2  y-46 brows: inner ends lifted (sad)        [brow cube rows 2-3]
+    "5Bhh7777777hhB5",   # r3  y-45 brow tails falling outward
+    "56qq6677766qq65",   # r4  y-44 upper lids, mauve crease              [eyelids cover rows 4-7]
+    "5kKKKk777kKKKk5",   # r5  y-43 upper lash line
+    "5KGIiv676vGIiK5",   # r6  y-42 shaded upper sclera, catchlight, pupil, iris
+    "5vjijw676wjijv5",   # r7  y-41 warm amber lower iris, bright sclera
+    "565556786655565",   # r8  y-40 soft lower lids                         [nose cube rows 8-10]
+    "56rr7768577rr65",   # r9  y-39 blush, nose bridge lit on her right
+    "566777685777t65",   # r10 y-38 nose tip; the tear runs down her left cheek
+    "566676545676T65",   # r11 y-37 shadow under the nose, the tear drop
+    "56666l6q6l66665",   # r12 y-36 upper lip, corners turned up (a faint smile)
+    "456666LLL666654",   # r13 y-35 mouth line
+    "456666pPp666654",   # r14 y-34 lower lip with a highlight
+    "c4566657566654c",   # r15 y-33 shadow under the lip, chin
+    "cc45567776554cc",   # r16 y-32 chin, the coif wraps round the jaw
 ]
 assert all(len(r) == 15 for r in FACE), [len(r) for r in FACE]
+EYE_CELLS = {(r, c) for r in range(4, 8) for c in list(range(1, 6)) + list(range(9, 14))}
 
-# closed lids (eyelids bone): one 5 x 4 plane per eye, rows y -41..-37, cols 1..5 and 9..13.
-LID_R = [
-    "56665",
+# closed lids (eyelids bone): one 5 x 4 plane per eye over face rows 4-7 (y -44..-40), cols 1..5 and 9..13.
+LID_R = [            # her right eye (viewer's left): outer corner at the left
+    "6qq66",
     "67776",
-    "k6776",
-    "5KKKk",
+    "k677k",
+    "kKKK6",
 ]
-LID_L = [
-    "56665",
+LID_L = [            # her left eye: outer corner at the right
+    "66qq6",
     "67776",
-    "6776k",
-    "kKKK5",
+    "k776k",
+    "6KKKk",
+]
+
+# open mouth for speech (mouth bone): one 5 x 3 plane over face rows 12-14, cols 5..9
+MOUTH_OPEN = [
+    "luUul",
+    "LDdDL",
+    "6pPp6",
 ]
 
 FPAL = {str(i): A(SKIN[i], A_SKIN) for i in range(10)}
 FPAL.update({
+    'D': A(hx('#4a1f2a'), 252), 'd': A(hx('#7a3a42'), 250),
     'c': A(LINEN[4], A_LINEN), 'C': A(LINEN[6], A_LINEN),
     'b': A(BROW[0], A_SKIN), 'B': A(BROW[2], A_SKIN), 'h': A(BROW[1], A_SKIN),
-    'K': A(LASH, 250), 'k': A(LASH2, A_SKIN),
+    'K': A(LASH, 252), 'k': A(LASH2, A_SKIN),
     'w': A(SCLERA, A_SKIN), 'v': A(SCLERA_D, A_SKIN),
-    'I': A(IRIS[0], 250), 'i': A(IRIS[1], 250), 'j': A(IRIS[3], 250), 'G': A(CATCH, 255),
-    'q': A(mix(SKIN[5], LIPC[0], 0.25), A_SKIN), 'r': A(mix(SKIN[6], BLUSH, 0.55), A_SKIN),
-    'n': A(SKIN[3], A_SKIN),
-    'u': A(LIPC[1], A_SKIN), 'U': A(LIPC[2], A_SKIN), 'L': A(LIPC[0], A_SKIN), 'l': A(mix(SKIN[5], LIPC[0], 0.5), A_SKIN),
+    'I': A(IRIS[0], 252), 'i': A(IRIS[2], 252), 'j': A(IRIS[3], 252), 'G': A(CATCH, 255),
+    'q': A(mix(SKIN[5], LIPC[0], 0.22), A_SKIN), 'r': A(mix(SKIN[6], BLUSH, 0.5), A_SKIN),
+    'n': A(SKIN[4], A_SKIN),
+    'u': A(LIPC[1], A_SKIN), 'U': A(LIPC[2], A_SKIN), 'L': A(LIPC[0], A_SKIN),
+    'l': A(mix(SKIN[5], LIPC[0], 0.55), A_SKIN),
     'p': A(LIPC[2], A_SKIN), 'P': A(LIPC[3], A_SKIN),
-    'T': A(TEAR, 250), 't': A(TEAR2, 248),
+    'T': A(TEAR, 252), 't': A(TEAR2, 248),
 })
+# lids use the face palette (same alpha, so the lid planes do not read as lighter patches)
+LIDPAL = dict(FPAL)
+# emissive layer of the face: a soft glow on the lit planes and the tear -- never on the eyes, so nothing glows
+# through the closed lids
 GLOWPAL = {
-    'G': (255, 240, 210, 255), 'j': (70, 40, 16, 255), 'T': (170, 180, 186, 255), 't': (90, 104, 112, 255),
-    '8': (26, 20, 14, 255), '9': (34, 26, 18, 255), '7': (16, 12, 8, 255),
+    'T': (170, 182, 190, 255), 't': (90, 104, 112, 255),
+    '9': (46, 36, 26, 255), '8': (38, 29, 20, 255), '7': (26, 19, 13, 255), '6': (14, 10, 7, 255),
+    'c': (20, 17, 14, 255),
 }
+FACE_GLOW = [''.join(ch if (r, c) not in EYE_CELLS else '.' for c, ch in enumerate(row)) for r, row in enumerate(FACE)]
 
 
 def _slice(grid, x0, y0, w, h):
@@ -602,13 +627,30 @@ def _slice(grid, x0, y0, w, h):
 
 
 def face_decals(x0, y0, w, h):
-    rows = _slice(FACE, x0, y0, w, h)
-    return {'front': pixelart(rows, FPAL, anchor='topleft'),
-            'eyes:front': pixelart(rows, GLOWPAL, anchor='topleft')}
+    return {'front': pixelart(_slice(FACE, x0, y0, w, h), FPAL, anchor='topleft'),
+            'eyes:front': pixelart(_slice(FACE_GLOW, x0, y0, w, h), GLOWPAL, anchor='topleft')}
 
 
 DEFAULT_MAT = habit_mat
 FOCUS = 'head'
+
+# robe hull at the hips (y -9): octagon vertices (x, z), front edge first, going round toward her left (+X)
+HULL = [(-4.5, -4.5), (4.5, -4.5), (7.0, -2.0), (7.0, 2.0), (4.5, 4.5), (-4.5, 4.5), (-7.0, 2.0), (-7.0, -2.0)]
+PANEL_NAMES = ['skirt_front', 'skirt_front_left', 'skirt_left', 'skirt_back_left', 'skirt_back', 'skirt_back_right',
+               'skirt_right', 'skirt_front_right']
+# streamers per panel: (offset along the panel from its centre, width, top y, height)
+STREAMERS = {
+    'skirt_front': ((-3.5, 3, 10, 13), (1.0, 4, 12, 12)),
+    'skirt_front_left': ((0.0, 3, 11, 11),),
+    'skirt_left': ((-1.0, 3, 9, 13),),
+    'skirt_back_left': ((0.5, 3, 11, 11),),
+    'skirt_back': ((-3.0, 4, 11, 12), (2.5, 3, 10, 12)),
+    'skirt_back_right': ((-0.5, 3, 10, 12),),
+    'skirt_right': ((1.0, 3, 11, 12),),
+    'skirt_front_right': ((0.0, 3, 9, 14),),
+}
+TY = -3.0          # torso extension: everything above the waist is lifted by 3 texels (slimmer, taller figure)
+ROBE_H = 26        # robe panels hang from y -9 to y 17
 
 
 def build():
@@ -620,7 +662,7 @@ def build():
     def bone(name, pivot, parent=None, rot=(0, 0, 0), mat=None):
         return r.bone(name, pivot, parent=parent, rot=rot, mat=mat)
 
-    def box(bone_, frm, size, mat=None, name=None, inflate=0.0, decals=None, glow=False):
+    def box(bone_, frm, size, mat=None, name=None, inflate=0.0, decals=None, glow=True):
         dec = dict(decals or {})
         if glow:
             for kk, fn in GLOW_ALL.items():
@@ -629,100 +671,120 @@ def build():
         c.name = name
         return c
 
-    def fbox(bone_, frm, size, name, mat=skin_mat):
-        return box(bone_, frm, size, mat=mat, name=name, decals=face_decals(frm[0], frm[1], size[0], size[1]))
+    # upper body (everything above the waist) is authored at the original heights and lifted by TY
+    def ubone(name, pivot, parent=None, rot=(0, 0, 0), mat=None):
+        return bone(name, (pivot[0], pivot[1] + TY, pivot[2]), parent, rot, mat)
 
-    # ---------------- body: root at the waist; cincture + hips
+    def ubox(bone_, frm, size, **kw):
+        return box(bone_, (frm[0], frm[1] + TY, frm[2]), size, **kw)
+
+    def fbox(bone_, frm, size, name, mat=skin_mat):
+        f = (frm[0], frm[1] + TY, frm[2])
+        return box(bone_, f, size, mat=mat, name=name, decals=face_decals(f[0], f[1], size[0], size[1]))
+
+    # ---------------- body: root at the waist; cincture + a hidden core inside the robe
     bone('body', (0, -10, 0), mat=habit_mat)
-    box('body', (-8, -11, -5), (16, 2, 10), mat=belt_mat, inflate=0.25, name='belt')
-    box('body', (-7.5, -9, -4.5), (15, 6, 9), name='hips')
+    box('body', (-7.5, -11, -4.75), (15, 2, 9), mat=belt_mat, inflate=0.25, name='belt')
+    box('body', (-5, -9, -3.5), (10, 5, 7), name='core')
 
     # rosary from the left hip (her left = +X): walnut beads, upright wooden cross
-    bone('rosary', (5.5, -10, -5.4), parent='body', rot=(-4, 0, -3), mat=wood_mat)
-    box('rosary', (5, -10, -5.9), (1, 11, 1), name='beads', glow=True)
-    box('rosary', (5, 1, -6.1), (1, 5, 1), name='cross', glow=True)
-    box('rosary', (4, 2, -6.1), (3, 1, 1), name='cross', glow=True)
+    bone('rosary', (4.5, -10, -5.6), parent='body', rot=(-7, 0, -3), mat=wood_mat)
+    box('rosary', (4.0, -10, -6.1), (1, 13, 1), name='beads', glow=True)
+    box('rosary', (4.0, 3, -6.3), (1, 5, 1), name='cross', glow=True)
+    box('rosary', (3.0, 4, -6.3), (3, 1, 1), name='cross', glow=True)
 
-    # ---------------- robe: four flared panels dissolving into light, light streamers below each
-    bone('skirt_front', (0, -9, -4.5), parent='body', rot=(-5, 0, 0), mat=habit_mat)
-    box('skirt_front', (-9, -9, -5.5), (18, 23, 1), name='panel', glow=True)
-    bone('skirt_back', (0, -9, 4.5), parent='body', rot=(6, 0, 0), mat=habit_mat)
-    box('skirt_back', (-9, -9, 4.5), (18, 23, 1), name='panel', glow=True)
-    bone('skirt_right', (-7.5, -9, 0), parent='body', rot=(0, 0, 6), mat=habit_mat)
-    box('skirt_right', (-8.5, -9, -5), (1, 23, 10), name='panel', glow=True)
-    bone('skirt_left', (7.5, -9, 0), parent='body', rot=(0, 0, -6), mat=habit_mat)
-    box('skirt_left', (7.5, -9, -5), (1, 23, 10), name='panel', glow=True)
-
-    bone('light_front', (0, 6, -5.4), parent='skirt_front', mat=light_mat)
-    for x0, y0, ww, hh in ((-7.5, 5, 3, 14), (-2, 6, 4, 17), (3.5, 4, 3, 13)):
-        box('light_front', (x0, y0, -5.3), (ww, hh, 0), name='streamer', glow=True)
-    bone('light_back', (0, 6, 5.4), parent='skirt_back', mat=light_mat)
-    for x0, y0, ww, hh in ((-6.5, 5, 3, 15), (-1, 6, 3, 16), (4, 5, 3, 12)):
-        box('light_back', (x0, y0, 5.3), (ww, hh, 0), name='streamer', glow=True)
-    bone('light_right', (-8.3, 6, 0), parent='skirt_right', mat=light_mat)
-    for z0, y0, dd, hh in ((-4, 5, 3, 13), (1, 6, 3, 15)):
-        box('light_right', (-8.2, y0, z0), (0, hh, dd), name='streamer', glow=True)
-    bone('light_left', (8.3, 6, 0), parent='skirt_left', mat=light_mat)
-    for z0, y0, dd, hh in ((-3.5, 6, 3, 15), (1.5, 5, 3, 12)):
-        box('light_left', (8.2, y0, z0), (0, hh, dd), name='streamer', glow=True)
+    # ---------------- robe: eight flared panels round an octagonal hull, each dissolving into light, with light
+    # streamers trailing below.  Each panel is authored facing -Z at its pivot and yawed into place.
+    for k, name in enumerate(PANEL_NAMES):
+        (x0, z0), (x1, z1) = HULL[k], HULL[(k + 1) % 8]
+        ln = math.hypot(x1 - x0, z1 - z0)
+        tx, tz = (x1 - x0) / ln, (z1 - z0) / ln
+        nx, nz = tz, -tx                                    # outward normal (hull runs clockwise seen from above)
+        cxm, czm = (x0 + x1) / 2 + nx * 0.5, (z0 + z1) / 2 + nz * 0.5
+        yaw = math.degrees(math.atan2(-nx, -nz))            # local -Z -> (nx, nz)
+        flare = -7.0 if k % 2 == 0 else -9.0
+        bone(name, (cxm, -9, czm), parent='body', rot=(flare, yaw, 0), mat=habit_mat)
+        wd = int(round(ln)) + 2
+        box(name, (cxm - wd / 2, -9, czm - 0.5), (wd, ROBE_H, 1), name='panel', glow=True)
+        for off, sw, sy, sh in STREAMERS[name]:
+            box(name, (cxm + off - sw / 2, sy, czm - 0.62), (sw, sh, 0), mat=light_mat, name='streamer', glow=True)
 
     # ---------------- chest: slim bodice under a rounded white guimpe, upright wooden cross
     bone('chest', (0, -10, 0), parent='body', mat=habit_mat)
-    box('chest', (-7, -26, -4), (14, 16, 8), name='bodice')
-    box('chest', (-10.5, -27, -6), (21, 10, 12), mat=linen_mat, name='guimpe', glow=True)
-    box('chest', (-0.5, -22.5, -6.8), (1, 5, 1), mat=wood_mat, name='cross', glow=True)
-    box('chest', (-1.5, -21.5, -6.8), (3, 1, 1), mat=wood_mat, name='cross', glow=True)
+    ubox('chest', (-6.5, -26, -4), (13, 16 - int(TY), 8), name='bodice')
+    ubox('chest', (-10.5, -27, -6), (21, 10, 12), mat=linen_mat, name='guimpe', glow=True)
+    ubox('chest', (-0.5, -22.5, -6.8), (1, 5, 1), mat=wood_mat, name='cross', glow=True)
+    ubox('chest', (-1.5, -21.5, -6.8), (3, 1, 1), mat=wood_mat, name='cross', glow=True)
 
     # long back veil from the nape to the hips (angled in so it rests on the back)
-    bone('veil', (0, -31, 9), parent='chest', rot=(-8, 0, 0), mat=habit_mat)
-    box('veil', (-10.5, -31, 8.5), (21, 27, 1), name='veil_back')
+    ubone('veil', (0, -31, 9), parent='chest', rot=(-8, 0, 0), mat=habit_mat)
+    ubox('veil', (-10.5, -31, 8.5), (21, 27 - int(TY), 1), name='veil_back')
 
     # ---------------- neck (inside the wimple)
-    bone('neck', (0, -27, 0), parent='chest', mat=skin_mat)
-    box('neck', (-3, -30, -3), (6, 4, 6), mat=linen_mat, name='chinwrap')
+    ubone('neck', (0, -27, 0), parent='chest', mat=skin_mat)
+    ubox('neck', (-3, -30, -3), (6, 4, 6), mat=linen_mat, name='chinwrap')
 
-    # ---------------- head: veil top -51, face window x -7.5..7.5 / y -45..-28
-    bone('head', (0, -28, 0), parent='neck', mat=skin_mat)
+    # ---------------- head: face window x -7.5..7.5 / y (-45..-28) + TY
+    ubone('head', (0, -28, 0), parent='neck', mat=skin_mat)
     fbox('head', (-7.5, -45, -7), (15, 17, 13), 'skull')
-    fbox('head', (-6.5, -43, -7.75), (13, 2, 1), 'brow')
+    fbox('head', (-6.5, -43, -7.5), (5, 2, 1), 'brow')                     # brow pads over each eye
+    fbox('head', (1.5, -43, -7.5), (5, 2, 1), 'brow')
     fbox('head', (-1.5, -37, -7.75), (3, 3, 1), 'nose')
-    fbox('head', (-2.5, -33, -7.5), (5, 5, 1), 'muzzle')
-    box('head', (-9.5, -48, -8), (19, 3, 14), mat=linen_mat, name='band', glow=True)
-    box('head', (-9.5, -45, -8), (2, 17, 13), mat=linen_mat, name='coif_side', glow=True)
-    box('head', (7.5, -45, -8), (2, 17, 13), mat=linen_mat, name='coif_side', glow=True)
-    box('head', (-7.5, -28, -7.5), (15, 4, 12), mat=linen_mat, name='chinwrap', glow=True)
-    box('head', (-11.5, -51, -9), (23, 3, 18), mat=habit_mat, name='crown')
-    box('head', (-9.5, -48, 7), (19, 20, 2), mat=habit_mat, name='nape')
+    ubox('head', (-9.5, -48, -8), (19, 3, 14), mat=linen_mat, name='band', glow=True)
+    ubox('head', (-9.5, -45, -8), (2, 17, 13), mat=linen_mat, name='coif_side', glow=True)
+    ubox('head', (7.5, -45, -8), (2, 17, 13), mat=linen_mat, name='coif_side', glow=True)
+    ubox('head', (-7.5, -28, -7.5), (15, 4, 12), mat=linen_mat, name='chinwrap', glow=True)
+    ubox('head', (-10.5, -51, -8.75), (21, 3, 18), mat=habit_mat, name='crown')
+    ubox('head', (-8.5, -52, -6.5), (17, 1, 15), mat=habit_mat, name='cap')
+    ubox('head', (-9.5, -48, 7.25), (19, 20, 2), mat=habit_mat, name='nape')
 
-    bone('eyelids', (0, -41, -7.25), parent='head', mat=lid_mat)
-    box('eyelids', (-6.5, -41, -7.25), (5, 4, 0), name='lid',
-        decals={'front': pixelart(LID_R, FPAL, anchor='topleft')})
-    box('eyelids', (1.5, -41, -7.25), (5, 4, 0), name='lid',
-        decals={'front': pixelart(LID_L, FPAL, anchor='topleft')})
+    ubone('eyelids', (0, -41, -7.2), parent='head', mat=lid_mat)
+    ubox('eyelids', (-6.5, -41, -7.2), (5, 4, 0), name='lid',
+         decals={'front': pixelart(LID_R, LIDPAL, anchor='topleft')})
+    ubox('eyelids', (1.5, -41, -7.2), (5, 4, 0), name='lid',
+         decals={'front': pixelart(LID_L, LIDPAL, anchor='topleft')})
+
+    # speech: an open-mouth plane tucked 0.2 behind the face plane (hidden); Java slides it forward to talk
+    ubone('mouth', (0, -33, -6.8), parent='head', mat=lid_mat)
+    ubox('mouth', (-2.5, -33, -6.8), (5, 3, 0), name='mouth_open',
+         decals={'front': pixelart(MOUTH_OPEN, FPAL, anchor='topleft')})
 
     for side, sx in (('right', -1), ('left', 1)):
         vb = f'veil_{side}'
-        bone(vb, (10.5 * sx, -49, 0), parent='head', rot=(0, 0, -3 * sx), mat=habit_mat)
-        box(vb, (10.5 * sx - 1, -49, -7.5), (2, 25, 16), name='veil_side')
+        ubone(vb, (10.0 * sx, -50, 0), parent='head', rot=(0, 0, -7 * sx), mat=habit_mat)
+        ubox(vb, (10.0 * sx - 1, -50, -7.75), (2, 27, 17), name='veil_side')
 
     # ---------------- arms: bell sleeves, slender hands
     for side, sx in (('right', -1), ('left', 1)):
         arm, fa, sl, hand, fing = (f'{side}_arm', f'{side}_forearm', f'{side}_sleeve', f'{side}_hand',
                                    f'{side}_fingers')
         ax = 12.5 * sx
-        bone(arm, (ax, -24, 0), parent='chest', rot=(-4, 0, -5 * sx), mat=habit_mat)
-        box(arm, (ax - 3, -26, -3), (6, 12, 6), name='sleeve_up')
-        bone(fa, (ax, -14.5, 0), parent=arm, rot=(-16, 0, 3 * sx), mat=habit_mat)
-        box(fa, (ax - 2.5, -15.5, -2.5), (5, 6, 5), name='forearm')
-        box(fa, (ax - 2, -5, -2), (4, 1, 4), mat=linen_mat, name='undercuff')
-        bone(sl, (ax, -10, 0), parent=fa, mat=habit_mat)
-        box(sl, (ax - 3.5, -10, -3.5), (7, 7, 7), name='cuff')
-        bone(hand, (ax, -4, 0), parent=fa, rot=(0, 0, 0), mat=hand_mat)
-        box(hand, (ax - 1, -4, -2), (2, 5, 4), name='palm', glow=True)
-        box(hand, (ax - 0.5, -3, -3), (1, 4, 1), name='thumb', glow=True)
-        bone(fing, (ax, 1, 0), parent=hand, rot=(0, 0, 0), mat=hand_mat)
+        ubone(arm, (ax, -24, 0), parent='chest', rot=(-4, 0, -6 * sx), mat=habit_mat)
+        ubox(arm, (ax - 3, -26, -3), (6, 12, 6), name='sleeve_up')
+        ubone(fa, (ax, -14.5, 0), parent=arm, rot=(-14, 0, 3 * sx), mat=habit_mat)
+        ubox(fa, (ax - 2, -15.5, -2), (4, 10, 4), name='forearm')       # inner sleeve (shows when the bell droops)
+        ubox(fa, (ax - 2, -5.5, -2), (4, 1, 4), mat=linen_mat, name='undercuff', inflate=0.3)
+        ubone(sl, (ax, -11, 0), parent=fa, mat=habit_mat)
+        ubox(sl, (ax - 4, -11, -4), (8, 8, 8), name='cuff')
+        ubone(hand, (ax, -4, 0), parent=fa, rot=(0, -30 * sx, 0), mat=hand_mat)   # palms turned a little forward
+        ubox(hand, (ax - 1, -4, -2), (2, 5, 4), name='palm', glow=True)
+        ubox(hand, (ax - 0.5, -3, -3), (1, 4, 1), name='thumb', glow=True)
+        ubone(fing, (ax, 1, 0), parent=hand, rot=(-8, 0, 0), mat=hand_mat)      # fingers softly curled
         for zz, ln in ((-2, 4), (-1, 5), (0, 4), (1, 3)):
-            box(fing, (ax - 0.5, 1, zz + 0.1), (1, ln, 1), inflate=-0.1, name='finger', glow=True)
+            ubox(fing, (ax - 0.5, 1, zz + 0.1), (1, ln, 1), inflate=-0.1, name='finger', glow=True)
+
+    # zero-thickness planes with transparent edges get their own gutter-separated strip at the bottom of the sheet,
+    # so no neighbouring texel of the packed atlas can bleed into them as a hairline
+    u, v, row_h = 0, 200, 0
+    for b in r.bones.values():
+        for c in b.cubes:
+            if 0 in c.size:
+                w, h = c.uv_size()
+                if u + w > 256:
+                    u, v, row_h = 0, v + row_h + 1, 0
+                c.uv = (u, v)
+                u += w + 1
+                row_h = max(row_h, h)
 
     m = Model('clara', 256, 256, r.roots)
     m.scale = 0.5
@@ -731,43 +793,114 @@ def build():
     return m
 
 
+def _mirror(right):
+    """Pose entries for both arms from the right-arm values (mirror across x = 0: yRot and zRot flip)."""
+    out = {}
+    for name, (x, y, z, dx, dy, dz) in right.items():
+        out['right_' + name] = (x, y, z, dx, dy, dz)
+        out['left_' + name] = (x, -y, -z, -dx, dy, dz)
+    return out
+
+
 POSES = {
-    # ascension: rises, arms open wide, palms up and forward, head lifted, eyes OPEN (lids folded away)
+    # ascension: she rises, arms open wide and low, palms turned forward and up, head lifted, eyes OPEN (the lids
+    # fold back into the head)
     'rise': {
         'body': (-0.04, 0, 0, 0, -3.0, 0),
-        'chest': (-0.08, 0, 0, 0, 0, 0),
-        'neck': (-0.06, 0, 0, 0, 0, 0),
-        'head': (-0.26, 0, 0, 0, 0, 0),
+        'chest': (-0.06, 0, 0, 0, 0, 0),
+        'neck': (-0.05, 0, 0, 0, 0, 0),
+        'head': (-0.22, 0, 0, 0, 0, 0),
         'eyelids': (1.5708, 0, 0, 0, 0, 0),
-        'right_arm': (-0.4, 0, 1.1, 0, 0, 0),
-        'left_arm': (-0.4, 0, -1.1, 0, 0, 0),
-        'right_forearm': (-0.3, 0, 0.15, 0, 0, 0),
-        'left_forearm': (-0.3, 0, -0.15, 0, 0, 0),
-        'right_sleeve': (0, 0, -0.7, 0, 0, 0),
-        'left_sleeve': (0, 0, 0.7, 0, 0, 0),
-        'right_hand': (0, 1.2, 0, 0, 0, 0),
-        'left_hand': (0, -1.2, 0, 0, 0, 0),
         'veil': (0.12, 0, 0, 0, 0, 0),
-        'veil_right': (0, 0, 0.1, 0, 0, 0),
-        'veil_left': (0, 0, -0.1, 0, 0, 0),
-        'skirt_front': (-0.1, 0, 0, 0, 0, 0),
-        'skirt_back': (0.14, 0, 0, 0, 0, 0),
-        'skirt_right': (0, 0, 0.1, 0, 0, 0),
-        'skirt_left': (0, 0, -0.1, 0, 0, 0),
+        **_mirror({
+            'arm': (-0.379, 0.431, 0.377, 0, 0, 0),
+            'forearm': (-0.138, 0.287, 0.135, 0, 0, 0),
+            'sleeve': (1.0, 0, 0.05, 0, 0, 0),          # the bell sleeves hang from the open arms like wings
+            'hand': (-0.35, 0.25, 0.014, 0, 0, 0),
+        }),
     },
-    # gratitude: gentle bow of the head, hands together in prayer at the chest, eyes closed
+    # 'Gracias por venir': eyes open, head a little lifted, mouth open (the speech frame Java flaps)
+    'speak': {
+        'head': (-0.08, 0, 0.05, 0, 0, 0),
+        'eyelids': (1.5708, 0, 0, 0, 0, 0),
+        'mouth': (0, 0, 0, 0, 0, -0.45),
+    },
+    # gratitude: a gentle bow of the head over hands joined in prayer at the chest, eyes closed
     'bow': {
-        'chest': (0.1, 0, 0, 0, 0, 0),
-        'neck': (0.1, 0, 0, 0, 0, 0),
-        'head': (0.38, 0, 0, 0, 0, 0),
-        'right_arm': (-0.75, 0, -0.42, 0, 0, 0),
-        'left_arm': (-0.75, 0, 0.42, 0, 0, 0),
-        'right_forearm': (-1.3, 0, 0, 0, 0, 0),
-        'left_forearm': (-1.3, 0, 0, 0, 0, 0),
-        'veil': (-0.06, 0, 0, 0, 0, 0),
+        'chest': (0.08, 0, 0, 0, 0, 0),
+        'neck': (0.08, 0, 0, 0, 0, 0),
+        'head': (0.28, 0, 0, 0, 0, 0),
+        **_mirror({
+            'arm': (-0.462, -0.48, -0.217, 0, 0, 0),
+            'forearm': (-0.832, -0.448, 0.111, 0, 0, 0),
+            'hand': (-0.874, -0.347, 0.685, 0, 0, 0),
+        }),
     },
 }
 
 ANIM_NOTES = """
-TODO
+Clara (the freed soul of Sor Maria) -- animation contract.  Angles in radians, ADDED to the rest pose; offsets
+(dx, dy, dz) in model texels at 2x density (inside scale 0.5: 2 texels = 1 vanilla pixel).  t = ageInTicks.
+Render the base with RenderType.entityTranslucentEmissive(texture) (alpha is baked: skin 244, linen 240, veil 244,
+habit 226, light fading to 0) and the 'eyes' layer as an additive emissive overlay (RenderType.eyes) -- it carries
+the warm glow of the face, linen, hands, robe rim, embers and streamers, and never the eyes themselves.  Fade her in
+and out with the vertex alpha (0 -> 1 over 40 ticks).  She is NOT scary: every motion is slow, soft and continuous
+(sine eases, no snaps, no twitches).  She never walks: the robe ends in light.  Poses: rise, speak, bow.
+
+ENDING BEAT (suggested): appear in 'bow' with alpha 0 -> 1 and body dy +6 -> 0 (40 ticks)  ->  lift the head out
+of the bow (30 ticks)  ->  OPEN THE EYES (eyelids, 20 ticks)  ->  'speak' while clara.voz plays ("Gracias por
+venir. Digale a Teresita que no fue su culpa.")  ->  blend to 'rise' over 60 ticks while she floats up 2-3 blocks
+->  white flash, alpha -> 0.
+
+ROOT
+* body -- root at the waist (pivot y -10): leather cincture + hidden core.  HOVER: dy = -1.0 + sin(t*0.06)*1.0
+  (the light streamers stay 1-3 texels above the floor), xRot sin(t*0.045)*0.02, yRot sin(t*0.02)*0.04.
+  Rise: (-0.04, 0, 0, 0, -3, 0) then keep adding dy for the ascension.  Bow: 0.
+* rosary -- walnut beads + upright wooden cross hanging from her left hip.  Lagging pendulum:
+  xRot = -bodyXRot*0.8 + sin(t*0.06 - 0.8)*0.05, zRot = sin(t*0.05 - 0.5)*0.06.  Rise: trails +0.12.
+
+ROBE -- eight panels round an octagonal hull, children of body, pivots at the hips (y -9), rest flare -7/-9 deg,
+k = 0..7 in this order: skirt_front, skirt_front_left, skirt_left, skirt_back_left, skirt_back, skirt_back_right,
+skirt_right, skirt_front_right.  Each panel carries its light streamers (zero-thickness planes) so they sway with
+it; the dissolve into light is painted, so no bone is needed for it.
+* skirt_* -- slow underwater ripple, out of phase: xRot += sin(t*0.07 + k*0.785)*0.05 (local x = outward
+  flare: negative opens the panel).  Rise: front panels (k 0,1,7) -0.08, back panels (k 3,4,5) +0.12 (the hem
+  trails below her as she lifts), sides (k 2,6) -0.05.  Bow: all +0.03 (the robe settles).  Never let a panel
+  go past -0.35 or the streamers lift into view above the hem.
+
+TORSO
+* chest -- slim bodice, rounded white guimpe with the upright wooden cross on its cord.  Breathing (she breathes
+  even as a soul, it reads as alive): xRot sin(t*0.05)*0.015.  Rise -0.06 (opens), bow +0.08.
+* veil -- the long back veil (nape to hips).  Hangs with gravity: xRot = -chestXRot*0.6 + sin(t*0.05 - 1.2)*0.03.
+  Rise +0.12 (streams back).  Bow -0.03.
+* neck -- inside the wimple.  Follows the head softly: 30 % of the look pitch.  Rise -0.05, bow +0.08.
+* head -- skull with the 15 x 17 face (brow pads, nose), coif band, coif sides, chin wrap, veil crown + cap and
+  nape.  FOCUS bone.  Looks at the player with gentle easing (yaw clamp +-0.6, pitch +-0.3, lerp 0.08 per
+  tick).  Idle: a slow tilt zRot sin(t*0.03)*0.05.  Rise (-0.22): lifts her face to the light.  Speak
+  (-0.08, 0, 0.05).  Bow 0.28 (with neck + chest: a 25 deg bow).
+* eyelids -- two zero-thickness closed-lid planes (peaceful U-shaped lash curves) 0.2 texels in front of the open
+  eyes, pivot at the top of the lids (y -44).  REST = EYES CLOSED.  To open: xRot 0 -> +1.5708 over ~20 ticks
+  (the lids fold back into the head), or yScale 1 -> 0 (lids retract upward from the pivot), or visible = false.
+  Blink while open (2 ticks closed every 80-140 ticks).  Keep closed in 'bow'.
+* mouth -- the speech frame: a zero-thickness open-mouth plane tucked 0.2 texels BEHIND the face plane (hidden
+  at rest; the face shows a closed, faintly smiling mouth).  Talking: dz -0.45 brings it in front of the face
+  ('speak' pose); flap it with the voice (open 2-3 ticks per syllable, or whenever the clara.voz amplitude is
+  above a threshold); return dz 0 when silent.
+* veil_right / veil_left -- the black veil falling from the crown onto the shoulders (rest flare 7 deg).  Sway
+  zRot += sin(t*0.05 + side)*0.03; rise: open outward 0.08 (right +, left -).
+
+ARMS (right_* on -X; left mirrors yRot / zRot)
+* right_arm / left_arm -- upper sleeve, shoulder pivot inside the guimpe.  Idle: xRot sin(t*0.05)*0.03, a
+  slow forward drift.  Rise (-0.379, +-0.431, +-0.377): arms open wide and low.  Bow (-0.462, -+0.48, -+0.217).
+* right_forearm / left_forearm -- inner sleeve (black) ending in the white undercuff at the wrist; elbow pivot.
+  Rise (-0.138, +-0.287, +-0.135).  Bow (-0.832, -+0.448, +-0.111): forearms come together at the chest.
+* right_sleeve / left_sleeve -- the bell of the sleeve (8 x 8 x 8, white undercuff visible inside the opening),
+  child of the forearm, pivot at the top of the bell.  It should always HANG: whenever the forearm lifts, rotate
+  it back toward gravity (rise: (1.0, 0, +-0.05) -- they hang from the open arms like wings; lag 6-10 ticks
+  behind the arm, plus sin(t*0.06)*0.04 sway).  Bow: 0 (the bells meet in front like a muff).
+* right_hand / left_hand -- palm + thumb, wrist pivot; rest yaw 30 deg (palms turned slightly forward).
+  Rise (-0.35, +-0.25, +-0.014): palms open forward and up, receiving the light.  Bow (-0.874, -+0.347,
+  +-0.685): palms pressed together in prayer, fingers up.
+* right_fingers / left_fingers -- four slender fingers with rose nails and glowing tips; rest curl -8 deg.
+  Rise: uncurl +0.1 and breathe xRot sin(t*0.07)*0.04.  Bow: 0.
 """
