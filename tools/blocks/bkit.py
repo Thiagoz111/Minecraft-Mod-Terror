@@ -310,6 +310,8 @@ def export_furniture(b, preview):
             if f in p.uv:
                 u0, v0, w, h = p.uv[f]
                 fn(tex, u0, v0, w, h)
+        if min(*p.frm, *p.to) < -16 or max(*p.frm, *p.to) > 32:
+            raise ValueError(f'{b.key}: element {n} {p.frm}..{p.to} outside the -16..32 model bounds')
         el = {'from': [round(v, 4) for v in p.frm], 'to': [round(v, 4) for v in p.to], 'faces': {}}
         if not p.shade:
             el['shade'] = False
