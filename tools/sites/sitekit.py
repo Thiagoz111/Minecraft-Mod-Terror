@@ -141,7 +141,21 @@ class Site:
         zs = [p[2] for p in self.blocks]
         return min(xs), min(ys), min(zs), max(xs), max(ys), max(zs)
 
+    def check_markers(self):
+        """Warn when two clickable markers resolve to the same block (only one of them would get its use: event)."""
+        seen = {}
+        for name, (x, y, z, _) in self.markers['points'].items():
+            seen.setdefault((int((x + 0.5) // 1), int(y // 1), int((z + 0.5) // 1)), []).append(name)
+        for name, (x, y, z) in self.markers['doors'].items():
+            seen.setdefault((x, y, z), []).append(name)
+            seen.setdefault((x, y + 1, z), []).append(name)
+        clashes = {k: v for k, v in seen.items() if len(v) > 1}
+        for k, v in sorted(clashes.items()):
+            print(f'WARNING {self.key}: markers {v} share block {k}')
+        return clashes
+
     def export(self):
+        self.check_markers()
         x0, y0, z0, x1, y1, z1 = self.bounds()
         W, H, D = x1 - x0 + 1, y1 - y0 + 1, z1 - z0 + 1
         palette = ['']

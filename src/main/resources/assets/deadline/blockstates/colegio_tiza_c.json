@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "deadline:block/colegio_tiza_c"
+  },
+  "facing=east": {
+   "model": "deadline:block/colegio_tiza_c",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "deadline:block/colegio_tiza_c",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "deadline:block/colegio_tiza_c",
+   "y": 270
+  }
+ }
+}

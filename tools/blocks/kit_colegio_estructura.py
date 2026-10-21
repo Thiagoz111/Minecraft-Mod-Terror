@@ -3917,3 +3917,7 @@ for n_ in range(1, 10):
       collision='none', sound='stone', directional=True)
 F('rayuela_cielo', 'Rayuela: CIELO', 'Hopscotch: SKY', rayuela_parts('CIELO', cielo=True), render='translucent',
   collision='none', sound='stone')
+# --- the four chalk answer squares of the oral lesson (a/b/c/d on the classroom floor)
+for l_ in 'ABCD':
+    F(f'tiza_{l_.lower()}', f'Cuadro de tiza {l_}', f'Chalk answer square {l_}', rayuela_parts(l_), render='translucent',
+      collision='none', sound='stone', directional=True)

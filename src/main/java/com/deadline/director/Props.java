@@ -149,10 +149,10 @@ public final class Props {
 			td.setBillboardConstraints(Display.BillboardConstraints.FIXED);
 			td.setBackgroundColor(0);
 			td.setLineWidth(220);
-			td.setTransformation(new Transformation(new Vector3f(), new Quaternionf(), new Vector3f(scale, scale, scale), new Quaternionf()));
 			r.level.addFreshEntity(td);
 			r.actor(actor, td);
 		}
+		td.setTransformation(new Transformation(new Vector3f(), new Quaternionf(), new Vector3f(scale, scale, scale), new Quaternionf()));
 		td.setText(text);
 		return td;
 	}

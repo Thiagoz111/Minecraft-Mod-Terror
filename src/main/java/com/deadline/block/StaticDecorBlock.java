@@ -25,6 +25,6 @@ public class StaticDecorBlock extends Block {
 
 	@Override
 	protected VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext ctx) {
-		return shape;
+		return this.hasCollision ? shape : Shapes.empty();
 	}
 }

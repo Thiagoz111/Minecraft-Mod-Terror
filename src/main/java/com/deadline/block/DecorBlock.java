@@ -73,6 +73,7 @@ public class DecorBlock extends HorizontalDirectionalBlock {
 
 	@Override
 	protected VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext ctx) {
-		return shapes[state.getValue(FACING).get2DDataValue()];
+		// props without collision still get their boxes as the outline, so they can be aimed at and clicked
+		return this.hasCollision ? shapes[state.getValue(FACING).get2DDataValue()] : Shapes.empty();
 	}
 }

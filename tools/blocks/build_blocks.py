@@ -148,6 +148,9 @@ def main():
     args = sys.argv[1:]
     full = not args or args == ['--all']
     only = None if full else args
+    if args and args[0] == '--register':
+        # register (Java + lang) only the finished kits, e.g. `--register colegio` while a casa kit is half done
+        full, only = True, args[1:]
     load_kits(only)
     blocks = list(bkit.REGISTRY)
     keys = [b.key for b in blocks]

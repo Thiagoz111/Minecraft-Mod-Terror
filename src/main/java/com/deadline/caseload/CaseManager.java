@@ -79,7 +79,12 @@ public final class CaseManager {
 			p.sendSystemMessage(Component.translatable("deadline.msg.welcome"));
 		}
 		Fx.sanity(p, d.sanity);
-		if (d.active != null) {
+		if (d.active != null && d.active.type.scripted()) {
+			com.deadline.director.Run r = com.deadline.director.Director.of(p);
+			if (r != null) {
+				r.sync(p);
+			}
+		} else if (d.active != null) {
 			Fx.objective(p, d.active.type.key(), d.active.stage);
 		}
 	}

@@ -349,6 +349,17 @@ def export_furniture(b, preview):
             c = _clip(p.frm + p.to)
             if c:
                 boxes.append(c)
+    else:
+        # no collision: one box around the whole model (clipped to the block) is the outline used to aim and click
+        lo = [min(min(p.frm[i], p.to[i]) for p in b.parts) for i in range(3)]
+        hi = [max(max(p.frm[i], p.to[i]) for p in b.parts) for i in range(3)]
+        for i in range(3):
+            if hi[i] - lo[i] < 1.0:  # flat decals and planes: give them a little thickness
+                mid = (hi[i] + lo[i]) / 2
+                lo[i], hi[i] = mid - 0.5, mid + 0.5
+        c = _clip(tuple(lo) + tuple(hi)) if b.parts else None
+        if c:
+            boxes.append(c)
     preview['models'][b.key] = {'elements': elements, 'tex': tex, 'size': size}
     return boxes
 

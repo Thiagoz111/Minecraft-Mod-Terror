@@ -44,7 +44,7 @@ public class ColegioScript extends CaseScript {
 	@Override
 	public void define(Script s) {
 		// doors that stay locked until their chapter opens them (the Silence Room only opens for the script)
-		s.lock("aula", 1, 2).lock("cocina", 1, 3).lock("direccion", 1, 4).lock("capilla", 1, 5).lock("capilla2", 1, 5)
+		s.lock("aula", 1, 2).lock("cocina", 1, 4).lock("aula4", 1, 99).lock("direccion", 1, 4).lock("capilla", 1, 5).lock("capilla2", 1, 5)
 				.lock("coro", 1, 5).lock("dormitorio", 1, 6).lock("banos", 1, 6).lock("sacristia", 1, 7)
 				.lock("cuarto_silencio", 1, 99).lock("entrada", 2, 99);
 		chapters(s);
@@ -67,7 +67,11 @@ public class ColegioScript extends CaseScript {
 		s.chapter(2, "aula_puerta").objectives("aula", "frente").hint("aula")
 				.setup(lights("pasillo_pb", true), door("aula", true, false), run(e -> Props.write(e.run, "pizarron", Props.chalk(""), 1.6F)));
 		s.chapter(3, "refectorio").objectives("llave").hint("llave")
-				.setup(lights("refectorio_velas", false), lights("pasillo_pb", true), door("cocina", true, false));
+				.setup(lights("refectorio_velas", false), lights("pasillo_pb", true), door("cocina", false, false),
+						run(e -> {
+							hatch(e.run, true);
+							Props.swap(e.run, "tablero", "colegio_tablero_llaves");
+						}));
 		s.chapter(4, "hall").objectives("direccion").hint("direccion")
 				.setup(lights("pasillo_pb", false), door("direccion", true, false));
 		s.chapter(5, "capilla_puerta").objectives("confesar", "coro").hint("confesar")
@@ -119,9 +123,9 @@ public class ColegioScript extends CaseScript {
 				say("colegio.madre.usted", "aula_frente"),
 				run(e -> e.run.counters.remove("voice_seen")),
 				loop(e -> {
-					// without a microphone, raising your hand (sneak) answers for you
+					// raising your hand (sneak) answers too: no microphone, or a muted one
 					ServerPlayer p = e.target();
-					boolean hand = p != null && !com.deadline.voice.Voice.enabled(p) && p.isShiftKeyDown();
+					boolean hand = p != null && p.isShiftKeyDown();
 					if (e.run.event("voice") || hand) {
 						e.run.counters.put("voice_seen", 1);
 						return true;
@@ -297,6 +301,7 @@ public class ColegioScript extends CaseScript {
 					hatch(e.run, false);
 					e.run.despawn(NUN);
 				}),
+				door("cocina", true, false),  // now you have to go in there for the key
 				delay(30),
 				// she blows the candles out one by one
 				loop(e -> {
@@ -351,9 +356,15 @@ public class ColegioScript extends CaseScript {
 	/** Opens/closes the service hatch between the dining hall and the kitchen (a trapdoor: OPEN = vertical = shut). */
 	static void hatch(Run r, boolean open) {
 		net.minecraft.core.BlockPos pos = r.block("ventanilla");
-		var st = r.level.getBlockState(pos);
-		if (st.hasProperty(net.minecraft.world.level.block.state.properties.BlockStateProperties.OPEN)) {
-			r.setBlock(pos, st.setValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.OPEN, !open));
+		boolean hit = false;
+		for (net.minecraft.core.BlockPos q : new net.minecraft.core.BlockPos[] {pos, pos.south()}) {  // the hatch is two trapdoors wide
+			var st = r.level.getBlockState(q);
+			if (st.getBlock() instanceof net.minecraft.world.level.block.TrapDoorBlock) {
+				r.setBlock(q, st.setValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.OPEN, !open));
+				hit = true;
+			}
+		}
+		if (hit) {
 			r.sound(ModSounds.DOOR_SLAM, Vec3.atCenterOf(pos), 1.2F, 1.4F);
 		}
 	}
@@ -374,6 +385,15 @@ public class ColegioScript extends CaseScript {
 						if (n == 2) {
 							SanityManager.add(p, 5F);
 						}
+					}
+				}));
+
+		s.beat("direccion_entra").chapter(4).when(enter("direccion")).then(
+				delay(30),
+				sound(ModSounds.CONFESIONARIO_REJILLA, "direccion_legajo", 1.1F),
+				run(e -> {
+					for (ServerPlayer p : e.run.hunters()) {
+						Fx.subtitle(p, "deadline.speaker.cartel", "deadline.colegio.caption.archivero", 90);
 					}
 				}));
 
@@ -413,7 +433,7 @@ public class ColegioScript extends CaseScript {
 						Props.faceGroup(e.run, "direccion_silla", p.position());
 					}
 				}),
-				sound(ModSounds.SILLA_GIRA, "direccion_silla", 1.4F),
+				sound(ModSounds.SILLA_GIRA, "direccion_silla_pt", 1.4F),
 				delay(40),
 				chapter(5));
 	}

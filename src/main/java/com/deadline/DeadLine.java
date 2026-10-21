@@ -42,6 +42,8 @@ public class DeadLine implements ModInitializer {
 		CommandRegistrationCallback.EVENT.register(DeadLineCommands::register);
 		SmokeTest.register();
 		com.deadline.director.Director.register();
+		// scripted actors (the nun, chalk text...) go away before the final save, so they are never saved as orphans
+		net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents.SERVER_STOPPING.register(server -> com.deadline.director.Director.clear());
 		net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
 			com.deadline.director.Director.clear();
 			com.deadline.site.SiteDef.clearCache();

@@ -261,8 +261,8 @@ def build():
     K(s, -16, 0, 5, 'escritorio_maestra_izq', 'east')
     K(s, -16, 0, 6, 'escritorio_maestra_der', 'east')
     K(s, -17, 0, 6, 'silla_maestra', 'east')
-    for i, z in enumerate((1, 3, 5, 7)):  # chalk squares to answer from
-        K(s, -15, 0, z, f'rayuela_{i + 1}', 'east')
+    for i, z in enumerate((7, 5, 3, 1)):  # chalk squares a-d, read left to right from the class like the board
+        K(s, -15, 0, z, 'tiza_' + 'abcd'[i], 'west')  # upright for the class looking at the board
         s.area('aula_' + 'abcd'[i], -15, 0, z, -15, 1, z)
     sillas = []
     for cx in (-13, -11, -9):
@@ -315,7 +315,7 @@ def build():
         s.set(x, 4, 8, 'wall')
     doorway(s, 'aula', -8, 0, 8, 'north', 'puerta_aula_6', hinge='right', open_=False)
     doorway(s, 'direccion', 11, 0, 8, 'north', 'puerta_direccion', hinge='left', open_=False)
-    doorway(s, None, -20, 0, 8, 'north', 'puerta_aula_4', hinge='left', open_=False)
+    doorway(s, 'aula4', -20, 0, 8, 'north', 'puerta_aula_4', hinge='left', open_=False)  # locked for good
     K(s, -20, 0, 9, 'tablones_clavados', 'south')  # 4th grade: boarded up
     for x in (-1, 0, 1):  # archway into the hall
         for y in (0, 1, 2):
@@ -382,7 +382,7 @@ def build():
     K(s, -24, 1, 18, 'pila_platos', 'north')
     K(s, -25, 1, 18, 'olla', 'north')
     window3(s, -28, 1, 17, 'west')
-    K(s, -23, 4, 16, 'lampara_globo')
+    K(s, -23, 4, 16, 'lampara_globo_apagada')  # the kitchen is dark: her domain
     K(s, -21, 1, 19, 'tablero_llaves', 'north')
     s.point('tablero', -21, 1, 19)
     s.area('cocina', -27, 0, 13, -19, 4, 19)
@@ -670,7 +670,7 @@ def build():
     s.markers['groups']['coro_velas'] = velas
     s.area('atril8', 13, 6, 14, 15, 8, 16)
     s.point('atril8', 14, 6, 15, 'north')
-    s.point('coro_pared', 10, 6, 13.4, 'north')
+    s.point('coro_pared', 15, 6, 13.4, 'north')  # her kneeling spot, clear of the candle row
 
     # ------------------------------------------------------------ bell tower behind the corridor (the opening shot's silhouette)
     tx0, tx1, tz0, tz1, by = 17, 21, 13, 17, 17  # by = floor level of the belfry

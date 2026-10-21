@@ -169,6 +169,7 @@ WEAKNESS = {
 
 # Scripted case texts (director): chapter cards, objectives, hints, reprimand reasons.
 SCRIPT = {
+    'deadline.colegio.caption.archivero': ('Un cajón del archivero de la Madre se abre solo.', "A drawer of the Mother's filing cabinet slides open by itself."),
     'deadline.door.locked': ('Está cerrada con llave.', "It's locked."),
     'deadline.colegio.ch.1': ('03:33 · LLEGADA', '03:33 · ARRIVAL'),
     'deadline.colegio.ch.1.sub': ('Colegio Santa Inés de la Vigilia', 'Saint Agnes of the Vigil School'),

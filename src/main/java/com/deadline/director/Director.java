@@ -42,6 +42,9 @@ public final class Director {
 					if (m == null) {
 						m = r.markerAt(pos.above());
 					}
+					if (m == null) {
+						m = r.markerAt(pos.relative(hit.getDirection()));  // a prop hanging on the wall that was clicked through
+					}
 					if (m != null && r.def.doors.containsKey(m) && r.locked(m)) {
 						world.playSound(null, pos, net.minecraft.sounds.SoundEvents.CHEST_LOCKED, net.minecraft.sounds.SoundSource.BLOCKS, 1.0F, 0.8F);
 						sp.displayClientMessage(net.minecraft.network.chat.Component.translatable("deadline.door.locked"), true);
@@ -100,7 +103,9 @@ public final class Director {
 				return null;
 			}
 			r = create(ac.type, ac.site, level, CaseSites.origin(ac.site), def);
-			r.startChapter(Math.max(1, ac.stage), true);
+			// after a restart: back to the checkpoint of the saved chapter and replay it (flags and actors were not saved)
+			r.chapter = Math.max(1, ac.stage);
+			r.checkpoint(p);
 		}
 		return r;
 	}

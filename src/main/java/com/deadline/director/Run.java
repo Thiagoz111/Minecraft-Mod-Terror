@@ -64,6 +64,8 @@ public final class Run {
 	public final Map<String, Entity> actors = new LinkedHashMap<>();
 	public final Map<String, Object> vars = new HashMap<>();
 	final Map<BlockPos, String> markerAt = new HashMap<>();
+	/** Flags as they were when each chapter first started (for /deadline chapter retakes). */
+	private final Map<Integer, Set<String>> flagsAtStart = new HashMap<>();
 
 	Run(CaseType type, int site, ServerLevel level, BlockPos origin, SiteDef def, CaseScript script) {
 		this.type = type;
@@ -244,6 +246,9 @@ public final class Run {
 				flags.addAll(chapterFlags);
 			}
 		}
+		if (!fromCheckpoint) {
+			flagsAtStart.put(n, new HashSet<>(flags));
+		}
 		chapterFlags = new HashSet<>(flags);
 		chapter = n;
 		chapterStart = now();
@@ -275,7 +280,21 @@ public final class Run {
 
 	/** Jumps to a chapter at its checkpoint (testing / filming retakes). */
 	public void jump(int n, ServerPlayer p) {
-		chapterFlags = null;
+		// a retake: flags as they were when chapter n first started, and this chapter's and every later chapter's beats
+		// forgotten, so the story replays from here (a jump ahead keeps the current flags)
+		Set<String> snap = flagsAtStart.get(n);
+		if (snap != null) {
+			flags.clear();
+			flags.addAll(snap);
+		}
+		flagsAtStart.keySet().removeIf(k -> k > n);
+		for (Beat b : compiled.beats) {
+			if (b.chapter >= n) {
+				fired.remove(b.id);
+				lastEnd.remove(b.id);
+			}
+		}
+		chapterFlags = new HashSet<>(flags);
 		chapter = n;
 		checkpoint(p);
 	}
