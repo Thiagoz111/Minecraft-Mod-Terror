@@ -15,6 +15,15 @@ id -> dict(speaker, es, en, voice, fx)
              coro    the 7 girls at once (alumna layered x7 with detune and delays)
              monja   Sor Agonia (ef_dora -5 st layered with em_santa -9 st, distortion)
              operadora the DEAD LINE switchboard (ef_dora, bright, telephone band, polite)
+             marta   the mum (ef_dora, natural, nervous and fast, small living room)
+             jorge   the dad (em_alex, jovial, low, a bit hoarse); jorge_poseido: jorge + em_santa -5 st layer, grit
+             nona    the grandma (ef_dora -2 st, slow, old rasp, tremolo); nona_grito: the same woman shouting, strong
+                     and clear (no old-age effect); nona_poseida: nona + demonic layer, whispered
+             lucia   the 8-year-old (ef_dora +3 st, small, shy); lucia_doble: lucia + em_santa -9 st in unison
+             toti    the teen (em_alex +2 st, annoyed, muffled inside a wardrobe)
+             choripan the demon dog speaking (em_santa -5 st with an octave-down layer, wet growl)
+             spirit  a spirit-box answer (any voice chopped into radio sweeps, static between syllables)
+             tomi    the streamer's VOD on a tablet (em_alex, laughing, tiny tablet speaker band)
   fx       optional placement hint: 'phone' (heard through the phone), 'pa' (loudspeakers), 'room', 'head'
 
 Sound events are 'line.<id>' (files assets/deadline/sounds/line/<id>.ogg); subtitles are deadline.line.<id>.
@@ -32,6 +41,14 @@ SPEAKERS = {
     'operadora': ('La Operadora', 'The Operator'),
     'tu': ('Vos', 'You'),
     'cartel': ('', ''),
+    'marta': ('Marta', 'Marta'),
+    'jorge': ('Jorge', 'Jorge'),
+    'nona': ('La Nona', 'Grandma'),
+    'lucia': ('Lucía', 'Lucía'),
+    'toti': ('Toti', 'Toti'),
+    'choripan': ('Choripán', 'Choripán'),
+    'spirit': ('Spirit box', 'Spirit box'),
+    'tomi': ('Tomi (video)', 'Tomi (video)'),
 }
 
 LINES = {
@@ -135,6 +152,94 @@ LINES = {
         en='Thank you for coming. I called in 1984 and nobody came. Who passed you my call? ...Be careful with whoever calls you with your own voice.'),
     'colegio.madre.aja': dict(speaker='madre', voice='madre', fx='room', es='Ajá.', en='Aha.'),
     'colegio.alumnas.shhh': dict(speaker='coro', voice='coro', fx='room', es='¡SHHHHHH!', en='SHHHHHH!'),
+
+    # ================================================================ CASE 2: CASA MORALES
+    'casa.marta.llamada': dict(
+        speaker='marta', voice='marta', fx='phone',
+        es='Hola... ¿es la línea de los exorcistas? Perdón la hora. Es mi perro... Choripán... camina raro. No, no, el perro no. Mi hija. Bueno... los dos, no sé. Y la muñeca... la compré en la feria de San Telmo, re barata. Pasaje Las Glicinas 1961. Por favor, venga rápido... ...y el perro. El perro está raro.',
+        say='Hola... ¿es la línea de los exorcistas? Perdón la hora. Es mi perro... Choripán... camina raro. No, no, el perro no. Mi hija. Bueno... los dos, no sé. Y la muñeca... la compré en la feria de San Telmo, re barata. Pasaje Las Glicinas, mil novecientos sesenta y uno. Por favor, venga rápido... y el perro. El perro está raro.',
+        en="Hello... is this the exorcists' line? Sorry about the hour. It's my dog... Choripán... he's walking funny. No, no, not the dog. My daughter. Well... both, I don't know. And the doll... I bought it at the San Telmo fair, dirt cheap. 1961 Las Glicinas Lane. Please, come quickly... ...and the dog. The dog is acting weird."),
+    'operadora.casa_aviso': dict(
+        speaker='operadora', voice='operadora', fx='phone',
+        es='DEAD LINE le recuerda: si el ente le pide pasar, por favor no lo invite a pasar.',
+        en='DEAD LINE reminds you: if the entity asks to come in, please do not invite it in.'),
+    # 1. arrival
+    'casa.marta.hola': dict(speaker='marta', voice='marta', fx='room',
+                            es='Ay, gracias a Dios. ¿Lo mandó el Padre Ignacio? Pase, pase... y límpiese los pies.',
+                            en='Oh, thank God. Did Father Ignacio send you? Come in, come in... and wipe your feet.'),
+    'casa.jorge.humedad': dict(speaker='jorge', voice='jorge', fx='room', es='Es la humedad, flaco.', en="It's the damp, mate."),
+    'casa.jorge.mucha_humedad': dict(speaker='jorge', voice='jorge', fx='room', es='...Mucha humedad.', en='...A lot of damp.'),
+    'casa.nona.mate': dict(speaker='nona', voice='nona', fx='room', es='¿Querés un mate, nene?', en='Want some mate, dear?'),
+    'casa.jorge.carbon': dict(speaker='jorge', voice='jorge', fx='room',
+                              es='Bueno, yo me voy a buscar carbón para el asado. Ya vuelvo.',
+                              en="Right, I'm off to get charcoal for the barbecue. Be right back."),
+    # 2. the family chat
+    'casa.marta.chat': dict(speaker='marta', voice='marta', fx='room', es='Mire, mire el grupo de la familia...', en='Look, look at the family group chat...'),
+    'casa.marta.no_celular': dict(speaker='marta', voice='marta', fx='room', es='...Lucía no tiene celular.', en="...Lucía doesn't have a phone."),
+    'casa.tu.me_llamaste': dict(speaker='tu', voice=None, es='Pero si me llamaste vos.', en='But you called me.'),
+    'casa.marta.telefono': dict(speaker='marta', voice='marta', fx='room', es='¿Yo? Nos cortaron el teléfono en marzo.', en='Me? They cut our phone off in March.'),
+    # 3. Lucía's room
+    'casa.lucia.perro': dict(speaker='lucia', voice='lucia', fx='room',
+                             es='Ofelia dice que tu perro... digo, nuestro perro... tiene hambre.',
+                             en='Ofelia says your dog... I mean, our dog... is hungry.'),
+    'casa.tomi.vod': dict(speaker='tomi', voice='tomi', fx='room', es='Si no vuelvo, llamen a DEAD LINE, jajaja.',
+                          say='Si no vuelvo, llamen a Ded Lain, ja ja ja.', en="If I don't come back, call DEAD LINE, hahaha."),
+    'casa.spirit.azamel': dict(speaker='spirit', voice='spirit', fx='room', es='...A... ZA... MEL.', say='A... za... mel.', en='...A... ZA... MEL.'),
+    'casa.spirit.al_perro': dict(speaker='spirit', voice='spirit', fx='room', es='...AL... PE... RRO.', say='Al... pe... rro.', en='...THE... DOG.'),
+    'casa.spirit.nunca': dict(speaker='spirit', voice='spirit', fx='room', es='...NUN... CA.', say='Nun... ca.', en='...NE... VER.'),
+    'casa.spirit.temperley': dict(speaker='spirit', voice='spirit', fx='room', es='...SOY DE... TEMPERLEY.', say='Soy de... Temperley.', en="...I'M... A TEMPERLEY FAN."),
+    # 4. the kitchen
+    'casa.tu.termo': dict(speaker='tu', voice=None, es='¡EL TERMO NO!', en='NOT THE THERMOS!'),
+    'casa.marta.sillas': dict(speaker='marta', voice='marta', fx='room', es='¡Esas sillas eran de mi suegra!', en='Those chairs were my mother-in-law\'s!'),
+    'casa.nona.son_mias': dict(speaker='nona', voice='nona_grito', fx='room', es='¡TODAVÍA SON MÍAS!', en='THEY STILL ARE!'),
+    # 5. the calm beat
+    'casa.nona.esperando': dict(speaker='nona', voice='nona', fx='room', es='A vos te estaba esperando, nene.', en='I was waiting for you, dear.'),
+    'casa.nona.guardame': dict(speaker='nona', voice='nona', fx='room', es='Tomá, guardame esto.', en='Here, keep this for me.'),
+    'casa.tu.galletitas': dict(speaker='tu', voice=None, es='Hilos, agujas y botones. Obvio. Nunca son galletitas.',
+                               en='Thread, needles and buttons. Of course. It is never cookies.'),
+    'casa.marta.llamalo': dict(speaker='marta', voice='marta', fx='room',
+                               es='Llamalo vos, decile «Choripán», capaz a vos te hace caso.',
+                               say='Llamalo vos, decile Choripán, capaz a vos te hace caso.',
+                               en='You call him, say "Choripán", maybe he will listen to you.'),
+    # 6. good boy
+    'casa.choripan.buen_chico': dict(speaker='choripan', voice='choripan', fx='room',
+                                     es='¿Quién es un buen chico?... YO NO.', say='¿Quién es un buen chico? ... Yo no.',
+                                     en="Who's a good boy?... NOT ME."),
+    # 8. the wardrobe
+    'casa.toti.ocupado': dict(speaker='toti', voice='toti', fx='room', es='¡OCUPADO! ¡ESTOY EN RANKED!', say='¡Ocupado! ¡Estoy en ranked!', en="OCCUPIED! I'M IN RANKED!"),
+    'casa.toti.callate': dict(speaker='toti', voice='toti', fx='room', es='¡Callate, Chori!', en='Shut up, Chori!'),
+    # 9-10. fetch, the grill
+    'casa.marta.tirale': dict(speaker='marta', voice='marta', fx='room', es='¡TIRALE ALGO!', en='THROW HIM SOMETHING!'),
+    'casa.marta.choripan': dict(speaker='marta', voice='marta', fx='room', es='¡Lo único que lo calma es un choripán! ¡Tomá!',
+                                en='The only thing that calms him is a choripán! Here!'),
+    # 11. Jorge
+    'casa.jorge.llegue': dict(speaker='jorge', voice='jorge', fx='room',
+                              es='Llegué. No había carbón en lo de Rubén, tuve que ir hasta la—',
+                              say='Llegué. No había carbón en lo de Rubén, tuve que ir hasta la...',
+                              en="I'm back. Rubén had no charcoal, I had to go all the way to the—"),
+    'casa.jorge.jugoso': dict(speaker='jorge', voice='jorge_poseido', fx='room', es='¿Jugoso o a punto, pibe?', en='Rare or medium, kid?'),
+    'casa.jorge.es_la_humedad': dict(speaker='jorge', voice='jorge_poseido', fx='room', es='Es la humedad... ES LA HUMEDAD.', en="It's the damp... IT'S THE DAMP."),
+    'casa.jorge.falta_sal': dict(speaker='jorge', voice='jorge_poseido', fx='room', es='LE FALTA SAL.', en='IT NEEDS SALT.'),
+    'casa.cartel.sal': dict(speaker='cartel', voice=None, es='Ahora sí tiene sal.', en='Now it has salt.'),
+    'casa.marta.chorizo': dict(speaker='marta', voice='marta', fx='room', es='¡Te dije que no comas tanto chorizo!', en='I told you not to eat so much chorizo!'),
+    # 13-14. Lucía, the slipper
+    'casa.lucia.voces': dict(speaker='lucia', voice='lucia_doble', fx='room', es='Él te llamó. Él tiene muchas voces.', en='He called you. He has many voices.'),
+    'casa.nona.atorrante': dict(speaker='nona', voice='nona_grito', fx='room', es='¡SALÍ DE MI NIETA, ATORRANTE!', en='GET OUT OF MY GRANDDAUGHTER, YOU BUM!'),
+    'casa.nona.aca': dict(speaker='nona', voice='nona_grito', fx='room', es='¡ACÁ! ¡VENÍ CON LA VIEJA, COMO ANTES! ¡DEJALA A LA NENA!',
+                          en='HERE! COME TO THE OLD LADY, LIKE BEFORE! LEAVE THE GIRL ALONE!'),
+    'casa.lucia.liberada': dict(speaker='lucia', voice='lucia', fx='room', es='Ofelia tenía miedo... el señor feo quiere ir con la Nona.',
+                                en='Ofelia was scared... the ugly man wants to go to Grandma.'),
+    # 15-16. the 1961 room, the stitches
+    'casa.nona.nene_veni': dict(speaker='nona', voice='nona_poseida', fx='head', es='Nene, vení...', en='Come here, dear...'),
+    'casa.nona.damelo': dict(speaker='nona', voice='nona', fx='room', es='Dámelo, nene. Esta vez lo cierro yo.', en="Give it to me, dear. This time I'll close it."),
+    'casa.nona.sesenta': dict(speaker='nona', voice='nona', fx='room', es='Sesenta y cinco años esperando para esto. ¿Me alcanzás el mate?',
+                              en='Sixty-five years waiting for this. Pass me the mate?'),
+    # 17. breakfast
+    'casa.jorge.asado': dict(speaker='jorge', voice='jorge', fx='room', es='¿Te quedás al asado?', en='Staying for the barbecue?'),
+    'casa.toti.que_perdi': dict(speaker='toti', voice='toti', fx='room', es='¿Qué me perdí?', en='What did I miss?'),
+    'casa.nona.quien_asado': dict(speaker='nona', voice='nona', fx='room', es='¿Quién quiere asado?', en='Who wants barbecue?'),
+    'casa.marta.perro': dict(speaker='marta', voice='marta', fx='room', es='Llevate al perro un par de días, nos da miedo.',
+                             en="Take the dog for a couple of days, he scares us."),
 }
 
 # Text shown big on screen (no audio): prayers the player must say aloud, the file, the diary.
@@ -152,6 +257,10 @@ TEXTS = {
     'colegio.silencio': ('Silencio. Quince segundos. Ni una palabra.', 'Silence. Fifteen seconds. Not a word.'),
     'colegio.reglamento': ('1. Silencio. 2. En el colegio se camina. No se corre. 3. Toda voz será escuchada.',
                            '1. Silence. 2. In this school we walk. No running. 3. Every voice will be heard.'),
+    'casa.reglas': ('OFELIA SE MUEVE CUANDO NO LA MIRÁS. DONDE SE SIENTA, AHÍ VA EL DEMONIO.',
+                    "OFELIA MOVES WHEN YOU DON'T LOOK. WHERE SHE SITS, THE DEMON GOES."),
+    'casa.cuaderno': ('MI AMIGO SE LLAMA LEMAZA', 'MY FRIEND IS CALLED LEMAZA'),
+    'casa.foto': ('Nélida y Ofelia, 1960', 'Nélida and Ofelia, 1960'),
     'colegio.reglas': ('SI LA ILUMINÁS, SE QUEMA. SI HACÉS RUIDO, YA TE ESCUCHÓ. NO SE CORRE EN LOS PASILLOS.',
                        'LIGHT BURNS HER. IF YOU MAKE NOISE, SHE ALREADY HEARD YOU. NO RUNNING IN THE HALLS.'),
 }
