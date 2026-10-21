@@ -595,7 +595,7 @@ def build():
     s.light(-12, 8, 47, 4, 'espejo_luz')
     s.write('diario_espejo', -12, 7, 50, 'north', width=4.0)
     s.point('espejo', -12, 7, 43)
-    s.point('espejo_cara', -12, 6, 44.4, 'south')
+    s.point('espejo_cara', -11, 6, 44.4, 'south')  # between the mirrored sinks
     s.point('espejo_detras', -12, 6, 47, 'south')
     for i, x in enumerate((-14, -10)):
         s.point(f'espejo_nena_{i}', x, 6, 45, 'south')

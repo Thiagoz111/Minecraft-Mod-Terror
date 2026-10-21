@@ -12,7 +12,7 @@ import render  # noqa: E402
 
 ROOT = os.path.abspath(os.path.join(HERE, '..', '..'))
 OUT = os.path.join(ROOT, 'src/main/resources/assets/deadline/textures/gui/jumpscare')
-KEYS = ['llorona', 'wendigo', 'poseida', 'payaso', 'monja', 'sombra', 'muneca', 'anima']
+KEYS = ['poseida', 'monja', 'sombra', 'muneca', 'anima']
 
 
 def portrait(key):

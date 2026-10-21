@@ -88,7 +88,12 @@ public final class DeadLineCommands {
 								.then(Commands.argument("max", IntegerArgumentType.integer(5)).executes(DeadLineCommands::calls)))));
 	}
 
+	/** The player running the command; from the console (or a command block) the first player online. */
 	private static ServerPlayer self(CommandContext<CommandSourceStack> c) throws CommandSyntaxException {
+		ServerPlayer p = c.getSource().getPlayer();
+		if (p == null && !c.getSource().getServer().getPlayerList().getPlayers().isEmpty()) {
+			return c.getSource().getServer().getPlayerList().getPlayers().get(0);
+		}
 		return c.getSource().getPlayerOrException();
 	}
 

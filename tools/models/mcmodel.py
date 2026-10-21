@@ -299,7 +299,8 @@ public abstract class {cls} extends {self.base_class() if self.haunt else 'Entit
                                 for bone, vals in table.items() if any(b.name == bone for b in self.bones()))
             out.append('\tpublic static final java.util.Map<String, float[]> POSE_%s = HauntModel.table(%s);' % (name.upper(), entries))
         names = [n for n in self.poses]
-        out.append('\tpublic static final java.util.Map<String, java.util.Map<String, float[]>> POSES = java.util.Map.of(%s);' % ', '.join('"%s", POSE_%s' % (n, n.upper()) for n in names))
+        out.append('\tpublic static final java.util.Map<String, java.util.Map<String, float[]>> POSES = java.util.Map.ofEntries(%s);'
+                   % ', '.join('java.util.Map.entry("%s", POSE_%s)' % (n, n.upper()) for n in names))  # Map.of stops at 10
         out.append('')
         out.append('\t@Override')
         out.append('\tprotected java.util.Map<String, java.util.Map<String, float[]>> poses() {')
