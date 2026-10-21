@@ -43,6 +43,10 @@ public final class ModRenderers {
 		EntityRendererRegistry.register(ModEntities.SOMBRA, ctx -> new HauntRenderer<>(ctx, new SombraModel(ctx.bakeLayer(SOMBRA)), 0.0F, "sombra", true));
 		EntityRendererRegistry.register(ModEntities.MUNECA, ctx -> new HauntRenderer<>(ctx, new MunecaModel(ctx.bakeLayer(MUNECA)), 0.3F, "muneca", true));
 		EntityRendererRegistry.register(ModEntities.ANIMA, ctx -> new HauntRenderer<>(ctx, new AnimaModel(ctx.bakeLayer(ANIMA)), 0.0F, "anima", true));
+		// placeholders until the alumna / madre / clara models ship (tools/models/ent_*.py)
+		EntityRendererRegistry.register(ModEntities.ALUMNA, ctx -> new HauntRenderer<>(ctx, new AnimaModel(ctx.bakeLayer(ANIMA)), 0.0F, "anima", true));
+		EntityRendererRegistry.register(ModEntities.MADRE, ctx -> new HauntRenderer<>(ctx, new MonjaModel(ctx.bakeLayer(MONJA)), 0.0F, "monja", true));
+		EntityRendererRegistry.register(ModEntities.CLARA, ctx -> new HauntRenderer<>(ctx, new AnimaModel(ctx.bakeLayer(ANIMA)), 0.0F, "anima", true));
 		EntityRendererRegistry.register(ModEntities.ANCHOR, AnchorRenderer::new);
 		EntityRendererRegistry.register(ModEntities.HOLY_WATER, ThrownItemRenderer::new);
 		EntityRendererRegistry.register(ModEntities.FLARE, ctx -> new ThrownItemRenderer<>(ctx, 1.0F, true));

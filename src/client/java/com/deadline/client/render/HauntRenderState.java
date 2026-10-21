@@ -13,4 +13,5 @@ public class HauntRenderState extends LivingEntityRenderState {
 	public float attackAnim;
 	public float speed;
 	public int seed;
+	public int variant;
 }

@@ -112,7 +112,7 @@ def ref(m):
 
 
 SIMPLE_ITEMS = ['crucifix', 'holy_water', 'salt', 'spirit_box', 'camera', 'ritual_book', 'spirit_jar', 'spirit_jar_full',
-                'pills', 'rosary', 'inverted_rosary', 'cursed_doll', 'llave_capilla']
+                'pills', 'rosary', 'inverted_rosary', 'cursed_doll', 'llave_capilla', 'regla_quebracho', 'diario_teresita']
 EGGS = ['monja', 'poseida', 'sombra', 'muneca', 'anima']
 
 
@@ -147,6 +147,9 @@ def items():
         'on_true': {'type': 'minecraft:condition', 'property': 'minecraft:custom_model_data', 'index': 1,
                     'on_true': ref(f'{NS}:item/flashlight_uv'), 'on_false': ref(f'{NS}:item/flashlight_on')},
         'on_false': ref(f'{NS}:item/flashlight')}})
+    # the tap water is drawn exactly like holy water (that is the joke)
+    write(f'{A}/models/item/agua_canilla.json', model('agua_canilla', layer0=f'{NS}:item/holy_water'))
+    write(f'{A}/items/agua_canilla.json', {'model': ref(f'{NS}:item/agua_canilla')})
     for e in EGGS:
         n = f'{e}_spawn_egg'
         write(f'{A}/models/item/{n}.json', model(n, layer0=f'{NS}:item/{n}'))

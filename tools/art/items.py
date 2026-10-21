@@ -764,6 +764,45 @@ def llave_capilla():
     return img
 
 
-ALL.update({'flashlight_uv': flashlight_uv, 'ritual_candle': candle_item, 'llave_capilla': llave_capilla})
+def regla_quebracho():
+    """Mother Remedios' quebracho ruler: a long dark-red hardwood ruler with brass-capped ends and cut marks."""
+    s = Sprite(S, seed=93)
+    wood = Material(['#1a0705', '#2e0e09', '#47170f', '#622418', '#7e3322', '#99462e'], spec=0.3, shininess=10)
+    s.poly([(3, 25), (25, 3), (29, 7), (7, 29)], wood)
+    s.poly([(3, 25), (6, 22), (10, 26), (7, 29)], GOLD)
+    s.poly([(22, 6), (25, 3), (29, 7), (26, 10)], GOLD)
+    img = s.render()
+    px = img.load()
+    for k in range(8, 24, 2):  # graduation marks along the edge
+        x, y = k + 1, 29 - k - 2
+        if 0 <= x < 32 and 0 <= y < 32 and px[x, y][3]:
+            px[x, y] = (214, 182, 120, 255)
+    for (x, y) in ((14, 17), (15, 16), (18, 14)):
+        px[x, y] = (30, 8, 6, 255)
+    return img
+
+
+def diario_teresita():
+    """Teresita's diary: a small navy notebook with a school label, a hair ribbon as bookmark, written backwards."""
+    s = Sprite(S, seed=94)
+    cover = Material(['#0b1024', '#121a33', '#1d2850', '#2b3a66', '#41558c'], ambient=0.4)
+    s.rect(7, 4, 25, 28, cover, bevel=1.5)
+    s.rect(9, 6, 24, 27, PAPER, bevel=0.5)
+    s.rect(7, 4, 23, 26, cover, bevel=1.5)
+    s.rect(11, 9, 20, 14, PAPER, bevel=0.5)
+    img = s.render()
+    px = img.load()
+    for x in range(12, 20):  # label lines
+        px[x, 11] = (90, 80, 70, 255) if x % 3 else px[x, 11]
+        px[x, 12] = (90, 80, 70, 255) if x % 2 else px[x, 12]
+    for y in range(3, 12):  # red hair ribbon bookmark
+        px[21, y] = (190, 30, 40, 255)
+        px[22, y] = (140, 20, 30, 255)
+    px[21, 12] = px[22, 13] = (190, 30, 40, 255)
+    return img
+
+
+ALL.update({'flashlight_uv': flashlight_uv, 'ritual_candle': candle_item, 'llave_capilla': llave_capilla,
+            'regla_quebracho': regla_quebracho, 'diario_teresita': diario_teresita})
 for _k in EGG_COLORS:
     ALL[f'{_k}_spawn_egg'] = (lambda k=_k: spawn_egg(k))

@@ -69,6 +69,10 @@ public final class ModItems {
 	public static final Item EXORCIST_SKIRT = register("exorcist_skirt", Item::new, new Item.Properties().rarity(Rarity.UNCOMMON).humanoidArmor(EXORCIST, ArmorType.LEGGINGS));
 	public static final Item EXORCIST_BOOTS = register("exorcist_boots", Item::new, new Item.Properties().rarity(Rarity.UNCOMMON).humanoidArmor(EXORCIST, ArmorType.BOOTS));
 
+	public static final Item REGLA_QUEBRACHO = register("regla_quebracho", Item::new, new Item.Properties().stacksTo(1).rarity(Rarity.EPIC));
+	public static final Item DIARIO_TERESITA = register("diario_teresita", Item::new, new Item.Properties().stacksTo(1).rarity(Rarity.RARE));
+	/** Looks exactly like holy water. It is not (Paloma swapped it). */
+	public static final Item AGUA_CANILLA = register("agua_canilla", Item::new, new Item.Properties().stacksTo(16));
 	public static final Item LLAVE_CAPILLA = register("llave_capilla", Item::new, new Item.Properties().stacksTo(1).rarity(Rarity.UNCOMMON));
 
 	public static final AnchorItem INVERTED_ROSARY = register("inverted_rosary", AnchorItem::new, new Item.Properties().stacksTo(1).rarity(Rarity.RARE));

@@ -112,6 +112,7 @@ LINES = {
     'colegio.alumna.shh': dict(speaker='alumna', voice='alumna', fx='room', es='Shhh...', en='Shhh...'),
     'colegio.alumna.shh_viene': dict(speaker='alumna', voice='alumna', fx='room', es='Shh... viene.', en="Shh... she's coming."),
     'colegio.cartel.canilla': dict(speaker='cartel', voice=None, es='Era agua de la canilla.', en='It was tap water.'),
+    'colegio.cartel.agua': dict(speaker='cartel', voice=None, es='Si se acerca, tirale agua bendita.', en='If she comes close, throw holy water at her.'),
     'colegio.paloma.perdon': dict(speaker='paloma', voice='paloma', fx='room', es='Perdón.', en='Sorry.'),
     'colegio.madre.pensa': dict(speaker='madre', voice='madre', fx='head', es='Pensá en lo que hiciste.', en='Think about what you did.'),
     'colegio.paloma.chiste1': dict(
@@ -147,6 +148,7 @@ TEXTS = {
                        'Religious name: Sister Maria of the Agony. Secular name: CLARA INES BUSTOS. Discharged: 22/6/1984. "Not on record. Not to be searched for."'),
     'colegio.diario': ('21/6. Las escucho cantar al revés. Lo hicieron sin mí. Eran siete. EL LIBRO DICE OCHO.',
                        '21/6. I hear them singing backwards. They did it without me. There were seven. THE BOOK SAYS EIGHT.'),
+    'colegio.silencio': ('Silencio. Quince segundos. Ni una palabra.', 'Silence. Fifteen seconds. Not a word.'),
     'colegio.reglamento': ('1. Silencio. 2. En el colegio se camina. No se corre. 3. Toda voz será escuchada.',
                            '1. Silence. 2. In this school we walk. No running. 3. Every voice will be heard.'),
     'colegio.reglas': ('SI LA ILUMINÁS, SE QUEMA. SI HACÉS RUIDO, YA TE ESCUCHÓ. NO SE CORRE EN LOS PASILLOS.',

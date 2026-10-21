@@ -3,6 +3,7 @@ package com.deadline.registry;
 import com.deadline.DeadLine;
 import com.deadline.entity.AnchorEntity;
 import com.deadline.entity.AnimaEntity;
+import com.deadline.entity.ApparitionEntity;
 import com.deadline.entity.FlareEntity;
 import com.deadline.entity.HauntEntity;
 import com.deadline.entity.HolyWaterEntity;
@@ -30,6 +31,12 @@ public final class ModEntities {
 			EntityType.Builder.of(MunecaEntity::new, MobCategory.MONSTER).sized(0.45F, 0.8F).fireImmune().clientTrackingRange(10));
 	public static final EntityType<AnimaEntity> ANIMA = register("anima",
 			EntityType.Builder.of(AnimaEntity::new, MobCategory.MONSTER).sized(0.7F, 1.9F).fireImmune().clientTrackingRange(10));
+	public static final EntityType<ApparitionEntity> ALUMNA = register("alumna",
+			EntityType.Builder.of(ApparitionEntity::new, MobCategory.MISC).sized(0.5F, 1.35F).fireImmune().clientTrackingRange(10));
+	public static final EntityType<ApparitionEntity> MADRE = register("madre",
+			EntityType.Builder.of(ApparitionEntity::new, MobCategory.MISC).sized(0.7F, 2.3F).fireImmune().clientTrackingRange(12));
+	public static final EntityType<ApparitionEntity> CLARA = register("clara",
+			EntityType.Builder.of(ApparitionEntity::new, MobCategory.MISC).sized(0.7F, 1.9F).fireImmune().clientTrackingRange(12));
 	public static final EntityType<AnchorEntity> ANCHOR = register("anchor",
 			EntityType.Builder.<AnchorEntity>of(AnchorEntity::new, MobCategory.MISC).sized(0.7F, 0.9F).fireImmune().clientTrackingRange(10));
 	public static final EntityType<HolyWaterEntity> HOLY_WATER = register("holy_water",
@@ -51,6 +58,9 @@ public final class ModEntities {
 		FabricDefaultAttributeRegistry.register(SOMBRA, SombraEntity.createAttributes());
 		FabricDefaultAttributeRegistry.register(MUNECA, MunecaEntity.createAttributes());
 		FabricDefaultAttributeRegistry.register(ANIMA, AnimaEntity.createAttributes());
+		FabricDefaultAttributeRegistry.register(ALUMNA, ApparitionEntity.createAttributes());
+		FabricDefaultAttributeRegistry.register(MADRE, ApparitionEntity.createAttributes());
+		FabricDefaultAttributeRegistry.register(CLARA, ApparitionEntity.createAttributes());
 	}
 
 	public static boolean isHaunt(Entity e) {

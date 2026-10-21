@@ -43,6 +43,7 @@ public class HauntRenderer<T extends HauntEntity, M extends EntityModel<HauntRen
 		s.revealed = entity instanceof AnimaEntity a && a.isRevealed();
 		s.speed = (float) entity.getDeltaMovement().horizontalDistance();
 		s.seed = entity.getId();
+		s.variant = entity.variant();
 	}
 
 	@Override

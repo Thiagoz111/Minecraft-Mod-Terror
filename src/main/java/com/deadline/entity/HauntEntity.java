@@ -45,6 +45,7 @@ public abstract class HauntEntity extends Monster {
 	private static final EntityDataAccessor<Boolean> ANCHORED = SynchedEntityData.defineId(HauntEntity.class, EntityDataSerializers.BOOLEAN);
 	private static final EntityDataAccessor<Integer> STUN = SynchedEntityData.defineId(HauntEntity.class, EntityDataSerializers.INT);
 	private static final EntityDataAccessor<Integer> ACTION = SynchedEntityData.defineId(HauntEntity.class, EntityDataSerializers.INT);
+	private static final EntityDataAccessor<Integer> VARIANT = SynchedEntityData.defineId(HauntEntity.class, EntityDataSerializers.INT);
 
 	/** Case site this entity belongs to, -1 when spawned freely (spawn egg / command). */
 	protected int siteIndex = -1;
@@ -64,6 +65,16 @@ public abstract class HauntEntity extends Monster {
 		builder.define(ANCHORED, false);
 		builder.define(STUN, 0);
 		builder.define(ACTION, 0);
+		builder.define(VARIANT, 0);
+	}
+
+	/** Look variant (hair style of a schoolgirl, outfit...), meaning depends on the subclass. */
+	public int variant() {
+		return this.entityData.get(VARIANT);
+	}
+
+	public void setVariant(int v) {
+		this.entityData.set(VARIANT, v);
 	}
 
 	// ------------------------------------------------------------------ state

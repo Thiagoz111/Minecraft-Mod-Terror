@@ -8,6 +8,7 @@ import com.deadline.director.Props;
 import com.deadline.director.Run;
 import com.deadline.director.Script;
 import com.deadline.director.Step;
+import com.deadline.entity.ApparitionEntity;
 import com.deadline.entity.MonjaEntity;
 import com.deadline.net.Fx;
 import com.deadline.registry.ModEntities;
@@ -17,7 +18,10 @@ import com.deadline.registry.ModSounds;
 import com.deadline.sanity.SanityManager;
 import java.util.ArrayList;
 import java.util.List;
+import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.phys.Vec3;
 
@@ -45,6 +49,10 @@ public class ColegioScript extends CaseScript {
 		dinner(s);
 		office(s);
 		compline(s);
+		greatSilence(s);
+		deadHour(s);
+		matins(s);
+		lauds(s);
 		corridorRule(s);
 	}
 
@@ -61,11 +69,14 @@ public class ColegioScript extends CaseScript {
 		s.chapter(5, "capilla_puerta").objectives("confesar", "coro").hint("confesar")
 				.setup(lights("capilla_lampara", true), door("capilla", true, false));
 		s.chapter(6, "dormitorio_puerta").objectives("dormitorio", "espejo", "silencio").hint("dormitorio")
-				.setup(lights("hall_arana", false), door("dormitorio", true, false));
+				.setup(lights("hall_arana", false), lights("pasillo_pb", false), lights("dormitorio_luna", true),
+						door("dormitorio", true, false), door("banos", true, false), door("cuarto_silencio", false, false));
 		s.chapter(7, "sacristia").objectives("regla", "volver").hint("regla")
-				.setup(lights("capilla_lampara", true));
-		s.chapter(8, "coro_alto").objectives("velas", "rezar", "romper").hint("velas");
-		s.chapter(9, "capilla_puerta").noCard().objectives("volver_casa");
+				.setup(lights("capilla_lampara", true), lights("cripta_islas", false), door("sacristia", true, false),
+						run(e -> flashlights(e.run, false)));
+		s.chapter(8, "coro_alto").objectives("velas", "rezar", "romper").hint("velas")
+				.setup(lights("coro_velas", false), lights("capilla_lampara", false), run(e -> flashlights(e.run, true)));
+		s.chapter(9, "coro_alto").noCard().objectives("volver_casa");
 	}
 
 	// ================================================================== 1. arrival
@@ -429,6 +440,7 @@ public class ColegioScript extends CaseScript {
 					if (m != null) {
 						m.setAction(MonjaEntity.ACT_CONDUCT);
 					}
+					girls(e.run, "atril_", ApparitionEntity.POSE_SING);
 				}),
 				sound(ModSounds.CORO_AVE_REVES, "coro_alto", 2.2F),
 				waitUntil(e -> e.target() != null && (Props.beamOn(e.target(), e.run.actor(NUN))
@@ -440,6 +452,10 @@ public class ColegioScript extends CaseScript {
 					}
 					Props.place(e.run, NUN, "coro_monja", true);
 					Props.action(e.run, NUN, MonjaEntity.ACT_IDLE);
+					// the only head turn of the case: eight heads at once
+					for (int i = 0; i < 7; i++) {
+						Props.action(e.run, "alumna_" + i, ApparitionEntity.POSE_HEAD_180);
+					}
 				}),
 				delay(40),
 				lights("capilla_lampara", false),
@@ -448,12 +464,521 @@ public class ColegioScript extends CaseScript {
 				delay(4),
 				lights("capilla_lampara", false),
 				despawn(NUN),
+				run(e -> despawnGirls(e.run)),
 				delay(10),
 				lights("capilla_lampara", true),
+				run(e -> {
+					ApparitionEntity paloma = Props.spawn(e.run, "paloma", ModEntities.ALUMNA, "atril_3", true);
+					if (paloma != null) {
+						paloma.setVariant(0);
+						paloma.setAction(ApparitionEntity.POSE_POINT);
+					}
+					swapHolyWater(e.run, true);
+				}),
 				say("colegio.paloma.toma", "coro_alto"),
+				despawn("paloma"),
 				complete("coro"),
 				delay(40),
 				chapter(6));
+	}
+
+	// ================================================================== 6. the great silence: dormitory, mirror, Silence Room
+	private void greatSilence(Script s) {
+		s.beat("gran_silencio").chapter(6).when(chapterTime(10)).then(
+				sound(ModSounds.LUCES_FUERA, null, 1.4F),
+				lights("hall_arana", false),
+				lights("pasillo_1p", false),
+				run(e -> flashlights(e.run, false)),
+				delay(40),
+				say("colegio.clara.dormitorio", null));
+
+		s.beat("dormitorio").chapter(6).when(enter("dormitorio")).then(
+				sound(ModSounds.DORMITORIO_RESPIRA, "dorm_silla_2", 1.2F),
+				run(e -> {
+					MonjaEntity m = Props.spawn(e.run, NUN, ModEntities.MONJA, "dorm_silla_0", false);
+					if (m != null) {
+						m.setAction(MonjaEntity.ACT_SIT);
+					}
+					e.run.vars.put("silla", 0);
+				}),
+				delay(30),
+				sayAsync("colegio.alumna.shh", "cama8"),
+				delay(50),
+				caption("colegio.cartel.agua", 100),
+				flag("nubes"));
+
+		// every 20 s the moon is covered: the chair is closer when it comes back; if you moved, she gets up
+		s.beat("nube").chapter(6).requires("nubes").unless("dormitorio_hecho").repeat(20 * 14).when(always()).then(
+				sound(ModSounds.COLEGIO_VIENTO, "dorm_silla_2", 1.5F),
+				delay(40),
+				lights("dormitorio_luna", false),
+				run(e -> {
+					ServerPlayer p = e.target();
+					e.run.vars.put("nube_pos", p == null ? null : p.position());
+				}),
+				delay(100),
+				run(e -> {
+					ServerPlayer p = e.target();
+					Vec3 before = (Vec3) e.run.vars.get("nube_pos");
+					boolean moved = p != null && before != null && (p.position().distanceTo(before) > 1.2
+							|| com.deadline.voice.NoiseMeter.get(p) > 40F);
+					int i = Math.min(4, (Integer) e.run.vars.getOrDefault("silla", 0) + 1);
+					e.run.vars.put("silla", i);
+					if (!e.run.has("persigue")) {
+						Props.place(e.run, NUN, "dorm_silla_" + i, true);
+						e.run.sound(ModSounds.SILLA_ARRASTRA, e.run.at("dorm_silla_" + i), 1.4F, 0.9F);
+					}
+					if (moved) {
+						wakeNun(e.run, 200);
+					}
+				}),
+				lights("dormitorio_luna", true));
+
+		// the tap-water gag: the "holy water" Paloma gave you does nothing
+		s.beat("canilla").chapter(6).when(event("item:deadline:agua_canilla")).then(
+				run(e -> {
+					Entity nun = e.run.actor(NUN);
+					if (nun != null) {
+						nun.setDeltaMovement(Vec3.ZERO);
+						if (nun instanceof MonjaEntity m) {
+							m.scripted = true;
+							m.setNoAi(true);
+							m.setAction(MonjaEntity.ACT_WET);
+						}
+						e.run.level.sendParticles(net.minecraft.core.particles.ParticleTypes.SPLASH, nun.getX(), nun.getY() + 1.4, nun.getZ(), 40, 0.3, 0.5, 0.3, 0.1);
+						e.run.sound(ModSounds.MONJA_MOJADA, nun.position(), 1.6F, 1.0F);
+					}
+				}),
+				delay(30),
+				caption("colegio.cartel.canilla", 60),
+				sayAsync("colegio.alumna.risitas", "cama8"),
+				delay(20),
+				run(e -> {
+					Entity nun = e.run.actor(NUN);
+					if (nun != null) {
+						e.run.sound(ModSounds.MONJA_SCREAM, nun.position(), 2.2F, 1.0F);
+					}
+					wakeNun(e.run, 220);
+				}),
+				delay(120),
+				run(e -> swapHolyWater(e.run, false)),
+				say("colegio.paloma.perdon", null));
+
+		s.beat("cama8").chapter(6).when(event("use:cama8")).then(
+				give(ModItems.DIARIO_TERESITA, 1),
+				sound(ModSounds.SILLA_ARRASTRA, "cama8", 0.6F),
+				sayAsync("colegio.alumna.shh_viene", "cama8"));
+
+		s.beat("banos").chapter(6).when(enter("banos")).then(
+				complete("dormitorio"),
+				flag("dormitorio_hecho"),
+				run(e -> {
+					e.run.unflag("persigue");
+					e.run.despawn(NUN);
+				}));
+
+		// the diary only reads the right way round in the mirror; then she is behind the reflection
+		s.beat("espejo").chapter(6).requires("dormitorio_hecho").when(holding(ModItems.DIARIO_TERESITA).and(lookAt("espejo", 25, 7))).then(
+				run(e -> {
+					for (int i = 0; i < 2; i++) {
+						ApparitionEntity g = Props.spawn(e.run, "espejo_nena_" + i, ModEntities.ALUMNA, "espejo_nena_" + i, false);
+						if (g != null) {
+							g.setVariant(i + 2);
+							g.setAction(ApparitionEntity.POSE_STAND);
+						}
+					}
+					Props.write(e.run, "diario_espejo", Props.chalk("21/6. Las escucho cantar al revés.\nLo hicieron sin mí.\nEran siete.\nEL LIBRO DICE OCHO."), 1.0F);
+				}),
+				bigText("deadline.text.colegio.diario", 140),
+				delay(120),
+				run(e -> {
+					Props.spawn(e.run, NUN, ModEntities.MONJA, "espejo_detras", false);
+					e.run.sound(ModSounds.MONJA_REGLA_TAP, e.run.at("espejo_detras"), 1.2F, 1.0F);
+				}),
+				waitUntil(e -> e.target() != null && !e.run.looking(e.target(), e.run.at("espejo"), 60, 10), 20 * 12),
+				run(e -> Props.place(e.run, NUN, "espejo_cara", false)),
+				waitUntil(e -> e.target() != null && e.run.looking(e.target(), e.run.at("espejo"), 35, 10), 20 * 12),
+				sound(ModSounds.ESPEJO_RAJA, "espejo", 2.0F),
+				jumpscare("monja"),
+				shake(1.0F, 20),
+				delay(12),
+				fade(60),
+				delay(30),
+				teleport("cuarto_silencio"),
+				run(e -> {
+					e.run.despawn(NUN);
+					e.run.despawn("espejo_nena_0");
+					e.run.despawn("espejo_nena_1");
+					e.run.door("cuarto_silencio", false, true);
+				}),
+				complete("espejo"),
+				flag("encerrado"));
+
+		// 15 seconds of silence (voice) or stillness (no microphone); Paloma tries to make you laugh
+		s.beat("cuarto_silencio").chapter(6).requires("encerrado").when(enter("cuarto_silencio")).then(
+				delay(30),
+				say("colegio.madre.pensa", null),
+				loop(e -> {
+					ServerPlayer p = e.target();
+					if (p == null) {
+						return true;
+					}
+					Vec3 last = (Vec3) e.run.vars.get("quieto_pos");
+					boolean noisy = com.deadline.voice.Voice.enabled(p)
+							? com.deadline.voice.Voice.speaking(p, e.run.now())
+							: last != null && p.position().distanceTo(last) > 0.08;
+					e.run.vars.put("quieto_pos", p.position());
+					int n = noisy ? 0 : e.run.count("silencio") + 1;
+					e.run.counters.put("silencio", n);
+					if (e.t % 4 == 0) {
+						Fx.bigText(p, "deadline.text.colegio.silencio", 12, n / 300F);
+					}
+					if (e.t == 120) {
+						e.run.say("colegio.paloma.chiste1", e.run.at("rendija"));
+					} else if (e.t == 420) {
+						e.run.say("colegio.paloma.chiste2", e.run.at("rendija"));
+					}
+					return n >= 300;
+				}),
+				run(e -> {
+					ServerPlayer p = e.target();
+					if (p != null) {
+						Props.commend(e.run, p);
+					}
+				}),
+				door("cuarto_silencio", true, false),
+				complete("silencio"),
+				delay(40),
+				chapter(7));
+	}
+
+	// ================================================================== 7. the dead hour: the ruler, the wall, run
+	private void deadHour(Script s) {
+		s.beat("tumba").chapter(7).when(event("use:cripta_tumba")).then(
+				sound(ModSounds.TUMBA_TAPA, "cripta_tumba", 1.6F),
+				delay(50),
+				give(ModItems.REGLA_QUEBRACHO, 1),
+				complete("regla"),
+				sound(ModSounds.COLEGIO_CAMPANA_TRIPLE, null, 1.6F),
+				shake(0.5F, 20),
+				delay(60),
+				shake(0.6F, 20),
+				delay(60),
+				shake(0.8F, 30),
+				lights("capilla_lampara", false),
+				delay(40),
+				run(e -> {
+					for (BlockPos rel : e.run.def.group("cripta_muro")) {
+						e.run.setBlock(e.run.origin.offset(rel), net.minecraft.world.level.block.Blocks.AIR.defaultBlockState());
+					}
+					e.run.sound(ModSounds.MURO_CAE, e.run.at("silla7_3"), 2.2F, 1.0F);
+					Vec3 v = e.run.at("silla7_3");
+					e.run.level.sendParticles(net.minecraft.core.particles.ParticleTypes.CAMPFIRE_COSY_SMOKE, v.x, v.y + 1, v.z - 2, 60, 3, 1, 0.5, 0.01);
+					girls(e.run, "silla7_", ApparitionEntity.POSE_FACE_WALL);
+				}),
+				delay(50),
+				run(e -> {
+					for (int i = 0; i < 7; i++) {
+						Entity g = e.run.actor("alumna_" + i);
+						if (g instanceof ApparitionEntity a) {
+							a.setAction(ApparitionEntity.POSE_TURN);
+							ServerPlayer p = e.target();
+							if (p != null) {
+								a.setYRot(Props.yawTowards(a.position(), p.position()));
+								a.setYBodyRot(a.getYRot());
+								a.setYHeadRot(a.getYRot());
+							}
+						}
+					}
+				}),
+				delay(10),
+				say("colegio.alumnas.corre", "silla7_3"),
+				run(e -> {
+					for (int i = 0; i < 7; i++) {
+						Props.action(e.run, "alumna_" + i, ApparitionEntity.POSE_RUN);
+					}
+					// she is right behind you
+					MonjaEntity m = Props.spawn(e.run, NUN, ModEntities.MONJA, "silla7_3", true);
+					if (m != null) {
+						m.scripted = false;
+						m.setNoAi(false);
+						ServerPlayer p = e.target();
+						if (p != null) {
+							m.setTarget(p);
+						}
+					}
+				}),
+				// the girls run ahead to the sacristy lighting the candle islands
+				loop(e -> {
+					Vec3 goal = e.run.at("cripta_entrada");
+					for (int i = 0; i < 7; i++) {
+						Entity g = e.run.actor("alumna_" + i);
+						if (g != null) {
+							Vec3 d = goal.subtract(g.position());
+							double len = d.length();
+							if (len > 0.5) {
+								Vec3 step = d.scale(Math.min(0.32, len) / len);
+								g.setPos(g.getX() + step.x, g.getY(), g.getZ() + step.z);
+								g.setYRot(Props.yawTowards(g.position(), goal));
+							}
+						}
+					}
+					if (e.t % 25 == 0 && e.t / 25 < 4) {
+						e.run.light("cripta_islas", e.t / 25, true);
+						e.run.sound(ModSounds.ALUMNA_PASOS, goal, 1.2F, 1.0F);
+					}
+					return e.t > 130;
+				}),
+				run(e -> despawnGirls(e.run)),
+				flag("persecucion"));
+
+		s.beat("volver").chapter(7).requires("persecucion").when(enter("capilla")).then(
+				complete("volver"),
+				run(e -> Props.burnAway(e.run, NUN)),
+				delay(30),
+				chapter(8));
+	}
+
+	// ================================================================== 8. matins: 7 candles, the prayer, break the ruler
+	private void matins(Script s) {
+		s.beat("falta_voz").chapter(8).when(chapterTime(40)).then(say("colegio.clara.falta_voz", null));
+		for (int i = 0; i < 7; i++) {
+			final int k = i;
+			s.beat("vela_" + i).chapter(8).when(event("use:vela_" + i)).then(
+					run(e -> {
+						e.run.light("coro_velas", k, true);
+						ApparitionEntity g = Props.spawn(e.run, "alumna_" + k, ModEntities.ALUMNA, "atril_" + k, false);
+						if (g != null) {
+							g.setVariant(k);
+							g.setAction(ApparitionEntity.POSE_SING);
+						}
+						ServerPlayer p = e.target();
+						if (p != null) {
+							Props.commend(e.run, p);
+						}
+						if (e.run.inc("velas") >= 7) {
+							e.run.complete("velas");
+							e.run.flag("velas");
+						}
+					}));
+		}
+		s.beat("rezar").chapter(8).requires("velas").when(enter("atril8")).then(
+				prayer(1), flash(0.8F), sound(ModSounds.CORO_AVE_DERECHO_1, "coro_alto", 2.0F), run(e -> wave(e.run)), delay(20 * 12), run(e -> Props.burnAway(e.run, NUN)),
+				prayer(2), flash(0.9F), sound(ModSounds.CORO_AVE_DERECHO_2, "coro_alto", 2.2F), run(e -> wave(e.run)), delay(20 * 12), run(e -> Props.burnAway(e.run, NUN)),
+				prayer(3), flash(1.0F), sound(ModSounds.CORO_AVE_DERECHO_3, "coro_alto", 2.4F),
+				run(e -> {
+					MonjaEntity m = Props.spawn(e.run, NUN, ModEntities.MONJA, "coro_pared", false);
+					if (m != null) {
+						m.setAction(MonjaEntity.ACT_KNEEL_WALL);
+					}
+				}),
+				complete("rezar"),
+				flag("arrodillada"));
+
+		s.beat("romper").chapter(8).requires("arrodillada").when((r, p) -> r.event("item:deadline:regla_quebracho")
+				&& r.actor(NUN) != null && r.actor(NUN).distanceTo(p) < 5).then(
+				sound(ModSounds.REGLA_ROMPE, "coro_pared", 2.2F),
+				run(e -> {
+					ServerPlayer p = e.target();
+					if (p != null) {
+						var inv = p.getInventory();
+						for (int i = 0; i < inv.getContainerSize(); i++) {
+							if (inv.getItem(i).is(ModItems.REGLA_QUEBRACHO)) {
+								inv.getItem(i).shrink(1);
+								break;
+							}
+						}
+					}
+					Props.action(e.run, NUN, MonjaEntity.ACT_REVEAL);
+				}),
+				flash(1.0F),
+				shake(1.0F, 30),
+				delay(40),
+				run(e -> {
+					Entity nun = e.run.actor(NUN);
+					if (nun != null) {
+						e.run.level.sendParticles(ModParticles.DEMON_SMOKE, nun.getX(), nun.getY() + 1.5, nun.getZ(), 120, 0.6, 1.2, 0.6, 0.05);
+					}
+					e.run.sound(ModSounds.JAR_CAPTURE, e.run.at("coro_pared"), 1.8F, 0.8F);
+				}),
+				delay(20),
+				despawn(NUN),
+				complete("romper"),
+				delay(30),
+				chapter(9));
+	}
+
+	// ================================================================== 9. lauds: Clara, the choir with mouths, "SHHH"
+	private void lauds(Script s) {
+		s.beat("laudes").chapter(9).when(chapterTime(5)).then(
+				sound(ModSounds.CORO_ACORDE_FINAL, "coro_alto", 2.0F),
+				run(e -> {
+					girls(e.run, "atril_", ApparitionEntity.POSE_FREED);
+					ApparitionEntity clara = Props.spawn(e.run, "clara", ModEntities.CLARA, "coro_monja", true);
+					if (clara != null) {
+						clara.setAction(ApparitionEntity.POSE_RISE);
+					}
+				}),
+				delay(40),
+				say("colegio.clara.gracias", "coro_monja"),
+				delay(20),
+				run(e -> {
+					ApparitionEntity madre = Props.spawn(e.run, "madre", ModEntities.MADRE, "coro_pared", true);
+					if (madre != null) {
+						madre.setAction(ApparitionEntity.POSE_WRITE);
+					}
+				}),
+				say("colegio.madre.aja", "coro_pared"),
+				delay(10),
+				run(e -> {
+					for (int i = 0; i < 7; i++) {
+						Entity g = e.run.actor("alumna_" + i);
+						Entity m = e.run.actor("madre");
+						if (g != null && m != null) {
+							g.setYRot(Props.yawTowards(g.position(), m.position()));
+						}
+					}
+				}),
+				say("colegio.alumnas.shhh", "coro_alto"),
+				run(e -> Props.burnAway(e.run, "madre")),
+				delay(60),
+				run(e -> {
+					Props.action(e.run, "clara", ApparitionEntity.POSE_BOW);
+					for (ServerPlayer p : e.run.hunters()) {
+						Fx.title(p, "deadline.title.solved", 100);
+					}
+				}),
+				complete("volver_casa"),
+				delay(120),
+				run(e -> {
+					for (ServerPlayer p : e.run.hunters()) {
+						com.deadline.caseload.CaseManager.returnHome(p, true);
+					}
+				}));
+	}
+
+	/** Lets the nun loose (real AI) for `ticks`, then sits her back on her chair. */
+	static void wakeNun(Run r, int ticks) {
+		if (r.actor(NUN) instanceof MonjaEntity m) {
+			r.flag("persigue");
+			m.scripted = false;
+			m.setNoAi(false);
+			m.setAction(MonjaEntity.ACT_HUNT);
+			ServerPlayer p = r.star();
+			if (p != null) {
+				m.setTarget(p);
+			}
+			r.vars.put("despierta_hasta", r.now() + ticks);
+		}
+	}
+
+	/** One prayer phrase: speak it aloud (Simple Voice Chat) or hold the ritual book still; 6 s of progress. */
+	static Step prayer(int n) {
+		return e -> {
+			ServerPlayer p = e.target();
+			if (p == null) {
+				return true;
+			}
+			String key = "rezo" + n;
+			boolean praying;
+			if (com.deadline.voice.Voice.enabled(p)) {
+				praying = com.deadline.voice.Voice.speaking(p, e.run.now()) && com.deadline.voice.Voice.relative(p) > -8F;
+			} else {
+				praying = p.getMainHandItem().is(ModItems.RITUAL_BOOK) || p.getOffhandItem().is(ModItems.RITUAL_BOOK)
+						|| p.isShiftKeyDown();
+			}
+			int v = Math.max(0, e.run.count(key) + (praying ? 2 : (e.t % 2 == 0 ? -1 : 0)));
+			e.run.counters.put(key, v);
+			if (e.t % 3 == 0) {
+				Fx.bigText(p, "deadline.text.colegio.oracion." + n, 10, Math.min(1F, v / 240F));
+			}
+			return v >= 240;
+		};
+	}
+
+	/** Between prayer phrases she comes for you (real AI, from the far side of the choir). */
+	static void wave(Run r) {
+		MonjaEntity m = Props.spawn(r, NUN, ModEntities.MONJA, "coro_monja", true);
+		if (m != null) {
+			m.scripted = false;
+			m.setNoAi(false);
+			ServerPlayer p = r.star();
+			if (p != null) {
+				m.setTarget(p);
+			}
+			r.sound(ModSounds.MONJA_SCREAM, m.position(), 2.0F, 1.0F);
+		}
+	}
+
+	/** The seven choir girls at points prefix0..prefix6, each with her own hair. */
+	static void girls(Run r, String prefix, int pose) {
+		for (int i = 0; i < 7; i++) {
+			ApparitionEntity g = Props.spawn(r, "alumna_" + i, ModEntities.ALUMNA, prefix + i, false);
+			if (g != null) {
+				g.setVariant(i);
+				g.setAction(pose);
+			}
+		}
+	}
+
+	static void despawnGirls(Run r) {
+		for (int i = 0; i < 7; i++) {
+			r.despawn("alumna_" + i);
+		}
+	}
+
+	/** Paloma's trick: every holy water becomes tap water (true) and back (false). */
+	static void swapHolyWater(Run r, boolean toTap) {
+		for (ServerPlayer p : r.hunters()) {
+			var inv = p.getInventory();
+			for (int i = 0; i < inv.getContainerSize(); i++) {
+				ItemStack st = inv.getItem(i);
+				if (toTap && st.is(ModItems.HOLY_WATER)) {
+					inv.setItem(i, new ItemStack(ModItems.AGUA_CANILLA, st.getCount()));
+				} else if (!toTap && st.is(ModItems.AGUA_CANILLA)) {
+					inv.setItem(i, new ItemStack(ModItems.HOLY_WATER, st.getCount()));
+				}
+			}
+			if (!toTap && !inv.contains(new ItemStack(ModItems.HOLY_WATER))) {
+				inv.add(new ItemStack(ModItems.HOLY_WATER, 2));
+			}
+		}
+	}
+
+	/** The flashlight dies in the great silence (battery drained) and comes back for matins. */
+	static void flashlights(Run r, boolean charged) {
+		for (ServerPlayer p : r.hunters()) {
+			var inv = p.getInventory();
+			for (int i = 0; i < inv.getContainerSize(); i++) {
+				ItemStack st = inv.getItem(i);
+				if (st.is(ModItems.FLASHLIGHT)) {
+					st.setDamageValue(charged ? 0 : st.getMaxDamage() - 1);
+					if (!charged) {
+						com.deadline.item.ItemUtil.setFlags(st, false, false);
+					}
+				}
+			}
+			if (!charged) {
+				r.sound(ModSounds.FLASHLIGHT_FLICKER, p.position(), 1.0F, 1.0F);
+			}
+		}
+	}
+
+	@Override
+	public void tick(Run r) {
+		// a woken nun sits back down after a while (dormitory)
+		Object until = r.vars.get("despierta_hasta");
+		if (until instanceof Long t && r.now() > t && r.chapter() == 6) {
+			r.vars.remove("despierta_hasta");
+			r.unflag("persigue");
+			if (r.actor(NUN) instanceof MonjaEntity m && !r.has("dormitorio_hecho")) {
+				m.scripted = true;
+				m.setNoAi(true);
+				m.setTarget(null);
+				m.setAction(MonjaEntity.ACT_SIT);
+				Props.place(r, NUN, "dorm_silla_" + r.vars.getOrDefault("silla", 0), true);
+			}
+		}
 	}
 
 	// ================================================================== the corridor rule (all chapters)

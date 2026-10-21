@@ -453,11 +453,11 @@ FACE = [
     "222222685222222",   # r8
     "222222685222222",   # r9
     "333333695333333",   # r10 y-34 nose tip
-    "467754464457764",   # r11 y-33 cheekbones lit, nose wings, the folds start
-    "356836757638653",   # r12 y-32 folds cut down past the bloodless upper lip, cheeks hollow at the sides
-    "34635KKKKKK3643",   # r13 y-31 ONE pressed line, pulled to her left (jaw top row)
-    "3454K7777764543",   # r14 y-30 right corner hooked down, lower lip catches the light
-    "234354444454432",   # r15 y-29 under-lip shadow, marionette line under the hooked corner
+    "46786k464k68764",   # r11 y-33 cheekbones lit; the deep folds start at the nose wings
+    "3578k56765k8753",   # r12 y-32 folds cut down past the bloodless upper lip, lit cheek bulge outside them
+    "3464kKKKKKKk643",   # r13 y-31 ONE pressed line, pulled to her left, the folds bracket it (jaw top row)
+    "354kK777776k453",   # r14 y-30 right corner hooked down, lower lip catches the light, marionette lines
+    "234k5444445k432",   # r15 y-29 under-lip shadow, jowl creases
     "234567898765432",   # r16 y-28 hard chin
 ]
 assert all(len(r) == 15 for r in FACE), [len(r) for r in FACE]
@@ -492,7 +492,7 @@ def face_decals(x0, y0, w, h):
 # slanted, angry half-moon; under the raised left brow the lens glows round and wide -- the skeptical "Aja." look.
 GLASSES = [
     "..fff.....fff..",
-    ".fdddFFFFFdWGf.",
+    ".fdddFfffFdWGf.",
     "fWddddF.FWWWWWf",
     "FWWWddF.FWWWWWF",
     "FWWWWWF.FWWWWWF",

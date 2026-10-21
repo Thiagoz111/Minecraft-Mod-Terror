@@ -222,4 +222,10 @@ SCRIPT = {
     'deadline.hud.amonestaciones': ('Amonestaciones: %s', 'Reprimands: %s'),
     'deadline.hud.te_escucha': ('TE ESCUCHA', 'SHE HEARS YOU'),
     'item.deadline.llave_capilla': ('Llave de la capilla', 'Chapel key'),
+    'item.deadline.regla_quebracho': ('Regla de quebracho', 'Quebracho ruler'),
+    'item.deadline.diario_teresita': ('Diario de Teresita', "Teresita's diary"),
+    'item.deadline.agua_canilla': ('Agua bendita', 'Holy Water'),
+    'entity.deadline.alumna': ('Alumna', 'Schoolgirl'),
+    'entity.deadline.madre': ('Madre Remedios', 'Mother Remedios'),
+    'entity.deadline.clara': ('Clara', 'Clara'),
 }
