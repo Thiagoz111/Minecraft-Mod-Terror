@@ -342,3 +342,70 @@ ENTITIES.update({
     'toti': ('Toti', 'Toti'),
 })
 # --- end casa:P1
+
+# --- casa:P7 (CasaScript: chapter cards, objectives, hints, the reprimand stamp, signs and captions) ---
+SCRIPT.update({
+    # chapter cards (title + subtitle)
+    'deadline.casa.ch.1': ('02:41 · LLEGADA', '02:41 · ARRIVAL'),
+    'deadline.casa.ch.1.sub': ('Pasaje Las Glicinas 1961, Villa Esperanza', '1961 Las Glicinas Lane, Villa Esperanza'),
+    'deadline.casa.ch.2': ('02:52 · LA CASA', '02:52 · THE HOUSE'),
+    'deadline.casa.ch.2.sub': ('Es la humedad.', "It's the damp."),
+    'deadline.casa.ch.3': ('03:14 · CHORIPÁN', '03:14 · CHORIPÁN'),
+    'deadline.casa.ch.3.sub': ('El perro está raro.', 'The dog is acting weird.'),
+    'deadline.casa.ch.4': ('03:33 · LA CUCHA', '03:33 · THE DOGHOUSE'),
+    'deadline.casa.ch.4.sub': ('¿Quién es un buen chico?', "Who's a good boy?"),
+    'deadline.casa.ch.5': ('03:58 · LA PARRILLA', '03:58 · THE GRILL'),
+    'deadline.casa.ch.5.sub': ('Jorge volvió con el carbón.', 'Jorge is back with the charcoal.'),
+    'deadline.casa.ch.6': ('04:20 · LUCÍA', '04:20 · LUCÍA'),
+    'deadline.casa.ch.6.sub': ('Él tiene muchas voces.', 'He has many voices.'),
+    'deadline.casa.ch.7': ('04:44 · LA NONA', '04:44 · GRANDMA'),
+    'deadline.casa.ch.7.sub': ('Hilo rojo, como en 1961.', 'Red thread, like in 1961.'),
+    'deadline.casa.ch.8': ('07:30 · DESAYUNO', '07:30 · BREAKFAST'),
+    'deadline.casa.ch.8.sub': ('Pasaje Las Glicinas, a la mañana', 'Las Glicinas Lane, in the morning'),
+    # objectives (HUD checklist)
+    'deadline.casa.obj.familia': ('Hablá con la familia.', 'Talk to the family.'),
+    'deadline.casa.obj.evidencias': ('Reuní 3 evidencias.', 'Gather 3 pieces of evidence.'),
+    'deadline.casa.obj.luz': ('Volvé a dar la luz: el tablero está en el lavadero.', 'Get the power back on: the breaker panel is in the laundry room.'),
+    'deadline.casa.obj.chori': ('Algo le pasa a Choripán.', 'Something is wrong with Choripán.'),
+    'deadline.casa.obj.calmar': ('Calmá a Choripán sin lastimarlo.', 'Calm Choripán down without hurting him.'),
+    'deadline.casa.obj.jorge': ('Liberá a Jorge.', 'Free Jorge.'),
+    'deadline.casa.obj.ofelia': ('Purificá a Ofelia. No pierdas de vista a las muñecas.', "Purify Ofelia. Don't lose sight of the dolls."),
+    'deadline.casa.obj.sotano': ('Bajá al sótano.', 'Go down to the basement.'),
+    'deadline.casa.obj.coser': ('Cosele la boca a Ofelia (3 puntadas).', "Sew Ofelia's mouth shut (3 stitches)."),
+    'deadline.casa.obj.frasco': ('Guardá a Ofelia en el Frasco de Almas.', 'Put Ofelia in the Spirit Jar.'),
+    'deadline.casa.obj.desayunar': ('Desayuná.', 'Have breakfast.'),
+    'deadline.casa.obj.volver_casa': ('Volvé a casa.', 'Go home.'),
+    # hints (after 3 minutes in a chapter)
+    'deadline.casa.hint.familia': ('La señora está en la puerta, en ruleros.', 'The lady is at the door, in curlers.'),
+    'deadline.casa.hint.lucia': ('Probá la spirit box en el cuarto de Lucía.', "Try the spirit box in Lucía's room."),
+    'deadline.casa.hint.chori': ('Llamalo vos. A vos capaz te hace caso.', "You call him. Maybe he'll listen to you."),
+    'deadline.casa.hint.calmar': ('¿Qué es lo único que un perro no puede rechazar?', "What's the one thing a dog can't refuse?"),
+    'deadline.casa.hint.sal': ('LE FALTA SAL.', 'IT NEEDS SALT.'),
+    'deadline.casa.hint.ofelia': ('No podés mirar a las dos cosas a la vez. Usá sal. Usá el flash.', "You can't watch both at once. Use salt. Use the flash."),
+    'deadline.casa.hint.coser': ('Hilo y aguja: la lata de la Nona.', "Thread and needle: Grandma's tin."),
+    # the reprimand book, continued from the school
+    'deadline.casa.stamp.pies': ('Por entrar a casa ajena sin limpiarse los pies.', "For entering someone else's home without wiping your feet."),
+    'deadline.casa.stamp.felicitacion': ('FELICITACIÓN', 'COMMENDATION'),
+    # the voice imitation without a recording (speaker + line)
+    'deadline.casa.speaker.eco': ('Una voz como la tuya', 'A voice like yours'),
+    'deadline.casa.caption.chori_veni': ('¡Choripán, vení!', 'Choripán, come here!'),
+    # signs and nudges (speaker: cartel)
+    'deadline.casa.msg.evidencias': ('Evidencias: %s/3', 'Evidence: %s/3'),
+    'deadline.casa.caption.cocina': ('Algo se cae en la cocina.', 'Something falls over in the kitchen.'),
+    'deadline.casa.caption.tablero': ('Saltó la térmica. El tablero está en el lavadero.', 'The breaker tripped. The panel is in the laundry room.'),
+    'deadline.casa.caption.nona': ('La Nona está despierta en su cuarto, con las velas del altar prendidas.', "Grandma is awake in her room, the altar candles lit."),
+    'deadline.casa.caption.llamalo': ('(Decilo en voz alta: «¡Choripán, vení!»)', '(Say it out loud: "Choripán, come here!")'),
+    'deadline.casa.caption.cucha': ('Choripán se metió en la cucha. No sale.', "Choripán crawled into his doghouse. He won't come out."),
+    'deadline.casa.caption.tirale': ('(Tirale algo: tecla Q.)', '(Throw him something: Q key.)'),
+    'deadline.casa.caption.parrilla': ('Cociná el chorizo en la parrilla, adentro del círculo de sal.', 'Grill the chorizo on the parrilla, inside the salt circle.'),
+    'deadline.casa.caption.pan': ('Chorizo asado + pan = choripán. Juntalos en el inventario.', 'Grilled chorizo + bread = choripán. Combine them in your inventory.'),
+    'deadline.casa.caption.bendecir': ('Para él no alcanza: juntalo con agua bendita.', 'Not enough for him: combine it with holy water.'),
+    'deadline.casa.caption.tiralo': ('¡Tiráselo! Lo atrapa en el aire.', 'Throw it to him! He catches it in the air.'),
+    'deadline.casa.caption.otro': ('Marta te tira otro chorizo y otro pan por la ventana.', 'Marta throws you another chorizo and another roll through the window.'),
+    'deadline.casa.caption.sal': ('Tirale sal: clic derecho con la Sal Consagrada, mirándolo, a menos de 6 bloques.', 'Throw salt at him: right click with the Consecrated Salt, looking at him, within 6 blocks.'),
+    'deadline.casa.caption.lana': ('Cortá la lana con la daga o quemala con una bengala.', 'Cut the yarn with the dagger or burn it with a flare.'),
+    'deadline.casa.caption.agua': ('Primero, agua bendita a Ofelia.', 'First, holy water on Ofelia.'),
+    'deadline.casa.caption.puntada': ('Se ríe con la voz de Lucía. Se deshizo una puntada.', "It laughs in Lucía's voice. A stitch came undone."),
+    'deadline.casa.caption.frasco': ('Ofelia está cosida. Guardala en el Frasco de Almas.', "Ofelia is sewn shut. Put her in the Spirit Jar."),
+})
+# --- end casa:P7

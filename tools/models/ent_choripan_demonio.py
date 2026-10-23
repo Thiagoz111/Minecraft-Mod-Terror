@@ -11,26 +11,29 @@ legs, then five fur links (seg2..seg6) and the rump (hips).  Every link is tied 
 stretched, see-through pink-grey skin: a rib cage of partial rib arcs and a knobbly spine ridge, then a pinched
 waist where the skin is pulled thinnest.  The chain carries a hunch: it climbs from the chest to a crest at
 seg3/seg4, sags at seg5 and lifts again into the rump, and the links taper (chest 14 wide -> waist 11 -> hips 13).
-Three pairs of thin, far-too-long, NOT symmetrical human arms grow out of the flanks of seg3, seg5 and the hips:
-spider elbows above the spine, knobbly elbows and wrists, dirty hands -- one flat, one on its knuckles, one
-clawing on its fingertips, one with an extra joint and a wrist broken backwards.  The dachshund tail (now big
-enough to read) still sticks up and wags.
+Three pairs of far-too-long, NOT symmetrical human arms grow out of the flanks of seg3, seg5 and the hips: pallid
+dead skin lit on top and livid underneath, 5 x 5 upper arms with a lean deltoid, bony elbow points, 4 x 4 forearms
+tapering into 3 x 3 wrists with crease rings, bruises only at the joints, grime toward the filthy hands -- one flat,
+one on its knuckles, one clawing on its fingertips, one with an extra joint and a wrist broken backwards.  The
+dachshund tail (now big enough to read) still sticks up and wags.
 
-Face (the clip close-up and the jumpscare portrait): it must still be Choripan.  The cute form's identity markers
-are kept -- tan muzzle and jowls, chunky tan brows (inner ends raised: puppy eyes), big almond eyes with a 2x2
-glint, one big round black nose -- but the eyes are milk-white with tiny red pinpoint pupils (2x2, one hot texel,
-emissive layer 'eyes') looking slightly inward, and the tan muzzle is TORN OPEN from the nose to the throat into
-four flaps (jaw_upper_right/left, jaw_lower_right/left): the nose is cut in half down a raw red seam, each flap
-is lined with crooked needle teeth in two offset rows (zero-thickness planes), red gums, a ridged palate, a deep
-red throat and a long black tongue (tongue + tongue_tip).
+Face (the clip close-up and the jumpscare portrait): it must still be Choripan.  The dog's identity markers are
+kept -- tan muzzle and jowls, chunky tan brows (inner ends raised: puppy eyes), big almond eyes RECESSED in sockets
+under brown lids with a warm wet lower lid, and THE big glossy black nose with its wet highlight -- but the eyes are
+milk-white with tiny red pin pupils (emissive layer 'eyes') looking slightly inward, and the muzzle is TORN into four
+flaps (jaw_upper_right/left, jaw_lower_right/left) that peel back radially, like a flower, from the corners of a
+square MAW cut into the face: gum walls darkening to a black throat, two rings of needle teeth inside it.  The nose is
+split down a raw red seam, each half rides its upper flap; every flap is lined with uneven needle teeth (2-3 long fangs
+per row), red gums and raw cut faces; a long black tongue (tongue + tongue_tip) with a wet stripe and a rounded tip.
 
 Export for Java (ChoripanRenderer draws the body as a chain that follows the head's position history): every body
 link is its own TOP-LEVEL bone, link_0 (head + neck) .. link_7 (hips), pivot at the link's front joint; arms, front
 legs, shreds and the tail ride on their link.  Toggles (hidden by default): `vomit` (the black column) and `choripan`
 (the blessed choripan caught in the air); `mouth_item` is a cubeless locator for the fetched ItemStack.  Poses:
 unspool, run, fetch_drop, beg, lunge, catch, vomit, retract, stretch, coil + the gait keys walk_1..walk_4 (the six
-arms' tripod walk, looped in trail mode).  ANIM_NOTES at the end of the file is the animation contract (chain table,
-trail algorithm, every bone, toggle and pose) and is generated from the built model, so its numbers never go stale.
+arms' tripod walk, looped in trail mode); POSE_ANCHOR says how each pose is placed on the trail.  ANIM_NOTES at the end
+of the file is the animation contract (chain table, trail algorithm, anchors, every bone, toggle and pose) and is
+generated from the built model, so its numbers never go stale.
 """
 import math
 import os
@@ -2495,7 +2498,7 @@ def make_beg():
     F = {n: (k.R(n), k.wpos(n)) for n in BODY}
     # the neck stands up out of the chest so the head sits ON TOP of the tower, looking down at you with the dog
     # head tilt; nothing of the begging below it (paws, tag, praying hands) hides behind the skull
-    k.neck_head(F, wdir(-86, 0), R_deg(0, 4, 0) @ R_deg(0, 0, 18) @ R_deg(1, 0, 0), slide=2.0)
+    k.neck_head(F, wdir(-86, 0), R_deg(0, 4, 0) @ R_deg(0, 0, 18) @ R_deg(-6, 0, 0), slide=6.0)
     k.flower(3, 8, jitter=1.0)
     k.brows(15, -0.7)
     k.set('tongue', 10, 34, 0)                                 # lolling out of the side of the mouth
@@ -2503,8 +2506,8 @@ def make_beg():
     # stubby front paws held up high beside the name tag, folded down at the wrist: the dachshund 'sit pretty'
     for side, sx in (('right', -1), ('left', 1)):
         lb, pb = f'front_{side}_leg', f'front_{side}_paw'
-        k.set_world_rot(lb, R_deg(0, -30 * sx, 0) @ R_deg(-128, 0, 0) @ R_deg(0, 0, 12 * sx))
-        k.set_world_rot(pb, R_deg(0, -12 * sx, 0) @ R_deg(84, 0, 0))
+        k.set_world_rot(lb, R_deg(0, -40 * sx, 0) @ R_deg(-128, 0, 0) @ R_deg(0, 0, 16 * sx))
+        k.set_world_rot(pb, R_deg(0, -22 * sx, 0) @ R_deg(84, 0, 0))
     k.hang_tag(-32)                                          # resting on the bulge of the belly
     # pair 1: two human hands held out side by side under the tag, palms up and tipped toward you, cupped:
     # 'una monedita'.  Elbows jut out like a mantis (the forearms are far too long to fold any closer)
