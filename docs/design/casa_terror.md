@@ -330,3 +330,75 @@ por venir.", "Ya somos todos." + foto.
   parado, decals de sangre, sonidos nuevos.
 - **Tanda C:** set pieces y actos (llegada, cena, Lucía techo, Jorge sonámbulo, la Nona se rompe, sótano, final en el
   auto), los otros 24 eventos, revisión de partida completa, CI con capturas.
+
+## 11. Contrato de marcadores de la casona v2 (`tools/sites/casa.py` → `sites/casa.json`)
+
+El script y el director usan EXACTAMENTE estos nombres (se pueden agregar más, nunca renombrar).
+Puntos `(x,y,z,facing)` = donde se para un actor/jugador mirando hacia `facing`.
+
+**Exterior:** `spawn` (=`llegada`), `llegada` (donde estaciona el auto, en el camino de entrada, mirando a la casa),
+`porton`, `camino` (mitad del camino de entrada), `puerta_entrada` (afuera, frente a la puerta: donde se golpea),
+`nona_umbral` (adentro, en el umbral, mirando afuera), `farol`, `patio`, `patio_fondo` (lo más lejos de la casa),
+`cucha`, `cucha_techo`, `parrilla`, `pileta`, `soga`, `galpon`, `limonero`, `ventana_1p_afuera` (punto en el aire
+afuera de una ventana del 1P sin balcón: donde "flota" la Nona mirando adentro), `final_auto` (donde aparece el auto
+al final), `perro_mira_1` (patio_fondo, mirando la casa), `perro_mira_2` (afuera de la ventana del living),
+`perro_mira_3` (fondo del pasillo PB), `perro_mira_4` (al pie de la cama de huéspedes).
+**PB:** `hall`, `espejo_hall` (frente al espejo grande), `living`, `tv`, `sillon_jorge`, `mecedora`, `comedor`,
+`silla_1`..`silla_8` (cabecera = `silla_1` = Nona; `silla_2` Marta, `silla_3` Jorge, `silla_4` Lucía, `silla_5` Toti,
+`silla_6` jugador), `aparador`, `cocina`, `heladera`, `mesada`, `cuchillos`, `canilla_cocina`, `despensa`,
+`lavadero`, `tablero`, `bano_pb`, `nona_cuarto`, `nona_cama`, `nona_altar`, `nona_mecedora`, `costurero`,
+`maquina_coser`, `escritorio`, `escritorio_silla`, `pasillo_pb`, `pasillo_pb_fondo`, `esc_principal_pie`,
+`esc_principal_arriba`, `esc_servicio_pie`, `esc_servicio_arriba`, `telefono_fijo`.
+**1P:** `pasillo_1p`, `pasillo_1p_fondo`, `lucia_cuarto`, `lucia_cama`, `lucia_techo` (en el techo del cuarto,
+SEALED), `pasillo_techo` (techo del pasillo 1P, SEALED), `estante_munecas`, `caja_musica`, `toti_cuarto`,
+`toti_cama`, `toti_rincon` (rincón de cara a la pared), `matrimonial`, `matrimonial_cama`, `tocador`,
+`huespedes` (cuarto del jugador), `huespedes_cama`, `bano_1p`, `banera`, `espejo_bano`, `balcon`, `cuarto_nono`,
+`altillo_trampa` (debajo de la escalera rebatible), `altillo`, `altillo_baul`.
+**Sótano:** `sotano_escalera` (pie de la escalera), `sotano`, `caldera`, `sotano_pared` (frente a la pared rajada),
+`cuarto61` (centro, SEALED hasta romper la pared), `cuarto61_cama`, `cuarto61_techo` (SEALED), `familia61_1`..`4`
+(parados de cara a la pared, SEALED).
+**Escondites** (≥14): para cada uno `hide_<id>` (posición del jugador ADENTRO, mirando hacia afuera) y
+`hide_<id>_out` (afuera, frente a la entrada; ahí se para la cazadora para revisarlo). Ids: `ropero_nona`,
+`ropero_lucia`, `ropero_toti`, `ropero_matrimonial`, `ropero_huespedes`, `ropero_hall`, `cama_lucia`, `cama_toti`,
+`cama_matrimonial`, `cama_huespedes`, `cama_nona`, `despensa`, `banera`, `baul_altillo`, `galpon`. Las camas-escondite
+dejan 1 bloque libre debajo (cama elevada) y el ropero es 1×1×2 por dentro como mínimo.
+**Escrituras** (`writes`, paredes donde aparece sangre/escritura): `lemaza`, `espejo_azamel`, `cuaderno`,
+`escritura_1`..`escritura_12` repartidas (hall, living, comedor, cocina, pasillo PB, pasillo 1P ×2, cuartos, baño,
+sótano), cada una sobre una pared lisa de al menos 3×2.
+**Áreas** (una por ambiente, para saber dónde está el jugador): `sitio`, `casa` (todo el interior), `exterior`, `hall`,
+`living`, `comedor`, `cocina`, `despensa`, `lavadero`, `bano_pb`, `nona_cuarto`, `costurero`, `escritorio`,
+`pasillo_pb`, `esc_principal`, `esc_servicio`, `pasillo_1p`, `lucia`, `toti`, `matrimonial`, `huespedes`, `bano_1p`,
+`balcon`, `cuarto_nono`, `altillo`, `sotano`, `cuarto61`, `patio`.
+**Grupos:** `luces_<area>` por ambiente (pares prendida/apagada), `luces_pasillo_1p` (una cada 4), `comedor_sillas`,
+`aparador_platos`, `cuchillos`, `cuadros_pasillo`, `persianas_pb`, `persianas_1p`, `estante_munecas`, `tv`,
+`sotano_pared`, `velas_sotano` (camino de velas al sótano), `altar_velas`, `ventanas_1p`, `cajones` (todos los
+muebles con cajones).
+**Puertas:** `entrada`, `porton`, `puerta_patio`, una por ambiente con el nombre del área (`living` si tiene,
+`cocina`, `despensa`, `lavadero`, `bano_pb`, `nona_cuarto`, `costurero`, `escritorio`, `lucia`, `toti`,
+`matrimonial`, `huespedes`, `bano_1p`, `balcon`, `cuarto_nono`, `sotano`, `galpon`), y los roperos
+`ropero_<id>`. `pasillo_1p_cascada`: lista ordenada de las puertas del pasillo 1P desde el fondo hacia la escalera.
+
+## 12. Motor de terror: API fija (`com.deadline.horror`, ya escrito)
+
+- `HorrorEvent` (abstracta): `id`, `Kind` (SOUND, POLTER, APPARITION, BLOOD, PHONE, SCARE, SETPIECE); configuración
+  fluida en el constructor: `acts(min,max)`, `intensity(1..5)`, `cooldown(seg)`, `weight(w)`, `once()`,
+  `scripted()` (nunca al azar). Ciclo: `canRun(Ctx)` (condiciones; guardar lo encontrado en `c.data`) →
+  `start(Ctx)` → `tick(Ctx)` cada tick hasta devolver `true` → `stop(Ctx)` SIEMPRE una vez (restaurar el mundo,
+  despawnear actores). `maxTicks()` corta por seguridad (90 s por defecto).
+- `Ctx`: `run`, `haunt`, `p` (el jugador objetivo), `event`, `rnd`, `t` (ticks desde el inicio), `data`,
+  `room()`, `get/put`, `chance(f)`, `between(a,b)`.
+- `HorrorEvents.register("casa", new MiEvento())` (una vez al iniciar el mod); `of`, `get`, `ids`.
+- `Haunt.of(run)` (uno por run): `tick()` (lo llama el script del caso cada tick), `act()`/`act(n)`,
+  `actTicks()`, `caseTicks()`, `tension()`/`addTension`, `phase()` (BUILD/PEAK/RELAX), `bigScares()`,
+  `times(id)`/`happened(id)`, `fire(id[, jugador, chequearCondiciones])`, `isRunning(id)`, `busy()`,
+  `relax(ticks)`, `pause(bool)`, `canJumpscare()`/`jumpscared()`, `stopAll()`, `Haunt.forget(run)` al terminar.
+  Los eventos de intensidad 4+ son PICO y después hay 40–90 s de calma. Un `SCARE` solo sale si `canJumpscare()`.
+- `HouseQuery`: `room(run, entidad)`, `roomAt`, `inHouse`, `points(run, prefijo)`, `sees(run, p, pos)`,
+  `nearest`, `outOfView(run, p, prefijo, min, max)`, `inView(...)`, `random(...)`, `doorsNear`, `doorPos`,
+  `behind(run, p, dist)` (lugar libre detrás del jugador), `standable`, `dark(run, pos)`,
+  `blocks(run, área, test)` (p. ej. todas las sillas del comedor), `key(state)` (clave del bloque del kit).
+- `HorrorCommands.register(dispatcher)`: `/deadline horror status|event <id>|act <n>|tension <v>|pause`
+  (el cambio de acto postea `act:<n>` en el run para que el script reaccione).
+- Convenciones: cada evento en su clase dentro de `com.deadline.horror.casa.events` (o agrupados por tipo), sin
+  dejar bloques cambiados al terminar salvo lo que la historia quiere que quede (sangre, cuadros dados vuelta: se
+  limpian en `onLeave`). Sonidos por `run.sound(...)`/`Fx.soundAt` (posicional), nunca globales salvo los del celular.
