@@ -1,6 +1,10 @@
 """Marta Morales (42) -- the mum of the Casa Morales, comic guide, NEVER possessed (DEAD LINE, case 'casa').
 
-(design notes: see DESIGN below; the animation contract is ANIM_NOTES at the end of the file)
+1.75 blocks (y 24 -> -32 at 2x density, rollers to -38).  Fluffy pink coral-fleece bata with a raspberry belt and
+piping, five hot-fuchsia rollers (three across the crown, one each side), night cream on ONLY her left cheek, worried
+brows, the phone with the family chat lit on the 'eyes' layer, dachshund-head slippers.  Pure comedy: nervous and
+caring, never scary.  Pose tables are solved from world-space hand targets (POSE_TARGETS -> --write-poses); the
+animation contract for Java is ANIM_NOTES at the end of the file.
 """
 import math
 import os
@@ -146,6 +150,10 @@ def tone(ramp, v, k=0, amt=0.45):
 LAPEL_ROT = 22          # deg, the shawl collar's lapels close into a V at the belt
 SKIRT_FLARE = 3         # deg, the wrap skirt panels open out to the hem
 TOES_OUT = 8            # deg, duck stance in the dog slippers
+# temple rollers: centre (|x|, y, z), length, diameter, rotation (x, y, z) degrees.  Authored standing (along Y), laid
+# along Z by the -75 deg pitch (front end dipping toward the temple) and splayed 25 deg so the front view shows BOTH
+# the round end cap with its hollow core and the perforated barrel running back over the ear
+TEMPLE = (9.5, -31.0, 1.0, 8, 6, -75.0, 25.0, 0.0)
 BROW_WORRY = 16         # deg, inner ends of the brows raised at rest (she is always worried)
 _SA, _CA = math.sin(math.radians(LAPEL_ROT)), math.cos(math.radians(LAPEL_ROT))
 
@@ -411,10 +419,29 @@ def fluff_mat(ctx):
     """Fringe shells round the cuffs, the collar and the hem: 1-2 rows of irregular fleece tufts with cut-out
     gaps, so the outline of the robe is soft instead of a box edge."""
     f = ctx.face
-    if f not in SIDE:
-        return None
     c = ctx.cube
     rows = c.size[1]
+    if f in ('top', 'bottom'):
+        # only the 1-texel overhang round the border: it ties the tufts back to the robe, so they never float
+        lx, ly, lz = local(ctx)
+        w, h, d = c.size
+        if not (lx < 1 or lx > w - 1 or lz < 1 or lz > d - 1):
+            return None
+        if lz < 1:
+            ua = lx
+        elif lx > w - 1:
+            ua = w + lz
+        elif lz > d - 1:
+            ua = w + d + (w - lx)
+        else:
+            ua = 2 * w + d + (d - lz)
+        u = int(math.floor(ua)) + c.seed * 5
+        tip = (f == 'top') == (c.grow == 'up')
+        if tip:
+            if u % 3 == 2 or (u % 3 == 0 and h2(u, rows - 1, 77) < 0.3):
+                return None
+            return tone(ROBE, c.tone + 0.08 + face_light(ctx) * 0.6, 1 if u % 2 == 0 else 0)
+        return tone(ROBE, c.tone - 0.1 + face_light(ctx) * 0.6)
     k = ctx.j if c.grow == 'down' else rows - 1 - ctx.j          # 0 = the row attached to the robe
     u = int(math.floor(around(ctx))) + c.seed * 5
     hh = h2(u, k, 77)
@@ -632,13 +659,13 @@ FACE = [
     "56eek777777keee5",   # r4  y-26  lids, a trace of mauve shadow at the outer corners
     "5FLLLK6776KLLLF5",   # r5  y-25  lash line: flicked out at the outer corners, thin at the inner corners
     "56WWWW6776WWWW65",   # r6  y-24  white ABOVE the iris: wide, jumpy eyes
-    "56WgPW6776WgPW65",   # r7  y-23  glint + a 1-texel pupil
-    "56VJJV6776VJJV65",   # r8  y-22  iris (lit lower half), shadowed corners
+    "56WIPW6776WPIW65",   # r7  y-23  iris + a 1-texel pupil on the inner side: she looks straight at you
+    "56VJJV6776VJJV65",   # r8  y-22  the lit lower half of the iris, shadowed corners
     "45b66b6nn6b66b54",   # r9  y-21  soft lower lids + bags | nostrils
-    "4rRRrqUUUU655554",   # r10 y-20  blush | a one-row upper lip, her RIGHT corner pulled up (crooked)
-    "45rr5uTTTuq65554",   # r11 y-19  the mouth line, a few teeth on the lifted side (away from the cream)
+    "4rRRrmUUUU655554",   # r10 y-20  blush | a one-row rose upper lip, her RIGHT corner pulled up (crooked)
+    "45rr5tTTTTm65554",   # r11 y-19  a forced row of teeth, the left corner dipping: the nervous smile
     "x45556oOOo65554x",   # r12 y-18  a short lower lip on the jaw | jowls
-    "x45566s66s66554x",   # r13 y-17
+    "x45565555665554x",   # r13 y-17  soft shadow under the lip
     "x345667ww766543x",   # r14 y-16  chin
     "xxxx45666654xxxx",   # r15 y-15
 ]
@@ -655,13 +682,13 @@ CREAM_MAP = [
     "................",
     "................",
     "................",
-    "...............c",   # r8   a loose dot by the eye's corner
-    "...........dccd.",   # r9   under the eye
-    "..........dcCCCc",   # r10  across the cheekbone
-    "...........cCCCd",   # r11
-    "............cCd.",   # r12  down onto the jowl
-    "............dc..",   # r13  the finger-drag trail
-    "..............d.",   # r14  a dot
+    "..............c.",   # r8   a loose dot by the eye's outer corner
+    "...........dCCc.",   # r9   under the eye
+    "..........cCCCCd",   # r10  across the cheekbone
+    "...........cCdCc",   # r11  two finger-drag grooves
+    "............cdC.",   # r12  down onto the jowl
+    ".............c..",   # r13  the trail runs out
+    "...........c....",   # r14  a flicked dot
     "................",
 ]
 assert all(len(r) == 16 for r in CREAM_MAP)
@@ -675,9 +702,9 @@ def face_rgba(ch):
         'W': SCLERA, 'V': SCLERA2, 'I': IRIS, 'J': IRIS2, 'P': PUPIL, 'g': GLINT,
         'b': mix(SKIN[6], hx('#9a7a9a'), 0.22), 'e': mix(SKIN[6], hx('#9a6aaa'), 0.3),
         'r': mix(SKIN[6], hx('#e8707a'), 0.38), 'R': mix(SKIN[6], hx('#e8707a'), 0.58),
-        'u': LIP[0], 'q': mix(LIP[0], SKIN[3], 0.35), 'U': mix(SKIN[5], LIP[2], 0.6),
-        'o': mix(SKIN[6], LIP[3], 0.55), 'O': mix(SKIN[7], LIP[4], 0.45), 'T': TEETH[3], 't': TEETH[1], 'm': SKIN[3],
-        's': SKIN[4], 'n': SKIN[2],
+        'u': LIP[0], 'q': mix(LIP[0], SKIN[3], 0.35), 'U': mix(LIP[2], LIP[3], 0.4),
+        'o': LIP[3], 'O': LIP[4], 'T': TEETH[3], 't': TEETH[1], 'm': mix(SKIN[4], LIP[1], 0.5),
+        's': SKIN[4], 'n': SKIN[4],
     }.get(ch, SKIN[5])
 
 
@@ -823,9 +850,20 @@ def slipper_mat(ctx):
             return None                                           # rounded lobe
         outer = (f == 'west') if sx < 0 else (f == 'east')
         if f == 'top':
-            return A(pick(DOG, 0.32))
-        if outer or f in ('front', 'back'):
-            return A(pick(DOG, 0.18 + face_light(ctx) + (0.06 if ly < 1.0 else 0.0)))
+            return A(pick(DOG, 0.5))
+        if outer:
+            # a soft felt flap: lit fold along the top where it hangs from the head, a lit front edge, darker lobe
+            front_col = ctx.w - 1 if f == 'west' else 0
+            v2 = 0.34 + face_light(ctx)
+            if ly < 1.0:
+                v2 += 0.16
+            elif ctx.i == front_col:
+                v2 += 0.08
+            elif ly > h - 2.0:
+                v2 -= 0.06
+            return A(pick(DOG, v2))
+        if f in ('front', 'back'):
+            return A(pick(DOG, 0.3 + face_light(ctx) + (0.12 if ly < 1.0 else 0.0)))
         return A(pick(DOG, 0.12))
     if n == 'dog_head':
         if f == 'front':
@@ -839,7 +877,6 @@ def slipper_mat(ctx):
         if f in ('west', 'east', 'back') and ly < 1.0:
             v += 0.08
     if n == 'dog_snout':
-        w2 = ctx.w
         if f == 'front':
             if ctx.j == 0 and ctx.i in (1, 2):
                 return A(INK if ctx.i == 2 else hx('#4a3a3a'))     # the nose, with a glint
@@ -1143,59 +1180,65 @@ def frame(dir_a, vec_a, dir_b, vec_b):
     return Wm @ Lm.T
 
 
-def solve_arm(roots, side, wrist, hand_R=None, elbow_hint=None, rots=None, rest=None, limit=80.0,
-              palm_weight=4.0):
-    """Arm (x, y, z) + forearm x (degrees) putting the hand pivot on `wrist` (world), with every angle kept within
-    `limit` degrees of `rest` where possible; then the hand rotation (the Euler triple nearest its rest) so the
-    hand's world orientation is hand_R.  Returns {bone: rot}."""
+def solve_arm(roots, side, wrist, hand_R=None, elbow_hint=None, rots=None, rest=None, limit=80.0, twist=60.0):
+    """Arm (x, y, z) + forearm (x bend, y twist) degrees putting the hand pivot on `wrist` (world); the hand bone
+    then takes the rotation that makes its world orientation hand_R exactly (the Euler triple nearest its rest).
+    The cost keeps EVERY Euler delta (arm, forearm and the resulting hand) under `limit` degrees from rest, so the
+    linear per-component blend HauntModel.apply() does between rest and the pose never corkscrews.
+    Returns {bone: rot}."""
     from scipy.optimize import minimize
     rots = dict(rots or {})
     rest = rest or {}
     arm, fa, hand = f'{side}_arm', f'{side}_forearm', f'{side}_hand'
     r_arm = rest.get(arm, (0.0, 0.0, 0.0))
-    r_fa = rest.get(fa, (0.0, 0.0, 0.0))[0]
+    r_fa = rest.get(fa, (0.0, 0.0, 0.0))
+    r_hand = rest.get(hand, (0.0, 0.0, 0.0))
     target = np.array(wrist, float)
-
-    loc_palm = np.array((1.0, 0.0, 0.0) if side == 'right' else (-1.0, 0.0, 0.0))
-    loc_fing = np.array((0.0, 1.0, 0.0))
-    if hand_R is not None:
-        t_palm, t_fing = hand_R @ loc_palm, hand_R @ loc_fing
 
     def chain(p):
         rr = dict(rots)
         rr[arm] = (p[0], p[1], p[2])
-        rr[fa] = (p[3], 0, 0)
-        rr[hand] = rest.get(hand, (0.0, 0.0, 0.0))
-        W = fk(roots, rr)
-        return W[hand][:3, 3], W[fa][:3, 3], W[hand][:3, :3]
+        rr[fa] = (p[3], p[4], 0.0)
+        rr[hand] = r_hand
+        return fk(roots, rr)
+
+    def over(d, lim):
+        return max(0.0, abs(d) - lim) ** 2
 
     def cost(p):
-        w, e, Rh = chain(p)
-        c = float(np.sum((w - target) ** 2))
-        if hand_R is not None:
-            # prefer an arm twist that already turns the palm the right way: the hand's own delta stays small
-            c += palm_weight * (float(np.sum((Rh @ loc_palm - t_palm) ** 2)) + 0.5 * float(np.sum((Rh @ loc_fing - t_fing) ** 2)))
+        W = chain(p)
+        c = float(np.sum((W[hand][:3, 3] - target) ** 2))
         if elbow_hint is not None:
-            c += 0.02 * float(np.sum((e - np.array(elbow_hint, float)) ** 2))
-        for i in range(3):
-            c += 2e-3 * max(0.0, abs(p[i] - r_arm[i]) - limit) ** 2
-        c += 2e-3 * max(0.0, abs(p[3] - r_fa) - limit) ** 2
-        c += 0.02 * max(0.0, p[3]) ** 2                         # elbows only bend one way
+            c += 0.02 * float(np.sum((W[fa][:3, 3] - np.array(elbow_hint, float)) ** 2))
+        ds = [p[i] - r_arm[i] for i in range(3)] + [p[3] - r_fa[0]]
+        c += sum(2e-2 * over(d, limit) + 2e-5 * d * d for d in ds)
+        c += 2e-2 * over(p[4] - r_fa[1], twist) + 6e-5 * (p[4] - r_fa[1]) ** 2
+        c += 0.05 * max(0.0, p[3]) ** 2                         # elbows only bend one way
+        if hand_R is not None:
+            e = euler_near(W[fa][:3, :3].T @ hand_R, r_hand)
+            dh = [e[i] - r_hand[i] for i in range(3)]
+            c += sum(2e-2 * over(d, limit * 0.85) + 4e-5 * d * d for d in dh)
         return c
     best = None
-    g0 = list(r_arm) + [r_fa]
-    for g in (g0, [g0[0] - 40, g0[1], g0[2] + 30, g0[3] - 40], [g0[0] - 70, g0[1] + 30, g0[2] + 40, g0[3] - 60],
-              [g0[0] - 60, g0[1] - 30, g0[2] - 20, g0[3] - 30], [g0[0] + 20, g0[1], g0[2], g0[3] - 50]):
-        res = minimize(cost, g, method='Nelder-Mead', options={'xatol': 1e-4, 'fatol': 1e-10, 'maxiter': 8000})
+    g0 = list(r_arm) + [r_fa[0], r_fa[1]]
+    starts = [g0]
+    for dx, dy, dz, dfx, dt in ((-40, 0, 30, -40, 0), (-70, 30, 40, -60, 30), (-60, -30, -20, -30, -30),
+                                (20, 0, 0, -50, 0), (-50, 20, -40, -40, 45), (-30, -20, 20, -20, -45)):
+        starts.append([g0[0] + dx, g0[1] + dy, g0[2] + dz, g0[3] + dfx, g0[4] + dt])
+    for g in starts:
+        res = minimize(cost, g, method='Nelder-Mead', options={'xatol': 1e-4, 'fatol': 1e-10, 'maxiter': 12000})
+        res = minimize(cost, res.x, method='Nelder-Mead', options={'xatol': 1e-5, 'fatol': 1e-12, 'maxiter': 12000})
         if best is None or res.fun < best.fun:
             best = res
     p = best.x
-    out = {arm: tuple(_wrap_near(p[i], r_arm[i]) for i in range(3)), fa: (_wrap_near(p[3], r_fa), 0, 0)}
+    out = {arm: tuple(_wrap_near(p[i], r_arm[i]) for i in range(3)),
+           fa: (_wrap_near(p[3], r_fa[0]), _wrap_near(p[4], r_fa[1]), 0.0)}
+    W = chain(p)
+    err = float(np.linalg.norm(W[hand][:3, 3] - target))
+    if err > 0.6:
+        print(f'  ! {side} wrist misses its target by {err:.2f} texels')
     if hand_R is not None:
-        rr = dict(rots)
-        rr.update(out)
-        W = fk(roots, rr)
-        out[hand] = euler_near(W[fa][:3, :3].T @ hand_R, rest.get(hand, (0.0, 0.0, 0.0)))
+        out[hand] = euler_near(W[fa][:3, :3].T @ hand_R, r_hand)
     return out
 
 
@@ -1208,6 +1251,10 @@ ARM_REST = {
     'left_arm': (-31.5, -3.0, 62.6), 'left_forearm': (-52.8, 0.0, 0.0), 'left_hand': (62.1, -26.1, -28.2),
 }
 FINGER_REST = {'right_index': (0.0, 0.0, -18.0), 'right_fingers': (0.0, 0.0, -38.0)}
+CHORIZO_ROT = (115.8, 22.2, 34.8)         # solved by --chorizo
+CHORIZO_LINK_ROT = (84.5, 71.0, 65.9)
+CHORIZO_UP = (-0.3, -0.9, 0.3)           # world direction of the first link in 'throw' (up, out, a little back)
+CHORIZO_FLOP = (-0.85, 0.35, 0.3)        # ... and of the second link, flopping out and down from the knot
 REST_IK = ('left', (5.5, -4.0, -13.5), (0.35, -0.75, -0.55), (-0.75, -0.1, -0.65), (15, -3, -5))
 
 
@@ -1292,19 +1339,25 @@ def build(pose=None):
     # so the perforated barrels and the white picks face the camera; the middle one rides highest.  Temples: one
     # standing (along Y) over each ear.
     bone('curlers', (0, -30, 0), 'head')
-    CROWN = ((-32.5, -5.0, 6, 12, 2.0), (-34.5, 0.0, 7, 11, -2.0), (-32.5, 5.0, 6, 12, 1.0))
+    CROWN = ((-32.5, -5.0, 6, 12, 2.0), (-34.5, 0.0, 7, 10, -2.0), (-32.5, 5.0, 6, 12, 1.0))
     for cy, cz, D, L, pk in CROWN:
         box('curlers', (-L / 2, cy - D / 2, cz - (D - 2) / 2), (L, D, D - 2), 'curler', 'curler', axis='x',
             ctr=(0.0, cy, cz), ln=L, pick_at=pk)
         box('curlers', (-L / 2 + 0.5, cy - (D - 2) / 2, cz - D / 2), (L - 1, D - 2, D), 'curler', 'curler',
             axis='x', ctr=(0.0, cy, cz), ln=L, pick_at=pk)
-    box('curlers', (-5, -32, -2), (10, 3, 4), 'hair', 'hair_bun')          # hair wound up under the middle one
-    for sx in (-1, 1):
-        cx, cz, L, D = 10.5 * sx, -2.0, 8, 5
-        box('curlers', (cx - D / 2, -31, cz - (D - 2) / 2), (D, L, D - 2), 'curler', 'curler', axis='y',
-            ctr=(cx, -27.0, cz), ln=L, pick_at=-1.5 * sx)
-        box('curlers', (cx - (D - 2) / 2, -30.5, cz - D / 2), (D - 2, L - 1, D), 'curler', 'curler', axis='y',
-            ctr=(cx, -27.0, cz), ln=L, pick_at=-1.5 * sx)
+    box('curlers', (-4, -32, -2), (8, 3, 4), 'hair', 'hair_bun')          # hair wound up under the middle one
+    # MARTA_TEMPLE='x,y,z,L,D,rx,ry,rz' overrides TEMPLE for preview experiments only
+    tp = [float(v) for v in os.environ.get('MARTA_TEMPLE', '').split(',') if v] or TEMPLE
+    tcx, tcy, tcz, tL, tD, trx, try_, trz = tp
+    tL, tD = int(tL), int(tD)
+    for side, sx in (('right', -1), ('left', 1)):
+        cb = f'curler_{side}'
+        cx, cy, cz = tcx * sx, tcy, tcz
+        bone(cb, (cx, cy, cz), 'curlers', rot=(trx, try_ * sx, -trz * sx))
+        box(cb, (cx - tD / 2, cy - tL / 2, cz - (tD - 2) / 2), (tD, tL, tD - 2), 'curler', 'curler', axis='y',
+            ctr=(cx, cy, cz), ln=tL, pick_at=-1.5 * sx)
+        box(cb, (cx - (tD - 2) / 2, cy - tL / 2 + 0.5, cz - tD / 2), (tD - 2, tL - 1, tD), 'curler', 'curler',
+            axis='y', ctr=(cx, cy, cz), ln=tL, pick_at=-1.5 * sx)
 
     # ---------------- arms (authored hanging; bent by the bone rotations)
     for side, sx in (('right', -1), ('left', 1)):
@@ -1326,12 +1379,15 @@ def build(pose=None):
             box('right_index', (ax - 1, 11, -2.5), (2, 5, 2), 'skin', 'finger')
             bone('right_fingers', (ax, 11, 1), hand, rot=FINGER_REST['right_fingers'])
             box('right_fingers', (ax - 1, 11, -0.5), (2, 4, 3), 'skin', 'fingers')
-            # toggles in the fist: two chorizo links held by the twine between them, and a pan francés
-            bone('chorizo', (ax, 10, 0), hand)
-            box('chorizo', (ax - 1.5, 8.5, -6.5), (3, 3, 6), 'chori', 'chorizo')
-            box('chorizo', (ax - 1, 9, -0.5), (2, 2, 1), 'chori', 'twine')
-            bone('chorizo_link', (ax, 10, 0.5), 'chorizo', rot=(32, 0, 8))
-            box('chorizo_link', (ax - 1.5, 8.5, 0.5), (3, 3, 6), 'chori', 'chorizo')
+            # toggles in the fist.  Chorizo: a string of two links gripped by the tied end of the first one, which
+            # sticks up out of the fist; the second link flops over from the twine knot.  The rest rotations are
+            # solved so that in 'throw' the string is brandished above her right roller, clear of the head
+            # (python3 tools/models/ent_marta.py --chorizo), so Java only toggles visibility.
+            bone('chorizo', (ax, 10, 0), hand, rot=CHORIZO_ROT)
+            box('chorizo', (ax - 1.5, 8.5, -7.5), (3, 3, 6), 'chori', 'chorizo')
+            box('chorizo', (ax - 1, 9, -8.5), (2, 2, 1), 'chori', 'twine')
+            bone('chorizo_link', (ax, 10, -8.5), 'chorizo', rot=CHORIZO_LINK_ROT)
+            box('chorizo_link', (ax - 1.5, 8.5, -14.5), (3, 3, 6), 'chori', 'chorizo')
             bone('bread', (ax, 10, 0), hand)
             box('bread', (ax - 2, 8, -6.5), (4, 4, 13), 'bread', 'bread')
         else:
@@ -1411,7 +1467,7 @@ POSE_TARGETS = {
         'off': {'left_brow': (0, -1.2, 0)},
         'ik': [
             ('left', (7.5, -6.0, -16.5), (-0.15, 0.05, -1.0), (-0.1, -1.0, -0.05), (16, -6, -8)),
-            ('right', (-1.0, -6.5, -14.5), (-0.1, 1.0, 0.25), (0.8, -0.1, -0.6), (-15, -4, -6)),
+            ('right', (0.5, -9.0, -17.0), (-0.1, 0.9, 0.4), (0.95, -0.2, -0.2), (-15, -4, -8)),
         ],
     },
     # overhand throw, wind-up: chorizo cocked behind her head, phone arm out front, body twisted back
@@ -1431,7 +1487,7 @@ POSE_TARGETS = {
                 'right_fingers': (0, 0, -55), 'right_index': (0, 0, -35)},
         'off': {'right_brow': (0, -1.2, 0), 'left_brow': (0, -1.2, 0)},
         'ik': [
-            ('right', (-7.5, -12.5, -13.0), (0.85, 0.0, -0.5), (0.1, -0.95, -0.3), (-16, -6, -9)),
+            ('right', (-9.5, -12.0, -12.5), (0.75, 0.0, -0.65), (0.15, -0.95, -0.25), (-16, -6, -9)),
         ],
     },
 }
@@ -1446,7 +1502,7 @@ def solve_rest():
     rest = rest_rots(m)
     side, wrist, palm, fing, hint = REST_IK
     R = frame((1, 0, 0) if side == 'right' else (-1, 0, 0), palm, (0, 1, 0), fing)
-    return solve_arm(m.roots, side, wrist, R, elbow_hint=hint, rots=rest, rest=rest, limit=170.0)
+    return solve_arm(m.roots, side, wrist, R, elbow_hint=hint, rots=rest, rest=rest, limit=170.0, twist=170.0)
 
 
 def solve_poses(names=None):
@@ -1481,8 +1537,159 @@ def pose_report(poses):
         print('%-13s max |delta| %6.1f deg (%s)' % (name, math.degrees(big[0]), big[1]))
 
 
-POSES = {}
-ANIM_NOTES = """(rewritten below)"""
+ANIM_NOTES = """Marta Morales -- comic guide, never possessed.  29 bones, 87 cubes, 256x128, scale 0.5, entityCutoutNoCull.
+Emissive layer 'eyes' (marta_eyes.png): the phone screen (family chat) on the phone's west face + a green notification
+LED next to the camera on the case back.  Texture only: Minecraft emissive layers cast NO light on her face.  For the
+show_phone / chat beat (casa.ya_llego) Java should add light itself (a dynamic light / temporary light block at the
+phone, or an additive glow quad); do not expect the screen to light her.
+
+BONES
+  body            hips pivot.  Torso, bust shelf, waist, belt (+knot), shawl collar + fluff, hood, nightgown hem.
+                  Idle: breathe (xRot +-0.02, 0.09 rad/tick); walk: small yRot sway counter to the legs.
+  lapel_right/_left  the shawl collar's lapels (fixed; can flap +-0.05 zRot when she runs).
+  skirt_right/_left/skirt_back  wrap-skirt panels (+ hem fluff).  Swing with the legs: skirt_right/_left xRot = 0.2 x
+                  the same-side leg swing, skirt_back xRot = 0.25 x |swing| (they overlap 3+ texels: checked at legs +-0.5 rad, no slit opens).
+  belt_tails      the two belt ends under the knot: pendulum xRot +-0.12 with walking, follow body lean.
+  neck / head     head look split 0.3 neck / 0.7 head (HauntModel.look(s, 0.3)).  Nervous idle: head zRot
+                  0.05 sin(t 0.07) + quick 2-tick glances (yRot +-0.15) every 3-5 s.
+  jaw             mouth.  Talk: xRot 0.05..0.3 driven by the voice line amplitude; she talks a lot.
+  right_brow / left_brow  rest already tilted 16 deg (worried).  Expressions add zRot (inner end up = more worried)
+                  and dy -1.2..-1.5 (brows shoot up), see the poses.  Idle: lift both by dy -0.6 now and then.
+  curlers         the three crown rollers + the hair wound under them.  Jiggle on steps: xRot 0.03 sin(walk);
+                  scared adds dy -0.6 (hair stands up).  curler_right / curler_left: the temple rollers (rest rotation
+                  (-75, +-25, 0) deg); bob zRot +-0.04 a tick after the head turns (secondary motion).
+  right_arm > right_forearm > right_hand > right_index, right_fingers: the free hand (gestures, throws).
+                  right_index / right_fingers zRot curls them (negative = curl into the palm).
+  left_arm > left_forearm > left_hand > phone: the phone hand.  The phone never leaves it.
+  right_leg / left_leg  thigh-to-slipper (dachshund head + snout + ears + fuzz cuff + sole), toes out 8 deg.  Walk via
+                  HauntModel.walk(s, "left_leg", "right_leg", "left_arm", "right_arm", 0.5, 0.25); the left arm's
+                  swing should be scaled down (x0.3) so the phone stays readable.
+
+POSES (additive tables POSE_<NAME>; every Euler component stays within 86 deg of rest -- solved with that limit --
+so the per-component linear blend of HauntModel.apply() never corkscrews a hand).  Blend in over 5-8 ticks.
+  idle_nervous  default loop while she talks: hands wringing round the phone at her belly.  Add a wring: right_hand
+                zRot +-0.25 sin(t 0.25) and left_hand yRot +-0.12 sin(t 0.25 + 1.4), weight 1 all the time she is idle.
+  scared        "Ay, Dios mio": free hand flies to her RIGHT cheek (the cream cheek stays visible), the phone hand
+                clutched up by the left collarbone with the lit screen out, jaw open, brows up, recoil.  Plates /
+                chairs / the termo flying.  Add a tremble: body zRot 0.02 sin(t 2.1).  Fast blend (3 ticks).
+  point         right arm out pointing (index straight, others curled), head and body turned toward the target;
+                "Por la ventana!" / pointing at Ofelia in the cucha.  Turn the whole entity toward the target first.
+  show_phone    beat casa.ya_llego: the phone held up beside her face, screen to the player, the right index pointing at
+                it.  Hold while the ChatScreen is open; when the unknown number writes "ya llego?" add scared's jaw
+                + brows on top (weight 0.6) for the "...Lucia no tiene celular" line.
+  throw         beat casa.parrilla: overhand wind-up, the chorizo string brandished above her right roller, phone arm out
+                for balance, body twisted back.  Release: blend to weight 0 in 3 ticks while adding right_arm xRot
+                +1.6 for 2 ticks (the snap), then spawn the item at the right hand's world position.  Show the chorizo
+                toggle for the chorizo throw, the bread toggle for the bread throw.
+  shout         "TIRALE ALGO!" / "Te dije que no comas tanto chorizo!": leaning in, chin up, the right hand cupped beside
+                the mouth (palm forward-in, fingers curled), jaw wide open, brows up.  Bob body xRot +0.05 on the shout
+                syllables.
+
+TOGGLES (ModelPart.visible; all hidden by default)
+  chorizo (+ child chorizo_link)  a string of two chorizo links in the right fist; visible only during 'throw' (chorizo
+                variant) and the hand-over beat.  Rest rotations are pre-solved for the throw pose -- just show it.
+  bread           a pan frances in the right fist; visible only during 'throw' (bread variant).
+The preview JSON carries 'toggles' {default, poses}; hidden toggle cubes are kept under 'hidden_cubes' per bone so a
+toggle-aware viewer can show them (MARTA_SHOW=chorizo|bread|all forces them on in tools/models/preview.py).
+No variants: one look (marta.png + marta_eyes.png)."""
+
+
+# >>> POSES (generated: python3 tools/models/ent_marta.py --write-poses; edit POSE_TARGETS, not this block)
+POSES = {
+    'idle_nervous': {
+        'head': (0.0698, 0, 0.1047, 0, 0, 0),
+        'right_brow': (0, 0, -0.0873, 0, 0, 0),
+        'left_brow': (0, 0, 0.0873, 0, 0, 0),
+        'right_arm': (-0.7829, -0.6366, -0.2563, 0, 0, 0),
+        'right_forearm': (-0.0811, -0.1199, 0, 0, 0, 0),
+        'right_hand': (-0.5721, 0.2359, 0.3685, 0, 0, 0),
+        'right_index': (0, 0, -0.2618, 0, 0, 0),
+        'right_fingers': (0, 0, -0.3491, 0, 0, 0),
+        'left_arm': (0.0419, 0.2407, -0.4452, 0, 0, 0),
+        'left_forearm': (0.3699, 0.047, 0, 0, 0, 0),
+        'left_hand': (0.2976, -0.9253, -0.3029, 0, 0, 0),
+    },
+    'scared': {
+        'body': (-0.0698, 0, 0, 0, 0, 0),
+        'head': (-0.1396, 0, -0.0698, 0, 0, 0),
+        'jaw': (0.4189, 0, 0, 0, 0, 0),
+        'right_brow': (0, 0, -0.1396, 0, -1.5, 0),
+        'left_brow': (0, 0, 0.1396, 0, -1.5, 0),
+        'curlers': (0, 0, 0, 0, -0.6, 0),
+        'right_arm': (-0.8659, -0.2746, -0.1053, 0, 0, 0),
+        'right_forearm': (-1.2179, -0.0478, 0, 0, 0, 0),
+        'right_hand': (-0.726, 1.2752, -0.5974, 0, 0, 0),
+        'right_index': (0, 0, 0.2443, 0, 0, 0),
+        'right_fingers': (0, 0, 0.3491, 0, 0, 0),
+        'left_arm': (-0.207, -0.0645, 0.7783, 0, 0, 0),
+        'left_forearm': (-0.5037, -0.0514, 0, 0, 0, 0),
+        'left_hand': (1.2697, 1.2966, -1.2413, 0, 0, 0),
+        'right_leg': (0.0698, 0, 0, 0, 0, 0),
+        'left_leg': (0.0698, 0, 0, 0, 0, 0),
+    },
+    'point': {
+        'body': (0, -0.1047, 0, 0, 0, 0),
+        'neck': (0, -0.1396, 0, 0, 0, 0),
+        'head': (-0.0349, -0.2443, 0, 0, 0, 0),
+        'jaw': (0.1396, 0, 0, 0, 0, 0),
+        'right_brow': (0, 0, 0.2094, 0, 0, 0),
+        'left_brow': (0, 0, -0.0349, 0, -0.8, 0),
+        'right_arm': (-0.1254, 0.4468, 1.2821, 0, 0, 0),
+        'right_forearm': (-0.7671, -0.0136, 0, 0, 0, 0),
+        'right_hand': (0.7785, 0.5074, -0.6349, 0, 0, 0),
+        'right_index': (0, 0, 0.3142, 0, 0, 0),
+        'right_fingers': (0, 0, -1.2566, 0, 0, 0),
+        'right_leg': (0, 0.1047, 0, 0, 0, 0),
+        'left_leg': (0, 0.1047, 0, 0, 0, 0),
+    },
+    'show_phone': {
+        'head': (0.0698, 0, 0.1222, 0, 0, 0),
+        'jaw': (0.1047, 0, 0, 0, 0, 0),
+        'left_brow': (0, 0, 0.0698, 0, -1.2, 0),
+        'right_arm': (-1.2403, -0.6658, -0.5227, 0, 0, 0),
+        'right_forearm': (0.287, -0.5885, 0, 0, 0, 0),
+        'right_hand': (-0.1289, -0.2777, -0.7024, 0, 0, 0),
+        'right_index': (0, 0, 0.3142, 0, 0, 0),
+        'right_fingers': (0, 0, -1.2217, 0, 0, 0),
+        'left_arm': (-0.7791, 0.0272, 0.1405, 0, 0, 0),
+        'left_forearm': (0.9274, -1.0324, 0, 0, 0, 0),
+        'left_hand': (1.2616, 0.4296, -0.9915, 0, 0, 0),
+    },
+    'throw': {
+        'body': (-0.0873, 0.384, 0, 0, 0, 0),
+        'neck': (0, -0.1047, 0, 0, 0, 0),
+        'head': (0.0349, -0.3142, 0, 0, 0, 0),
+        'jaw': (0.2443, 0, 0, 0, 0, 0),
+        'right_brow': (0, 0, 0.2443, 0, 0, 0),
+        'left_brow': (0, 0, -0.2443, 0, 0, 0),
+        'right_arm': (-1.4845, 0.5559, 0.2851, 0, 0, 0),
+        'right_forearm': (-1.3492, 0.4962, 0, 0, 0, 0),
+        'right_hand': (0.1094, 0.3818, -0.3061, 0, 0, 0),
+        'right_index': (0, 0, -1.0472, 0, 0, 0),
+        'right_fingers': (0, 0, -0.9599, 0, 0, 0),
+        'left_arm': (-0.2393, -1.1932, -1.4842, 0, 0, 0),
+        'left_forearm': (-0.521, 1.0478, 0, 0, 0, 0),
+        'left_hand': (-0.5377, 0.7516, 0.4755, 0, 0, 0),
+        'right_leg': (0.0873, -0.384, 0, 0, 0, 0),
+        'left_leg': (0.0873, -0.384, 0, 0, 0, 0),
+    },
+    'shout': {
+        'body': (0.1047, 0, 0, 0, 0, 0),
+        'neck': (0.1047, 0, 0, 0, 0, 0),
+        'head': (-0.1745, 0.1396, 0, 0, 0, 0),
+        'jaw': (0.4712, 0, 0, 0, 0, 0),
+        'right_brow': (0, 0, -0.1047, 0, -1.2, 0),
+        'left_brow': (0, 0, 0.1047, 0, -1.2, 0),
+        'right_arm': (-0.7877, -0.0041, 0.3523, 0, 0, 0),
+        'right_forearm': (-1.4312, -0.1886, 0, 0, 0, 0),
+        'right_hand': (-0.5743, 0.3472, 1.0229, 0, 0, 0),
+        'right_index': (0, 0, -0.6109, 0, 0, 0),
+        'right_fingers': (0, 0, -0.9599, 0, 0, 0),
+        'right_leg': (-0.1047, 0, 0, 0, 0, 0),
+        'left_leg': (-0.1047, 0, 0, 0, 0, 0),
+    },
+}
+# <<< POSES
 
 
 if __name__ == '__main__':
@@ -1497,3 +1704,48 @@ if __name__ == '__main__':
                 print("        '%s': (%s)," % (b, ', '.join(('%.4f' % a).rstrip('0').rstrip('.') if a else '0' for a in t)))
             print('    },')
         pose_report(P)
+    if '--chorizo' in sys.argv:
+        m = build(pose='throw')
+        rest = rest_rots(m)
+        rots = dict(rest)
+        for b, t in POSES['throw'].items():
+            rots[b] = tuple(rest[b][i] + math.degrees(t[i]) for i in range(3))
+        rots['chorizo'] = (0.0, 0.0, 0.0)
+        rots['chorizo_link'] = (0.0, 0.0, 0.0)
+
+        def towards(Rw, tgt):
+            t = np.array(tgt, float)
+            t /= np.linalg.norm(t)
+            v = Rw.T @ t
+            a = np.array([0.0, 0.0, -1.0])
+            ax_ = np.cross(a, v)
+            sn = np.linalg.norm(ax_)
+            ang = math.atan2(sn, a @ v)
+            ax_ /= sn
+            K = np.array([[0, -ax_[2], ax_[1]], [ax_[2], 0, -ax_[0]], [-ax_[1], ax_[0], 0]])
+            return np.eye(3) + math.sin(ang) * K + (1 - math.cos(ang)) * K @ K
+        W = fk(m.roots, rots)
+        Rc = towards(W['chorizo'][:3, :3], CHORIZO_UP)
+        rc = euler_near(Rc, (0, 0, 0))
+        rots['chorizo'] = rc
+        W = fk(m.roots, rots)
+        rl = euler_near(towards(W['chorizo_link'][:3, :3], CHORIZO_FLOP), (0, 0, 0))
+        print('CHORIZO_ROT = (%.1f, %.1f, %.1f)' % rc)
+        print('CHORIZO_LINK_ROT = (%.1f, %.1f, %.1f)' % rl)
+    if '--write-poses' in sys.argv:
+        P = solve_poses()
+        pose_report(P)
+        lines = ['POSES = {']
+        for k, v in P.items():
+            lines.append("    '%s': {" % k)
+            for b, t in v.items():
+                lines.append("        '%s': (%s)," % (b, ', '.join(('%.4f' % a).rstrip('0').rstrip('.') if a else '0' for a in t)))
+            lines.append('    },')
+        lines.append('}')
+        path = os.path.abspath(__file__)
+        src = open(path).read()
+        a = src.index('# >>> POSES')
+        a = src.index('\n', a) + 1
+        b = src.index('# <<< POSES')
+        open(path, 'w').write(src[:a] + '\n'.join(lines) + '\n' + src[b:])
+        print('POSES written')

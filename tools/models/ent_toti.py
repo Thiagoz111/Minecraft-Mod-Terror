@@ -1,6 +1,49 @@
-"""Toti Morales (15) -- the gamer son in the wardrobe (DEAD LINE, case 'casa', beats casa.ropero / casa.desayuno).
+"""Toti Morales (15) -- the gamer son hiding in the wardrobe (DEAD LINE, case 2 'Casa Morales', beats casa.ropero and
+casa.desayuno).  A comedy beat, not a monster: the player dives into the placard during the chase and Toti is already in
+there in the dark, lit only by his RGB headset and the pad: "OCUPADO! ESTOY EN RANKED!", then he slams the door on
+the snout without looking ("Callate, Chori!").  At breakfast he wanders out: "Que me perdi?".
 
-(docstring finalised below, see DOC)
+Authored at 2x texel density (model.scale = 0.5).  +Y down, ground y = 24, faces -Z, right_* on -X.  Centred on x = 0,
+z = 0.  Real height 1.8 blocks (soles y = 24 .. hair shell y -33.5; the messy spikes reach y -38.5).  Texture 256 x 80
+(16.7k texels of faces: 256 x 64 cannot hold them).  77 cubes / 28 bones (budget 90 / 28).  No variants, no toggles.
+
+Design
+------
+Silhouette: a lollipop.  The head + headset mass is ~28 texels wide (yawed RGB cups out to x +-14.3) over 24-wide rounded
+shoulders and a skinny 14-wide hoodie torso; the hips slouch 6 deg forward, the neck juts 15 deg (gamer neck) and the
+head bows 2 deg more over the pad; the upper arms roll forward and in (rounded shoulders), the forearms come up in
+front of the belly and both fists close on the gamepad grips.  The hood lies down as a thick bunched roll on the upper
+back (13 x 8 x 6, a value lighter than the torso) whose opening shows the acid-green lining as a U from behind, with
+its rim round the neck and its point hanging below; in profile it is a hump.  Grey joggers with ribbed cuffs, chunky
+white sneakers (grey toe box, red swoosh / heel tab, grey outsole) with a 0.5 gap between the soles.
+
+Face (16 x 16 front: skull 16 x 12 + jowls / chin 4 rows): pale teen skin, sleepless 2-texel bags under the eyes, a few
+single pink pimple dots (no halos), cheekbone blush, a 1-texel dark mouth line between the lips with a crooked pinched
+corner, braces (upper teeth on the mouth cube, lower ones on a plane on the jaw - they show whenever the jaw opens).
+Eyes 4 x 3: shadowed sclera row, a 2 x 3 brown iris (dark rim, black pupils, lit lower half) and a 1-px screen glint
+that glows.  Brows are separate 1-row bones (5 long, 0.7 proud) with a full skin row under them and ~1.4 rows above,
+so their tilt carries the expression: knitted (crouch_closet), an angry V (slam), raised and uneven (stand).  The
+fringe is a root block (y -34.4 .. -31.4) plus a cut-out strand plane: only three locks cross the brow line (his right
+eye's outer corner, the nose bridge, his left temple).  A separate 'tongue' pokes out of the corner of the mouth
+while he concentrates.
+
+Hair: messy dark-brown teen hair.  The shell's back / sides and the nape are painted as hand-placed overlapping LOCKS
+in three tiers (each tapered to a point, rounded value, dark root -> lighter tip, a broken sheen band, the upper tier
+casting a 1-2 texel shadow on the one below) - no stripes, no planks.  The nape's lower edge is the lock tips (ragged
+cut-outs, dark underneath).  Cut-out spike planes break the silhouette: a low row in front of the headband, a 5-tall
+crest behind it that pokes over the band, a cowlick on the crown (side view); boxy tufts puff out over the cups.
+
+Headset (the scare): matte black band with a cyan -> violet -> magenta LED strip on top, steel sliders, big cups yawed
+16 deg toward the front so their outer RGB plates (ring + logo) read in 3/4 and an LED arc on each cup's FRONT face
+reads head-on; boom mic aimed at his left mouth corner with a red mute LED.  Gamepad: white, sticks, face buttons,
+d-pad, touchpad, a cyan light bar facing him (it lights his chin from below).
+
+Light: NOTHING coloured is baked into the base texture (it reads as clean skin in daylight, e.g. at breakfast).  All
+the RGB is on the emissive 'eyes' layer: cup rings / arcs, band strip, pad light bar and buttons, mic LED, the glints
+and lit whites of his eyes, the braces, and an additive RGB light on the face - cyan rim on his right, magenta on his
+left (2-3 columns with falloff on the face front, temples and jowl sides), a cyan pad under-glow on the FRONT faces
+(chin and lower lip ~0.25-0.3, philtrum / nostrils ~0.15, cheek rows 0.08-0.11, a faint wash on the upper lids so the
+unlit brows read as lines) and on the tops of his fists.  In a black closet the face reads head-on.
 """
 import colorsys
 import math
@@ -174,18 +217,19 @@ class Light:
 
 # ------------------------------------------------------------------ the face
 # Skull front 16 x 12: col c <-> x [-8 + c, -7 + c], row r <-> y [-33 + r, -32 + r].  The fringe root covers rows
-# 0-2, its strands hang in front of rows 2-6 (one lock over his right eye's outer corner, one down the nose bridge);
-# the brow bones sit over rows 3-4 (cols 1-5 / 10-14); the nose cube over cols 7-8, rows 7-9.
+# 0-1, three of its strands hang in front of rows 2-5 (one lock over his right eye's outer corner, one down the nose
+# bridge, one at his left temple); the 1-row brow bones sit on row 3 (cols 1-5 / 10-14); the nose cube over cols 7-8,
+# rows 7-9.
 #   0-9 skin ramp   h hairline   k lid crease   L lash line   w / W sclera (lid shadow / lit)   g screen glint (emissive)
 #   R iris rim   K pupil   i lit lower iris   d sleepless bag (2 texels)   c cheekbone   f peach fuzz   s philtrum
 #   P pimple (a single pink dot)   M mouth corner   m mouth line   x under-lip shade   v / V lower lip   U chin undercut
 FACE = [
     # 0123456789ABCDEF
     "hhhhhhhhhhhhhhhh",   # r0  y-33  hairline (under the fringe root)
-    "5678888888888765",   # r1  y-32  forehead (under the root)
+    "5667777777777665",   # r1  y-32  forehead in the shadow of the fringe root (root ends at y -31.4)
     "5678888888888765",   # r2  y-31  forehead (behind the strands)
-    "5667777777777665",   # r3  y-30  shadow of the fringe (the brows cover cols 1-5 / 10-14)
-    "5667777887777665",   # r4  y-29  (brows)
+    "5678888998888765",   # r3  y-30  (the 1-row brow cubes cover cols 1-5 / 10-14)
+    "5678888888888765",   # r4  y-29  upper lids: one clean skin row between brows and lashes
     "5kLLLL7777LLLLk5",   # r5  y-28  lash lines, flicked out at the outer corners
     "56wgRw7887wgRw65",   # r6  y-27  eyes: sclera in the lid's shadow, screen glint (emissive), dark iris rim
     "56WKKW7887WKKW65",   # r7  y-26  pupils (centred: he looks wherever the head points)
@@ -220,7 +264,8 @@ def face_rgba(ch):
 
 # ---- emissive face light (additive): rims from the cups, under-glow from the pad, the screen in his eyes
 RIM_COLS = {0: 0.30, 1: 0.15, 2: 0.06}                     # skull front, counted from each outer edge
-UNDER_ROW = {8: 0.03, 9: 0.08, 10: 0.11, 11: 0.14}          # skull front rows lit from below
+UNDER_ROW = {2: 0.02, 3: 0.035, 4: 0.05, 8: 0.03, 9: 0.08, 10: 0.11, 11: 0.14}   # skull front rows lit from below
+# (rows 2-4: a faint wash on the forehead / upper lids so the unlit brow cubes read as dark lines in the closet)
 UNDER_JAW = {0: 0.19, 1: 0.22, 2: 0.25, 3: 0.29}            # lower face rows lit from below
 
 
@@ -235,10 +280,10 @@ def glow_face(i, j, w, h):
         L.add(SCREEN, 0.17)
     elif ch == 'i':
         L.add(PAD_GLOW, 0.1)
-    if j >= 5:
+    if j >= 2:
         for sd, col in ((-1, i), (1, w - 1 - i)):
             k = RIM_COLS.get(col, 0.0)
-            L.add(RIM_R if sd < 0 else RIM_L, k * (0.7 if j == 5 else 1.0))
+            L.add(RIM_R if sd < 0 else RIM_L, k * (0.45 if j < 5 else 0.7 if j == 5 else 1.0))
     if ch not in 'mMLK':
         k = UNDER_ROW.get(j, 0.0)
         if ch == 's':
@@ -318,7 +363,7 @@ def skin_mat(ctx):
         if f == 'bottom':
             if abs(x) < 3.0 and z < -2.0:
                 return MOUTH[2] if z < -5 else MOUTH[1]     # roof of the mouth (seen with the jaw open)
-            return pick(SKIN, 0.36)
+            return pick(SKIN, 0.36) if z < -0.5 else pick(HAIR, 0.1)
         return pick(HAIR, 0.15)                             # top / back: under the hair
     if t == 'nose':
         if f == 'front':
@@ -329,6 +374,8 @@ def skin_mat(ctx):
             return pick(SKIN, 0.6 - ly / h * 0.1)
         return SKIN[7]
     if t in ('jaw', 'jowl'):
+        if f == 'back' or (f in ('west', 'east', 'bottom') and z > -0.5):
+            return pick(HAIR, 0.1)                          # inside the nape hair: seen only through its ragged tips
         if f == 'front':
             col = int(clamp(math.floor(x + 7.0), 0, 13))
             return face_rgba(JAW[ctx.j][col])
@@ -362,11 +409,10 @@ def skin_mat(ctx):
     return pick(SKIN, skin_v(ctx))
 
 
-# brows (front face, col 0 = the outer tail, col 4 = the thick inner end): straight, heavy, tapering outward
-BROW_ART = [
-    "..bBB",
-    "bBBBB",
-]
+# brows: one texel tall, 5 long, 0.7 proud of the face (front face, col 0 = the thin tail by the temple .. col 4 = the
+# heavy inner end).  A full skin row separates them from the lash line and ~1.4 rows from the fringe root, so every
+# tilt of the brow bones reads: knitted in crouch_closet, an angry V in slam, raised in stand.
+BROW_ART = "cbbBB"
 
 
 def brow_mat(ctx):
@@ -375,44 +421,37 @@ def brow_mat(ctx):
     w = ctx.cube.size[0]
     if f == 'back':
         return None
-    if f in ('front', 'top', 'bottom'):
-        i = ctx.i if sx < 0 else w - 1 - ctx.i
-        if f == 'front':
-            ch = BROW_ART[min(ctx.j, 1)][min(i, 4)]
-        else:
-            ch = BROW_ART[0 if f == 'top' else 1][min(i, 4)]
-        if ch == '.':
-            return None
-        if f == 'top':
-            return HAIR[4]
-        if f == 'bottom':
-            return HAIR[1]
-        return HAIR[2] if ch == 'B' else HAIR[4]
+    i = (ctx.i if sx < 0 else w - 1 - ctx.i) if f in ('front', 'top', 'bottom') else 0
+    ch = BROW_ART[min(i, 4)]
+    if f == 'front':
+        return {'c': HAIR[5], 'b': HAIR[3], 'B': HAIR[1]}[ch]
+    if f == 'top':
+        return HAIR[6] if ch == 'c' else HAIR[4]
+    if f == 'bottom':
+        return HAIR[0]
     inner = (f == 'east') if sx < 0 else (f == 'west')
-    if inner:
-        return HAIR[1]
-    return HAIR[3] if ctx.j == 1 else None
+    return HAIR[1] if inner else HAIR[4]
 
 
 def hand_mat(ctx):
     """Bony pale hands round the pad grips.  In the pad frame the palm is a vertical plate on the outside of the grip
     (its outer face = back of the hand), the fingers come out of its lower edge and wrap under the grip toward the pad
-    centre (tips on the inner end), the thumb lies over the stick (nail on its inner end).  Palm, fingers and thumb
-    share one tone so the open hand (slam / stand) reads as one flat hand, not stacked boxes."""
+    centre (tips on the inner end), the thumb lies over the buttons (nail on its inner end).  The hands rotate far from
+    their rest pose (slam, stand), so NO baked rest-pose light here: every piece uses the same fixed tones per side
+    (back of hand / fingers 0.66, palm / finger pads 0.6), so the open hand reads as one flat hand, not stacked boxes."""
     t = tag(ctx)
     f = ctx.face
     lx, ly, lz = local(ctx)
     w, h, d = ctx.cube.size
     sd = side_of(ctx)
-    v = skin_v(ctx, 0.66)
+    v = 0.66 - (0.03 if edge(ctx) == 0 and 0 not in ctx.cube.size else 0.0)
     tip_face = 'west' if sd > 0 else 'east'                 # the inner end of fingers / thumb
-    root_face = 'east' if sd > 0 else 'west'
     if t == 'palm':
         if f == outer_face(ctx):
             if ly > h - 1.0:
-                v += 0.05 if int(lz) % 2 == 0 else -0.04    # knuckle row along the lower edge
+                v += 0.05 if int(lz) % 2 == 0 else 0.0      # knuckles along the lower edge
             if lz > d - 1.0:
-                v -= 0.07                                   # wrist going into the cuff
+                v -= 0.06                                   # wrist going into the cuff
             if 1.0 <= ly < 3.0 and int(lz) == 1:
                 v += 0.03                                   # a tendon
             return pick(SKIN, v)
@@ -421,37 +460,42 @@ def hand_mat(ctx):
             if abs(ly - 1.5) < 0.5 and 1 <= lz < d - 1:
                 v -= 0.06                                   # palm crease
             return pick(SKIN, v)
-        if f == 'back':
-            return pick(SKIN, v - 0.06)
-        return pick(SKIN, v)
+        return pick(SKIN, v - 0.04)
     if t == 'fingers':
-        k = int(math.floor(A(ctx)[2] * 1.0 + 100)) % 2   # alternate fingers along z
+        k = int(math.floor(A(ctx)[2] + 100)) % 2            # one texel per finger along z
         if f == tip_face:
             c = pick(SKIN, v + 0.02 - 0.03 * k)
-            if ctx.j == 0 and (ctx.i % 2 == 0):
-                c = mix(SKIN[8], hx('#f4e4dc'), 0.5)        # nails
-            if h2(ctx.i, ctx.j, 3) > 0.55:
-                c = mix(c, ORANGE[2], 0.4)                  # cheese-snack dust on the fingertips
+            if ctx.j == h - 1:
+                c = mix(SKIN[8], hx('#f4e4dc'), 0.5)        # nails (back-of-finger side)
+            elif h2(ctx.i, ctx.j, 3) > 0.6:
+                c = mix(c, ORANGE[2], 0.3)                  # cheese-snack dust on the fingertips
             return c
         if f in ('front', 'back'):
-            return pick(SKIN, v - 0.03)
-        # top / bottom: split lines between the fingers (every texel along z alternates), knuckle crease
-        v += 0.03 if k == 0 else -0.04
-        if abs(lx - (w - 1.5 if sd > 0 else 1.5)) < 0.5:
-            v -= 0.06                                       # middle-joint crease
+            return pick(SKIN, v - 0.05)
+        from_root = (w - 1 - lx) if sd > 0 else lx          # 0 at the knuckles .. 3 at the tips
+        if f == 'top':                                      # finger pads (palm side)
+            v -= 0.06
+            if 1.0 <= from_root < 2.0:
+                v -= 0.05                                   # joint crease
+            return pick(SKIN, v - (0.02 if k else 0.0))
+        v += 0.02 if k == 0 else -0.02                      # back of the fingers, one tone with the back of the hand
+        if from_root < 1.0:
+            v += 0.04                                       # knuckles
+        elif 1.5 <= from_root < 2.5:
+            v -= 0.04                                       # middle joints
         return pick(SKIN, v)
     if t == 'thumb':
         if f == 'top':
             if (lx < 1.0) if sd > 0 else (lx > w - 1.0):
                 return mix(SKIN[8], hx('#f4e4dc'), 0.55)    # thumbnail
             if abs(lx - w / 2.0) < 0.5:
-                return pick(SKIN, v - 0.06)                 # knuckle crease
-            return pick(SKIN, v + 0.04)
+                return pick(SKIN, v - 0.05)                 # knuckle crease
+            return pick(SKIN, v + 0.02)
         if f == tip_face:
-            return mix(pick(SKIN, v), ORANGE[2], 0.35)
+            return mix(pick(SKIN, v), ORANGE[2], 0.22)
         if f == 'bottom':
-            return pick(SKIN, v - 0.1)
-        return pick(SKIN, v)
+            return pick(SKIN, v - 0.08)
+        return pick(SKIN, v - 0.03)
     return pick(SKIN, v)
 
 
@@ -491,14 +535,76 @@ def tip_cut(u, from_bottom, seed):
     return from_bottom < short + 1.3 * abs(2.0 * p - 1.0) ** 0.8
 
 
-# fringe strand plane 17 x 5: col p <-> x [-8.5 + p, -7.5 + p], row t <-> y [-31 + t, -30 + t]; '#' hair, '.' cut
+# ---- the back and sides of the head as overlapping LOCKS (not stripes): every lock is a hand-placed tapered shape
+# (centre u, root v, tip v, width, tier) painted rounded (lit centre, dark rim), dark at the root, lighter toward the
+# tip, with a broken sheen; an upper tier lies OVER the lower one and casts a 1-2 texel shadow on it, so the back of
+# the head reads as layered messy hair.  Back: u = x, v = y.  Sides: u = z (front -> back), the locks sweep back.
+BACK_LOCKS = [
+    # tier 0: from the crown, tips round the occipital bulge
+    (-6.9, -34.0, -27.4, 4.6, 0), (-2.9, -34.0, -26.2, 4.4, 0), (1.0, -34.0, -27.6, 4.0, 0),
+    (4.6, -34.0, -25.9, 4.6, 0), (8.0, -34.0, -27.2, 3.8, 0),
+    # tier 1: the middle layer
+    (-8.4, -29.5, -21.8, 3.4, 1), (-5.1, -29.5, -20.4, 4.4, 1), (-1.2, -29.5, -22.0, 4.0, 1),
+    (2.6, -29.5, -20.2, 4.4, 1), (6.2, -29.5, -21.4, 4.2, 1), (9.0, -29.5, -22.6, 3.0, 1),
+    # tier 2: the nape, ragged tips of different lengths (this edge IS the silhouette from behind)
+    (-7.4, -24.5, -18.2, 3.4, 2), (-4.4, -24.5, -16.6, 3.8, 2), (-1.0, -24.5, -17.6, 3.6, 2),
+    (2.4, -24.5, -16.2, 4.0, 2), (5.6, -24.5, -17.2, 3.6, 2), (8.1, -24.5, -18.6, 3.0, 2),
+]
+SIDE_LOCKS = [
+    (-7.2, -34.0, -27.6, 4.4, 0), (-3.4, -34.0, -27.0, 4.4, 0), (0.6, -34.0, -27.8, 4.4, 0),
+    (4.2, -34.0, -26.8, 4.0, 0), (7.4, -34.0, -27.4, 3.4, 0),
+    (-5.6, -30.0, -26.0, 3.2, 1), (2.2, -30.0, -21.6, 4.0, 1), (5.4, -30.0, -20.8, 4.0, 1), (8.2, -30.0, -22.0, 3.0, 1),
+    (0.8, -24.5, -18.0, 3.4, 2), (3.6, -24.5, -16.8, 3.6, 2), (6.4, -24.5, -17.6, 3.0, 2),
+]
+SIDE_SLANT = 0.32          # side locks sweep toward the back as they fall
+
+
+def lock_at(locks, u, v, slant=0.0):
+    """Topmost lock covering (u, v): (index, p -1..1 across, along 0 root..1 tip, tier) or None."""
+    for k, (cx, top, tip, w, tier) in enumerate(locks):
+        if v < top or v > tip:
+            continue
+        c = cx + slant * (v - top)
+        taper = min(3.6, (tip - top) * 0.55)
+        hw = w / 2.0 if v < tip - taper else max(0.45, w / 2.0 * (tip - v) / taper)
+        if abs(u - c) <= hw:
+            return k, (u - c) / max(hw, 0.5), (v - top) / (tip - top), tier
+    return None
+
+
+def lock_v(locks, u, v, seed, slant=0.0):
+    """Hair value at (u, v) or None where no lock covers it."""
+    L = lock_at(locks, u, v, slant)
+    if L is None:
+        return None
+    k, p, along, tier = L
+    val = 0.27 + 0.2 * along + (h2(k, seed, 5) - 0.5) * 0.1
+    val += 0.1 * (1.0 - p * p) - 0.05 * p                     # rounded lock, lit from his right
+    if abs(p) > 0.78:
+        val -= 0.07                                           # the lock's dark rim
+    elif tier < 2 and abs(p) < 0.25 and along > 0.55 and h2(k, seed, 7) > 0.4:
+        val -= 0.05                                           # a strand split running into the tip
+    s0 = 0.32 + (h2(k, seed, 9) - 0.5) * 0.16
+    if abs(along - s0) < 0.11 and abs(p + 0.15) < 0.6:
+        val += 0.13                                           # broken sheen band
+    for dv, amt in ((1.0, 0.15), (2.0, 0.06)):                # shadow cast by the tier above
+        U = lock_at(locks, u, v - dv, slant)
+        if U is not None and U[3] < tier and U[0] != k:
+            val -= amt
+            break
+    return val
+
+
+# fringe strand plane 17 x 5: col p <-> x [-8.5 + p, -7.5 + p], row t <-> y [-32 + t, -31 + t]; '#' hair, '.' cut.
+# The root ends at y -31.4, so one texel of forehead shows between it and the brows (y -30.4 .. -28.4): only three
+# locks cross the brow line - one over his right eye's outer corner, one down the nose bridge, one at his left temple.
 FRINGE = [
     # 01234567890123456
-    "#################",   # t0 y-31 (mostly inside the root)
-    "##.#####.####.###",   # t1 y-30
-    "#.##.##.##.#.##.#",   # t2 y-29 choppy tips (the brows sit in front, cols 1.5-6.5 / 10.5-15.5)
-    "..##....#.......#",   # t3 y-28 one lock over his right eye's outer corner, one down the nose bridge
-    "...#............."    # t4 y-27 ... its tip across the outer white of the right eye
+    "#################",   # t0 y-32 (mostly inside the root)
+    "##.###.####.##.##",   # t1 y-31 choppy ends just under the root
+    "..##.....#......#",   # t2 y-30 three locks cross the brow line
+    "..##.....#.......",   # t3 y-29
+    "...#.............",   # t4 y-28 the right-eye lock's tip across the lash line's outer corner
 ]
 assert all(len(r) == 17 for r in FRINGE)
 
@@ -514,7 +620,7 @@ def hair_mat(ctx):
         if f != 'front' or FRINGE[ctx.j][ctx.i] != '#':
             return None
         below = ctx.j + 1 < len(FRINGE) and FRINGE[ctx.j + 1][ctx.i] == '#'
-        u = x + (y + 31.0) * 0.6                            # strands swept toward his right
+        u = x + (y + 32.0) * 0.6                            # strands swept toward his right
         v = hair_v(u, 0.55 + ctx.j * 0.1, 7, sheen=2.0) + 0.04
         if not below:
             v -= 0.06                                       # thinner, darker tip
@@ -523,7 +629,7 @@ def hair_mat(ctx):
         if f == 'back':
             return None
         if f == 'front':
-            u = x + (y + 33.6) * 0.6
+            u = x + (y + 34.4) * 0.6
             return pick(HAIR, hair_v(u, 0.25 + ly / h * 0.3, 7, sheen=0.38) + 0.06)
         if f == 'top':
             return pick(HAIR, hair_v(x, 0.1 + (1.0 - lz / d) * 0.15, 7, sheen=0.2) + 0.1)
@@ -540,7 +646,6 @@ def hair_mat(ctx):
             ang = math.atan2(dx, -dz)
             u = ang * 9.0 if r > 1.2 else 0.0
             return pick(HAIR, hair_v(u, clamp(r / 12.0) * 0.55, 13, sheen=0.33) + 0.1)
-        along = clamp((y + 33.5) / 10.0) * 0.75 + 0.2
         if f in ('west', 'east'):
             sd = -1 if f == 'west' else 1
             if z < -4.0:
@@ -548,29 +653,23 @@ def hair_mat(ctx):
                 lim = -26.8 + (1.6 if -6.2 < z < -5.0 else 0.0) + h2(int(math.floor(z * 2)), 5, 2) * 0.8
                 if y > lim:
                     return None
-            v = hair_v(z * sd * 1.1, along, 17 if sd < 0 else 19, sheen=0.42) + lt
-            return pick(HAIR, v)
+            v = lock_v(SIDE_LOCKS, z, y, 17 if sd < 0 else 19, SIDE_SLANT)
+            return pick(HAIR, (0.12 if v is None else v) + lt)
         if f == 'back':
-            # two layers: the upper clumps end in points round y -27 over a darker lower layer (it reads as hair
-            # layers, not planks)
-            k, p, wk = clump_at(x, 23)
-            tip_y = -28.6 + h2(k, 23, 11) * 1.3 + (1.0 - abs(2.0 * p - 1.0)) * 1.5
-            if y > tip_y:
-                v = hair_v(x + 2.0, 0.55 + (y - tip_y) * 0.05, 29, sheen=0.85) - 0.04
-                if y - tip_y < 0.9:
-                    v -= 0.1                                # shadow under the upper layer's points
-                return pick(HAIR, v + lt)
-            return pick(HAIR, hair_v(x, along, 23, sheen=0.42) + lt - 0.01)
+            v = lock_v(BACK_LOCKS, x, y, 23)
+            return pick(HAIR, (0.12 if v is None else v) + lt)
     if t == 'nape':
         if f in ('front', 'top'):
             return None
         if f == 'bottom':
             return pick(HAIR, 0.08)
-        u = x if f == 'back' else z * (1 if f == 'east' else -1) * 1.1
-        along = 0.8 + ly / h * 0.2
-        if tip_cut(u, (h - ly) * (h + 1.0) / h, 23 if f == 'back' else 29):
-            return None                                     # staggered, pointed ends at the nape
-        return pick(HAIR, hair_v(u, along, 23 if f == 'back' else 29, sheen=0.4) + lt - 0.03)
+        if f == 'back':
+            v = lock_v(BACK_LOCKS, x, y, 23)
+        else:
+            v = lock_v(SIDE_LOCKS, z, y, 17 if f == 'west' else 19, SIDE_SLANT)
+        if v is None:
+            return None if y > -20.0 else pick(HAIR, 0.12)  # ragged lock tips at the nape, dark gaps above
+        return pick(HAIR, v + lt - 0.02)
     if t == 'tuft_side':
         if f == 'bottom':
             return pick(HAIR, 0.08)
@@ -589,15 +688,24 @@ def hair_mat(ctx):
         u = (lx if f in ('front', 'back', 'top') else lz) * 1.4 + x * 0.3
         return pick(HAIR, hair_v(u, along, 37 + int(z), sheen=0.6) + lt + 0.04)
     if t == 'spikes':
-        # zero-thickness cut-out planes: jagged messy tips sticking up round the headband
-        if f not in ('front', 'back', 'west', 'east'):
+        # zero-thickness cut-out planes: jagged messy locks sticking up round the headband.  The profile is read from
+        # the ABSOLUTE position along the plane, so both faces of a plane cut the same outline.
+        if f in ('top', 'bottom'):
             return None
-        ii = ctx.i
-        col_h = SPIKES[tag2(ctx)][ii] if ii < len(SPIKES[tag2(ctx)]) else 0
-        if (h - ctx.j) > col_h:
+        u0, prof = SPIKES[tag2(ctx)]
+        u = z if tag2(ctx) == 'crown' else x
+        col = int(math.floor(u - u0))
+        col_h = prof[col] if 0 <= col < len(prof) else 0
+        top = ctx.cube.a0[1] + h - col_h                    # the tip of this column
+        if col_h <= 0 or y < top:
             return None
-        along = 0.5 + (ctx.j - (h - col_h)) / max(1.0, col_h) * 0.4
-        return pick(HAIR, hair_v(ii * 1.0, 1.0 - along, 41, sheen=0.75) + 0.08 + lt)
+        along = (y - top) / max(1.0, col_h)                 # 0 at the tip .. 1 at the root
+        v = 0.6 - along * 0.32 + (h2(col, len(prof), 41) - 0.5) * 0.12
+        if y - top < 1.0 and col_h >= 3:
+            v += 0.06                                       # sunlit tip
+        if (col + (1 if col_h % 2 else 0)) % 3 == 2:
+            v -= 0.07                                       # every third strand in shadow
+        return pick(HAIR, v + lt)
     return pick(HAIR, 0.3 + lt)
 
 
@@ -605,11 +713,12 @@ def tag2(ctx):
     return getattr(ctx.cube, 'variant', 'front')
 
 
-# spike planes: per column, how many rows of hair rise from the bottom (0 = cut).  Read from the viewer's side.
+# spike planes: (u0, heights) - for every texel column along the plane (u = x, or z for 'crown') how many texels of
+# hair rise from the plane's bottom edge (0 = cut).
 SPIKES = {
-    'front': [0, 1, 2, 3, 2, 1, 0, 2, 3, 3, 1, 0, 1, 2, 1, 0],
-    'side': [0, 2, 3, 1, 0, 1, 3, 2, 1, 0],
-    'crown': [1, 3, 2, 0, 2, 3, 1],
+    'front': (-8.0, [1, 2, 3, 2, 1, 0, 2, 3, 2, 1, 2, 3, 1, 0, 2, 1]),          # in front of the band (hairline)
+    'crest': (-6.5, [1, 3, 2, 4, 5, 3, 1, 2, 5, 4, 2, 3, 1]),                  # behind the band: pokes over it
+    'crown': (2.6, [3, 5, 4, 5, 2]),                                         # the cowlick on the crown (side view)
 }
 
 
@@ -671,7 +780,7 @@ FOLD_TORSO_SIDE = [(1.0, 1.5, 6.5, 6.5), (1.0, 12.8, 6.5, 13.4)]
 FOLD_TORSO_BACK = [(3.5, 7.5, 1.5, 13.0), (10.5, 7.5, 12.5, 13.0), (5.0, 13.4, 9.0, 13.4)]
 FOLD_SLEEVE = {'front': [(0.3, 7.0, 4.7, 8.2)], 'back': [(0.3, 7.6, 4.7, 6.8)],
                'out': [(0.3, 7.2, 4.7, 6.4)], 'in': [(0.3, 1.5, 4.7, 2.5), (0.3, 7.6, 4.7, 8.4)]}
-FOLD_FOREARM = [(0.0, 1.6, 4.0, 2.6), (0.0, 4.8, 4.0, 5.4)]
+FOLD_FOREARM = [(0.0, 2.4, 4.0, 3.4)]                      # one fold where the sleeve bunches over the cuff
 
 
 def hoodie_mat(ctx):
@@ -680,7 +789,12 @@ def hoodie_mat(ctx):
     lx, ly, lz = local(ctx)
     w, h, d = ctx.cube.size
     x, y, z = A(ctx)
-    v = 0.52 + face_light(ctx) * 0.9 + knit(ctx)
+    v = 0.5 + face_light(ctx) * 0.9 + knit(ctx)               # 0.5 = the middle of HOOD[4]: no tone flicker
+    if t in ('sleeve', 'forearm', 'cuff'):
+        # the arms swing far from their rest pose: only a weak baked light, centred on a ramp step, so the sleeves
+        # read as flat fleece with one deliberate fold instead of flickering between two tones
+        fl = face_light(ctx)
+        v = 0.5 + (0.11 if fl > 0.1 else -0.11 if fl < -0.1 else 0.0)   # one ramp step up / down, never between
     if edge(ctx) == 0 and f not in ('top', 'bottom'):
         v -= 0.035
     if t == 'torso':
@@ -749,12 +863,12 @@ def hoodie_mat(ctx):
         if ly < 1.5:
             v += 0.04                                       # shoulder catches the light
         if key == 'in':
-            v -= 0.06
+            v -= 0.1                                        # the inner side, in the torso's shadow (one step down)
         return pick(HOOD, v)
     if t == 'forearm':
         if f in ('top', 'bottom'):
             return HOOD[1]
-        v += folds(ctx, FOLD_FOREARM if f in ('front', 'back') else [(0.0, 2.2, 4.0, 1.4)])
+        v += folds(ctx, FOLD_FOREARM if f in ('front', 'back') else [(0.0, 3.2, 4.0, 2.6)])
         if f == inner_face(ctx):
             v -= 0.06
         return pick(HOOD, v)
@@ -1319,16 +1433,17 @@ def build():
     box('head', (8.2, -32, -6), (2, 4, 4), 'hair', 'tuft_side', sx=1)          # in front of the sliders
     box('head', (8.4, -31.5, 2.5), (2, 3, 3), 'hair', 'tuft_side', sx=1)       # and one behind the left slider
     box('head', (-8, -36.5, -5.6), (16, 3, 0), 'hair', 'spikes', variant='front')
-    box('head', (0.3, -36.5, 0.5), (0, 3, 7), 'hair', 'spikes', variant='crown')
+    box('head', (-6.5, -38.5, 3.6), (13, 5, 0), 'hair', 'spikes', variant='crest')
+    box('head', (0.3, -38.5, 2.6), (0, 5, 5), 'hair', 'spikes', variant='crown')
 
     bone('fringe', (0, -33, -9), 'head')
-    box('fringe', (-8.5, -33.6, -9.3), (17, 3, 2), 'hair', 'fringe_root')
-    box('fringe', (-8.5, -31, -8.9), (17, 5, 0), 'hair', 'fringe_tips')
+    box('fringe', (-8.5, -34.4, -9.3), (17, 3, 2), 'hair', 'fringe_root', inflate=0.15)   # sides 0.15 out of the shell's
+    box('fringe', (-8.5, -32, -8.9), (17, 5, 0), 'hair', 'fringe_tips')
 
     for side, sx in (('right', -1), ('left', 1)):
         bb = f'{side}_brow'
-        bone(bb, (4.5 * sx, -29, -9), 'head', rot=(0, 0, BROW_FOCUS * -sx))
-        box(bb, (4.5 * sx - 2.5, -30, -9.5), (5, 2, 2), 'brow', 'brow', sx=sx)
+        bone(bb, (4.5 * sx, -29.5, -8.2), 'head', rot=(0, 0, BROW_FOCUS * -sx))
+        box(bb, (4.5 * sx - 2.5, -30.0, -8.7), (5, 1, 1), 'brow', 'brow', sx=sx)   # 0.7 proud: never hides the eyes
 
     bone('jaw', (0, -21, 2), 'head')
     box('jaw', (-3, -21, -8), (6, 4, 10), 'skin', 'jaw',
@@ -1343,7 +1458,7 @@ def build():
     box('headphones', (-7.5, -35.8, -1.5), (15, 2, 4), 'headset', 'band', decals={'eyes:top': glow(glow_band_top)})
     for side, sx in (('right', -1), ('left', 1)):
         box('headphones', ((7 if sx > 0 else -11), -35.0, -1.5), (4, 2, 4), 'headset', 'band_end', sx=sx,
-            decals={'eyes:top': glow(glow_band_end(sx))})
+            inflate=0.1, decals={'eyes:top': glow(glow_band_end(sx))})     # 0.1 proud of the band's front / back
         box('headphones', ((10 if sx > 0 else -12), -33.5, -2), (2, 6, 2), 'headset', 'slider', sx=sx)
         cb = f'{side}_cup'
         bone(cb, (9.0 * sx, -24, -0.5), 'headphones', rot=(0, CUP_YAW * sx, 0))
@@ -1410,12 +1525,13 @@ def build():
             pbox(hb, (f0, 2.0, 0.5), (4, 2, 4), 'hand', 'fingers', sx=sx)
         else:
             pbone('right_fingers', (pc + 0.5, 2.5, 2.5), hb)
-            pbox('right_fingers', (f0, 2.0, 0.4), (4, 2, 2), 'hand', 'fingers', sx=sx)
-            pbox('right_fingers', (f0, 2.0, 2.6), (4, 2, 2), 'hand', 'fingers', sx=sx)
+            # two finger pairs with a 1-texel gap: the open hand in slam / stand reads as spread fingers
+            pbox('right_fingers', (f0, 2.0, 0.0), (4, 2, 2), 'hand', 'fingers', sx=sx)
+            pbox('right_fingers', (f0, 2.0, 3.0), (4, 2, 2), 'hand', 'fingers', sx=sx)
         tb = f'{side}_thumb'
         pbone(tb, (pc - 0.5 * sx, -1.5, 2.5), hb)
-        t0 = pc - 6.0 if sx > 0 else pc
-        pbox(tb, (t0, -2.8, 1.5), (6, 2, 2), 'hand', 'thumb', sx=sx, decals={'eyes:top': glow(glow_under(0.12))})
+        t0 = pc - 4.0 if sx > 0 else pc                     # 4 long: from the palm over the grip onto the buttons
+        pbox(tb, (t0, -2.8, 1.5), (4, 2, 2), 'hand', 'thumb', sx=sx, decals={'eyes:top': glow(glow_under(0.12))})
 
     # gamepad: centre of the pad frame, child of the left hand
     pbone('gamepad', (0.0, 0.0, 0.0), 'left_hand')
@@ -1442,7 +1558,7 @@ def build():
         box(foot, (lx - 2, 17.5, -4), (4, 2, 2), 'shoe', 'shoe_tongue', sx=sx)
     box('right_foot', (-LEG_X - 3.8, 21, -5), (0, 3, 3), 'shoe', 'lace', sx=-1)
 
-    m = Model('toti', 256, 128, r.roots)
+    m = Model('toti', 256, 80, r.roots)       # 16.7k texels of faces: 256x64 cannot hold them, 80 rows can
     m.scale = 0.5
     m.pad_info = {'gx': gx, 'gp': gp, 'wrist': wrist_w.tolist(), 'hand_rot': hand_rot}
     return m
@@ -1504,7 +1620,7 @@ POSES = {
         'right_forearm': (0.295, 0.172, 0.252, 0, 0, 0),
         'right_hand': (-0.902, -0.675, 1.073, 0, 0, 0),
         'right_fingers': (0, 0, 1.571, 0, 0, 0),
-        'right_thumb': (0, 0, -0.4, 0, 0, 0),
+        'right_thumb': (0, 0.785, 1.571, 0, 0, 0),
         'jaw': (0.34, 0, 0, 0, 0, 0),
         'left_thumb': (0, 0, 0.2, 0, 0, 0),
         'fringe': (-0.1, 0, 0, 0, 0, 0),
@@ -1527,6 +1643,109 @@ POSES = {
         'right_forearm': (-0.217, 0.193, 0.05, 0, 0, 0),
         'right_hand': (-2.653, 0.603, -2.825, 0, 0, 0),
         'right_fingers': (0, 0, 1.571, 0, 0, 0),
-        'right_thumb': (0, 0, -0.5, 0, 0, 0),
+        'right_thumb': (0, 0.785, 1.571, 0, 0, 0),
     },
 }
+
+
+ANIM_NOTES = """Toti Morales -- animation notes.  Units: radians for POSES and for the values below (rest rotations quoted in
+DEGREES where marked "deg"), offsets in model texels (2x density inside scale_root: 2 texels = 1 vanilla pixel).
+t = ageInTicks, s = walk speed 0..1.  Every POSES entry is ADDED to the rest pose; blend between poses over 4-6 ticks
+unless a note says SNAP (1-2 ticks).  Mirrored values are always written out per side as "right = (...), left = (...)"
+in (xRot, yRot, zRot[, dx, dy, dz]) order; right_* is on -X.  MC applies Z * Y * X.
+
+Variants and toggles: none (one texture, toti.png; every bone always visible).
+Render: entityCutoutNoCull + the emissive layer 'eyes' (toti_eyes) drawn full-bright / additive on top.  The base
+texture carries NO coloured light (clean skin in daylight); all the RGB lives on 'eyes': the cup rings and front arcs,
+the band strip, the pad light bar + buttons, the mic LED, the eye glints / lit whites, the braces, and the coloured
+light on his face (cyan rim on his right, magenta on his left, cyan under-glow from the pad on the chin / lips / nose
+/ cheeks / fist tops).  Optional: pulse the layer's brightness 0.85-1.0 on a 2 s sine (breathing LEDs); never switch
+it off - in the closet it IS his face.
+
+Rest pose (the idle "playing" stance; every pose below starts from it)
+* body: slouched 6 deg forward over the hips.  neck: 15 deg forward (gamer neck).  head: 2 deg more down.
+* right_arm = (-14, -8, 8) deg, left_arm = (-14, 8, -8) deg: forward, rolled in (rounded shoulders), elbows out.
+* right_forearm = (-56, -18, 0) deg, left_forearm = (-56, 18, 0) deg: up in front of the belly, angled in.
+* right_hand = (30.1, 20.0, 20.3) deg, left_hand = (30.1, -20.0, -20.3) deg: solved so both fists close on the pad
+  grips with the pad face tilted 36 deg up toward his eyes.
+* right_leg = left_leg = (-6, 0, 0) deg: counter-rotate the slouch so the soles stay flat.
+* right_brow = (0, 0, 5) deg, left_brow = (0, 0, -5) deg: inner ends a touch down (absorbed).
+* right_cup = (0, -16, 0) deg, left_cup = (0, 16, 0) deg: the outer RGB plates turn toward the front.
+* mic = (19.8, 20.5, 0) deg: the boom aimed at his left mouth corner.
+
+Bones
+* body (root, pivot at the hips y 2): hoodie torso + ribbed hem + kangaroo pocket (phone bulge, snack dust on its
+  edge) + the hood lying down (roll, rim round the neck, tip) + the two drawstrings (merged into body: they swing
+  with it).  Idle: breathing dy 0..0.25 on a 3 s sine; rocks zRot +-0.04 with the "game" (see idle).  Walk: bob
+  dy = |sin(walk)| * 0.6 * s, no sway (shuffle).
+* neck: the forward-jutting neck.  Takes 35% of the head look (yaw / pitch).
+* head: skull + nose + upper teeth / mouth cavity ('mouth' cube) + static jowls + hair shell / nape / tufts / spike
+  planes.  65% of the head look.  Idle while playing: tiny bob to the game's music, xRot +-0.03 at 2 Hz, and every
+  4-7 s a 0.08 zRot "lean into the turn" together with body.  When he SPEAKS a line ("OCUPADO! ESTOY EN RANKED!",
+  "Callate, Chori!", "Que me perdi?"): head xRot -0.25 + neck -0.15 for the line only (looks up at the player),
+  then back down to the pad over 6 ticks (in the closet he is lit from below, so looking up = full face).
+* fringe (child of head, pivot at the hairline): the fringe root + the cut-out strand plane.  Secondary: xRot spring
+  -0.1 .. +0.05 lagging head pitch by 2 ticks; slam flicks it up (-0.1).
+* right_brow / left_brow (children of head): 1-row brow lines.  Expression only via zRot and dy: knitted /
+  focused = right (0, 0, +0.06), left (0, 0, -0.06); angry V = right (0, 0, +0.3, 0, +0.4, 0), left (0, 0, -0.3, 0,
+  +0.4, 0); raised / dopey = right (0, 0, -0.26, 0, -1.0, 0), left (0, 0, +0.26, 0, -1.3, 0).  Never move dy above
+  -1.3 (the fringe root starts there) or below +0.6 (the lash line).  Idle: every 3-6 s a 3-tick "rage" twitch: both
+  brows +-0.15 toward the angry V and back (he is losing the match).
+* jaw (child of head, pivot behind the mouth): chin + lower lip + the lower braces plane (teeth).  Talk: xRot
+  0..0.3 per syllable; slam 0.34 (shouting, braces flash); stand 0.14 (slack-jawed); chewing gum idle 0..0.06 at
+  2.5 Hz.  The chin's bottom row is a darker undercut so small opens never show a step against the jowls.
+* tongue (child of jaw): hidden inside the mouth at rest; crouch_closet slides it out of his left mouth corner
+  (0.12, 0, 0.3, 0, 0.45, -2.4) - the concentration tongue.  Retract it (back to rest) whenever he talks.
+* headphones (child of head): band + LED strip + band ends + sliders.  Secondary only: on the slam impact a 4-tick
+  zRot shake +-0.04.
+* right_cup / left_cup (children of headphones): cushion + cup + RGB plate (ring + logo).  Static (rest yaw above).
+* mic (child of left_cup): boom + mic with the red mute LED.  Static; at breakfast it may swing up out of the way
+  (xRot -1.2) while he eats.
+* right_arm / left_arm: shoulders (sleeves).  Idle: they follow the hands' small "steering" motion (yRot +-0.03).
+  Walk: no swing - he walks holding the pad in front of him (keep the rest arms).
+* right_forearm / left_forearm: elbows (sleeve + ribbed cuff).  Pose values only.
+* right_hand / left_hand: wrists (palm plate on the outside of each grip).  left_hand carries left_thumb AND the
+  gamepad; right_hand carries right_fingers and right_thumb.  The left fist's fingers are part of left_hand (it never
+  opens).
+* right_fingers (child of right_hand, pivot on the palm's knuckle edge): two finger pairs with a 1-texel gap,
+  wrapped under the grip at rest.  zRot +1.571 opens them flat (they continue the palm plane): slam, stand.
+* right_thumb / left_thumb (children of the hands, pivot on the palm's top edge, 4 long over the face buttons /
+  d-pad).  Button mashing: lift = right (0, 0, -0.12..-0.2), left (0, 0, +0.12..+0.2); alternate the two thumbs at
+  3-4 Hz with random 2-6 tick holds while playing (both sides tap independently).  Open hand: right_thumb
+  (0, 0.785, 1.571) splays it 45 deg off the open fingers in the palm plane (slam, stand).
+* gamepad (child of left_hand, pivot = pad centre): body, grips, sticks; light bar faces him.  Static relative to
+  the left hand - every pose keeps it in the left fist, so never animate it on its own (a 0.05 zRot "steer" on both
+  hands is enough).
+* right_leg / left_leg (hips), right_shin / left_shin (knees), right_foot / left_foot (ankles: sneakers).  Walk:
+  legs xRot = +-sin(walk) * 0.45 * s (right = +, left = -), shins max(0, sin(walk + 1.2)) * 0.5 * s, feet keep the
+  soles flat: foot xRot = -(leg + shin) * 0.5.  The soles keep a 0.5 gap at rest; in the crouch the legs splay
+  right (.., .., +0.05), left (.., .., -0.05) and the feet counter it (right -0.05, left +0.05) so they never cross.
+
+Poses
+* crouch_closet: the wardrobe.  Crouched on his heels, absorbed: body (0.384, 0, 0, 0, 12.298, 3.895) (drops 12.3,
+  leans 22 deg, back 3.9 so he sits on his heels); thighs right = (-2.129, 0, 0.05), left = (-2.129, 0, -0.05);
+  shins right = left = (2.443, 0, 0); feet right = (-0.698, 0, -0.05), left = (-0.698, 0, 0.05) (soles flat on
+  the floor); neck -0.3 / head -0.06 (counter the lean: the face looks at the pad held up in front of his chin);
+  arms right = (-0.989, 0.093, -0.18), left = (-0.989, -0.093, 0.18); forearms right = (-0.349, 0.149, -0.021),
+  left = (-0.349, -0.149, 0.021); hands right = (1.15, -0.392, -0.197), left = (1.15, 0.392, 0.197) (pad up under
+  his nose, its light bar under his chin); jaw 0.06; tongue out (see tongue); left_thumb (0, 0, 0.12) lifted mid-tap;
+  brows knitted.  Play the idle on top (thumb mashing, head bob, rage twitches).  When the player enters the
+  wardrobe: SNAP the head up (head -0.25, neck -0.15) for "OCUPADO! ESTOY EN RANKED!", jaw talking, then back.
+* slam: the punchline.  Same crouch (body, legs, feet as crouch_closet) but he does NOT look: neck (-0.3, -0.12, 0),
+  head (0, -0.42, 0.1) (turned to his left, toward the pad, away from the door); the RIGHT arm shoves the door shut
+  with a flat open hand: right_arm (-0.924, 0.866, 0.7), right_forearm (0.295, 0.172, 0.252), right_hand (-0.902,
+  -0.675, 1.073), right_fingers (0, 0, 1.571), right_thumb (0, 0.785, 1.571); the left hand keeps playing one-handed:
+  left_arm (-0.927, -0.104, 0.151), left_forearm (-0.316, -0.145, 0.012), left_hand (1.093, 0.351, 0.176),
+  left_thumb (0, 0, 0.2); jaw 0.34 ("Callate, Chori!"), fringe -0.1, brows angry V (right (0, 0, 0.3, 0, 0.4, 0),
+  left (0, 0, -0.3, 0, 0.4, 0)).  Timing: SNAP from crouch_closet to slam in 3 ticks on the door-slam sound, hold 12
+  ticks, ease back to crouch_closet over 8 (the right hand re-closes on the pad: right_fingers / right_thumb back to
+  0 in the last 3).  Place him with the wardrobe door on his right (-X side).
+* stand: breakfast, "Que me perdi?".  Upright (body -0.05, legs right = left = (0.05, 0, 0)), head lifted and
+  cocked: neck -0.22, head (-0.14, 0.14, 0.16); slack jaw 0.14 (braces show); brows raised and uneven (right (0, 0,
+  -0.26, 0, -1.0, 0), left (0, 0, 0.26, 0, -1.3, 0)); shrug: both shoulders up 1.4 - right_arm (0.189, 0.198, 0.281,
+  0, -1.4, 0), left_arm (0.316, 0.014, -0.118, 0, -1.4, 0); the RIGHT hand turns palm-up at waist height:
+  right_forearm (-0.217, 0.193, 0.05), right_hand (-2.653, 0.603, -2.825), right_fingers (0, 0, 1.571), right_thumb
+  (0, 0.785, 1.571); the LEFT hand holds the pad horizontally against the hip: left_forearm (0.169, 0.016, -0.04),
+  left_hand (0.119, -0.192, 0.237).  The eyes are painted centred, so with the head lifted he looks at whoever he
+  talks to.  Hold the shrug for the line, then drop the shoulders (dy back to 0 over 6 ticks).
+"""
