@@ -1,4 +1,4 @@
-# Estado del proyecto y traspaso (24/10/2026)
+# Estado del proyecto y traspaso (actualizado 23/10/2026, sesión 2)
 
 Leer esto primero en una sesión nueva, después `docs/design/casa_terror.md` completo (diseño vigente, §11 contrato de
 marcadores, §12 API del motor de terror). `BIBLIA.md` y `casa_mecanicas.md` quedan como historia: donde contradigan
@@ -14,15 +14,19 @@ a `casa_terror.md`, manda `casa_terror.md`.
   de la partida completa. Guardar trabajo de agentes en el repo seguido (el contenedor se reinicia).
 
 ## Reglas técnicas
-- Rama `claude/intelligent-mayer-xknxxf`; commits terminan con
-  `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>` y `Claude-Session: https://claude.ai/code/session_01C2PSZfs8x2BhoyHGNbsV9v`.
+- Rama de trabajo actual `claude/dead-line-casa-morales-7r65e8` (sale de `claude/intelligent-mayer-xknxxf`, mismo
+  historial). Commits terminan con `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>` y la línea
+  `Claude-Session:` de la sesión que los hace.
   Sin PR salvo pedido. Sin identificadores de modelo en commits ni código. Repo PÚBLICO: nunca subir fuentes
   descompiladas de Minecraft.
 - **No hay compilador local** (maven bloqueado): el CI (`.github/workflows/build.yml`) compila al pushear. Logs con
   `mcp__github__get_job_logs(run_id, failed_only, return_content)`; el paso "ERRORS BEGIN/END" resume los errores.
   Verificar APIs contra el código del repo, `/tmp/ref/probe/api*.txt`, `/tmp/ref/mc_imports.txt`, `/tmp/ref/fabric-api`
   (si `/tmp/ref` no existe en una sesión nueva, el workflow `.github/workflows/probe.yml` + `tools/ci/probe.sh`
-  imprime firmas de clases vanilla).
+  imprime firmas de clases vanilla). Red: Maven Central y `raw.githubusercontent.com` andan (fuentes de Fabric API:
+  `curl -s https://raw.githubusercontent.com/FabricMC/fabric-api/1.21.11/<ruta>`); maven de Fabric/Mojang y la descarga
+  de logs zip de Actions están bloqueados.
+- `export DEADLINE_WORK=<scratchpad>/work` para que renders y QA no caigan en `<repo>/.work`.
 - Capturas in-game del CI: `tools/ci/decode_shots.py` (base64 en los logs del job cliente).
 - Herramientas: modelos `tools/models` (`preview.py <key> [--pose]`, `build_all.py <key>`, ART_GUIDE.md); sitios
   `tools/sites` (`casa.py`, `walkcheck.py casa`, `siterender.py casa --point X`); sonidos `tools/audio` (`sounds_def.py`
@@ -49,8 +53,18 @@ a `casa_terror.md`, manda `casa_terror.md`.
   15 escondites, 116/116 marcadores alcanzables (11 sellados a propósito), según §11. Falta solo una pasada de revisión
   visual (renders día/noche) y exportar `casa.json` final.
 
+## Sesión 2 (en curso)
+- CI verde de nuevo (`976d300`: el culling del auto pasó a `CarRenderer.getBoundingBoxForCulling`).
+- `HorrorCommands` registrado en `DeadLine.java`. `Director` postea `use:<puerta>` también en puertas trabadas (golpear).
+- `CasaScript` real: un capítulo por acto (cap. n = acto n, cap. 7 = final; checkpoints por acto), transiciones por
+  tiempo/lugar/sustos, mensajes de §8, `Haunt` con el acto y `tick()`, `Hunt` en el acto 5. Los set pieces son
+  `HorrorEvent` scripted con id `sp_*` (`sp_perro_camino`, `sp_llegada`, `sp_cena`, `sp_a_dormir`, `sp_lucia_techo`,
+  `sp_jorge_sonambulo`, `sp_ropero_toti`, `sp_nona_reza`, `sp_nona_se_rompe`, `sp_cuarto61`, `sp_final_auto`) y postean
+  `cena:fin`, `a_dormir:fin`, `cuarto61:fin`, `final:fin`; si un set piece no existe, el acto usa una versión simple.
+- En curso con agentes: casona (pendiente 2), B2 cacería, B3 apariciones/perro/copias.
+
 ## Pendiente (en orden)
-1. **CI verde** del commit del auto/overworld (arreglar errores de compilación).
+1. ~~CI verde~~ (hecho).
 2. **Cerrar la casona**: revisar renders (`siterender.py casa --point living|hall|pasillo_1p|cuarto61|patio`), corregir
    lo que se vea mal, exportar.
 3. **B2 cacería** y **B3 apariciones/perro/copias**: el brief exacto de cada uno está en `tools/workflows/casa_b2_b3.js`
