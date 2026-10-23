@@ -1002,6 +1002,7 @@ def furnish_pb(s, hs):
     for x, k in ((5, 'soga'), (6, 'ropa_tendida'), (7, 'ropa_tendida'), (8, 'soga')):
         K(s, x, 1, 18, k, 'north')
     lamp(s, 6, 2, 16, 'tubo', 'luces_lavadero')
+    K(s, 5, 0, 19, 'mancha_humedad', 'east')
     # ---------------------------------------------------------------- COSTURERO (x 11..14, z 14..20): the sewing table
     # with the cookie tin of buttons, the dress form under a sheet, wool, the old wardrobe, offcuts on the floor
     K(s, 14, 0, 19, 'mesa_cocina', 'west')
@@ -1159,6 +1160,11 @@ def furnish_1p(s, hs):
     K(s, 11, 5, 20, 'cajas_apiladas', 'north')
     K(s, 12, 5, 20, 'balde_secador', 'north')
     lamp(s, 12, 7, 17, 'foco', 'luces_trastero')
+    # the house already feels wrong: a face in the damp where you come up the stair, finger trails along the corridor
+    K(s, 14, 5, 3, 'mancha_humedad_cara', 'west')
+    for (x, y, z) in ((-14, 6, 12), (-13, 5, 12), (-13, 6, 12), (-6, 6, 9), (0, 5, 9), (0, 6, 9), (10, 6, 12), (11, 6, 9)):
+        if key_at(s, x, y, z) and key_at(s, x, y, z).startswith('pared_pasillo'):
+            K(s, x, y, z, 'pared_pasillo_rayada')
 
 
 def furnish_attic(s, hs):
@@ -1696,6 +1702,9 @@ def markers(s):
     drawers = sorted(p for p, st in s.blocks.items() if st.startswith('deadline:casa_') and
                      st.split('[')[0][len('deadline:casa_'):] in DRAWERS)
     G(s, 'cajones', *drawers)
+    G(s, 'luces_despensa', *s.markers['groups']['luces_cocina'])      # the pantry is lit from the kitchen
+    G(s, 'luces_exterior', *(s.markers['groups']['farol'] + s.markers['groups']['luces_porche'] +
+                             s.markers['groups']['luces_patio']))
 
     # ---------------------------------------------------------------- swaps the script can make (props)
     pr = s.prop
