@@ -6,12 +6,9 @@ Generates assets/deadline/sounds.json, lang subtitle keys and the Java ModSounds
 """
 SOUNDS = {
     # phone
-    'phone.ring': (1, 'El teléfono suena', 'Phone rings', False),
-    'phone.vibrate': (1, 'Vibración', 'Phone vibrates', False),
-    'phone.notify': (1, 'Notificación', 'Notification', False),
-    'phone.accept': (1, 'Llamada aceptada', 'Call accepted', False),
-    'phone.hangup': (1, 'Llamada cortada', 'Call ended', False),
-    'phone.voice': (6, 'Voz al teléfono', 'Voice on the phone', False),
+    'phone.vibrate': (1, 'El celular vibra', 'Phone vibrates', False),
+    'phone.notify': (1, 'Mensaje nuevo', 'New message', False),
+    'phone.accept': (1, 'Caso aceptado', 'Case accepted', False),
     'teleport.whoosh': (1, 'Transmisión', 'Transmission', False),
     # ambience
     'ambient.casa': (1, 'La casa cruje', 'The house creaks', True),
@@ -46,7 +43,6 @@ SOUNDS = {
     'flare.burn': (1, 'Bengala arde', 'Flare burns', False),
     # entities
     'poseida.giggle': (2, 'Risa de niña', 'Girl giggles', False),
-    'poseida.demon': (5, 'Voz demoníaca', 'Demonic voice', False),
     'poseida.crack': (2, 'Huesos crujen', 'Bones crack', False),
     'poseida.scream': (1, 'Grito', 'Scream', False),
     'poseida.hurt': (1, 'Lucía se queja', 'Lucia hurts', False),
@@ -65,7 +61,7 @@ SOUNDS = {
     'anchor.purify': (1, 'Ancla purificada', 'Anchor purified', False),
     'anchor.pulse': (1, 'Pulso maligno', 'Evil pulse', False),
     'case.solved': (1, 'Caso resuelto', 'Case solved', False),
-    # ---- case 1: Colegio Santa Ines (SFX; spoken lines are 'line.*', see tools/audio/lines.py)
+    # ---- case 1: Colegio Santa Ines (SFX only: nobody speaks)
     'colegio.timbre': (1, 'Suena el timbre', 'School bell rings', False),
     'colegio.campana': (1, 'Campanada', 'Bell tolls', False),
     'colegio.campana_triple': (1, 'Tres campanadas', 'Three bell tolls', False),
@@ -111,7 +107,6 @@ SOUNDS = {
     'casa.cumbia_musicbox': (1, 'Cajita de música', 'Music box', True),
     'casa.breaker_trip': (1, 'Salta la térmica', 'The breaker trips', False),
     'casa.breaker_reset': (1, 'Vuelve la luz', 'Power comes back', False),
-    'casa.tv_novela': (1, 'Novela a todo volumen', 'Soap opera blaring', True),
     'casa.tv_static': (1, 'Estática', 'TV static', True),
     'choripan.bark_cute': (3, 'Choripán ladra', 'Choripán barks', False),
     'choripan.whine': (2, 'Choripán gime', 'Choripán whines', False),
@@ -124,12 +119,10 @@ SOUNDS = {
     'choripan.chomp': (1, 'Mordisco', 'Chomp', False),
     'choripan.vomit': (1, 'Vómito negro', 'Black vomit', False),
     'choripan.metro_retract': (1, 'Se enrolla como un metro', 'Retracts like a tape measure', False),
-    'grill.sizzle': (1, 'Chisporroteo', 'Sizzling', False),
     'fire.blue_whoosh': (1, 'Fuego azul', 'Blue fire', False),
     'knife.lift': (2, 'Los cuchillos se elevan', 'Knives rise', False),
     'knife.whoosh': (3, 'Un cuchillo vuela', 'A knife flies', False),
     'knife.impact': (3, 'Un cuchillo se clava', 'A knife hits', False),
-    'salt.hit_scream': (1, 'Sal y alarido', 'Salt hit and shriek', False),
     'pool.splash': (1, 'Chapuzón', 'Splash', False),
     'plate.whoosh': (4, 'Un plato vuela', 'A plate flies', False),
     'plate.shatter': (3, 'Un plato se rompe', 'A plate shatters', False),
@@ -144,31 +137,17 @@ SOUNDS = {
     'doll.turn': (3, 'Clic de porcelana', 'Porcelain click', False),
     'doll.giggle_chorus': (1, 'Risitas de muñecas', 'Dolls giggle', False),
     'andador.squeak': (3, 'Rueda que chilla', 'Squeaky wheel', False),
-    'chancleta.whip': (1, 'Vuela una chancleta', 'A slipper flies', False),
-    'chancleta.hit': (1, '¡Chancletazo!', 'Slipper hit', False),
     'rocking.creak_slow': (1, 'Mecedora', 'Rocking chair', False),
-    'yarn.twang': (2, 'Lana tensa', 'Taut yarn', False),
-    'yarn.snap': (1, 'Se corta la lana', 'Yarn snaps', False),
-    'stitch.pull': (3, 'Puntada', 'Stitch', False),
     'azamel.suck': (1, 'Algo es absorbido', 'Something is sucked in', False),
     'candles.out': (1, 'Se apagan las velas', 'Candles go out', False),
     'wall.break': (1, 'Se derrumba una pared', 'A wall collapses', False),
-    'wisp.whistle': (1, 'Silbido', 'Whistling', False),
     'morning.birds': (1, 'Pájaros', 'Birds', True),
     'kettle.whistle': (1, 'Silba la pava', 'Kettle whistles', False),
 }
 
 
-try:
-    from lines import LINES as _LINES
-except ImportError:  # imported from another directory
-    import importlib.util as _u, os as _os
-    _spec = _u.spec_from_file_location('lines', _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), 'lines.py'))
-    _m = _u.module_from_spec(_spec)
-    _spec.loader.exec_module(_m)
-    _LINES = _m.LINES
-# every voiced line is its own event 'line.<id>' (file sounds/line/<id with dots -> slashes>.ogg); subtitle = the line
-LINE_EVENTS = {'line.' + k: v for k, v in _LINES.items() if v.get('voice')}
+# No character speaks (docs/design/casa_terror.md 0.3): there are no spoken-line events any more. Only non-verbal
+# sounds live here; the hunter's own voice imitation goes through Simple Voice Chat (com.deadline.voice).
 
 
 def java_name(s):

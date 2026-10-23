@@ -8,12 +8,9 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.sounds.SoundEvent;
 
 public final class ModSounds {
-	public static final SoundEvent PHONE_RING = register("phone.ring");
 	public static final SoundEvent PHONE_VIBRATE = register("phone.vibrate");
 	public static final SoundEvent PHONE_NOTIFY = register("phone.notify");
 	public static final SoundEvent PHONE_ACCEPT = register("phone.accept");
-	public static final SoundEvent PHONE_HANGUP = register("phone.hangup");
-	public static final SoundEvent PHONE_VOICE = register("phone.voice");
 	public static final SoundEvent TELEPORT_WHOOSH = register("teleport.whoosh");
 	public static final SoundEvent AMBIENT_CASA = register("ambient.casa");
 	public static final SoundEvent AMBIENT_COLEGIO = register("ambient.colegio");
@@ -44,7 +41,6 @@ public final class ModSounds {
 	public static final SoundEvent FLARE_IGNITE = register("flare.ignite");
 	public static final SoundEvent FLARE_BURN = register("flare.burn");
 	public static final SoundEvent POSEIDA_GIGGLE = register("poseida.giggle");
-	public static final SoundEvent POSEIDA_DEMON = register("poseida.demon");
 	public static final SoundEvent POSEIDA_CRACK = register("poseida.crack");
 	public static final SoundEvent POSEIDA_SCREAM = register("poseida.scream");
 	public static final SoundEvent POSEIDA_HURT = register("poseida.hurt");
@@ -107,7 +103,6 @@ public final class ModSounds {
 	public static final SoundEvent CASA_CUMBIA_MUSICBOX = register("casa.cumbia_musicbox");
 	public static final SoundEvent CASA_BREAKER_TRIP = register("casa.breaker_trip");
 	public static final SoundEvent CASA_BREAKER_RESET = register("casa.breaker_reset");
-	public static final SoundEvent CASA_TV_NOVELA = register("casa.tv_novela");
 	public static final SoundEvent CASA_TV_STATIC = register("casa.tv_static");
 	public static final SoundEvent CHORIPAN_BARK_CUTE = register("choripan.bark_cute");
 	public static final SoundEvent CHORIPAN_WHINE = register("choripan.whine");
@@ -120,12 +115,10 @@ public final class ModSounds {
 	public static final SoundEvent CHORIPAN_CHOMP = register("choripan.chomp");
 	public static final SoundEvent CHORIPAN_VOMIT = register("choripan.vomit");
 	public static final SoundEvent CHORIPAN_METRO_RETRACT = register("choripan.metro_retract");
-	public static final SoundEvent GRILL_SIZZLE = register("grill.sizzle");
 	public static final SoundEvent FIRE_BLUE_WHOOSH = register("fire.blue_whoosh");
 	public static final SoundEvent KNIFE_LIFT = register("knife.lift");
 	public static final SoundEvent KNIFE_WHOOSH = register("knife.whoosh");
 	public static final SoundEvent KNIFE_IMPACT = register("knife.impact");
-	public static final SoundEvent SALT_HIT_SCREAM = register("salt.hit_scream");
 	public static final SoundEvent POOL_SPLASH = register("pool.splash");
 	public static final SoundEvent PLATE_WHOOSH = register("plate.whoosh");
 	public static final SoundEvent PLATE_SHATTER = register("plate.shatter");
@@ -140,112 +133,12 @@ public final class ModSounds {
 	public static final SoundEvent DOLL_TURN = register("doll.turn");
 	public static final SoundEvent DOLL_GIGGLE_CHORUS = register("doll.giggle_chorus");
 	public static final SoundEvent ANDADOR_SQUEAK = register("andador.squeak");
-	public static final SoundEvent CHANCLETA_WHIP = register("chancleta.whip");
-	public static final SoundEvent CHANCLETA_HIT = register("chancleta.hit");
 	public static final SoundEvent ROCKING_CREAK_SLOW = register("rocking.creak_slow");
-	public static final SoundEvent YARN_TWANG = register("yarn.twang");
-	public static final SoundEvent YARN_SNAP = register("yarn.snap");
-	public static final SoundEvent STITCH_PULL = register("stitch.pull");
 	public static final SoundEvent AZAMEL_SUCK = register("azamel.suck");
 	public static final SoundEvent CANDLES_OUT = register("candles.out");
 	public static final SoundEvent WALL_BREAK = register("wall.break");
-	public static final SoundEvent WISP_WHISTLE = register("wisp.whistle");
 	public static final SoundEvent MORNING_BIRDS = register("morning.birds");
 	public static final SoundEvent KETTLE_WHISTLE = register("kettle.whistle");
-
-	/** Spoken lines (tools/audio/lines.py), looked up by id through {@link #line(String)}. */
-	private static final java.util.Map<String, SoundEvent> LINES = new java.util.HashMap<>();
-	static {
-		LINES.put("colegio.clara.llamada", register("line.colegio.clara.llamada"));
-		LINES.put("operadora.aviso", register("line.operadora.aviso"));
-		LINES.put("operadora.muerte", register("line.operadora.muerte"));
-		LINES.put("colegio.madre.lista", register("line.colegio.madre.lista"));
-		LINES.put("colegio.madre.ferreyra", register("line.colegio.madre.ferreyra"));
-		LINES.put("colegio.madre.quiroga", register("line.colegio.madre.quiroga"));
-		LINES.put("colegio.madre.bazan", register("line.colegio.madre.bazan"));
-		LINES.put("colegio.madre.luna", register("line.colegio.madre.luna"));
-		LINES.put("colegio.madre.sosa", register("line.colegio.madre.sosa"));
-		LINES.put("colegio.madre.heredia", register("line.colegio.madre.heredia"));
-		LINES.put("colegio.madre.moyano", register("line.colegio.madre.moyano"));
-		LINES.put("colegio.madre.albornoz", register("line.colegio.madre.albornoz"));
-		LINES.put("colegio.madre.ausente", register("line.colegio.madre.ausente"));
-		LINES.put("colegio.madre.usted", register("line.colegio.madre.usted"));
-		LINES.put("colegio.alumna.presente", register("line.colegio.alumna.presente"));
-		LINES.put("colegio.madre.pregunta1", register("line.colegio.madre.pregunta1"));
-		LINES.put("colegio.madre.conta_bien", register("line.colegio.madre.conta_bien"));
-		LINES.put("colegio.madre.correcto", register("line.colegio.madre.correcto"));
-		LINES.put("colegio.madre.pregunta2", register("line.colegio.madre.pregunta2"));
-		LINES.put("colegio.madre.como_dijo", register("line.colegio.madre.como_dijo"));
-		LINES.put("colegio.alumna.risitas", register("line.colegio.alumna.risitas"));
-		LINES.put("colegio.monja.no_se_corre", register("line.colegio.monja.no_se_corre"));
-		LINES.put("colegio.madre.megafonia", register("line.colegio.madre.megafonia"));
-		LINES.put("colegio.clara.1984", register("line.colegio.clara.1984"));
-		LINES.put("colegio.clara.ya_sabe", register("line.colegio.clara.ya_sabe"));
-		LINES.put("colegio.cura.ave", register("line.colegio.cura.ave"));
-		LINES.put("colegio.cura.r1", register("line.colegio.cura.r1"));
-		LINES.put("colegio.cura.r2", register("line.colegio.cura.r2"));
-		LINES.put("colegio.cura.r3", register("line.colegio.cura.r3"));
-		LINES.put("colegio.cura.r4", register("line.colegio.cura.r4"));
-		LINES.put("colegio.cura.corre", register("line.colegio.cura.corre"));
-		LINES.put("colegio.paloma.toma", register("line.colegio.paloma.toma"));
-		LINES.put("colegio.clara.dormitorio", register("line.colegio.clara.dormitorio"));
-		LINES.put("colegio.alumna.shh", register("line.colegio.alumna.shh"));
-		LINES.put("colegio.alumna.shh_viene", register("line.colegio.alumna.shh_viene"));
-		LINES.put("colegio.paloma.perdon", register("line.colegio.paloma.perdon"));
-		LINES.put("colegio.madre.pensa", register("line.colegio.madre.pensa"));
-		LINES.put("colegio.paloma.chiste1", register("line.colegio.paloma.chiste1"));
-		LINES.put("colegio.paloma.chiste2", register("line.colegio.paloma.chiste2"));
-		LINES.put("colegio.alumnas.corre", register("line.colegio.alumnas.corre"));
-		LINES.put("colegio.clara.falta_voz", register("line.colegio.clara.falta_voz"));
-		LINES.put("colegio.monja.quien_hablo", register("line.colegio.monja.quien_hablo"));
-		LINES.put("colegio.monja.a_la_pared", register("line.colegio.monja.a_la_pared"));
-		LINES.put("colegio.monja.castigo", register("line.colegio.monja.castigo"));
-		LINES.put("colegio.clara.gracias", register("line.colegio.clara.gracias"));
-		LINES.put("colegio.madre.aja", register("line.colegio.madre.aja"));
-		LINES.put("colegio.alumnas.shhh", register("line.colegio.alumnas.shhh"));
-		LINES.put("casa.marta.llamada", register("line.casa.marta.llamada"));
-		LINES.put("operadora.casa_aviso", register("line.operadora.casa_aviso"));
-		LINES.put("casa.marta.hola", register("line.casa.marta.hola"));
-		LINES.put("casa.jorge.humedad", register("line.casa.jorge.humedad"));
-		LINES.put("casa.jorge.mucha_humedad", register("line.casa.jorge.mucha_humedad"));
-		LINES.put("casa.nona.mate", register("line.casa.nona.mate"));
-		LINES.put("casa.jorge.carbon", register("line.casa.jorge.carbon"));
-		LINES.put("casa.marta.chat", register("line.casa.marta.chat"));
-		LINES.put("casa.marta.no_celular", register("line.casa.marta.no_celular"));
-		LINES.put("casa.marta.telefono", register("line.casa.marta.telefono"));
-		LINES.put("casa.lucia.perro", register("line.casa.lucia.perro"));
-		LINES.put("casa.tomi.vod", register("line.casa.tomi.vod"));
-		LINES.put("casa.spirit.azamel", register("line.casa.spirit.azamel"));
-		LINES.put("casa.spirit.al_perro", register("line.casa.spirit.al_perro"));
-		LINES.put("casa.spirit.nunca", register("line.casa.spirit.nunca"));
-		LINES.put("casa.spirit.temperley", register("line.casa.spirit.temperley"));
-		LINES.put("casa.marta.sillas", register("line.casa.marta.sillas"));
-		LINES.put("casa.nona.son_mias", register("line.casa.nona.son_mias"));
-		LINES.put("casa.nona.esperando", register("line.casa.nona.esperando"));
-		LINES.put("casa.nona.guardame", register("line.casa.nona.guardame"));
-		LINES.put("casa.marta.llamalo", register("line.casa.marta.llamalo"));
-		LINES.put("casa.choripan.buen_chico", register("line.casa.choripan.buen_chico"));
-		LINES.put("casa.toti.ocupado", register("line.casa.toti.ocupado"));
-		LINES.put("casa.toti.callate", register("line.casa.toti.callate"));
-		LINES.put("casa.marta.tirale", register("line.casa.marta.tirale"));
-		LINES.put("casa.marta.choripan", register("line.casa.marta.choripan"));
-		LINES.put("casa.jorge.llegue", register("line.casa.jorge.llegue"));
-		LINES.put("casa.jorge.jugoso", register("line.casa.jorge.jugoso"));
-		LINES.put("casa.jorge.es_la_humedad", register("line.casa.jorge.es_la_humedad"));
-		LINES.put("casa.jorge.falta_sal", register("line.casa.jorge.falta_sal"));
-		LINES.put("casa.marta.chorizo", register("line.casa.marta.chorizo"));
-		LINES.put("casa.lucia.voces", register("line.casa.lucia.voces"));
-		LINES.put("casa.nona.atorrante", register("line.casa.nona.atorrante"));
-		LINES.put("casa.nona.aca", register("line.casa.nona.aca"));
-		LINES.put("casa.lucia.liberada", register("line.casa.lucia.liberada"));
-		LINES.put("casa.nona.nene_veni", register("line.casa.nona.nene_veni"));
-		LINES.put("casa.nona.damelo", register("line.casa.nona.damelo"));
-		LINES.put("casa.nona.sesenta", register("line.casa.nona.sesenta"));
-		LINES.put("casa.jorge.asado", register("line.casa.jorge.asado"));
-		LINES.put("casa.toti.que_perdi", register("line.casa.toti.que_perdi"));
-		LINES.put("casa.nona.quien_asado", register("line.casa.nona.quien_asado"));
-		LINES.put("casa.marta.perro", register("line.casa.marta.perro"));
-	}
 
 	/** Single-file events of multi-take sounds, so a take can be chosen (e.g. the spirit box answer matching its subtitle). */
 	private static final java.util.Map<String, SoundEvent[]> VARIANTS = new java.util.HashMap<>();
@@ -256,10 +149,6 @@ public final class ModSounds {
 	public static SoundEvent variant(String name, int index) {
 		SoundEvent[] v = VARIANTS.get(name);
 		return v == null || v.length == 0 ? null : v[Math.floorMod(index, v.length)];
-	}
-
-	public static SoundEvent line(String id) {
-		return LINES.get(id);
 	}
 
 	private ModSounds() {

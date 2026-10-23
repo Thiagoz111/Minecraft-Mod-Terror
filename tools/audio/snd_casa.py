@@ -17,18 +17,13 @@ fragments for the soap opera on the Nona's TV.
   casa.breaker_reset       lever scraped up, KA-CHUNK + spark, transformer inrush, the TV degausses (BWOMM) in the
                            living room, the tube's glow starter ticks and flickers until it catches, the fridge
                            compressor kicks back in; the hum bed settles and fades under the ambience.
-  casa.tv_novela           LOOP 20 s (mono, positional TV): a telenovela at full volume through a tired CRT speaker -
-                           "Mercedes"/"Rodolfo" melodrama (TTS, sobbing, shouting), a string underscore, two
-                           orchestral stings with timpani; mains buzz and the 15 625 Hz line whine.
   casa.tv_static           LOOP 8 s (mono): untuned CRT snow, 50 Hz field buzz, screen-charge crackle, flyback whine.
-  grill.sizzle             LOOP 5 s: fat sizzling and spitting on embers, charcoal ticks, low fire breath.
   fire.blue_whoosh         the grill flares (suck - FWOOMP), turns into a blue gas jet and then slows, unnaturally,
                            into a low breathing groan with a sub drone.
   knife.lift (2)           kitchen knives drawn out of the wooden rack by nobody: wood-slot scrape, steel shing,
                            blades left ringing and slowly turning in the air (v2: they touch and start to sing).
   knife.whoosh (3)         a spinning knife passing (true Doppler): blade/handle whirr, edge whistle.
   knife.impact (3)         THUNK into wood (fence plank / table / lemon tree), fibres crunch, the blade wobbling.
-  salt.hit_scream          a fistful of salt crackling on skin, acid hiss, and possessed Jorge's yelp (man + demon).
   pool.splash              Jorge falls like a sack into the pelopincho: slap, plunge, cavity bloop, PVC walls
                            bwomp, spray raining back, slosh, overflow on the patio bricks.
   plate.whoosh (4)         a china plate frisbeeing past your head (spin whirr, rim whistle, close-pass buffet).
@@ -48,16 +43,10 @@ fragments for the soap opera on the Nona's TV.
   doll.turn (3)            porcelain head turning on its neck: grind + tok / ratchet / slow squeal + tink.
   doll.giggle_chorus       10 tiny porcelain giggles out of phase on Lucia's shelf; one slow giggle stays behind.
   andador.squeak (3)       the Nona's walker: rubber feet "tunk" and THE wheel motif "ee-EEK" (running gag).
-  chancleta.whip           the Nona's rubber slipper flapping end over end through the air (fwap-fwap-fwap).
-  chancleta.hit            ¡PLAF! sole on flesh (crack + thwack + rubber bomp + toe flap), slipper drops, plop.
   rocking.creak_slow       LOOP 4 s: the floating rocking chair, two joint creaks per swing, no floor contact.
-  yarn.twang (2)           taut red wool plucked: a dull, fuzzy, lossy string with a falling twang / stretch first.
-  yarn.snap                fibres giving way one by one, SNAP, the halves whipping back, slack yarn falling.
-  stitch.pull (3)          ASMR-close: needle punctures the cloth, the thread hisses through, tug and squeak.
   azamel.suck              a scream run backwards, sucked into a point with the room; cut; one porcelain "tink".
   candles.out              one long (possessed) breath and 7 altar flames fluttering out, the last one stubborn.
   wall.break               two huge blows and the brick wall of the basement collapses (boom, crack, rubble, dust).
-  wisp.whistle             the demon wisp: a thin wavering two-voice whistle with ember crackle travelling past.
   morning.birds            STREAM stereo 20 s loop: benteveo, horneros, sparrows, torcazas, a zorzal, a far
                            colectivo pulling away; the air of a suburban morning.
   kettle.whistle           the pava on the hob: burner, singing water, breathy first tries, full shrill two-tone
@@ -66,9 +55,9 @@ fragments for the soap opera on the Nona's TV.
                            on and off, the living-room clock, crickets, far traffic, dogs answering across the
                            barrio, the house settling (beams, roof tiles, a pipe knock).
 
-Positional sounds are mono (tv_novela / tv_static too: the TV is a block in the living room); only morning.birds and
+Positional sounds are mono (tv_static too: the TV is a block in the living room); only morning.birds and
 ambient.casa are stereo. Loudness: stingers -0.5 dBFS, voices -1 dBFS, foley/UI -3 dBFS, loops/streams -4 dBFS.
-Loops (tv_novela, tv_static, grill.sizzle, rocking.creak_slow, morning.birds, ambient.casa) live on a periodic timeline:
+Loops (tv_static, rocking.creak_slow, morning.birds, ambient.casa) live on a periodic timeline:
 events wrap round, beds and reverbs are circular (FFT), IIR stages run over two periods; dsp.master is applied to three
 tiled periods and the middle one is kept, so its edge fades never touch the loop point. Review PNGs + stats.json go
 to <WORK>/audio/casa_sfx (tools/workdir.py). Runtime ~35 s.
@@ -803,39 +792,7 @@ def breaker_reset():
     return verb(out, 'lavadero', wet=0.2)
 
 
-# ====================================================================== 3. the telenovela (loop)
-NOVELA = [  # (voice, speed, text, semitones, style, gap_before)
-    ('em_alex', 1.0, '¡Mentira! Vos nunca me quisiste, Mercedes.', -1.0, 'shout', 0.35),
-    ('ef_dora', 1.05, '¡Ese hijo no es tuyo, Rodolfo!', 1.0, 'shout', 0.3),
-    ('STING1', 0, '', 0, '', 0.15),
-    ('em_alex', 0.85, '¿Qué...? ¿Qué estás diciendo?', -1.5, 'stunned', 0.2),
-    ('ef_dora', 0.9, 'Perdoname... no te lo podía decir.', 0.5, 'sob', 0.35),
-    ('ef_dora', 1.0, '¿Mamá? ¿Es verdad?', 4.0, 'girl', 0.4),
-    ('ef_dora', 1.1, '¡Andate de esta casa!', 0.0, 'shout', 0.25),
-    ('STING2', 0, '', 0, '', 0.1),
-]
-
-
-def novela_line(voice, speed, text, semis, style, seed):
-    x = dsp.tts(text, voice, speed)
-    x = dsp.trim(x, -45, 0.04)
-    if semis:
-        x = dsp.pitch_shift(x, semis)
-    if style == 'shout':
-        x = dsp.peak(x, 2600, 5, 1.2)
-        x = dsp.drive(norm(x) * 2.2, 2.4)
-    elif style == 'sob':   # tremulous, crying voice: 5.5 Hz varispeed wobble + breath on the phrase
-        n = len(x) - N(0.05)
-        rate = 1 + 0.035 * np.sin(TWO_PI * 5.3 * taxis(n)) + 0.01 * snoise(n, 8, seed)
-        x = varispeed(x, rate, n)
-        x *= 1 + 0.25 * np.sin(TWO_PI * 5.3 * taxis(len(x)) + 1.0)
-        env = smooth(np.abs(x), 0.03)
-        x = x + 0.12 * norm(bp(white(len(x), seed), 1500, 7000)) * env / (env.max() + 1e-9)
-    elif style == 'girl':
-        x = dsp.peak(x, 3200, 3, 1.5)
-    return norm(x)
-
-
+# ====================================================================== 3. string stings (the telenovela voices were cut: nobody speaks)
 def string_chord(midis, dur, seed, att=0.12, rel=0.4, trem=0.0, vib=0.006, voices=3, amp=1.0, bow=0.04):
     """A small string section: per note `voices` detuned polyBLEP saws with own vibrato, bow noise, body EQ."""
     r = dsp.rng(seed)
@@ -906,47 +863,6 @@ def tv_speaker(x, level=1.0):
     y = dsp.peak(y, 240, 3, 2.5)        # cabinet box resonance
     y = dsp.drive(y * 1.7 * level, 1.9)
     return dsp.lowpass(y, 4800, 4)
-
-
-def tv_novela():
-    L = N(20.0)
-    buf = np.zeros(L + N(6.0), np.float32)
-    dlg = np.zeros_like(buf)
-    t = 0.0
-    for k, (voice, speed, text, semis, style, gap) in enumerate(NOVELA):
-        t += gap
-        if voice == 'STING1':
-            add(buf, sting1(), t, 0.85)
-            t += 1.6
-            continue
-        if voice == 'STING2':
-            add(buf, sting2(), t, 0.95)
-            continue
-        x = novela_line(voice, speed, text, semis, style, 400 + k)
-        # broadcast-style loudness per line: the quiet acting still reads over the underscore
-        loud = {'shout': 1.0, 'stunned': 0.62, 'sob': 0.66, 'girl': 0.6}[style]
-        add(dlg, x * (0.3 * loud / rms(x[np.abs(x) > 0.02])), t, 1.0)
-        t += len(x) / SR
-    assert t < 17.0, f'novela script too long ({t:.1f}s)'
-    # the underscore: low strings slowly breathing through Dm - Bb - Gm - A, four 5 s chords round the loop
-    pad = np.zeros_like(buf)
-    for i, ch in enumerate([[50, 57, 65], [46, 53, 62], [43, 50, 58], [45, 52, 61]]):
-        add(pad, string_chord(ch, 5.0, 330 + i, att=0.9, rel=0.9, vib=0.005, voices=2, bow=0.01), 5.0 * i - 0.45, 1.0)
-    # balance like a broadcast mix: dialogue up front, underscore ~-15 dB, stings as loud as the shouting
-    act = smooth(np.abs(dlg), 0.05) > 0.03 * np.max(np.abs(dlg))
-    d_rms = rms(dlg[act])
-    pad *= 0.18 * d_rms / rms(pad)
-    s_act = smooth(np.abs(buf), 0.05) > 0.05 * np.max(np.abs(buf))
-    buf *= 0.9 * d_rms / rms(buf[s_act])
-    sig = norm(fold(buf + dlg + pad, L))
-    sig = loop_iir(sig, lambda z: tv_speaker(z, 0.85))
-    n = L
-    tt = taxis(n)
-    buzz = loop_iir(np.tanh(6 * np.sin(TWO_PI * 50 * tt)).astype(np.float32), lambda z: bp(z, 45, 900))
-    hiss = cfilt(white(n, 340), lambda f: hp2(f, 2500) * lp2(f, 7000))
-    whine = np.sin(TWO_PI * 15625.0 * tt).astype(np.float32)
-    y = norm(sig) + 0.02 * norm(buzz) + 0.006 * norm(hiss) + 0.01 * whine
-    return verb(y, 'living', wet=0.28, circular=True)
 
 
 # ====================================================================== 4. TV static (loop)
@@ -2485,14 +2401,11 @@ def ambient_casa():
 EVENTS = {  # event -> ([variant builders], peak dBFS, loop)
     'casa.breaker_trip': ([breaker_trip], -3.0, False),
     'casa.breaker_reset': ([breaker_reset], -3.0, False),
-    'casa.tv_novela': ([tv_novela], -4.0, True),
     'casa.tv_static': ([tv_static], -4.0, True),
-    'grill.sizzle': ([grill_sizzle], -4.0, True),
     'fire.blue_whoosh': ([fire_blue_whoosh], -0.5, False),
     'knife.lift': ([lambda: knife_lift(1), lambda: knife_lift(2)], -3.0, False),
     'knife.whoosh': ([lambda v=v: knife_whoosh(v) for v in (1, 2, 3)], -3.0, False),
     'knife.impact': ([lambda v=v: knife_impact(v) for v in (1, 2, 3)], -3.0, False),
-    'salt.hit_scream': ([salt_hit_scream], -0.5, False),
     'pool.splash': ([pool_splash], -3.0, False),
     'plate.whoosh': ([lambda v=v: plate_whoosh(v) for v in (1, 2, 3, 4)], -3.0, False),
     'plate.shatter': ([lambda v=v: plate_shatter(v) for v in (1, 2, 3)], -3.0, False),
@@ -2507,16 +2420,10 @@ EVENTS = {  # event -> ([variant builders], peak dBFS, loop)
     'doll.turn': ([lambda v=v: doll_turn(v) for v in (1, 2, 3)], -3.0, False),
     'doll.giggle_chorus': ([doll_giggle_chorus], -1.0, False),
     'andador.squeak': ([lambda v=v: andador_squeak(v) for v in (1, 2, 3)], -3.0, False),
-    'chancleta.whip': ([chancleta_whip], -3.0, False),
-    'chancleta.hit': ([chancleta_hit], -0.5, False),
     'rocking.creak_slow': ([rocking_creak_slow], -4.0, True),
-    'yarn.twang': ([lambda: yarn_twang(1), lambda: yarn_twang(2)], -3.0, False),
-    'yarn.snap': ([yarn_snap], -3.0, False),
-    'stitch.pull': ([lambda v=v: stitch_pull(v) for v in (1, 2, 3)], -3.0, False),
     'azamel.suck': ([azamel_suck], -0.5, False),
     'candles.out': ([candles_out], -3.0, False),
     'wall.break': ([wall_break], -0.5, False),
-    'wisp.whistle': ([wisp_whistle], -3.0, False),
     'kettle.whistle': ([kettle_whistle], -3.0, False),
     'morning.birds': ([morning_birds], -4.0, True),
     'ambient.casa': ([ambient_casa], -4.0, True),

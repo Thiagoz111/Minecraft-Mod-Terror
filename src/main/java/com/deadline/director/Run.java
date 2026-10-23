@@ -160,7 +160,7 @@ public final class Run {
 			if (c != null && !hintShown && !c.hint.isEmpty() && chapterTicks() > c.hintAfter) {
 				hintShown = true;
 				for (ServerPlayer p : hunters) {
-					Fx.subtitle(p, "deadline.speaker.cartel", "deadline." + type.key() + ".hint." + c.hint, 120);
+					Fx.subtitle(p, "", "deadline." + type.key() + ".hint." + c.hint, 120);
 				}
 			}
 		}
@@ -291,7 +291,12 @@ public final class Run {
 		Chapter c = compiled.chapter(chapter);
 		String cp = c != null ? c.checkpoint : "spawn";
 		Vec3 v = at(cp);
-		p.teleportTo(level, v.x, v.y, v.z, java.util.Set.of(), yaw(cp), 0F, false);
+		// an overworld case replays its chapter where the hunter is while away from the site (driving there, after a
+		// restart): only hunters at the house go back to the checkpoint
+		boolean away = type.overworld() && (p.level() != level || !siteBox().inflate(32).contains(p.position()));
+		if (!away) {
+			p.teleportTo(level, v.x, v.y, v.z, java.util.Set.of(), yaw(cp), 0F, false);
+		}
 		startChapter(chapter, true);
 		script.onCheckpoint(this, p);
 	}
@@ -369,6 +374,11 @@ public final class Run {
 			for (String o : c.objectives) {
 				objs.add("deadline." + type.key() + ".obj." + o + "=" + (done.contains(o) ? 1 : 0));
 			}
+		}
+		if (objs.isEmpty()) {
+			// a chapter without objectives (the Casa: no missions on screen) clears the HUD checklist entirely
+			Fx.checklist(p, "", "", chapter, objs);
+			return;
 		}
 		Fx.checklist(p, type.langKey("place"), "deadline." + type.key() + ".ch." + chapter, chapter, objs);
 	}
@@ -501,7 +511,7 @@ public final class Run {
 		level.setBlock(abs, s, FLAGS);
 	}
 
-	// ------------------------------------------------------------------ sound and speech
+	// ------------------------------------------------------------------ sound
 	/** A world sound (everyone nearby hears it); at == null plays it on every hunter. */
 	public void sound(SoundEvent s, Vec3 at, float volume, float pitch) {
 		if (s == null) {
@@ -517,41 +527,12 @@ public final class Run {
 	}
 
 	/**
-	 * Plays a voice line (sound event line.&lt;id&gt;) with its subtitle. at == null: heard in the head (phone, PA,
-	 * thoughts). Returns the line length in ticks so sequences can wait for it.
+	 * Nobody speaks in DEAD LINE (docs/design/casa_terror.md 0.3): the spoken lines were removed. Kept so old script
+	 * steps compile; plays nothing and returns 0 ticks. Tell the story with phone messages
+	 * ({@link com.deadline.phone.PhoneMessages}), the set and what the characters do.
 	 */
 	public int say(String lineId, Vec3 at) {
-		int ticks = LineBook.ticks(level.getServer(), lineId);
-		SoundEvent s = ModSounds.line(lineId);
-		String speaker = speakerOf(lineId);
-		for (ServerPlayer p : hunters()) {
-			if (s != null) {
-				if (at == null) {
-					Fx.voice(p, s, 1.0F);
-				}
-			}
-			Fx.subtitle(p, "deadline.speaker." + speaker, "deadline.line." + lineId, ticks + 30);
-		}
-		if (s != null && at != null) {
-			level.playSound(null, at.x, at.y, at.z, s, SoundSource.HOSTILE, 1.6F, 1.0F);
-		}
-		return ticks;
-	}
-
-	/** Speaker of a line id like 'colegio.madre.lista' -> 'madre' (the middle part), 'operadora.x' -> 'operadora'. */
-	public static String speakerOf(String id) {
-		String[] p = id.split("\\.");
-		if (p.length >= 3) {
-			String s = p[1];
-			if (s.equals("alumnas")) {
-				return "coro";
-			}
-			if (s.equals("mate") || s.equals("mimic")) {
-				return "tu";
-			}
-			return s;
-		}
-		return p[0];
+		return 0;
 	}
 
 	public SoundEvent soundById(String id) {

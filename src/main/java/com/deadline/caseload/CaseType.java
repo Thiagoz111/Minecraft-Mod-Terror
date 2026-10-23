@@ -19,7 +19,8 @@ import net.minecraft.world.level.Level;
 /** Every haunted location the hotline can send you to (case 1: the girls' school, case 2: the Morales house). */
 public enum CaseType {
 	COLEGIO("colegio", 3, 4, 1800, ConventSite::new, () -> ModEntities.MONJA, () -> ModItems.INVERTED_ROSARY, ColegioScript::new),
-	CASA_MORALES("casa", 4, 5, 1600, MoralesHouseSite::new, () -> ModEntities.POSEIDA, () -> ModItems.CURSED_DOLL, null);
+	CASA_MORALES("casa", 4, 5, 1600, MoralesHouseSite::new, () -> ModEntities.POSEIDA, () -> ModItems.CURSED_DOLL,
+			com.deadline.director.casa.CasaScript::new);
 
 	public static final Codec<CaseType> CODEC = Codec.STRING.xmap(CaseType::byKey, CaseType::key);
 
@@ -88,8 +89,17 @@ public enum CaseType {
 		return anchor.get();
 	}
 
+	/** The level the case is played in: its own dimension, or the real overworld for an overworld case. */
 	public ResourceKey<Level> levelKey() {
-		return level;
+		return overworld() ? Level.OVERWORLD : level;
+	}
+
+	/**
+	 * Cases that happen in the player's real overworld (reached by car; the site is placed once and stays): no
+	 * teleport in or out, one stored origin (CaseSites), site index always 0.
+	 */
+	public boolean overworld() {
+		return this == CASA_MORALES;
 	}
 
 	/** The caller's voice line heard when the call is answered, then the operator's legal notice (null: none). */
@@ -117,9 +127,10 @@ public enum CaseType {
 		return COLEGIO;
 	}
 
+	/** The case whose OWN dimension this is (never an overworld case: the overworld is not a case level). */
 	public static CaseType forLevel(ResourceKey<Level> dim) {
 		for (CaseType t : values()) {
-			if (t.level.equals(dim)) {
+			if (!t.overworld() && t.level.equals(dim)) {
 				return t;
 			}
 		}

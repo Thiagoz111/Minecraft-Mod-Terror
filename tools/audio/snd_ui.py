@@ -4,13 +4,10 @@
 Run from the repo root:  python3 tools/audio/snd_ui.py
 
 In-game use (sized to it):
-  phone.ring       ClientFx: forUI, retriggered every 60 ticks (3 s) while a call is pending -> UK-style
-                   double ring (0.4 on / 0.2 off / 0.4 on) that has died away before the next trigger.
-  phone.vibrate    CaseManager.ring(): once per incoming call, at the player, vol 0.6.
-  phone.notify     PhoneItem open (vol 0.4) and shop purchase (pitch 1.3).
-  phone.accept     startCase(): just before the teleport, vol 0.8.
-  phone.hangup     declining a call, vol 0.6.
-  phone.voice      6 caller snippets (bad line, distressed victims).
+  phone.vibrate    PhoneMessages: every incoming text message (client, forUI), with phone.notify after it.
+  phone.notify     the short message tone; PhoneItem open (vol 0.4) and shop purchase (pitch 1.3).
+  phone.accept     startCase(): accepting a case from a message thread, vol 0.8.
+  (phone_ring / phone_hangup below are kept as unused builders: there are no calls any more, and no voices.)
   teleport.whoosh  at the destination right after teleport (screen fades 70 ticks).
   case.solved      ClientFx CASE_END: forUI, vol 0.8 -> relief sting.
   jumpscare        ClientFx: forUI with a 26-tick (1.3 s) visual -> 1.6-1.9 s hit.
@@ -499,102 +496,6 @@ def phone_hangup():
 
 
 # ---------------------------------------------------------------------- caller voices
-def voice_1():
-    """Woman crying: '¿Hola? ¿Me escucha? Por favor... necesito ayuda.'"""
-    p = [tts_n('¿Hola?', 'ef_dora', 0.9), tts_n('¿Me escucha?', 'ef_dora', 0.9), tts_n('Por favor... necesito ayuda.', 'ef_dora', 0.8)]
-    p = [dsp.tremolo(wobble(dsp.pitch_shift(x, 1.0), 6.5, 0.5, 40 + i, 0.35), 7.0, 0.35) for i, x in enumerate(p)]
-    seq = dsp.concat(sob(1, 0.3), p[0], dsp.silence(0.18), sob(2, 0.26), p[1], dsp.silence(0.12),
-                     sob(3, 0.22), sob(4, 0.3), p[2], dsp.silence(0.1), shaky_exhale(45, 0.9), dsp.silence(0.2))
-    return bad_line(seq, 51, drops=0.6, wow=0.5)
-
-
-def voice_2():
-    """Man whispering, hiding: 'Está adentro de la casa... la escucho respirar. Por favor, vengan rápido.'"""
-    p = [tts_n('Está adentro de la casa...', 'em_santa', 0.85), tts_n('La escucho respirar.', 'em_santa', 0.85),
-         tts_n('Por favor... vengan rápido.', 'em_santa', 0.9)]
-    w = [norm(whisperize(x, 60 + i) + 0.14 * dsp.lowpass(x, 900, 2), 0.7) for i, x in enumerate(p)]
-    w = [dsp.peak(x, 180, 5, 1.0) for x in w]  # mouth glued to the mic
-    inh = [breath(0.28, 0.0, 70 + i, gap=0.0, gain_in=0.3) for i in range(3)]
-    seq = dsp.concat(inh[0], w[0], dsp.silence(0.35), inh[1], w[1], dsp.silence(0.3), inh[2], w[2], dsp.silence(0.25))
-    return bad_line(seq, 52, drops=1.0, wow=0.6, line_noise=0.03)
-
-
-def voice_3():
-    """Little girl (Lucía) with something huge breathing behind her: '¿Hola? No me dejan salir... Vení a jugar conmigo.'"""
-    p = [tts_n('¿Hola?', 'ef_dora', 0.95), tts_n('No me dejan salir...', 'ef_dora', 0.88), tts_n('Vení a jugar conmigo.', 'ef_dora', 0.85)]
-    kid = [dsp.lowpass(dsp.pitch_shift(x, 4.0), 7500, 2) for x in p]
-    seq = dsp.concat(dsp.silence(0.35), kid[0], dsp.silence(0.5), kid[1], dsp.silence(0.55), kid[2], dsp.silence(0.6))
-    n = len(seq)
-    # demon doubling creeping into the last words
-    last = p[2]
-    dem = dsp.demonic(last, semis=-9, layers=(-12, 0), wet=0.3)
-    dem_start = secs(seq) - secs(kid[2]) - 0.6 + secs(kid[2]) * 0.45
-    dem = fit(dem[n_of(secs(last) * 0.45):], n_of(secs(last) * 0.6 + 0.6))
-    dem *= dsp.env_points(len(dem), [(0, 0), (0.3, 1), (0.85, 0.8), (1, 0)])
-    # heavy, wet breathing right behind the receiver
-    breaths = dsp.concat(breath(1.1, 1.3, 81, rasp=0.7, low=0.55, gain_in=0.7), dsp.silence(0.25),
-                         breath(1.0, 1.4, 82, rasp=0.8, low=0.5, gain_in=0.7))
-    breaths = dsp.reverb(breaths, 0.6, 0.2, 3000, seed=83)
-    full = dsp.mix((seq, 0, 1.0), (breaths, 0.05, 0.32), (dem, dem_start, 0.42), length=secs(seq))
-    return bad_line(full, 53, drops=0.5, wow=0.7)
-
-
-def voice_4():
-    """Man running, panicking, call cut: '¡Ayuda! ¡Algo me está siguiendo! ...¡Está entre los árboles! ¡No, no, no!'"""
-    p = [tts_n('¡Ayuda! ¡Algo me está siguiendo!', 'em_alex', 1.12), tts_n('¡Está entre los árboles!', 'em_alex', 1.15),
-         tts_n('¡No, no, no!', 'em_alex', 1.2)]
-    p = [wobble(dsp.pitch_shift(x, 1.5), 7.5, 0.4, 90 + i, 0.4) for i, x in enumerate(p)]
-    pant = lambda s: dsp.concat(*[breath(0.14, 0.16, s + j, gap=0.02, gain_in=0.9) for j in range(3)]) * 0.38  # noqa: E731
-    seq = dsp.concat(pant(100), p[0], pant(110), p[1], pant(120), p[2])
-    n = len(seq)
-    # running footsteps crunching under it
-    steps = np.zeros(n, np.float32)
-    for k in range(int(secs(seq) * 2.9)):
-        st = n_of(k / 2.9 + 0.05)
-        L = n_of(0.09)
-        if st + L < n:
-            steps[st:st + L] += dsp.lowpass(dsp.noise(0.09, 'brown', 130 + k), 900, 2) * dsp.env_exp(0.09, 40)
-    full = bad_line(seq + steps * 0.35, 54, drops=2.0, wow=0.8)
-    # the call is ripped away: garbled static burst then dead line
-    cut = dsp.bitcrush(dsp.bandpass(dsp.noise(0.35, 'white', 140), 500, 6000, 2), 4, 8)
-    cut *= dsp.env_points(n_of(0.35), [(0, 1), (0.8, 0.8), (1, 0)])
-    return dsp.concat(full, norm(cut, 0.6), dsp.silence(0.15))
-
-
-def voice_5():
-    """Young woman by the river, trembling whisper-cry, a far wail behind: 'Hay una mujer de blanco en el río...'"""
-    p = [tts_n('Hay una mujer de blanco en el río...', 'ef_dora', 0.82), tts_n('Está llorando...', 'ef_dora', 0.8),
-         tts_n('...y me está mirando.', 'ef_dora', 0.78)]
-    p = [norm(0.75 * whisperize(x, 150 + i) + 0.7 * wobble(x, 5.2, 0.55, 150 + i, 0.4), 0.7) for i, x in enumerate(p)]
-    p = [dsp.tremolo(x, 6.0, 0.3) for x in p]
-    sniff = lambda s: norm(dsp.bandpass(dsp.noise(0.18, 'white', s), 2000, 7000, 2) * dsp.env_points(n_of(0.18), [(0, 0), (0.3, 1), (1, 0)]), 0.35)  # noqa: E731
-    seq = dsp.concat(sniff(160), dsp.silence(0.1), p[0], dsp.silence(0.4), sob(161, 0.28), p[1], dsp.silence(0.45),
-                     sniff(162), p[2], dsp.silence(0.5))
-    # La Llorona wailing far away on the water
-    L = 2.4
-    f = 560 * dsp.env_points(n_of(L), [(0, 0.92), (0.2, 1.05), (0.7, 0.97), (1, 0.7)]) * (1 + 0.025 * np.sin(TWO_PI * 5 * dsp.t_axis(L)))
-    wail = vowel(dsp.osc(f, L, 'saw') + 0.3 * dsp.noise(L, 'white', 170), 'a') * dsp.env_points(n_of(L), [(0, 0), (0.2, 1), (0.7, 0.8), (1, 0)])
-    wail = dsp.reverb(dsp.lowpass(wail, 2500, 2), 3.0, 0.75, 2000, seed=171)
-    full = dsp.mix((seq, 0, 1.0), (norm(wail, 0.12), secs(seq) * 0.42, 1.0), length=secs(seq))
-    return bad_line(full, 55, drops=0.7, wow=0.5, line_noise=0.03)
-
-
-def voice_6():
-    """Lost hunter... or something mimicking him: '¿Hola? ¡Ayuda! Estoy perdido en el bosque... ¿hola? ¿hola? ¿HOLA?'"""
-    a = tts_n('¿Hola? ¡Ayuda! Estoy perdido en el bosque.', 'em_alex', 1.0)
-    h = tts_n('¿Hola?', 'em_alex', 1.0)
-    h1 = h.copy()
-    h2 = dsp.pitch_shift(dsp.time_stretch(h, 0.8), -3)
-    # third one: stuttered and wrong - the mimic slips
-    seg = h[:n_of(0.12)]
-    stut = dsp.concat(seg, seg, seg * 0.8)
-    h3 = dsp.concat(stut, dsp.time_stretch(h, 0.55))
-    h3 = dsp.demonic(h3, semis=-6, layers=(-12, 0), wet=0.35)
-    h3 = norm(h3, 0.85)
-    seq = dsp.concat(a, dsp.silence(0.55), h1, dsp.silence(0.6), norm(h2, 0.65), dsp.silence(0.5), h3, dsp.silence(0.3))
-    return bad_line(seq, 56, drops=0.8, wow=0.7)
-
-
 # ====================================================================== teleport
 def teleport_whoosh():
     total = 3.6
@@ -914,17 +815,9 @@ def stinger_whisper():
 
 # ====================================================================== build
 EVENTS = [
-    ('phone/ring', phone_ring, -2.0),
     ('phone/vibrate', phone_vibrate, -3.0),
     ('phone/notify', phone_notify, -3.0),
     ('phone/accept', phone_accept, -3.0),
-    ('phone/hangup', phone_hangup, -3.0),
-    ('phone/voice_1', voice_1, -1.0),
-    ('phone/voice_2', voice_2, -1.0),
-    ('phone/voice_3', voice_3, -1.0),
-    ('phone/voice_4', voice_4, -1.0),
-    ('phone/voice_5', voice_5, -1.0),
-    ('phone/voice_6', voice_6, -1.0),
     ('teleport/whoosh', teleport_whoosh, -1.0),
     ('case/solved', case_solved, -2.0),
     ('jumpscare_1', lambda: jumpscare(1), -0.5),

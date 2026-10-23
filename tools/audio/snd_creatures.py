@@ -7,13 +7,6 @@ Run from the repo root:  python3 tools/audio/snd_creatures.py [substring ...]
   poseida.giggle (2)  Lucia (8) giggles... and it goes wrong. 1: the giggle slows down like a dying tape until a
                       man's chuckle is laughing with her mouth. 2: every "hi" is answered by a low "heh" that grows,
                       the girl's laugh turns hysterical, chokes, and only the demon keeps laughing.
-  poseida.demon (5)   rioplatense lines spoken by Lucia's mouth and the voices inside her (DTW-aligned layers):
-                      1 "Lucia no esta aca." (her voice, then HIS voice takes over mid-line)
-                      2 "Ella es nuestra."   (girl + demon in unison, sub-octave growl)
-                      3 "Vas a morir, exorcista." (snarled, a hiss at the end)
-                      4 "Somos muchos."      (legion: seven voices, child to sub-bass, one mouth)
-                      5 reversed Latin, Mark 5:9 "Nomen mihi Legio est, quia multi sumus" played backwards
-                        (reverb swells INTO each syllable)
   poseida.crack (2)   bones: 1 neck twisting (tendon creak, vertebrae popping in a chain), 2 a limb bending
                       backwards (fracture + fibre splinter, wet tear, bone grinding on bone, settle).
   poseida.scream      possessed scream: child shriek (source-filter synth) + a man's roar under it, sucked-in start.
@@ -809,119 +802,6 @@ def poseida_giggle(v):
     y = stack((g, 0.0, 1.0), (ch, 0.0, 0.9), (norm(click), cut / SR, 0.35))
     y = dsp.drive(norm(y) * 1.3, 1.3)
     return dsp.highpass(verb(y, 'dormitorio', 0.15, seed=1204), 45, 2)
-
-
-# ====================================================================== demonic speech
-def possessed(text, seed, speed=0.86, girl_curve=None, demon_semis=-5.0, sub_semis=-14.0, growl_hz=34.0):
-    """Lucia's mouth + the voices behind it, all on Lucia's timeline (DTW). Returns peak-normalised layers."""
-    a = say(text, 'ef_dora', speed)
-    b = say(text, 'em_santa', speed)
-    tm = dtw_map(a, b)
-    n = len(a)
-    girl = reshape(a, semis=3.5, formant=2.5, wobble=30, wobble_rate=2.2, tremor=0.004, tremor_rate=6.0,
-                   jitter=0.008, shimmer=0.06, curve=girl_curve, seed=seed, fmin=110, fmax=480)
-    dem = reshape(b, semis=demon_semis, formant=-1.8, wobble=35, wobble_rate=0.9, jitter=0.03, shimmer=0.15,
-                  tmap=tm, n_out=n, seed=seed + 1, fmin=50, fmax=300)
-    sub = reshape(b, semis=sub_semis, formant=-4.0, wobble=25, wobble_rate=0.7, jitter=0.04, shimmer=0.2,
-                  tmap=tm, n_out=n, seed=seed + 2, fmin=50, fmax=300)
-    fr = growl_hz * (1 + 0.25 * snoise(n, 3, seed + 3))
-    pulses = np.maximum(0, np.sin(TWO_PI * np.cumsum(fr) / SR)) ** 5
-    sub = sub * (0.35 + 1.3 * pulses)
-    dem = dem * (0.85 + 0.3 * pulses)
-    ref = reshape(b, tmap=tm, n_out=n, seed=seed + 6, fmin=50, fmax=300)
-    return dict(girl=norm(girl), demon=norm(dem), sub=norm(sub), wh=norm(whisper(dem, seed + 4)),
-                gwh=norm(whisper(girl, seed + 5)), ref=ref, dora=a, n=n, tm=tm, santa=b)
-
-
-def demon_chain(y, seed, drv=1.7, room='dormitorio', wet=0.15):
-    y = dsp.drive(norm(y) * drv, drv)
-    y = dsp.peak(y, 150, 3.0, 1.0)
-    y = dsp.peak(y, 2600, 2.5, 1.4)
-    y = dsp.lowpass(y, 7500, 2)
-    return verb(y, room, wet, seed=seed)
-
-
-def smooth_step(n, a, b):
-    u = np.clip((taxis(n) - a) / max(1e-3, b - a), 0, 1)
-    return (u * u * (3 - 2 * u)).astype(np.float32)
-
-
-def demon_line(v):
-    """Returns (processed, intelligibility reference on the same timeline)."""
-    if v == 1:      # "Lucia no esta aca." -- starts as her, HE finishes it
-        L = possessed('Lucía no está acá.', 2110, 0.84, girl_curve=np.array([0, 0, 0, -1.0, -3.0, -4.5]))
-        n = L['n']
-        d = n / SR
-        xf = smooth_step(n, 0.3 * d, 0.5 * d)
-        y = (1.0 - 0.72 * xf) * L['girl'] + (0.12 + 0.95 * xf) * L['demon'] + (0.05 + 0.6 * xf) * L['sub'] + \
-            0.25 * xf * L['wh'] + 0.15 * (1 - xf) * L['gwh']
-        y = demon_chain(y, 2111)
-        ref = (1 - xf) * norm(L['dora']) + xf * norm(L['ref'])
-        return stack((breath_in(0.32, 2112, 0.8, 0.15), 0.0, 1.0), (y, 0.3, 1.0)), np.r_[np.zeros(N(0.3)), ref]
-    if v == 2:      # "Ella es nuestra." -- one mouth, two voices in unison
-        L = possessed('Ella es nuestra.', 2120, 0.8)
-        y = 0.55 * L['girl'] + 1.0 * L['demon'] + 0.62 * L['sub'] + 0.3 * L['wh']
-        y = demon_chain(y, 2121, 1.8)
-        pre = hiss(0.55, 2122, 0.62, gain=0.2, shape=[(0, 0), (0.4, 1), (0.55, 0)])     # inhaled rasp
-        return stack((pre, 0.0, 1.0), (y, 0.5, 1.0)), np.r_[np.zeros(N(0.5)), L['ref']]
-    if v == 3:      # "Vas a morir, exorcista." -- snarled, ends in a hiss
-        L = possessed('Vas a morir, exorcista.', 2130, 0.86, demon_semis=-4.0, growl_hz=30.0,
-                      girl_curve=np.array([0, 1.0, 0, 0, -1.0, 0]))
-        y = 0.35 * L['girl'] + 1.0 * L['demon'] + 0.78 * L['sub'] + 0.35 * L['wh']
-        y = demon_chain(y, 2131, 2.3, 'pasillo', 0.13)
-        tail = hiss(0.9, 2132, 0.6, gain=0.45, shape=[(0, 0), (0.05, 1), (0.4, 0.6), (0.9, 0)])
-        tail = tail * (0.7 + 0.3 * np.maximum(0, np.sin(TWO_PI * 26 * taxis(len(tail)))) ** 4)
-        pre = dsp.lowpass(hiss(0.4, 2133, 0.62, gain=0.22, shape=[(0, 0), (0.3, 1), (0.4, 0)]), 3000, 2)
-        out = stack((pre, 0.0, 1.0), (y, 0.38, 1.0), (tail, 0.38 + L['n'] / SR - 0.08, 1.0))
-        return out, np.r_[np.zeros(N(0.38)), L['ref']]
-    if v == 4:      # "Somos muchos." -- legion: seven voices, one mouth
-        text = 'Somos muchos.'
-        sp = 0.78
-        a = say(text, 'ef_dora', sp)
-        n = len(a)
-        b = say(text, 'em_santa', sp)
-        c = say(text, 'em_alex', sp)
-        tb, tc = dtw_map(a, b), dtw_map(a, c)
-        layers = [  # (src, tmap, semis, formant, offset s, gain, whisper, fmin, fmax)
-            (a, None, 3.5, 2.5, 0.000, 0.55, 0.15, 110, 480),     # Lucia
-            (a, None, 8.0, 4.0, 0.035, 0.22, 0.8, 110, 480),      # a tiny one, whispering
-            (a, None, -2.0, -1.0, 0.018, 0.45, 0.0, 110, 480),    # a woman
-            (c, tc, -3.0, -1.5, 0.026, 0.55, 0.0, 60, 320),       # a man
-            (b, tb, -5.0, -1.8, 0.008, 1.0, 0.0, 50, 300),        # HIM
-            (b, tb, -14.0, -4.0, 0.012, 0.6, 0.0, 50, 300),       # sub
-            (c, tc, 2.0, 0.5, 0.045, 0.3, 0.9, 60, 320),          # a whisperer
-        ]
-        parts = []
-        for k, (src, tm, st, fm, off, g, wh, fmin, fmax) in enumerate(layers):
-            v_ = reshape(src, semis=st, formant=fm, wobble=30, wobble_rate=1.2, jitter=0.02, shimmer=0.12,
-                         tmap=tm, n_out=n, seed=2140 + 7 * k, fmin=fmin, fmax=fmax)
-            if wh:
-                v_ = (1 - wh) * norm(v_) + wh * norm(whisper(v_, 2141 + k))
-            parts.append((norm(v_), off, g))
-        y = dsp.mix(*parts)
-        nn = len(y)
-        pulses = np.maximum(0, np.sin(TWO_PI * np.cumsum(32 * (1 + 0.2 * snoise(nn, 3, 2148))) / SR)) ** 5
-        y = y * (0.9 + 0.2 * pulses)
-        y = demon_chain(y, 2149, 1.6, 'cripta', 0.2)
-        ref = reshape(b, tmap=tb, n_out=n, seed=2147, fmin=50, fmax=300)
-        pre = breath_in(0.45, 2150, 0.7, 0.18)
-        return stack((pre, 0.0, 1.0), (y, 0.42, 1.0)), np.r_[np.zeros(N(0.42)), ref]
-    # v == 5: reversed Latin -- the reverb swells INTO each syllable
-    L = possessed('Nomen mihi Legio est, quia multi sumus.', 2150, 0.8, demon_semis=-6.0)
-    y = 0.45 * L['girl'] + 1.0 * L['demon'] + 0.7 * L['sub'] + 0.45 * L['wh']
-    y = dsp.drive(norm(y) * 1.7, 1.7)
-    y = dsp.peak(y, 150, 3.0, 1.0)
-    y = verb(dsp.lowpass(y, 7000, 2), 'cripta', 0.6, 0.8, seed=2151)
-    y = dsp.reverse(dsp.trim(y, -60, 0.02))
-    # keep ~1.1 s of reversed tail swelling in before the first (reversed) word
-    e = rms_env(y, 0.03)
-    first = int(np.argmax(e > np.max(e) * 10 ** (-22 / 20)))
-    y = y[max(0, first - N(1.1)):]
-    y[:N(1.1)] *= np.linspace(0, 1, N(1.1)) ** 2
-    # a dark forward exhale at the very end so it lands on something that breathes
-    ex = dsp.lowpass(hiss(0.6, 2152, 0.65), 2500, 2)
-    out = stack((y, 0.0, 1.0), (ex, len(y) / SR - 0.2, 0.18))
-    return out, None
 
 
 # ====================================================================== possessed scream / hurt / death
@@ -1916,19 +1796,9 @@ def seam_report(x):
 
 
 # ====================================================================== build
-def _demon(v):
-    y, ref = demon_line(v)
-    return finish_voice(y, -1.0, 15.0, -52.0, 0.08), ref
-
-
 JOBS = [   # (event, file, renderer -> (array, reference or None))
     ('poseida.giggle', 'poseida/giggle_1', lambda: (finish_voice(poseida_giggle(1), -1.0, 15.0, -52.0), None)),
     ('poseida.giggle', 'poseida/giggle_2', lambda: (finish_voice(poseida_giggle(2), -1.0, 15.0, -52.0), None)),
-    ('poseida.demon', 'poseida/demon_1', lambda: _demon(1)),
-    ('poseida.demon', 'poseida/demon_2', lambda: _demon(2)),
-    ('poseida.demon', 'poseida/demon_3', lambda: _demon(3)),
-    ('poseida.demon', 'poseida/demon_4', lambda: _demon(4)),
-    ('poseida.demon', 'poseida/demon_5', lambda: _demon(5)),
     ('poseida.crack', 'poseida/crack_1', lambda: (finish_impact(poseida_crack(1), -3.0), None)),
     ('poseida.crack', 'poseida/crack_2', lambda: (finish_impact(poseida_crack(2), -3.0), None)),
     ('poseida.scream', 'poseida/scream', lambda: (finish_voice(poseida_scream(), -0.5, 13.0, -55.0, 0.1), None)),

@@ -1,10 +1,4 @@
 {
- "phone.ring": {
-  "subtitle": "subtitles.deadline.phone.ring",
-  "sounds": [
-   "deadline:phone/ring"
-  ]
- },
  "phone.vibrate": {
   "subtitle": "subtitles.deadline.phone.vibrate",
   "sounds": [
@@ -21,23 +15,6 @@
   "subtitle": "subtitles.deadline.phone.accept",
   "sounds": [
    "deadline:phone/accept"
-  ]
- },
- "phone.hangup": {
-  "subtitle": "subtitles.deadline.phone.hangup",
-  "sounds": [
-   "deadline:phone/hangup"
-  ]
- },
- "phone.voice": {
-  "subtitle": "subtitles.deadline.phone.voice",
-  "sounds": [
-   "deadline:phone/voice_1",
-   "deadline:phone/voice_2",
-   "deadline:phone/voice_3",
-   "deadline:phone/voice_4",
-   "deadline:phone/voice_5",
-   "deadline:phone/voice_6"
   ]
  },
  "teleport.whoosh": {
@@ -250,16 +227,6 @@
   "sounds": [
    "deadline:poseida/giggle_1",
    "deadline:poseida/giggle_2"
-  ]
- },
- "poseida.demon": {
-  "subtitle": "subtitles.deadline.poseida.demon",
-  "sounds": [
-   "deadline:poseida/demon_1",
-   "deadline:poseida/demon_2",
-   "deadline:poseida/demon_3",
-   "deadline:poseida/demon_4",
-   "deadline:poseida/demon_5"
   ]
  },
  "poseida.crack": {
@@ -667,15 +634,6 @@
    "deadline:casa/breaker_reset"
   ]
  },
- "casa.tv_novela": {
-  "subtitle": "subtitles.deadline.casa.tv_novela",
-  "sounds": [
-   {
-    "name": "deadline:casa/tv_novela",
-    "stream": true
-   }
-  ]
- },
  "casa.tv_static": {
   "subtitle": "subtitles.deadline.casa.tv_static",
   "sounds": [
@@ -761,12 +719,6 @@
    "deadline:choripan/metro_retract"
   ]
  },
- "grill.sizzle": {
-  "subtitle": "subtitles.deadline.grill.sizzle",
-  "sounds": [
-   "deadline:grill/sizzle"
-  ]
- },
  "fire.blue_whoosh": {
   "subtitle": "subtitles.deadline.fire.blue_whoosh",
   "sounds": [
@@ -794,12 +746,6 @@
    "deadline:knife/impact_1",
    "deadline:knife/impact_2",
    "deadline:knife/impact_3"
-  ]
- },
- "salt.hit_scream": {
-  "subtitle": "subtitles.deadline.salt.hit_scream",
-  "sounds": [
-   "deadline:salt/hit_scream"
   ]
  },
  "pool.splash": {
@@ -898,43 +844,10 @@
    "deadline:andador/squeak_3"
   ]
  },
- "chancleta.whip": {
-  "subtitle": "subtitles.deadline.chancleta.whip",
-  "sounds": [
-   "deadline:chancleta/whip"
-  ]
- },
- "chancleta.hit": {
-  "subtitle": "subtitles.deadline.chancleta.hit",
-  "sounds": [
-   "deadline:chancleta/hit"
-  ]
- },
  "rocking.creak_slow": {
   "subtitle": "subtitles.deadline.rocking.creak_slow",
   "sounds": [
    "deadline:rocking/creak_slow"
-  ]
- },
- "yarn.twang": {
-  "subtitle": "subtitles.deadline.yarn.twang",
-  "sounds": [
-   "deadline:yarn/twang_1",
-   "deadline:yarn/twang_2"
-  ]
- },
- "yarn.snap": {
-  "subtitle": "subtitles.deadline.yarn.snap",
-  "sounds": [
-   "deadline:yarn/snap"
-  ]
- },
- "stitch.pull": {
-  "subtitle": "subtitles.deadline.stitch.pull",
-  "sounds": [
-   "deadline:stitch/pull_1",
-   "deadline:stitch/pull_2",
-   "deadline:stitch/pull_3"
   ]
  },
  "azamel.suck": {
@@ -953,12 +866,6 @@
   "subtitle": "subtitles.deadline.wall.break",
   "sounds": [
    "deadline:wall/break"
-  ]
- },
- "wisp.whistle": {
-  "subtitle": "subtitles.deadline.wisp.whistle",
-  "sounds": [
-   "deadline:wisp/whistle"
   ]
  },
  "morning.birds": {
@@ -1022,451 +929,6 @@
   "subtitle": "subtitles.deadline.spirit_box.voice",
   "sounds": [
    "deadline:spirit_box/voice_8"
-  ]
- },
- "line.colegio.clara.llamada": {
-  "sounds": [
-   "deadline:line/colegio/clara/llamada"
-  ]
- },
- "line.operadora.aviso": {
-  "sounds": [
-   "deadline:line/operadora/aviso"
-  ]
- },
- "line.operadora.muerte": {
-  "sounds": [
-   "deadline:line/operadora/muerte"
-  ]
- },
- "line.colegio.madre.lista": {
-  "sounds": [
-   "deadline:line/colegio/madre/lista"
-  ]
- },
- "line.colegio.madre.ferreyra": {
-  "sounds": [
-   "deadline:line/colegio/madre/ferreyra"
-  ]
- },
- "line.colegio.madre.quiroga": {
-  "sounds": [
-   "deadline:line/colegio/madre/quiroga"
-  ]
- },
- "line.colegio.madre.bazan": {
-  "sounds": [
-   "deadline:line/colegio/madre/bazan"
-  ]
- },
- "line.colegio.madre.luna": {
-  "sounds": [
-   "deadline:line/colegio/madre/luna"
-  ]
- },
- "line.colegio.madre.sosa": {
-  "sounds": [
-   "deadline:line/colegio/madre/sosa"
-  ]
- },
- "line.colegio.madre.heredia": {
-  "sounds": [
-   "deadline:line/colegio/madre/heredia"
-  ]
- },
- "line.colegio.madre.moyano": {
-  "sounds": [
-   "deadline:line/colegio/madre/moyano"
-  ]
- },
- "line.colegio.madre.albornoz": {
-  "sounds": [
-   "deadline:line/colegio/madre/albornoz"
-  ]
- },
- "line.colegio.madre.ausente": {
-  "sounds": [
-   "deadline:line/colegio/madre/ausente"
-  ]
- },
- "line.colegio.madre.usted": {
-  "sounds": [
-   "deadline:line/colegio/madre/usted"
-  ]
- },
- "line.colegio.alumna.presente": {
-  "sounds": [
-   "deadline:line/colegio/alumna/presente"
-  ]
- },
- "line.colegio.madre.pregunta1": {
-  "sounds": [
-   "deadline:line/colegio/madre/pregunta1"
-  ]
- },
- "line.colegio.madre.conta_bien": {
-  "sounds": [
-   "deadline:line/colegio/madre/conta_bien"
-  ]
- },
- "line.colegio.madre.correcto": {
-  "sounds": [
-   "deadline:line/colegio/madre/correcto"
-  ]
- },
- "line.colegio.madre.pregunta2": {
-  "sounds": [
-   "deadline:line/colegio/madre/pregunta2"
-  ]
- },
- "line.colegio.madre.como_dijo": {
-  "sounds": [
-   "deadline:line/colegio/madre/como_dijo"
-  ]
- },
- "line.colegio.alumna.risitas": {
-  "sounds": [
-   "deadline:line/colegio/alumna/risitas"
-  ]
- },
- "line.colegio.monja.no_se_corre": {
-  "sounds": [
-   "deadline:line/colegio/monja/no_se_corre"
-  ]
- },
- "line.colegio.madre.megafonia": {
-  "sounds": [
-   "deadline:line/colegio/madre/megafonia"
-  ]
- },
- "line.colegio.clara.1984": {
-  "sounds": [
-   "deadline:line/colegio/clara/1984"
-  ]
- },
- "line.colegio.clara.ya_sabe": {
-  "sounds": [
-   "deadline:line/colegio/clara/ya_sabe"
-  ]
- },
- "line.colegio.cura.ave": {
-  "sounds": [
-   "deadline:line/colegio/cura/ave"
-  ]
- },
- "line.colegio.cura.r1": {
-  "sounds": [
-   "deadline:line/colegio/cura/r1"
-  ]
- },
- "line.colegio.cura.r2": {
-  "sounds": [
-   "deadline:line/colegio/cura/r2"
-  ]
- },
- "line.colegio.cura.r3": {
-  "sounds": [
-   "deadline:line/colegio/cura/r3"
-  ]
- },
- "line.colegio.cura.r4": {
-  "sounds": [
-   "deadline:line/colegio/cura/r4"
-  ]
- },
- "line.colegio.cura.corre": {
-  "sounds": [
-   "deadline:line/colegio/cura/corre"
-  ]
- },
- "line.colegio.paloma.toma": {
-  "sounds": [
-   "deadline:line/colegio/paloma/toma"
-  ]
- },
- "line.colegio.clara.dormitorio": {
-  "sounds": [
-   "deadline:line/colegio/clara/dormitorio"
-  ]
- },
- "line.colegio.alumna.shh": {
-  "sounds": [
-   "deadline:line/colegio/alumna/shh"
-  ]
- },
- "line.colegio.alumna.shh_viene": {
-  "sounds": [
-   "deadline:line/colegio/alumna/shh_viene"
-  ]
- },
- "line.colegio.paloma.perdon": {
-  "sounds": [
-   "deadline:line/colegio/paloma/perdon"
-  ]
- },
- "line.colegio.madre.pensa": {
-  "sounds": [
-   "deadline:line/colegio/madre/pensa"
-  ]
- },
- "line.colegio.paloma.chiste1": {
-  "sounds": [
-   "deadline:line/colegio/paloma/chiste1"
-  ]
- },
- "line.colegio.paloma.chiste2": {
-  "sounds": [
-   "deadline:line/colegio/paloma/chiste2"
-  ]
- },
- "line.colegio.alumnas.corre": {
-  "sounds": [
-   "deadline:line/colegio/alumnas/corre"
-  ]
- },
- "line.colegio.clara.falta_voz": {
-  "sounds": [
-   "deadline:line/colegio/clara/falta_voz"
-  ]
- },
- "line.colegio.monja.quien_hablo": {
-  "sounds": [
-   "deadline:line/colegio/monja/quien_hablo"
-  ]
- },
- "line.colegio.monja.a_la_pared": {
-  "sounds": [
-   "deadline:line/colegio/monja/a_la_pared"
-  ]
- },
- "line.colegio.monja.castigo": {
-  "sounds": [
-   "deadline:line/colegio/monja/castigo"
-  ]
- },
- "line.colegio.clara.gracias": {
-  "sounds": [
-   "deadline:line/colegio/clara/gracias"
-  ]
- },
- "line.colegio.madre.aja": {
-  "sounds": [
-   "deadline:line/colegio/madre/aja"
-  ]
- },
- "line.colegio.alumnas.shhh": {
-  "sounds": [
-   "deadline:line/colegio/alumnas/shhh"
-  ]
- },
- "line.casa.marta.llamada": {
-  "sounds": [
-   "deadline:line/casa/marta/llamada"
-  ]
- },
- "line.operadora.casa_aviso": {
-  "sounds": [
-   "deadline:line/operadora/casa_aviso"
-  ]
- },
- "line.casa.marta.hola": {
-  "sounds": [
-   "deadline:line/casa/marta/hola"
-  ]
- },
- "line.casa.jorge.humedad": {
-  "sounds": [
-   "deadline:line/casa/jorge/humedad"
-  ]
- },
- "line.casa.jorge.mucha_humedad": {
-  "sounds": [
-   "deadline:line/casa/jorge/mucha_humedad"
-  ]
- },
- "line.casa.nona.mate": {
-  "sounds": [
-   "deadline:line/casa/nona/mate"
-  ]
- },
- "line.casa.jorge.carbon": {
-  "sounds": [
-   "deadline:line/casa/jorge/carbon"
-  ]
- },
- "line.casa.marta.chat": {
-  "sounds": [
-   "deadline:line/casa/marta/chat"
-  ]
- },
- "line.casa.marta.no_celular": {
-  "sounds": [
-   "deadline:line/casa/marta/no_celular"
-  ]
- },
- "line.casa.marta.telefono": {
-  "sounds": [
-   "deadline:line/casa/marta/telefono"
-  ]
- },
- "line.casa.lucia.perro": {
-  "sounds": [
-   "deadline:line/casa/lucia/perro"
-  ]
- },
- "line.casa.tomi.vod": {
-  "sounds": [
-   "deadline:line/casa/tomi/vod"
-  ]
- },
- "line.casa.spirit.azamel": {
-  "sounds": [
-   "deadline:line/casa/spirit/azamel"
-  ]
- },
- "line.casa.spirit.al_perro": {
-  "sounds": [
-   "deadline:line/casa/spirit/al_perro"
-  ]
- },
- "line.casa.spirit.nunca": {
-  "sounds": [
-   "deadline:line/casa/spirit/nunca"
-  ]
- },
- "line.casa.spirit.temperley": {
-  "sounds": [
-   "deadline:line/casa/spirit/temperley"
-  ]
- },
- "line.casa.marta.sillas": {
-  "sounds": [
-   "deadline:line/casa/marta/sillas"
-  ]
- },
- "line.casa.nona.son_mias": {
-  "sounds": [
-   "deadline:line/casa/nona/son_mias"
-  ]
- },
- "line.casa.nona.esperando": {
-  "sounds": [
-   "deadline:line/casa/nona/esperando"
-  ]
- },
- "line.casa.nona.guardame": {
-  "sounds": [
-   "deadline:line/casa/nona/guardame"
-  ]
- },
- "line.casa.marta.llamalo": {
-  "sounds": [
-   "deadline:line/casa/marta/llamalo"
-  ]
- },
- "line.casa.choripan.buen_chico": {
-  "sounds": [
-   "deadline:line/casa/choripan/buen_chico"
-  ]
- },
- "line.casa.toti.ocupado": {
-  "sounds": [
-   "deadline:line/casa/toti/ocupado"
-  ]
- },
- "line.casa.toti.callate": {
-  "sounds": [
-   "deadline:line/casa/toti/callate"
-  ]
- },
- "line.casa.marta.tirale": {
-  "sounds": [
-   "deadline:line/casa/marta/tirale"
-  ]
- },
- "line.casa.marta.choripan": {
-  "sounds": [
-   "deadline:line/casa/marta/choripan"
-  ]
- },
- "line.casa.jorge.llegue": {
-  "sounds": [
-   "deadline:line/casa/jorge/llegue"
-  ]
- },
- "line.casa.jorge.jugoso": {
-  "sounds": [
-   "deadline:line/casa/jorge/jugoso"
-  ]
- },
- "line.casa.jorge.es_la_humedad": {
-  "sounds": [
-   "deadline:line/casa/jorge/es_la_humedad"
-  ]
- },
- "line.casa.jorge.falta_sal": {
-  "sounds": [
-   "deadline:line/casa/jorge/falta_sal"
-  ]
- },
- "line.casa.marta.chorizo": {
-  "sounds": [
-   "deadline:line/casa/marta/chorizo"
-  ]
- },
- "line.casa.lucia.voces": {
-  "sounds": [
-   "deadline:line/casa/lucia/voces"
-  ]
- },
- "line.casa.nona.atorrante": {
-  "sounds": [
-   "deadline:line/casa/nona/atorrante"
-  ]
- },
- "line.casa.nona.aca": {
-  "sounds": [
-   "deadline:line/casa/nona/aca"
-  ]
- },
- "line.casa.lucia.liberada": {
-  "sounds": [
-   "deadline:line/casa/lucia/liberada"
-  ]
- },
- "line.casa.nona.nene_veni": {
-  "sounds": [
-   "deadline:line/casa/nona/nene_veni"
-  ]
- },
- "line.casa.nona.damelo": {
-  "sounds": [
-   "deadline:line/casa/nona/damelo"
-  ]
- },
- "line.casa.nona.sesenta": {
-  "sounds": [
-   "deadline:line/casa/nona/sesenta"
-  ]
- },
- "line.casa.jorge.asado": {
-  "sounds": [
-   "deadline:line/casa/jorge/asado"
-  ]
- },
- "line.casa.toti.que_perdi": {
-  "sounds": [
-   "deadline:line/casa/toti/que_perdi"
-  ]
- },
- "line.casa.nona.quien_asado": {
-  "sounds": [
-   "deadline:line/casa/nona/quien_asado"
-  ]
- },
- "line.casa.marta.perro": {
-  "sounds": [
-   "deadline:line/casa/marta/perro"
   ]
  }
 }

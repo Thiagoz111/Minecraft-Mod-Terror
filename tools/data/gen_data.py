@@ -11,7 +11,7 @@ sys.path.insert(0, HERE)
 sys.path.insert(0, os.path.join(HERE, '..', 'audio'))
 from lang import ITEMS, ENTITIES, BLOCKS, CASES, BESTIARY, SPIRIT_BOX, MISC, WEAKNESS, SCRIPT
 from sounds_def import SOUNDS
-from lines import LINES, TEXTS, SPEAKERS
+from lines import TEXTS
 
 ROOT = os.path.abspath(os.path.join(HERE, '..', '..'))
 RES = os.path.join(ROOT, 'src/main/resources')
@@ -126,7 +126,7 @@ def items():
     write(f'{A}/models/item/flare.json', model('flare', layer0=f'{NS}:item/flare'))
     write(f'{A}/models/item/flare_lit.json', model('flare_lit', layer0=f'{NS}:item/flare_lit'))
     write(f'{A}/items/flare.json', {'model': ref(f'{NS}:item/flare')})
-    # phone: rings while calls are pending (custom_model_data flag 0)
+    # phone: lit up while there are unread messages (custom_model_data flag 0)
     for n in ('phone', 'phone_ringing'):
         write(f'{A}/models/item/{n}.json', model(n, layer0=f'{NS}:item/{n}'))
     write(f'{A}/items/phone.json', {'model': {
@@ -231,11 +231,6 @@ def lang():
     for key, c in CASES.items():
         es[f'{NS}.case.{key}.place'], en[f'{NS}.case.{key}.place'] = c['place']
         es[f'{NS}.case.{key}.hint'], en[f'{NS}.case.{key}.hint'] = c['hint']
-        for i, (n_es, m_es, n_en, m_en) in enumerate(c['callers']):
-            es[f'{NS}.case.{key}.caller.{i}'] = n_es
-            es[f'{NS}.case.{key}.msg.{i}'] = m_es
-            en[f'{NS}.case.{key}.caller.{i}'] = n_en
-            en[f'{NS}.case.{key}.msg.{i}'] = m_en
     for k, (e, n) in BESTIARY.items():
         es[f'{NS}.bestiary.{k}'] = e
         en[f'{NS}.bestiary.{k}'] = n
@@ -253,12 +248,8 @@ def lang():
         en[f'subtitles.{NS}.{name}'] = sub_en
     for k, (e, n) in SCRIPT.items():
         es[k], en[k] = e, n
-    for k, v in LINES.items():
-        es[f'{NS}.line.{k}'], en[f'{NS}.line.{k}'] = v['es'], v['en']
     for k, (e, n) in TEXTS.items():
         es[f'{NS}.text.{k}'], en[f'{NS}.text.{k}'] = e, n
-    for k, (e, n) in SPEAKERS.items():
-        es[f'{NS}.speaker.{k}'], en[f'{NS}.speaker.{k}'] = e, n
     extra = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'blocks', 'out', 'lang_blocks.json')
     if os.path.exists(extra):
         for k, (e_es, e_en) in json.load(open(extra)).items():

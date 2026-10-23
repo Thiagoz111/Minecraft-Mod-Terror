@@ -38,9 +38,9 @@ public class DeadLine implements ModInitializer {
 		ModEntities.init();
 		ModAttachments.init();
 		ModNetworking.init();
+		// the phone's text threads (WhatsApp-like): how every case reaches the hunter
+		com.deadline.phone.PhoneMessages.init();
 		// case 2: the Morales house
-		com.deadline.casa.CasaItems.init();
-		com.deadline.casa.CasaNet.init();
 		com.deadline.casa.CasaSetEntities.init();
 		com.deadline.casa.FamilyEntities.init();
 
@@ -52,7 +52,6 @@ public class DeadLine implements ModInitializer {
 		net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
 			com.deadline.director.Director.clear();
 			com.deadline.site.SiteDef.clearCache();
-			com.deadline.director.LineBook.clear();
 		});
 
 		ServerTickEvents.END_SERVER_TICK.register(server -> {

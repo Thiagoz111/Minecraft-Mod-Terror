@@ -107,10 +107,12 @@ public final class Director {
 		Run r = RUNS.get(key(ac.type, ac.site));
 		if (r == null && p.level() instanceof ServerLevel level && level.dimension().equals(ac.type.levelKey())) {
 			SiteDef def = SiteDef.get(level.getServer(), ac.type.script().siteKey());
-			if (def == null) {
+			// an overworld case keeps one stored origin (CaseSites), a dimension case its slot
+			BlockPos origin = CaseSites.originOf(level.getServer(), ac.type, ac.site);
+			if (def == null || origin == null) {
 				return null;
 			}
-			r = create(ac.type, ac.site, level, CaseSites.origin(ac.site), def);
+			r = create(ac.type, ac.site, level, origin, def);
 			// after a restart: back to the checkpoint of the saved chapter and replay it (flags and actors were not saved)
 			r.chapter = Math.max(1, ac.stage);
 			r.checkpoint(p);
