@@ -25,6 +25,8 @@ is lined with crooked needle teeth in two offset rows (zero-thickness planes), r
 red throat and a long black tongue (tongue + tongue_tip).
 """
 import math
+import os
+import sys
 
 import numpy as np
 
@@ -1008,37 +1010,267 @@ def two_bone(S, W, L1, L2, pole):
     return S + u * a + pv * h
 
 
+# ------------------------------------------------------------------ the 'CHORIPAN' name tag (gold, engraved)
+# 3x5 pixel font (N is 4 wide: a 3-wide N reads as H).  Two lines, "CHORI" / "PAN" with the acute accent over the A.
+FONT = {
+    'C': [".##", "#..", "#..", "#..", ".##"],
+    'H': ["#.#", "#.#", "###", "#.#", "#.#"],
+    'O': [".#.", "#.#", "#.#", "#.#", ".#."],
+    'R': ["##.", "#.#", "##.", "#.#", "#.#"],
+    'I': ["#", "#", "#", "#", "#"],
+    'P': ["##.", "#.#", "##.", "#..", "#.."],
+    'A': [".#.", "#.#", "###", "#.#", "#.#"],
+    'N': ["#..#", "##.#", "#.##", "#..#", "#..#"],
+}
+TAG_W, TAG_H = 19, 14
+GOLD = pal('#2a1606', '#5a3a10', '#8a6420', '#b8913e', '#d9b458', '#f0d27a', '#fff2b8')
+ENGRAVE = hx('#1c0f05')
+
+
+def _tag_text():
+    rows = [[0] * TAG_W for _ in range(TAG_H)]
+
+    def put(word, x0, y0):
+        x = x0
+        for ch in word:
+            g = FONT[ch]
+            for j, r in enumerate(g):
+                for i, c in enumerate(r):
+                    if c == '#':
+                        rows[y0 + j][x + i] = 1
+            x += len(g[0]) + 1
+
+    put('CHORI', 1, 1)
+    w2 = sum(len(FONT[c][0]) for c in 'PAN') + 2
+    x2 = (TAG_W - w2) // 2
+    put('PAN', x2, 8)
+    rows[7][x2 + len(FONT['P'][0]) + 1 + 2] = 1          # the acute accent: up-right of the A's apex
+    return rows
+
+
+TAG_TXT = _tag_text()
+
+
+def tag_mat(ctx):
+    """The big brass name tag: rounded corners, bevelled rim, the name engraved (dark cut + a bright lower lip where
+    the light catches the cut), a diagonal sheen; a plain scratched back; a ring on top."""
+    f = ctx.face
+    i, j, w, h = ctx.i, ctx.j, ctx.w, ctx.h
+    if tag(ctx) == 'ring':
+        if f in ('front', 'back') and 0 < i < w - 1 and 0 < j < h - 1:
+            return None
+        return GOLD[4] if (i + j) % 2 == 0 else GOLD[2]
+    if f in ('front', 'back'):
+        if i in (0, w - 1) and j in (0, h - 1):
+            return None                                          # rounded corners
+        if f == 'back':
+            if edge(ctx) == 0:
+                return GOLD[1]
+            v = 0.42 + (0.1 if (i - j) % 7 == 0 else 0) - (0.12 if hash3(i, j, 4, 41) > 0.93 else 0)
+            return pick(GOLD, v)
+        if i == 0 or j == 0:
+            return GOLD[5] if not (i == 0 and j == 0) else GOLD[4]     # lit bevel top / left
+        if i == w - 1 or j == h - 1:
+            return GOLD[1]                                       # shaded bevel bottom / right
+        if TAG_TXT[j][i]:
+            return ENGRAVE
+        if TAG_TXT[j - 1][i] or (TAG_TXT[j - 1][i - 1] and not TAG_TXT[j][i - 1]):
+            return GOLD[6]                                       # bright lower lip of the cut
+        v = 0.6 + (0.18 if (i + j) % 11 in (0, 1) else 0) - (0.08 if hash3(i, j, 2, 43) > 0.9 else 0)
+        return pick(GOLD, v)
+    if f == 'top':
+        return GOLD[5]
+    return GOLD[2]
+
+
+# ------------------------------------------------------------------ the black vomit column (toggle)
+TAR = pal('#010002', '#050308', '#0b070f', '#140d19', '#211726', '#342639', '#524160')
+EMBER = (hx('#ff6a1e'), hx('#ffb648'), hx('#d81c10'))
+
+
+def ember_at(i, j, seed, rate=0.035):
+    return hash3(i, j, seed, 91) < rate
+
+
+def _face_seed(cube, face):
+    return (sum(map(ord, face)) * 7 + int(cube.size[0] * 13 + cube.size[1] * 3 + cube.size[2])) % 997
+
+
+def vomit_mat(ctx):
+    """Thick, glossy black bile: an oily purple sheen, a wet highlight line down one side, slow falling streaks,
+    red embers caught in it (the embers are also on the emissive layer).  The puddle is an irregular blob with
+    bubbles; the splash planes are ragged crowns of drops."""
+    f = ctx.face
+    t = tag(ctx)
+    i, j, w, h = ctx.i, ctx.j, ctx.w, ctx.h
+    sd = _face_seed(ctx.cube, f)
+    if t == 'puddle':
+        if f != 'top':
+            return None
+        cx, cy = (w - 1) / 2, (h - 1) / 2
+        dx, dy = (i - cx) / (w / 2), (j - cy) / (h / 2)
+        r = math.hypot(dx, dy)
+        ang = math.atan2(dy, dx)
+        lim = 0.72 + 0.16 * math.sin(ang * 5 + 1.3) + 0.1 * math.sin(ang * 3 - 0.4)
+        if r > lim:
+            # loose splatter drops around the blob
+            return TAR[2] if hash3(i, j, 7, 93) > 0.93 and r < lim + 0.25 else None
+        if ember_at(i, j, sd, 0.05):
+            return EMBER[0]
+        if abs(r - 0.3) < 0.07 and hash3(i, 1, 2, 95) > 0.3:
+            return TAR[4]                                        # a slow ripple ring round the impact
+        if hash3(i, j, 3, 97) > 0.95:
+            return TAR[5]                                        # bubble glints
+        return pick(TAR, 0.32 - r * 0.15 + (0.12 if (i - j) % 9 == 0 else 0))
+    if t == 'splash':
+        if f not in ('front', 'west'):
+            return None
+        # a crown of drops: columns of varying height rising from the bottom row, some drops detached
+        col_h = 1 + int(hash3(i, 0, sd, 99) ** 1.6 * (h - 1))
+        k = h - 1 - j
+        if k < col_h:
+            if (i % 2 == 1 and k > 0) or hash3(i, k, sd, 101) > 0.85:
+                return None
+            return TAR[4] if k == col_h - 1 else TAR[2]
+        if k == col_h + 1 and hash3(i, 3, sd, 103) > 0.6:
+            return TAR[3]                                        # a detached drop above the crown
+        return None
+    if f in ('top', 'bottom'):
+        return TAR[1]
+    # the stream / gush
+    if ember_at(i, j, sd):
+        return EMBER[0] if hash3(i, j, sd, 105) > 0.4 else EMBER[2]
+    v = 0.3
+    if i == 1 and f in ('front', 'east'):
+        v += 0.28                                                # the wet highlight line
+    elif i == 0 or i == w - 1:
+        v -= 0.12
+    band = hash3(i, math.floor((j + i * 2) / 3), sd, 107)
+    v += (band - 0.5) * 0.18                                     # falling streaks
+    if t == 'gush' and hash3(i, j, sd, 109) > 0.8:
+        v += 0.18                                                # foam
+    return pick(TAR, v)
+
+
+def vomit_glow(cube_tag, size):
+    """Emissive embers: the same texels vomit_mat paints red, full-bright."""
+    def make(face):
+        def fn(img, u0, v0, w, h):
+            px = img.load()
+
+            class _C:
+                pass
+            c = _C()
+            c.size = size
+            sd = _face_seed(c, face)
+            for jj in range(h):
+                for ii in range(w):
+                    if cube_tag == 'puddle':
+                        continue
+                    if ember_at(ii, jj, sd):
+                        px[u0 + ii, v0 + jj] = hx('#ff7a2a') if hash3(ii, jj, sd, 105) > 0.4 else hx('#ff2a18')
+        return fn
+    return {f'eyes:{face}': make(face) for face in ('front', 'back', 'west', 'east')}
+
+
+# ------------------------------------------------------------------ the blessed choripan (toggle: caught in the air)
+BREAD = pal('#4a2208', '#7a3e14', '#a85e24', '#cc8438', '#e6a956', '#f4cb82', '#fde6b8')
+CRUMB = pal('#a88a5a', '#ccb282', '#e6d3a4', '#f8ecc8')
+SAUSAGE = pal('#1e0604', '#3a0e08', '#5c1a0e', '#7e2a16', '#a03e20', '#c45a30', '#de7c48')
+CHIMI = (hx('#2e5a14'), hx('#5a8c22'), hx('#9cc04a'))
+HOLY = hx('#d8f6ff')
+
+
+def chori_mat(ctx):
+    """A fat cartoon choripan: crusty pan de campo split open along the top with the crumb showing, the grilled
+    chorizo poking out of both ends (diagonal grill marks, a fat glint), chimichurri flecks."""
+    f = ctx.face
+    t = tag(ctx)
+    i, j, w, h = ctx.i, ctx.j, ctx.w, ctx.h
+    v = 0.55 + face_light(ctx) * 1.0
+    if t == 'bun':
+        if f == 'top':
+            if 1 <= j <= h - 2:
+                return pick(CRUMB, 0.55 + (0.2 if (i + j) % 3 == 0 else 0) - (0.25 if j in (1, h - 2) else 0))
+            return pick(BREAD, v + 0.1)
+        if f in ('west', 'east'):
+            if i in (0, w - 1) and j == 0:
+                return None
+            return pick(CRUMB, 0.45 + (0.15 if (i + j) % 2 else 0)) if j == 0 else pick(BREAD, v - 0.05)
+        if f == 'bottom':
+            return pick(BREAD, 0.3 + (0.1 if (i * 3 + j) % 5 == 0 else 0))
+        # crust: flour dust and darker blisters
+        if (i in (0, w - 1)) and j in (0, h - 1):
+            return None
+        c = pick(BREAD, v + (0.12 if hash3(i, j, 5, 111) > 0.8 else 0) - (0.2 if hash3(i, j, 6, 113) > 0.88 else 0))
+        if j == 0:
+            c = pick(BREAD, v + 0.18)
+        return c
+    # sausage
+    if f in ('west', 'east'):
+        if (i in (0, w - 1)) and (j in (0, h - 1)):
+            return None                                          # rounded end
+        return pick(SAUSAGE, 0.45 + (0.15 if (i, j) == (1, 1) else 0))
+    if f == 'top':
+        if (i + j * 2) % 5 == 0:
+            return SAUSAGE[0]                                    # grill marks
+        if hash3(i, j, 8, 115) > 0.82:
+            return CHIMI[1] if hash3(i, j, 9, 117) > 0.5 else CHIMI[0]
+        return pick(SAUSAGE, v + (0.25 if j == 1 and i % 4 == 2 else 0))
+    if (i + j * 2) % 5 == 0 and f in ('front', 'back'):
+        return SAUSAGE[1]
+    return pick(SAUSAGE, v - 0.05)
+
+
+def chori_glow():
+    """'Bendito': a few holy-water sparkles on the crust (emissive)."""
+    pts = [(2, 0), (5, 1), (9, 0), (12, 1), (7, 2)]
+    return {'eyes:front': at([(i, j, HOLY) for i, j in pts]),
+            'eyes:top': at([(1, 0, HOLY), (13, 0, HOLY), (6, 4, HOLY)])}
+
+
 # ------------------------------------------------------------------ layout
 C0 = 4.0                     # chain axis height of the chest (authored)
-Z1F = -34.0                  # front of the chest = seg1 pivot
+Z1F = -34.0                  # front of the chest = link_1 pivot
 SEG1_L = 15
-# body links: (bone, parent, skin band length, fur length, width, height, inflate, rest pitch deg (+ = rear up),
-#              blood drips)
+HEAD_TILT = 8.0              # rest dog head tilt (deg, zRot)
+CHEST_ROLL = -5.0            # rest: the chest leans onto its right shoulder
+NECK_SOCKET = (0.0, -2.0, 0.0)          # where the neck leaves the chest (link_1-local)
+NECK_LEN = 11.0                          # socket -> head joint
+NECK_REST = (-35.0, 0.0, -CHEST_ROLL * 0.6)   # neck rest rotation relative to the chest (deg)
+COLLAR_Z = 3.5                           # collar position along the neck (neck-local, from the head joint back)
+MOUTH = (0.0, 0.5, -22.0)                # head-local: where a fetched item / the choripan sits between the teeth
+# body links after the chest: (bone, link in front, skin band length, fur length, width, height, inflate,
+#                              rest pitch deg (+ = rear up), blood drips)
 LINKS = [
-    ('seg2', 'seg1', 5, 7, 13, 12, 0.15, 13, False),
-    ('seg3', 'seg2', 7, 6, 12, 12, 0.30, 10, True),
-    ('seg4', 'seg3', 6, 6, 11, 11, 0.20, -13, False),
-    ('seg5', 'seg4', 8, 6, 11, 11, 0.40, -24, True),
-    ('seg6', 'seg5', 7, 7, 12, 11, 0.10, 6, False),
-    ('hips', 'seg6', 5, 10, 13, 12, 0.25, 16, True),
+    ('link_2', 'link_1', 5, 7, 13, 12, 0.15, 13, False),
+    ('link_3', 'link_2', 7, 6, 12, 12, 0.30, 10, True),
+    ('link_4', 'link_3', 6, 6, 11, 11, 0.20, -13, False),
+    ('link_5', 'link_4', 8, 6, 11, 11, 0.40, -24, True),
+    ('link_6', 'link_5', 7, 7, 12, 11, 0.10, 6, False),
+    ('link_7', 'link_6', 5, 10, 13, 12, 0.25, 16, True),
 ]
 LINK = {L[0]: L for L in LINKS}
+BODY = ['link_1'] + [L[0] for L in LINKS]
+CHAIN = ['link_0'] + BODY
+LINK_LEN = dict({'link_1': float(SEG1_L)}, **{L[0]: float(L[2] + L[3]) for L in LINKS})   # pivot -> next pivot (+Z)
 SPIKES = []                  # (bone, x, y, z) authored base of each rib spike (filled by build, used by skin_mat)
+VOMIT_LEN = 30               # column length; re-solved by make_vomit() so the puddle lands on the floor
 
 # the six human arms.  elbow = (|x| out from the midline, world y, dz from the shoulder); wrist = (|x| out, dz);
 # joint (extra elbow) likewise.  hand variants: flat, fist (on its knuckles), claw (on its fingertips),
 # twist (wrist broken backwards, fingers pointing back).  fingers: lengths inner -> outer.
 ARMS = {
-    (1, 'right'): dict(seg='seg3', elbow=(13.0, -14.0, -5.0), wrist=(21.0, -16.0), hand='flat', yaw=34,
+    (1, 'right'): dict(seg='link_3', elbow=(13.0, -14.0, -5.0), wrist=(21.0, -16.0), hand='flat', yaw=34,
                        fingers=(6, 9, 8, 7)),
-    (1, 'left'): dict(seg='seg3', elbow=(12.0, -8.0, -2.0), wrist=(17.0, -10.0), hand='fist', yaw=14),
-    (2, 'right'): dict(seg='seg5', elbow=(17.0, -9.0, 1.0), wrist=(23.0, -1.0), hand='claw', yaw=8,
+    (1, 'left'): dict(seg='link_3', elbow=(12.0, -8.0, -2.0), wrist=(17.0, -10.0), hand='fist', yaw=14),
+    (2, 'right'): dict(seg='link_5', elbow=(17.0, -9.0, 1.0), wrist=(23.0, -1.0), hand='claw', yaw=8,
                        fingers=(4, 6, 6, 5)),
-    (2, 'left'): dict(seg='seg5', elbow=(11.0, -13.0, -3.0), joint=(20.0, 1.0, 4.0), wrist=(18.0, 1.0),
+    (2, 'left'): dict(seg='link_5', elbow=(11.0, -13.0, -3.0), joint=(20.0, 1.0, 4.0), wrist=(18.0, 1.0),
                       hand='twist', yaw=158, fingers=(7, 8, 9, 6)),
-    (3, 'right'): dict(seg='hips', elbow=(14.0, -6.0, 5.0), wrist=(20.0, 12.0), hand='flat', yaw=-30,
+    (3, 'right'): dict(seg='link_7', elbow=(14.0, -6.0, 5.0), wrist=(20.0, 12.0), hand='flat', yaw=-30,
                        fingers=(8, 7, 9, 5)),
-    (3, 'left'): dict(seg='hips', elbow=(16.0, -10.0, 8.0), wrist=(21.0, 16.0), hand='claw', yaw=-20,
+    (3, 'left'): dict(seg='link_7', elbow=(16.0, -10.0, 8.0), wrist=(21.0, 16.0), hand='claw', yaw=-20,
                       fingers=(5, 6, 5, 4)),
 }
 HAND_DROP = {'flat': 2.0, 'twist': 2.0, 'fist': 4.2}      # wrist pivot height above the floor; claw: 1 + finger
@@ -1053,6 +1285,67 @@ def hand_drop(spec):
     if spec['hand'] == 'claw':
         return 1.0 + max(spec['fingers'])
     return HAND_DROP[spec['hand']]
+
+
+def body_fk(rel=None, root_rot=(0.0, 0.0, 0.0), root_pos=(0.0, 0.0, 0.0), slide=None):
+    """World frames {link: (R, P)} of link_1..link_7 composed like a hierarchy: each link's rotation relative to the
+    link in front = its rest hunch (pitch, 0, roll) + rel[link] (deg, Euler added); its pivot sits at the end of the
+    link in front, + slide[link] (a local (dx, dy, dz) in the front link's frame).  rel = {} gives the rest pose."""
+    rel = rel or {}
+    slide = slide or {}
+    R = R_deg(*(np.array([0.0, 0.0, CHEST_ROLL]) + np.array(root_rot, float)))
+    P = np.array([0.0, C0, Z1F]) + np.array(root_pos, float)
+    out = {'link_1': (R, P)}
+    L = float(SEG1_L)
+    for (name, par, Lb, Lf, W, Hh, infl, pitch, drip) in LINKS:
+        roll = -CHEST_ROLL if par == 'link_1' else 0.0
+        P = P + R @ (np.array([0.0, 0.0, L]) + np.array(slide.get(name, (0.0, 0.0, 0.0)), float))
+        R = R @ R_deg(*(np.array([pitch, 0.0, roll]) + np.array(rel.get(name, (0.0, 0.0, 0.0)), float)))
+        out[name] = (R, P)
+        L = float(Lb + Lf)
+    return out
+
+
+def neck_fk(R1, P1, neck_rel=(0.0, 0.0, 0.0), head_rel=(0.0, 0.0, 0.0), head_slide=(0.0, 0.0, 0.0)):
+    """(neck world rot, head joint, head world rot) for a chest frame, like the neck/head hierarchy hanging off the
+    chest socket (rel = Euler deltas on the rest local rotations, head_slide = offset of the head joint along the
+    neck frame)."""
+    Rn = R1 @ R_deg(*(np.array(NECK_REST) + np.array(neck_rel, float)))
+    S = P1 + R1 @ np.array(NECK_SOCKET)
+    Hj = S + Rn @ (np.array([0.0, 0.0, -NECK_LEN]) + np.array(head_slide, float))
+    Rh = Rn @ R_deg(*(np.array(HEAD_LOCAL_REST) + np.array(head_rel, float)))
+    return Rn, Hj, Rh
+
+
+def _head_local_rest():
+    R1 = R_deg(0, 0, CHEST_ROLL)
+    Rn = R1 @ R_deg(*NECK_REST)
+    return euler_zyx(Rn.T @ R_deg(0, 0, HEAD_TILT))
+
+
+HEAD_LOCAL_REST = _head_local_rest()
+
+
+def wdir(pitch, yaw, roll=0.0):
+    """World rotation of a link from WORLD angles: pitch + = rear end up, yaw + = rear end toward +X."""
+    return R_deg(0, yaw, 0) @ R_deg(pitch, 0, 0) @ R_deg(0, 0, roll)
+
+
+def body_world(P1, ang, slide=None):
+    """World frames for link_1..link_7 from world angles ang[link] = (pitch, yaw[, roll]); each pivot sits at the end
+    of the link in front, minus slide[link] texels (telescoped into it)."""
+    slide = slide or {}
+    out = {}
+    P = np.asarray(P1, float)
+    prev = None
+    for n in BODY:
+        if prev is not None:
+            Rp, Pp = out[prev]
+            P = Pp + Rp @ np.array([0.0, 0.0, LINK_LEN[prev] - slide.get(n, 0.0)])
+        a = ang[n]
+        out[n] = (wdir(*a), P)
+        prev = n
+    return out
 
 
 # ------------------------------------------------------------------ builder (world-space placement)
@@ -1098,30 +1391,71 @@ class Build:
         return self.M(bone)[:3, :3]
 
 
+# ------------------------------------------------------------------ toggles (Java: ModelPart.visible)
+TOGGLE_DEFAULT = {'vomit': False, 'choripan': False}
+POSE_TOGGLES = {'vomit': {'vomit': True}, 'catch': {'choripan': True}}
+
+
+def visible_set(pose=None):
+    vis = dict(TOGGLE_DEFAULT)
+    vis.update(POSE_TOGGLES.get(pose, {}))
+    show = os.environ.get('CHORI_SHOW', '')
+    if show:                                                    # preview helper: 'all' or 'bone,bone'
+        for k in vis:
+            if show == 'all' or k in show.split(','):
+                vis[k] = True
+    return {k for k, v in vis.items() if v}
+
+
+class ChoriModel(Model):
+    """Exports every bone to Java; the preview JSON hides the toggle bones the current pose does not show."""
+    visible = None
+
+    def to_json(self):
+        d = super().to_json()
+        d['toggles'] = {'default': dict(TOGGLE_DEFAULT), 'poses': {p: dict(t) for p, t in POSE_TOGGLES.items()}}
+        if self.visible is None:
+            return d
+        hide = set()
+        for b in self.bones():
+            if b.name in TOGGLE_DEFAULT and b.name not in self.visible:
+                for sub in b.walk():
+                    hide.add(sub.name)
+        for bd in d['bones']:
+            if bd['name'] in hide and bd['cubes']:
+                bd['hidden_cubes'] = bd['cubes']
+                bd['cubes'] = []
+        return d
+
+
+def _argv(flag):
+    a = sys.argv
+    return a[a.index(flag) + 1] if flag in a and a.index(flag) + 1 < len(a) else None
+
+
 # ------------------------------------------------------------------ module contract
 DEFAULT_MAT = link_fur
 FOCUS = 'head'
-HEAD_TILT = 8.0              # rest dog head tilt (deg, zRot)
-CHEST_ROLL = -5.0            # rest: the chest leans onto its right shoulder
 
 
 def build():
     b = Build()
     box = b.box
     SPIKES.clear()
+    F = body_fk()
 
-    # ---------------- seg1: the chest (root) with the sweater remnant
-    b.bone('seg1', None, (0.0, C0, Z1F), R_deg(0, 0, CHEST_ROLL), mat=link_fur)
-    box('seg1', (-7, -5.5, 0), (14, 11, SEG1_L), name='core', tear=(False, True))
-    box('seg1', (-5, -6.5, 0.5), (10, 1, SEG1_L - 1), name='cap', tear=(False, True))
-    box('seg1', (-5, 5.5, 1), (10, 1, SEG1_L - 2), name='keel', tear=(False, True))
-    box('seg1', (-7, -6.5, 0), (14, 13, 12), mat=sweater_mat, name='sweater', inflate=0.45)
+    # ---------------- link_1: the chest with the sweater remnant
+    R1, P1 = F['link_1']
+    b.bone('link_1', None, P1, R1, mat=link_fur)
+    box('link_1', (-7, -5.5, 0), (14, 11, SEG1_L), name='core', tear=(False, True))
+    box('link_1', (-5, -6.5, 0.5), (10, 1, SEG1_L - 1), name='cap', tear=(False, True))
+    box('link_1', (-5, 5.5, 1), (10, 1, SEG1_L - 2), name='keel', tear=(False, True))
+    box('link_1', (-7, -6.5, 0), (14, 13, 12), mat=sweater_mat, name='sweater', inflate=0.45)
 
-    # ---------------- body links: skin band (rib cage + pinched waist + spine ridge) then a fur link
-    parent, pz = 'seg1', float(SEG1_L)
+    # ---------------- link_2..link_7 (top-level): skin band (rib cage + pinched waist + spine ridge) + a fur link
     for k, (name, par, Lb, Lf, W, Hh, infl, pitch, drip) in enumerate(LINKS):
-        roll = -CHEST_ROLL if par == 'seg1' else 0.0
-        b.lbone(name, par, (0.0, 0.0, pz), rot=(pitch, 0, roll), mat=link_fur)
+        R, P = F[name]
+        b.bone(name, None, P, R, mat=link_fur)
         ti = 0.04 * k                                       # tiny per-link growth: nested bands never share planes
         box(name, (-4.5, -4.5, -3), (9, 9, max(3, Lb // 2 + 3)), mat=skin_mat, name='tube', inflate=ti)
         box(name, (-3.5, -3.5, Lb // 2 - 1), (7, 7, Lb - Lb // 2 + 3), mat=skin_mat, name='pinch', inflate=ti)
@@ -1130,17 +1464,16 @@ def build():
             rz = 0.3 + q * 2.0 if nrib == 2 else 0.8
             box(name, (-5.5, -5.5, rz), (11, 5, 1), mat=rib_mat, name='rib', inflate=ti * 0.5)
         box(name, (-1, -6, -1), (2, 3, Lb + 2), mat=spine_mat, name='spine', inflate=ti * 0.5)
-        last = name == 'hips'
+        last = name == 'link_7'
         z0 = float(Lb)
         box(name, (-W / 2, -Hh / 2 + 1, z0), (W, Hh - 2, Lf), name='core', inflate=infl, tear=(True, not last), drip=drip)
         box(name, (-W / 2 + 2, -Hh / 2, z0 + 0.5), (W - 4, 1, Lf - 1), name='cap', inflate=infl, tear=(True, not last))
         box(name, (-W / 2 + 2, Hh / 2 - 1, z0 + 0.5), (W - 4, 1, Lf - 1), name='keel', inflate=infl, tear=(True, not last))
         if last:
             box(name, (-W / 2 + 2, -Hh / 2 + 2, z0 + Lf), (W - 4, Hh - 4, 1), name='rump', inflate=infl)
-        pz = float(Lb + Lf)
 
-    # broken ribs piercing the skin (seg3 band right flank, seg5 band left top)
-    for bn, lp in (('seg3', (-4.0, -4.0, 1.0)), ('seg5', (3.0, -4.0, 4.0))):
+    # broken ribs piercing the skin (link_3 band right flank, link_5 band left top)
+    for bn, lp in (('link_3', (-4.0, -4.0, 1.0)), ('link_5', (3.0, -4.0, 4.0))):
         box(bn, (lp[0], lp[1] - 6.0, lp[2]), (1, 6, 1), mat=spike_mat, name='spike')
         p = b.r.abs_pivot[bn]
         SPIKES.append((bn, p[0] + lp[0] + 0.5, p[1] - 4.6, p[2] + lp[2] + 0.5))
@@ -1148,9 +1481,9 @@ def build():
     # ---------------- the two real dachshund front legs (planted, bowed in, paws turned out)
     for side, sx in (('right', -1), ('left', 1)):
         lb, pb = f'front_{side}_leg', f'front_{side}_paw'
-        Sw = b.wpos('seg1', (4.5 * sx, 3.0, 6.0))
+        Sw = b.wpos('link_1', (4.5 * sx, 3.0, 6.0))
         Rl = R_deg(0, 0, 5 * sx)
-        b.bone(lb, 'seg1', Sw, Rl, mat=leg_fur)
+        b.bone(lb, 'link_1', Sw, Rl, mat=leg_fur)
         Lleg = (21.0 - Sw[1]) / math.cos(math.radians(5))
         box(lb, (-2.5, -1, -2.5), (5, 6, 5), name='shoulder')
         box(lb, (-2, 4, -2), (4, int(math.ceil(Lleg - 3)), 4), name='leg')
@@ -1160,17 +1493,22 @@ def build():
         box(pb, (-2.5, 0, -4), (5, 3, 6), name='paw')
         box(pb, (-2, 1, -5), (4, 2, 1), name='toes')
 
-    # ---------------- neck: stretched skin with trachea rings, the celeste collar and its brass tag
-    b.lbone('neck', 'seg1', (0.0, -2.0, 0.0), rot=(-35, 0, -CHEST_ROLL * 0.6), mat=neck_mat)
-    box('neck', (-4.5, -5, -13), (9, 9, 16), name='tube')
-    for z in (-7.0, -4.0):
+    # ---------------- link_0 (top-level, pivot at the head joint): the neck runs back from it to the chest socket
+    Rn, Hj, Rh = neck_fk(R1, P1)
+    b.bone('link_0', None, Hj, np.eye(3))
+    b.bone('neck', 'link_0', Hj, Rn, mat=neck_mat)
+    box('neck', (-4.5, -5, -2), (9, 9, 16), name='tube')
+    for z in (8.0, 11.0):
         box('neck', (-5.5, -6, z), (11, 6, 1), name='ring')
-    box('neck', (-5.5, -6, -11.5), (11, 11, 2), mat=collar_mat, name='collar')
-    box('neck', (-1, 5, -10.5), (2, 3, 0), mat=collar_mat, name='tag')
+    box('neck', (-5.5, -6, COLLAR_Z), (11, 11, 2), mat=collar_mat, name='collar')
+    # the big brass 'CHORIPAN' tag hanging from the collar ring (its own bone: it swings)
+    Tw = b.wpos('neck', (0.0, 5.6, COLLAR_Z + 1.0))
+    b.bone('tag', 'neck', Tw, np.eye(3), mat=tag_mat)
+    box('tag', (-1, -0.5, -0.5), (2, 2, 1), name='ring')
+    box('tag', (-TAG_W / 2, 1.2, -0.5), (TAG_W, TAG_H, 1), name='plate')
 
-    # ---------------- head (pivot at the neck joint, under the back of the skull); level, with a dog tilt
-    Hp = b.wpos('neck', (0.0, 0.0, -11.0))
-    b.bone('head', 'neck', Hp, R_deg(0, 0, HEAD_TILT), mat=skull_mat)
+    # ---------------- head (pivot = link_0 pivot, under the back of the skull); level, with a dog tilt
+    b.bone('head', 'link_0', Hj, Rh, mat=skull_mat)
     hp = b.r.abs_pivot['head']
     box('head', (-9, -16, -14), (18, 10, 14), name='skull', hp=hp)
     box('head', (-7, -17, -12), (14, 1, 10), name='dome', hp=hp)
@@ -1233,16 +1571,28 @@ def build():
         b.lbone(tb, eb, (0, 16, 0), rot=(-7, 0, 6 * sx), mat=ear_mat)
         box(tb, (-1, 0, -4), (2, 21, 8), name='ear_tip', sx=sx)
 
+    # ---------------- toggles on the head: the black vomit column and the caught choripan
+    b.lbone('vomit', 'head', (0.0, 0.0, -14.0), rot=(-90, 0, 0), mat=vomit_mat)
+    vl = int(VOMIT_LEN)
+    box('vomit', (-3.5, -3, -3.5), (7, 8, 7), name='gush', decals=vomit_glow('gush', (7, 8, 7)))
+    box('vomit', (-2.5, 4, -2.5), (5, vl - 4, 5), name='stream', inflate=0.2, decals=vomit_glow('stream', (5, vl - 4, 5)))
+    box('vomit', (-9, vl - 1.0, -9), (18, 1, 18), name='puddle')
+    box('vomit', (-6, vl - 6.5, 0.3), (12, 6, 0), name='splash')
+    box('vomit', (0.3, vl - 6.5, -6), (0, 6, 12), name='splash')
+    b.lbone('choripan', 'head', MOUTH, rot=(0, 0, 0), mat=chori_mat)
+    box('choripan', (-7, -1.5, -2.5), (14, 4, 5), name='bun', decals=chori_glow())
+    box('choripan', (-8.5, -2.6, -1.5), (17, 3, 3), name='sausage')
+
     # ---------------- tail: big enough to read, carried high and curved up, tan tip -- it still wags
-    Lb, Lf = LINK['hips'][2], LINK['hips'][3]
-    b.lbone('tail', 'hips', (0, -3.5, Lb + Lf - 1.0), rot=(48, 0, 0), mat=tail_mat)
+    Lb, Lf = LINK['link_7'][2], LINK['link_7'][3]
+    b.lbone('tail', 'link_7', (0, -3.5, Lb + Lf - 1.0), rot=(48, 0, 0), mat=tail_mat)
     box('tail', (-2, -2, 0), (4, 4, 12), name='base')
     b.lbone('tail_tip', 'tail', (0, 0, 11.5), rot=(26, 0, 0), mat=tail_mat)
     box('tail_tip', (-1.5, -1.5, 0), (3, 3, 10), name='tip')
 
     # ---------------- sweater shreds hanging off the spine (band + two strips, one with a loose yarn end)
-    shreds = [('shred_1', 'seg2', 9.0, 11, 7), ('shred_2', 'seg3', 10.0, 8, 13),
-              ('shred_3', 'seg4', 9.0, 13, 6), ('shred_4', 'seg5', 11.0, 6, 11)]
+    shreds = [('shred_1', 'link_2', 9.0, 11, 7), ('shred_2', 'link_3', 10.0, 8, 13),
+              ('shred_3', 'link_4', 9.0, 13, 6), ('shred_4', 'link_5', 11.0, 6, 11)]
     for k, (name, par, zc, lr, ll) in enumerate(shreds):
         W, Hh, infl = LINK[par][4], LINK[par][5], LINK[par][6]
         top = -Hh / 2 - infl
@@ -1326,8 +1676,9 @@ def build():
             box(hb, (3.6 if inner > 0 else -5.6, 1, -4), (2, 2, 3), name='thumb', tip='front')
         ARM_GEOM[(idx, side)] = dict(L1=L1, L2=L2, L3=L3, jointed=J is not None)
 
-    m = Model('choripan_demonio', 256, 256, b.r.roots)
+    m = ChoriModel('choripan_demonio', 256, 256, b.r.roots)
     m.scale = 0.5
+    m.visible = visible_set(_argv('--pose'))
     return m
 
 
@@ -1337,12 +1688,33 @@ def EAR_WORLD(sx):
 
 
 # ------------------------------------------------------------------ pose kit (world-space posing)
+def look_rot(f, up=(0.0, -1.0, 0.0)):
+    """World rotation whose local +Z points along f and whose local -Y (the back) is as close as possible to `up`."""
+    z = np.asarray(f, float)
+    z = z / np.linalg.norm(z)
+    u = np.asarray(up, float)
+    u = u - z * float(u @ z)
+    u = u / max(1e-9, float(np.linalg.norm(u)))
+    y = -u
+    x = np.cross(y, z)
+    return np.column_stack([x, y, z])
+
+
+def yaw_of(R):
+    """Heading (deg) of a frame's -Z axis, as a yRot about the world Y axis."""
+    f = R @ np.array([0.0, 0.0, -1.0])
+    return math.degrees(math.atan2(-f[0], -f[2]))
+
+
 class Kit:
     def __init__(self):
         self.m = build()
         self.b = {bn.name: bn for bn in self.m.bones()}
         self.rest = {n: (bn.rot, bn.pivot) for n, bn in self.b.items()}
         self.d = {}
+        # effective forearm length (elbow -> wrist, through the extra joint of the broken arm)
+        self.l2eff = {key: float(np.linalg.norm(self.wpos(arm_names(*key)[3]) - self.wpos(arm_names(*key)[1])))
+                      for key in ARMS}
 
     def _apply(self, n):
         bn = self.b[n]
@@ -1413,6 +1785,54 @@ class Kit:
                 out[n] = tuple(math.radians(v) for v in d[:3]) + tuple(float(v) for v in d[3:])
         return out
 
+    # ---- the chain
+    def body(self, F):
+        """Place link_1..link_7 at world frames {link: (R, P)}."""
+        for n in BODY:
+            R, P = F[n]
+            self.set_world_rot(n, R)
+            self.set_world_pos(n, P)
+
+    def shift(self, dv):
+        """Move the whole creature (every top-level bone) by a world offset."""
+        for n in CHAIN:
+            P = self.wpos(n)
+            self.set_world_pos(n, P + np.asarray(dv, float))
+
+    def neck_head(self, F, Rn, Rh, slide=0.0):
+        """Neck leaving the chest socket with world rotation Rn (its -Z toward the head), head joint at
+        NECK_LEN + slide along it (link_0 moves there; its own rotation stays at rest), head world rot Rh."""
+        R1, P1 = F['link_1']
+        S = P1 + R1 @ np.array(NECK_SOCKET)
+        Hj = S + Rn @ np.array([0.0, 0.0, -(NECK_LEN + slide)])
+        self.set_world_pos('link_0', Hj)
+        self.set_world_rot('neck', Rn)
+        self.set_world_rot('head', Rh)
+        return Hj
+
+    def legacy_neck(self, F, neck_rel=(0, 0, 0), head_rel=(0, 0, 0), head_slide=(0, 0, 0)):
+        Rn, Hj, Rh = neck_fk(*F['link_1'], neck_rel, head_rel, head_slide)
+        self.set_world_pos('link_0', Hj)
+        self.set_world_rot('neck', Rn)
+        self.set_world_rot('head', Rh)
+
+    def face_yaw(self):
+        """Heading of the face: the head's -Z, or its chin direction when the head points straight up / down."""
+        Rh = self.R('head')
+        f = Rh @ np.array([0.0, 0.0, -1.0])
+        if math.hypot(f[0], f[2]) < 0.45:
+            f = Rh @ np.array([0.0, 1.0, 0.0]) * (1.0 if f[1] < 0 else -1.0)
+        return math.degrees(math.atan2(-f[0], -f[2]))
+
+    def hang_tag(self, swing=0.0, floor=23.6):
+        """The name tag hangs plumb from the collar ring, facing where the face faces (swing: xRot, + = lower edge
+        back).  If the ring is too low for it to hang free, it swings forward until it rests above the floor."""
+        yaw = self.face_yaw()
+        for k in range(40):
+            self.set_world_rot('tag', R_deg(0, yaw, 0) @ R_deg(swing - k * 4.0, 0, 0))
+            if self.lowest(['tag']) <= floor:
+                break
+
     # ---- limbs
     def arm(self, idx, side, W, pole, Hw):
         """IK: wrist pivot of arm (idx, side) onto world point W, elbow bent toward `pole`, hand world rot Hw."""
@@ -1432,15 +1852,58 @@ class Kit:
         self.set_world_rot(fb, dir_rot(W - E) @ Q.T)
         self.set_world_rot(hb, Hw)
 
-    def plant_arm(self, idx, side, xz, pole, yaw_deg, extra=None):
+    def fit_target(self, idx, side, W):
+        """Slide a wrist target horizontally (toward / away from the shoulder) until the arm can reach it without
+        locking straight or folding flat."""
+        g = ARM_GEOM[(idx, side)]
+        L2 = self.l2eff[(idx, side)]
+        lo, hi = abs(g['L1'] - L2) + 2.0, g['L1'] + L2 - 1.0
+        S = self.wpos(arm_names(idx, side)[0])
+        W = np.asarray(W, float).copy()
+        h = W - S
+        h[1] = 0.0
+        if np.linalg.norm(h) < 1e-6:
+            h = np.array([-1.0 if side == 'right' else 1.0, 0.0, 0.0])
+        h /= np.linalg.norm(h)
+        for _ in range(120):
+            dist = float(np.linalg.norm(W - S))
+            if dist < lo:
+                W += h * 0.5
+            elif dist > hi:
+                W -= h * 0.5
+            else:
+                break
+        return W
+
+    def plant_arm(self, idx, side, xz, pole, yaw_deg, extra=None, lift=0.0):
         spec = ARMS[(idx, side)]
-        W = np.array([xz[0], 24.0 - hand_drop(spec), xz[1]])
+        W = np.array([xz[0], 24.0 - hand_drop(spec) - lift, xz[1]])
+        W = self.fit_target(idx, side, W)
         Hw = R_deg(0, yaw_deg, 0) if extra is None else extra
         self.arm(idx, side, W, pole, Hw)
+        self.unfloor_arm(idx, side, W, pole, Hw)
+
+    def unfloor_arm(self, idx, side, W, pole, Hw, floor=24.0):
+        """Nothing of the arm may sink into the floor: lift the wrist target (and the elbow pole) until it clears."""
+        ab, fb, jb, hb = arm_names(idx, side)
+        parts = [n for n in (ab, fb, jb, hb) if n in self.b]
+        W = np.asarray(W, float).copy()
+        pole = np.asarray(pole, float).copy()
+        for it in range(20):
+            over = self.lowest(parts) - floor
+            if over <= 0.05:
+                break
+            if self.lowest([hb]) - floor > 0.05:
+                W[1] -= over
+            else:
+                pole[1] -= 0.6                                 # an elbow / extra joint dipping: bend it up more
+                if it >= 6:
+                    W[1] -= 1.0                                # ...and if that is not enough, lift the hand too
+            self.arm(idx, side, W, pole, Hw)
 
     def plant_leg(self, side, reach_deg, paw_yaw=None, bow=5.0):
-        """Front leg: swing it `reach_deg` (negative = forward) and lengthen nothing -- solve the swing so the
-        paw lands flat on the floor, keeping the requested direction as a hint."""
+        """Front leg: solve the swing so the paw lands flat on the floor; reach_deg only picks the direction
+        (negative = forward)."""
         sx = -1 if side == 'right' else 1
         lb, pb = f'front_{side}_leg', f'front_{side}_paw'
         S = self.wpos(lb)
@@ -1452,50 +1915,122 @@ class Kit:
             ang = 0.0
         else:
             ang = math.degrees(math.acos(max(-1.0, min(1.0, drop / L)))) * sgn
-        yaw = float(np.degrees(np.arctan2(self.R('seg1')[0, 2], self.R('seg1')[2, 2])))
+        yaw = float(np.degrees(np.arctan2(self.R('link_1')[0, 2], self.R('link_1')[2, 2])))
         self.set_world_rot(lb, R_deg(0, yaw, 0) @ R_deg(ang, 0, 0) @ R_deg(0, 0, bow * sx))
         py = -16 * sx if paw_yaw is None else paw_yaw
         self.set_world_rot(pb, R_deg(0, yaw + py, 0))
-        # residual (bow + rounding): nudge the paw pivot so it sits exactly on the floor
         P = self.wpos(pb)
         if abs(P[1] - 21.0) > 0.05:
             self.set_world_pos(pb, (P[0], 21.0, P[2]))
 
     def hang_ears(self, swing=0.0, clamp_y=23.4, splay=0.0):
-        Rh = self.R('head')
-        f = Rh @ np.array([0.0, 0.0, -1.0])
-        yaw = math.degrees(math.atan2(-f[0], -f[2]))
+        """Ears hang plumb (whatever the head does), swung by `swing` (xRot, + = lower ends back).  Where the floor is
+        in the way the leather first folds at the knee and the tip lies forward on the ground, and only then does the
+        whole ear splay out sideways."""
+        yaw = self.face_yaw()
         for side, sx in (('right', -1), ('left', 1)):
             eb, tb = f'{side}_ear', f'{side}_ear_tip'
+            tip0 = list(self.d.get(tb, [0.0] * 6))
+            Ry = R_deg(0, yaw, 0)
+            done = False
             for k in range(40):
                 out = splay + k * 3.0
-                self.set_world_rot(eb, R_deg(0, yaw, 0) @ R_deg(swing, 0, out * -sx) @ EAR_WORLD(sx))
-                if self.lowest([eb, tb]) <= clamp_y:
+                self.set(tb, *tip0)
+                self.set_world_rot(eb, Ry @ R_deg(swing, 0, out * -sx) @ EAR_WORLD(sx))
+                Rt0 = self.R(tb)
+                for q in range(24):
+                    if self.lowest([eb, tb]) <= clamp_y:
+                        done = True
+                        break
+                    if self.lowest([eb]) > clamp_y:
+                        break
+                    # fold the tip straight forward (about the face's own left-right axis) onto the floor
+                    self.set_world_rot(tb, Ry @ R_deg(-4.0 * (q + 1), 0, 0) @ Ry.T @ Rt0)
+                if done:
                     break
+
+    def unfloor(self, n, axis=0, step=-4.0, floor=23.8, tries=30):
+        """Rotate bone n about one local axis (deg steps) until it (with its children) clears the floor."""
+        names = [b.name for b in self.b[n].walk()]
+        for _ in range(tries):
+            if self.lowest(names) <= floor:
+                return
+            d = self.d.get(n, [0.0] * 6)
+            d[axis] += step
+            self.set(n, *d)
+
+    def flaps(self, up, lo, spread_up=0.0, spread_lo=0.0, twist_up=0.0, twist_lo=0.0):
+        """Open the four muzzle flaps: up/lo = hinge angle (deg), spread = sideways peel, twist = roll."""
+        self.set('jaw_upper_right', -up, spread_up, -twist_up)
+        self.set('jaw_upper_left', -up, -spread_up, twist_up)
+        self.set('jaw_lower_right', lo, spread_lo, twist_lo)
+        self.set('jaw_lower_left', lo, -spread_lo, -twist_lo)
+
+    def brows(self, rz, dy=0.0):
+        """rz > 0: inner ends up (sad / pleading); rz < 0: inner ends down (furious)."""
+        self.set('right_brow', 0, 0, rz, 0, dy, 0)
+        self.set('left_brow', 0, 0, -rz, 0, dy, 0)
+
+    def ground(self, names=None, floor=23.7):
+        """Shift the creature so the lowest point of `names` (default every link) rests on the floor."""
+        low = self.lowest(names or BODY)
+        self.shift((0.0, floor - low, 0.0))
+
+
+def gait(k, phase, stride=9.0, spread=17.0, lift=7.0, skip=()):
+    """Arms walking: each arm's hand target swings fore/aft along its link's heading by stride*cos(phase) and lifts
+    off the floor by lift*max(0, sin(phase)) (the hand in the air is mid-step)."""
+    for (idx, side), spec in ARMS.items():
+        if (idx, side) in skip:
+            continue
+        sx = -1 if side == 'right' else 1
+        ab = arm_names(idx, side)[0]
+        seg = spec['seg']
+        S = k.wpos(ab)
+        fwd = k.R(seg) @ np.array([0.0, 0.0, -1.0])
+        fwd[1] = 0.0
+        fwd /= np.linalg.norm(fwd)
+        outv = np.array([-fwd[2], 0.0, fwd[0]]) * -sx       # perpendicular, toward the arm's side
+        if float(outv @ (S - k.wpos(seg))) < 0:
+            outv = -outv
+        ph = math.radians(phase[(idx, side)])
+        W = S + outv * spread + fwd * (stride * math.cos(ph))
+        up = lift * max(0.0, math.sin(ph))
+        yaw = math.degrees(math.atan2(-fwd[0], -fwd[2])) + sx * -spec['yaw'] * 0.5
+        k.plant_arm(idx, side, (W[0], W[2]), (sx * 0.5, -1.0, 0.0), yaw, lift=up)
 
 
 def make_poses():
     poses = {}
+    poses['unspool'] = make_unspool()
+    poses['run'] = make_run()
+    poses['fetch_drop'] = make_fetch_drop()
+    poses['beg'] = make_beg()
+    poses['lunge'] = make_lunge()
+    poses['catch'] = make_catch()
+    poses['vomit'] = make_vomit()
+    poses['retract'] = make_retract()
+    poses['stretch'] = make_stretch()
+    poses['coil'] = make_coil()
+    return poses
 
-    # ------------------------------------------------ lunge
+
+# ------------------------------------------------------------------ lunge (ported)
+def make_lunge():
     k = Kit()
+    F = body_fk(rel={'link_2': (-6, 0, 0), 'link_3': (-2, 0, 0), 'link_4': (5, 0, 0), 'link_5': (4, 0, 0)},
+                root_pos=(0, 2.5, 0))
+    k.body(F)
+    k.legacy_neck(F, neck_rel=(27, 0, 0), head_rel=(-14, 0, -HEAD_TILT), head_slide=(0, 0, -3))
     k.set('jaw_upper_right', -28, 34, -12)
     k.set('jaw_upper_left', -28, -34, 12)
     k.set('jaw_lower_right', 34, 28, 14)
     k.set('jaw_lower_left', 34, -28, -14)
-    k.set('right_brow', 0, 0, -22, 0, 0.6, 0)
-    k.set('left_brow', 0, 0, 22, 0, 0.6, 0)
-    k.set('neck', 27, 0, 0)
-    k.set('head', -14, 0, -HEAD_TILT, 0, 0, -3)
+    k.brows(-22, 0.6)
     k.set('tongue', -8)
     k.set('tongue_tip', -34)
     k.set('right_ear_tip', 25)
     k.set('left_ear_tip', 25)
-    k.set('seg1', 0, 0, 0, 0, 2.5, 0)
-    k.set('seg2', -6)
-    k.set('seg3', -2)
-    k.set('seg4', 5)
-    k.set('seg5', 4)
     k.set('tail', 10, 26, 0)
     k.set('tail_tip', 0, 20, 0)
     k.plant_leg('right', -30)
@@ -1507,28 +2042,26 @@ def make_poses():
         S = k.wpos(arm_names(idx, side)[0])
         k.plant_arm(idx, side, (x, S[2] + dz), (sx * 0.6, -1.0, 0.0), yaw)
     k.hang_ears(50)
-    poses['lunge'] = k.table()
+    k.hang_tag(30)
+    return k.table()
 
-    # ------------------------------------------------ coil
+
+# ------------------------------------------------------------------ coil (ported)
+def make_coil():
     k = Kit()
-    yaw = [('seg2', 40), ('seg3', 32), ('seg4', 40), ('seg5', 32), ('seg6', 40), ('hips', 30)]
-    for q, (n, a) in enumerate(yaw):
-        k.set(n, -4 if q % 2 else 3, a, 0)
-    k.set('seg1', 0, 30, 0)
-    k.set('neck', -30, -55, 0)
-    k.set('head', 55, -20, 8 - HEAD_TILT)
-    k.set('jaw_upper_right', -16, 14, 0)
-    k.set('jaw_upper_left', -16, -14, 0)
-    k.set('jaw_lower_right', 20, 14, 0)
-    k.set('jaw_lower_left', 20, -14, 0)
-    k.set('right_brow', 0, 0, -16, 0, 0.5, 0)
-    k.set('left_brow', 0, 0, 16, 0, 0.5, 0)
+    yaw = [('link_2', 40), ('link_3', 32), ('link_4', 40), ('link_5', 32), ('link_6', 40), ('link_7', 30)]
+    rel = {n: (-4 if q % 2 else 3, a, 0) for q, (n, a) in enumerate(yaw)}
+    F = body_fk(rel=rel, root_rot=(0, 30, 0))
+    k.body(F)
+    k.legacy_neck(F, neck_rel=(-30, -55, 0), head_rel=(55, -20, 8 - HEAD_TILT))
+    k.flaps(16, 20, 14, 14)
+    k.brows(-16, 0.5)
     k.set('tail', 0, 40, 0)
     k.set('tail_tip', 0, 30, 0)
     k.set('tongue_tip', -10)
     k.plant_leg('right', -8)
     k.plant_leg('left', 8)
-    piv = [k.wpos(n) for n in ('seg1', 'seg2', 'seg3', 'seg4', 'seg5', 'seg6', 'hips')]
+    piv = [k.wpos(n) for n in BODY]
     cen = np.mean(np.array(piv), axis=0)
     for (idx, side), spec in ARMS.items():
         ab = arm_names(idx, side)[0]
@@ -1553,150 +2086,37 @@ def make_poses():
                     break
             k.plant_arm(idx, side, (Wt[0], Wt[2]), (0.0, -1.0, 0.0), bang + 180 - 25)
     k.hang_ears(0)
-    poses['coil'] = k.table()
-
-    # ------------------------------------------------ vomit
-    k = Kit()
-    k.set('jaw_upper_right', -30, 26, 10)
-    k.set('jaw_upper_left', -30, -26, -10)
-    k.set('jaw_lower_right', 34, 26, -8)
-    k.set('jaw_lower_left', 34, -26, 8)
-    k.set('right_brow', 0, 0, 14, 0, -0.5, 0)
-    k.set('left_brow', 0, 0, -14, 0, -0.5, 0)
-    k.set('neck', -24, 0, 0)
-    k.set('head', -30, 0, -HEAD_TILT)
-    k.set('tongue', 6)
-    k.set('tongue_tip', 20)
-    k.set('seg1', 0, 0, 0, 0, -1.5, 0)
-    k.set('seg2', 6)
-    k.set('seg3', 6)
-    k.set('seg4', -2)
-    k.set('seg5', -4)
-    k.set('tail', -20, 0, 0)
-    k.plant_leg('right', -12)
-    k.plant_leg('left', -12)
-    brace = {(1, 'right'): (-24, -6, 40), (1, 'left'): (22, -4, -30), (2, 'right'): (-25, 2, 20),
-             (2, 'left'): (23, 4, -150), (3, 'right'): (-23, 8, -20), (3, 'left'): (24, 10, 25)}
-    for (idx, side), (x, dz, yw) in brace.items():
-        sx = -1 if side == 'right' else 1
-        S = k.wpos(arm_names(idx, side)[0])
-        k.plant_arm(idx, side, (x, S[2] + dz), (sx * 0.4, -1.0, 0.0), yw)
-    k.hang_ears(10)
-    poses['vomit'] = k.table()
-
-    # ------------------------------------------------ beg (filled below)
-    poses['beg'] = make_beg()
-
-    # ------------------------------------------------ stretch
-    poses['stretch'] = make_stretch()
-    return poses
-
-
-def prayer_rot(sx, tilt=0.0):
-    """World rotation of a hand pressed palm-to-palm with its twin: fingers up, palm facing the midline."""
-    Rp = np.array([[0.0, -sx, 0.0], [0.0, 0.0, 1.0], [-sx, 0.0, 0.0]])
-    return R_deg(tilt, 0, 0) @ Rp
-
-
-BEG_CURL = [('seg2', 52), ('seg3', 50), ('seg4', 46), ('seg5', 44), ('seg6', 46), ('hips', 40)]
-
-
-def make_beg():
-    """THE gag: the 8-legged monster SITS and begs.  The chest stands straight up on the floor, the long body
-    curls round to its left on the ground like a sleeping cat's tail (bellies on the floor), so the rump and the
-    wagging tail end up beside the chest.  Stubby paws up at the chin with bent wrists, head tilt, sad brows,
-    the first pair of human hands pressed together 'por favor' under the chin, the rump's pair begging too,
-    the middle pair propped flat on the floor like a person sitting."""
-    k = Kit()
-    # chest vertical (front up), standing on its back end
-    k.set_world_rot('seg1', R_deg(-82, 0, 0))
-    axis_y = 24.0 - 6.3 - 0.45                         # link axis height so the bellies rest on the floor
-    p1 = np.array(k.rest['seg1'][1], float)
-    base = k.wpos('seg2')                               # chest back end (seg2 pivot) for the current pivot
-    k.set_world_pos('seg1', p1 + np.array([0.0, axis_y - base[1], -6.0 - (base[2] - p1[2])]))
-    # the body curls round on the floor to the dog's left (+X): level links, yawed progressively
-    heading = 0.0
-    for n, a in BEG_CURL:
-        heading += a
-        k.set_world_rot(n, R_deg(0, -heading, 0))
-    # bellies exactly on the floor (links differ in height a little)
-    for n, *_ in LINKS:
-        low = k.lowest([n])
-        k.add(n, dy=0.0)
-        if abs(low - 23.6) > 0.05:
-            k.add(n, dy=(23.6 - low) * 0.5)
-    # neck up and forward, head level with a big dog tilt, looking at you
-    k.set_world_rot('neck', R_deg(-62, 0, 0))
-    k.set_world_rot('head', R_deg(0, 6, 0) @ R_deg(0, 0, 21) @ R_deg(8, 0, 0))
-    k.set('jaw_upper_right', -4, 3, 0)
-    k.set('jaw_upper_left', -4, -3, 0)
-    k.set('jaw_lower_right', 9, 6, 0)
-    k.set('jaw_lower_left', 9, -6, 0)
-    k.set('right_brow', 0, 0, 14, 0, -0.6, 0)
-    k.set('left_brow', 0, 0, -14, 0, -0.6, 0)
-    k.set('tongue', 10, 6, 0)
-    k.set('tongue_tip', 18, 10, 0)
-    # stubby front paws raised to the chin, wrists bent down
-    for side, sx in (('right', -1), ('left', 1)):
-        lb, pb = f'front_{side}_leg', f'front_{side}_paw'
-        k.set_world_rot(lb, R_deg(0, 0, 10 * sx) @ R_deg(-150, 0, 0))
-        k.set_world_rot(pb, R_deg(0, 0, 6 * sx) @ R_deg(-40, 0, 0))
-    # pair 1: human palms pressed together 'por favor' under the chin, in front of the chest
-    chin = k.wpos('head', (0.0, 6.0, -10.0))
-    for side, sx in (('right', -1), ('left', 1)):
-        W = np.array([0.0 + sx * 1.0, chin[1] + 9.0, chin[2] - 2.0])
-        k.arm(1, side, W, (sx * 1.0, 0.2, 0.3), prayer_rot(sx, -12))
-    # pair 3 (the rump, beside the chest): begging too, a second pair of praying hands
-    hp = k.wpos('hips', (0.0, -6.0, LINK['hips'][2] + 4.0))
-    for side, sx in (('right', -1), ('left', 1)):
-        W = np.array([hp[0] + sx * 1.0, hp[1] - 10.0, hp[2] - 6.0])
-        k.arm(3, side, W, (sx * 1.0, 0.3, 0.6), prayer_rot(sx, -20))
-    # pair 2: propped flat on the floor, splayed out like a person sitting
-    for side, sx in (('right', -1), ('left', 1)):
-        S = k.wpos(arm_names(2, side)[0])
-        out = k.R('seg5') @ np.array([sx * 1.0, 0.0, 0.3])
-        out[1] = 0.0
-        out = out / np.linalg.norm(out)
-        g = ARM_GEOM[(2, side)]
-        W = S + out * 22.0
-        yaw = math.degrees(math.atan2(-out[0], -out[2]))
-        k.plant_arm(2, side, (W[0], W[2]), (0.0, -1.0, 0.0), yaw)
-    # the tail stands up beside the chest, wagging hard
-    k.set_world_rot('tail', R_deg(0, 30, 0) @ R_deg(-70, 0, 0))
-    k.set('tail_tip', 20, 0, 25)
-    k.hang_ears(0)
+    k.hang_tag()
     return k.table()
 
 
+# ------------------------------------------------------------------ stretch (ported)
 def make_stretch():
     """The transformation, w = 1 = compressed: every link telescopes into the one in front (only ~4 texels of
     each fur link still show), the compressed body slopes from the chest down to the rump sitting on the floor
     (a sitting dachshund), the neck telescopes in and the six arms are folded tight along the flanks."""
     k = Kit()
     vis = 4.0
-    prev = 'seg1'
-    for n, par, Lb, Lf, *_ in LINKS:
-        k.set(n, -LINK[n][7], 0, 0, 0, 0, vis - Lb - Lf)            # cancel the hunch pitch, slide in
-        prev = n
-    k.add('seg2', rx=0.0, rz=0.0)
-    # slope the whole telescope down so the rump sits on the floor
+    rel = {n: (-LINK[n][7], 0, 0) for n, *_ in LINKS}
+    slide = {n: (0, 0, vis - LINK[n][2] - LINK[n][3]) for n, *_ in LINKS}
     lo, hi = -40.0, 0.0
     for _ in range(30):
         mid = (lo + hi) / 2
-        k.set('seg2', -LINK['seg2'][7] + mid, 0, 0, 0, 0, vis - LINK['seg2'][2] - LINK['seg2'][3])
-        if k.lowest(['hips']) > 23.6:
+        rel['link_2'] = (-LINK['link_2'][7] + mid, 0, 0)
+        k.body(body_fk(rel=rel, slide=slide))
+        if k.lowest(['link_7']) > 23.6:
             lo = mid
         else:
             hi = mid
-    k.set('head', 0, 0, 0, 0, 0, 7.0)
+    F = body_fk(rel=rel, slide=slide)
+    k.body(F)
+    k.legacy_neck(F, head_slide=(0, 0, 7.0))
     k.set('tail', -30, 0, 0)
-    # arms folded tight along the flanks, hands on the floor beside the sitting body
     for (idx, side), spec in ARMS.items():
         sx = -1 if side == 'right' else 1
         ab = arm_names(idx, side)[0]
         S = k.wpos(ab)
-        seg = spec['seg']
-        fwd = k.R(seg) @ np.array([0.0, 0.0, 1.0])
+        fwd = k.R(spec['seg']) @ np.array([0.0, 0.0, 1.0])
         fwd[1] = 0
         fwd /= np.linalg.norm(fwd)
         g = ARM_GEOM[(idx, side)]
@@ -1708,9 +2128,314 @@ def make_stretch():
         yaw = math.degrees(math.atan2(-fwd[0], -fwd[2])) + 180 + sx * 20
         k.plant_arm(idx, side, (W[0], W[2]), (sx * 0.3, -1.0, 0.0), yaw)
     k.hang_ears(0)
+    k.hang_tag()
+    return k.table()
+
+
+# ------------------------------------------------------------------ run
+def make_run():
+    """Full chase gallop: the chain low and long, snaking in an S behind the head, the neck thrust forward, ears
+    streaming back, the tongue flapping out of the side of the mouth, the six arms caught mid-stride in a centipede
+    wave (two hands in the air), one stubby front paw tucked up."""
+    k = Kit()
+    ang = {'link_1': (-4, -8), 'link_2': (5, 8), 'link_3': (6, 20), 'link_4': (-5, 10), 'link_5': (-10, -10),
+           'link_6': (2, -20), 'link_7': (9, -8)}
+    F = body_world((0.0, 5.5, -38.0), ang)
+    k.body(F)
+    k.neck_head(F, wdir(-14, -8), R_deg(0, -10, 0) @ R_deg(-4, 0, 0))
+    k.flaps(9, 16, 6, 6)
+    k.brows(-14, 0.4)
+    k.set('tongue', 14, 58, 0)
+    k.set('tongue_tip', -40, 96, -18)
+    k.set('tail', -6, -26, 0)
+    k.set('tail_tip', 6, -24, 0)
+    k.plant_leg('left', 20)
+    lb, pb = 'front_right_leg', 'front_right_paw'
+    yaw = yaw_of(k.R('link_1'))
+    k.set_world_rot(lb, R_deg(0, yaw, 0) @ R_deg(-55, 0, 0) @ R_deg(0, 0, -6))
+    k.set_world_rot(pb, R_deg(0, yaw, 0) @ R_deg(50, 0, 0))
+    phase = {(1, 'right'): 0, (1, 'left'): 180, (2, 'right'): 230, (2, 'left'): 50,
+             (3, 'right'): 100, (3, 'left'): 280}
+    gait(k, phase, stride=12.0, spread=17.0, lift=9.0)
+    k.hang_ears(62)
+    k.hang_tag(55)
+    return k.table()
+
+
+# ------------------------------------------------------------------ fetch_drop
+def make_fetch_drop():
+    """'Te lo trae y te lo deja en los pies': a play bow.  The chest drops low on its forelegs (planted far forward),
+    the rump stays up with the tail high and swept to one side (wagging), the neck reaches forward and down and the
+    head hangs a hand above the floor, tilted, looking up at you from under puppy brows, the lower flaps just parted
+    so the fetched item falls out at the player's feet (MOUTH point), the ears flopped on the floor."""
+    k = Kit()
+    ang = {'link_1': (14, 0), 'link_2': (20, 4), 'link_3': (12, 6), 'link_4': (2, 4), 'link_5': (-10, 0),
+           'link_6': (-4, -4), 'link_7': (8, -6)}
+    F = body_world((0.0, 9.5, -32.0), ang)
+    k.body(F)
+    k.neck_head(F, wdir(-2, 0), R_deg(0, 0, -16) @ R_deg(16, 0, 0))
+    k.flaps(1, 13, 2, 8)
+    k.brows(16, -0.7)
+    k.set('tongue', 16, 8, 0)
+    k.set('tongue_tip', -20, 0, -10)
+    k.unfloor('tongue_tip', 0, -5.0)
+    k.set('tail', -16, 34, 0)
+    k.set('tail_tip', 10, 26, 0)
+    k.plant_leg('right', -60, paw_yaw=8)
+    k.plant_leg('left', -60, paw_yaw=-8)
+    reach = {(1, 'right'): (-23, -8, 30), (1, 'left'): (22, -6, -24), (2, 'right'): (-24, 2, 10),
+             (2, 'left'): (22, 6, -160), (3, 'right'): (-20, 8, 20), (3, 'left'): (21, 10, -20)}
+    for (idx, side), (x, dz, yw) in reach.items():
+        sx = -1 if side == 'right' else 1
+        S = k.wpos(arm_names(idx, side)[0])
+        k.plant_arm(idx, side, (x, S[2] + dz), (sx * 0.6, -1.0, 0.0), yw)
+    k.hang_ears(0)
+    k.hang_tag(-20)
+    return k.table()
+
+
+# ------------------------------------------------------------------ beg
+def make_beg():
+    """THE gag: 'pide sentado sobre los seis brazos'.  The rump sits on the floor, tail out behind it wagging, and the
+    whole sausage body stands straight up out of it like a meerkat -- a 3.5-block begging tower -- with the chest on
+    top, the stubby dachshund paws held up and bent at the wrist (the dachshund 'sit pretty'), the head tilted down
+    at you with sad puppy brows.  The middle pair of human hands is pressed together 'por favor' in front of the
+    chest; the lower two pairs are planted round the base like the legs of a stool: it is sitting on its arms."""
+    k = Kit()
+    ang = {'link_1': (-84, 0), 'link_2': (-87, 0), 'link_3': (-88, 0), 'link_4': (-84, 0), 'link_5': (-70, 0),
+           'link_6': (-38, 0), 'link_7': (-2, 0)}
+    F = body_world((0.0, -40.0, -14.0), ang)
+    k.body(F)
+    k.ground(['link_7', 'link_6'], 23.8)
+    F = {n: (k.R(n), k.wpos(n)) for n in BODY}
+    # the base: center the tower over the origin
+    k.shift((0.0, 0.0, -float(F['link_5'][1][2]) - 6.0))
+    F = {n: (k.R(n), k.wpos(n)) for n in BODY}
+    k.neck_head(F, wdir(-20, 0), R_deg(0, 4, 0) @ R_deg(0, 0, 20) @ R_deg(26, 0, 0))
+    k.flaps(3, 10, 2, 6)
+    k.brows(15, -0.7)
+    k.set('tongue', 14, 6, 0)
+    k.set('tongue_tip', 18, 10, 0)
+    # stubby front paws up, bent down at the wrist
+    for side, sx in (('right', -1), ('left', 1)):
+        lb, pb = f'front_{side}_leg', f'front_{side}_paw'
+        k.set_world_rot(lb, R_deg(0, 0, 14 * sx) @ R_deg(-112, 0, 0))
+        k.set_world_rot(pb, R_deg(0, 10 * sx, 0) @ R_deg(62, 0, 0))
+    # pair 1: human palms pressed together 'por favor' in front of the chest, under the paws
+    ch = k.wpos('link_1', (0.0, 9.0, 8.0))
+    for side, sx in (('right', -1), ('left', 1)):
+        W = np.array([sx * 1.0, ch[1] + 2.0, ch[2] - 2.0])
+        k.arm(1, side, W, (sx * 1.0, 0.4, 0.2), prayer_rot(sx, -8))
+    # pairs 2 and 3: planted round the base, elbows out: it sits on its arms
+    base = k.wpos('link_6')
+    spots = {(2, 'right'): (-22, -14, 34), (2, 'left'): (22, -12, -150), (3, 'right'): (-24, 10, -20),
+             (3, 'left'): (25, 14, 25)}
+    for (idx, side), (x, dz, yw) in spots.items():
+        sx = -1 if side == 'right' else 1
+        k.plant_arm(idx, side, (x, base[2] + dz), (sx * 1.0, -0.8, 0.0), yw)
+    k.set('tail', -40, 30, 0)
+    k.set('tail_tip', 20, 20, 0)
+    k.hang_ears(0)
+    k.hang_tag(-10)
+    return k.table()
+
+
+def prayer_rot(sx, tilt=0.0):
+    """World rotation of a hand pressed palm-to-palm with its twin: fingers up, palm facing the midline."""
+    Rp = np.array([[0.0, -sx, 0.0], [0.0, 0.0, 1.0], [-sx, 0.0, 0.0]])
+    return R_deg(tilt, 0, 0) @ Rp
+
+
+# ------------------------------------------------------------------ catch
+def make_catch():
+    """It catches the blessed choripan in the air: the chest rears up off its stubby forelegs, the neck goes straight
+    up and the head points at the sky with the four flaps peeled wide open like a flower, the choripan (toggle) just
+    dropping in between the needle teeth, the black tongue lolling out over the lower flaps, every hand braced for
+    the jump, tail wagging."""
+    k = Kit()
+    ang = {'link_1': (-34, 0), 'link_2': (-14, 2), 'link_3': (4, 4), 'link_4': (-6, 2), 'link_5': (-12, 0),
+           'link_6': (4, -2), 'link_7': (12, -4)}
+    F = body_world((0.0, -2.0, -34.0), ang)
+    k.body(F)
+    k.neck_head(F, wdir(-70, 0), R_deg(0, 0, -6) @ R_deg(-84, 0, 0))
+    k.set('jaw_upper_right', -40, 40, -16)
+    k.set('jaw_upper_left', -40, -40, 16)
+    k.set('jaw_lower_right', 44, 34, 18)
+    k.set('jaw_lower_left', 44, -34, -18)
+    k.brows(10, -1.0)
+    k.set('tongue', 40, 50, 0)
+    k.set('tongue_tip', 20, 0, -18)
+    # the choripan falls in crosswise, its split top (the chorizo) turned to the camera
+    k.set_world_rot('choripan', R_deg(0, 0, 8) @ R_deg(78, 0, 0))
+    k.set_world_pos('choripan', k.wpos('head', (0.0, -0.5, -21.0)))
+    # forelegs dangling forward off the ground (it jumped)
+    for side, sx in (('right', -1), ('left', 1)):
+        lb, pb = f'front_{side}_leg', f'front_{side}_paw'
+        k.set_world_rot(lb, R_deg(0, 0, 10 * sx) @ R_deg(-40, 0, 0))
+        k.set_world_rot(pb, R_deg(30, 0, 0))
+    reach = {(1, 'right'): (-25, -12, 40), (1, 'left'): (23, -10, -24), (2, 'right'): (-26, 0, 14),
+             (2, 'left'): (22, 4, -156), (3, 'right'): (-22, 10, 22), (3, 'left'): (23, 12, -22)}
+    for (idx, side), (x, dz, yw) in reach.items():
+        sx = -1 if side == 'right' else 1
+        S = k.wpos(arm_names(idx, side)[0])
+        k.plant_arm(idx, side, (x, S[2] + dz), (sx * 0.7, -1.0, 0.0), yw)
+    k.set('tail', -10, 32, 0)
+    k.set('tail_tip', 10, 26, 0)
+    k.hang_ears(0)
+    k.hang_tag(15)
+    return k.table()
+
+
+# ------------------------------------------------------------------ vomit
+def make_vomit():
+    """Retching: the back arches up into a hump like a sick cat, every arm locks out stiff and wide, the neck juts
+    forward and the head hangs nose-down with the four flaps peeled open toward the floor and the tongue hanging out,
+    and the black column (toggle 'vomit') pours straight down out of the mouth into a splashing puddle."""
+    global VOMIT_LEN
+    k = Kit()
+    ang = {'link_1': (8, 0), 'link_2': (24, 0), 'link_3': (14, 0), 'link_4': (-6, 0), 'link_5': (-22, 0),
+           'link_6': (-12, 0), 'link_7': (6, 0)}
+    F = body_world((0.0, 4.5, -32.0), ang)
+    k.body(F)
+    k.neck_head(F, wdir(-40, 0), R_deg(0, 0, 6) @ R_deg(44, 0, 0))
+    k.flaps(30, 32, 26, 24, 10, -8)
+    k.brows(14, -0.5)
+    k.set('tongue', 22, 20, 0)
+    k.set('tongue_tip', -10, 0, -18)
+    k.unfloor('tongue_tip', 0, -6.0)
+    k.set('tail', -26, 0, 0)
+    k.set('tail_tip', -10, 0, 0)
+    k.plant_leg('right', -14)
+    k.plant_leg('left', -14)
+    brace = {(1, 'right'): (-26, -8, 40), (1, 'left'): (24, -6, -30), (2, 'right'): (-27, 2, 20),
+             (2, 'left'): (25, 4, -150), (3, 'right'): (-25, 8, -20), (3, 'left'): (26, 10, 25)}
+    for (idx, side), (x, dz, yw) in brace.items():
+        sx = -1 if side == 'right' else 1
+        S = k.wpos(arm_names(idx, side)[0])
+        k.plant_arm(idx, side, (x, S[2] + dz), (sx * 0.4, -1.0, 0.0), yw)
+    # the column hangs plumb from inside the mouth; its length lands the puddle on the floor
+    k.set_world_rot('vomit', R_deg(0, k.face_yaw(), 0))
+    top = k.wpos('vomit')
+    VOMIT_LEN = int(round(24.0 - float(top[1])))
+    k.hang_ears(0)
+    k.hang_tag(0)
+    return k.table()
+
+
+# ------------------------------------------------------------------ retract
+def make_retract():
+    """'Se enrolla como un metro': the tape measure snapping home.  Every link telescopes back into the one behind
+    it toward the rump (only ~3 texels of fur per link still show), the compressed body sits low, the head is yanked
+    back onto the chest (neck telescoped), ears flung forward by the whiplash, flaps snapped shut, brows shot up,
+    tongue sucked in, the six arms folding in tight against the flanks with the elbows jutting above the back, tail
+    straight up (boing)."""
+    k = Kit()
+    vis = 3.0
+    slide = {n: LINK_LEN[p] - vis for n, p in zip(BODY[1:], BODY[:-1])}
+    ang = {'link_1': (-10, 0), 'link_2': (-6, 0), 'link_3': (-3, 0), 'link_4': (0, 0), 'link_5': (2, 0),
+           'link_6': (3, 0), 'link_7': (4, 0)}
+    F = body_world((0.0, 0.0, 0.0), ang, slide)
+    # pin the rump where it is at rest (the housing of the tape measure) and sit it on the floor
+    rest7 = body_fk()['link_7'][1]
+    off = rest7 - F['link_7'][1]
+    F = {n: (R, P + off) for n, (R, P) in F.items()}
+    k.body(F)
+    k.ground(BODY, 23.6)
+    F = {n: (k.R(n), k.wpos(n)) for n in BODY}
+    k.neck_head(F, wdir(-60, 0), R_deg(-16, 0, 0), slide=-7.0)
+    k.flaps(-3, -4)
+    k.brows(8, -1.4)
+    k.set('tongue', -6, 13, 0, 0, 0, 12.0)
+    k.set('tongue_tip', -62, 10, -18)
+    k.set('tail', -48, 0, 0)
+    k.set('tail_tip', -26, 0, 0)
+    k.plant_leg('right', -10)
+    k.plant_leg('left', -10)
+    for (idx, side), spec in ARMS.items():
+        sx = -1 if side == 'right' else 1
+        ab = arm_names(idx, side)[0]
+        S = k.wpos(ab)
+        g = ARM_GEOM[(idx, side)]
+        fwd = k.R(spec['seg']) @ np.array([0.0, 0.0, -1.0])
+        fwd[1] = 0.0
+        fwd /= np.linalg.norm(fwd)
+        W = S + np.array([sx * 6.0, 0.0, 0.0]) + fwd * (idx - 2) * 3.0
+        W[1] = 24.0 - hand_drop(spec)
+        need = abs(g['L1'] - g['L2']) + 1.0
+        if np.linalg.norm(W - S) < need:
+            W = S + (W - S) / np.linalg.norm(W - S) * need
+            W[1] = 24.0 - hand_drop(spec)
+        yaw = math.degrees(math.atan2(-fwd[0], -fwd[2])) + sx * 70
+        k.plant_arm(idx, side, (W[0], W[2]), (sx * 0.25, -1.0, 0.0), yaw)
+    k.hang_ears(-55)
+    k.hang_tag(-35)
+    return k.table()
+
+
+# ------------------------------------------------------------------ unspool
+UNSPOOL_R = (15.0, 8.0)      # outer / inner radius of the coil standing in the doghouse door
+UNSPOOL_TURN = 1.15          # turns of the coil
+
+
+def make_unspool():
+    """Coming out of the cucha: the chest has crawled out flat on its belly (stubby paws stretched forward), the neck
+    rises and the head looks up at you, the flower just starting to open.  Everything behind the chest is still
+    wound up like a tape measure: a tall upright coil standing in the doghouse door (the links bent backwards round
+    it, a horrible back-bend), the six arms sticking out of both sides of the coil and planted on the floor like the
+    legs of a spider, the rump curled up at the hub with the tail poking out sideways, wagging."""
+    k = Kit()
+    r0, r1 = UNSPOOL_R
+    Phi = 2 * math.pi * UNSPOOL_TURN
+    phi0 = -0.35
+    R1 = wdir(-2, 0)
+    # the chest lies on the floor; its back end is where the coil starts (bottom-front of the coil)
+    P2y = 17.6 - r0 * (1 - math.cos(phi0))
+    P2 = np.array([0.0, P2y - 0.8, 6.0])                      # the door: the coil stands right behind the origin
+    P1 = P2 - R1 @ np.array([0.0, 0.0, LINK_LEN['link_1']])
+    C = P2 - r0 * np.array([0.0, math.cos(phi0), math.sin(phi0)])
+
+    def spiral(phi):
+        r = r0 - (r0 - r1) * max(0.0, phi - phi0) / Phi
+        return C + r * np.array([0.0, math.cos(phi), math.sin(phi)])
+
+    phi = phi0
+    pts = [spiral(phi)]
+    for n in BODY[1:-1]:
+        L = LINK_LEN[n]
+        p0 = pts[-1]
+        while np.linalg.norm(spiral(phi) - p0) < L:
+            phi += 0.002
+        pts.append(spiral(phi))
+    tail_dir = spiral(phi + 0.05) - spiral(phi)
+    F = {'link_1': (R1, P1)}
+    for q, n in enumerate(BODY[1:]):
+        a = pts[q]
+        d = (pts[q + 1] - a) if q + 1 < len(pts) else tail_dir
+        mid = a + d / np.linalg.norm(d) * 5.0
+        F[n] = (look_rot(d, C - mid), a)                       # backs turned in: bent backwards round the hub
+    k.body(F)
+    k.neck_head(F, wdir(-46, 0), R_deg(0, 0, 12) @ R_deg(-10, 0, 0))
+    k.flaps(7, 18, 10, 12)
+    k.brows(-8, 0.3)
+    k.set('tongue', 8, 13, 0)
+    k.set('tongue_tip', 10, 0, 0)
+    k.unfloor('tongue_tip', 0, -5.0)
+    k.plant_leg('right', -80, paw_yaw=10)
+    k.plant_leg('left', -80, paw_yaw=-10)
+    for (idx, side), spec in ARMS.items():
+        sx = -1 if side == 'right' else 1
+        ab = arm_names(idx, side)[0]
+        S = k.wpos(ab)
+        dz = {1: 6.0, 2: -10.0, 3: 2.0}[idx]
+        W = np.array([sx * (20.0 + idx * 1.5), 0.0, S[2] + dz])
+        yaw = -sx * 70.0 + (20.0 if idx == 2 else -10.0) * sx
+        k.plant_arm(idx, side, (W[0], W[2]), (sx * 1.0, -1.2, 0.0), yaw)
+    # the tail pokes out of the side of the coil's hub, up and toward the viewer's right, wagging
+    k.set_world_rot('tail', look_rot(np.array([0.75, -0.55, -0.35]), np.array([0.0, 0.0, -1.0])))
+    k.set('tail_tip', 22, 0, 0)
+    k.hang_ears(0)
+    k.hang_tag(-10)
     return k.table()
 
 
 POSES = make_poses()
-
-ANIM_NOTES = """(rewritten below)"""

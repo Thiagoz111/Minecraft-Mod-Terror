@@ -48,7 +48,15 @@ from lines import LINES  # noqa: E402
 REVIEW_DIR = os.environ.get(
     'DEADLINE_REVIEW_DIR',
     _os.path.join(WORK, 'audio/colegio_voices'))
+CASA_REVIEW_DIR = os.environ.get(
+    'DEADLINE_REVIEW_DIR',
+    _os.path.join(WORK, 'audio/casa_voices'))
 LINES_JSON = os.path.join(dsp.ROOT, 'src/main/resources/data/deadline/lines.json')
+
+
+def is_casa(lid):
+    """Case 2 lines: casa.* and the switchboard's warning for that case."""
+    return lid.startswith('casa.') or lid == 'operadora.casa_aviso'
 TWO_PI = 2 * np.pi
 PEAK_DB = -1.0
 
@@ -1034,11 +1042,822 @@ def vox_operadora(text, fx, seed, tw):
     return z, np.concatenate([np.zeros(n_of(0.08), np.float32), dry])
 
 
+# ====================================================================== CASE 2: CASA MORALES
+# Everything below is only used by casa.* lines (and operadora.casa_aviso, which reuses vox_operadora): the Colegio
+# presets above are untouched.
+CASA_RESPELL = [
+    (r'Temperley', 'Témperlei'),     # rioplatense stress on the first syllable (espeak stresses the last)
+    (r'ranked', 'ránket'),           # how a teen from the conurbano says it (espeak: 'raŋkˈed')
+]
+
+
+def say_c(text, voice='ef_dora', speed=0.9):
+    for a, b in CASA_RESPELL:
+        text = re.sub(a, b, text)
+    return say(text, voice, speed)
+
+
+# ---------------------------------------------------------------- the house, room by room
+LIVING_ER = [(3.1, 0.42), (5.3, 0.33), (7.9, 0.27), (10.8, 0.2), (14.1, 0.15), (18.6, 0.1)]
+KITCHEN_ER = [(2.4, 0.5), (4.1, 0.44), (6.3, 0.38), (8.8, 0.31), (11.9, 0.25), (15.6, 0.19), (20.3, 0.13), (26.0, 0.09)]
+BEDROOM_ER = [(2.7, 0.3), (4.8, 0.24), (7.2, 0.17), (10.1, 0.11)]
+HALL_ER = [(2.1, 0.45), (4.3, 0.3), (11.6, 0.32), (23.2, 0.25), (34.8, 0.19), (46.4, 0.14), (58.0, 0.1), (69.6, 0.07)]
+CLOSET_ER = [(0.8, 0.62), (1.3, 0.55), (1.9, 0.48), (2.6, 0.4), (3.4, 0.32), (4.3, 0.24), (5.3, 0.17)]
+UNDERBED_ER = [(0.6, 0.5), (1.1, 0.42), (1.7, 0.32), (2.5, 0.22), (3.4, 0.14)]
+CELLAR_ER = [(6.2, 0.42), (11.5, 0.36), (16.8, 0.31), (23.9, 0.26), (30.7, 0.21), (39.1, 0.16), (51.4, 0.12), (66.0, 0.08)]
+PATIO_ER = [(4.8, 0.3), (19.5, 0.26), (42.0, 0.15), (71.0, 0.07)]   # brick floor, house wall, medianera, next house
+
+
+def casa_room(x, where, seed, wet=None):
+    """The Morales house (all mono). Each line is placed where the beat happens (BIBLIA 2.2 h)."""
+    if where == 'living':      # 9x7 m, flowered sofa, carpetitas, curtains: short and soft
+        return space(x, 0.45, wet or 0.1, 5200, 0.003, LIVING_ER, 0.3, 160, seed)
+    if where == 'kitchen':     # green 70s tiles: a brighter, ringing early field
+        return space(x, 0.6, wet or 0.12, 7500, 0.002, KITCHEN_ER, 0.34, 200, seed)
+    if where == 'bedroom':     # small and full of fabric (the Nona's knitting, Lucía's canopy bed)
+        return space(x, 0.32, wet or 0.07, 4200, 0.002, BEDROOM_ER, 0.25, 160, seed)
+    if where == 'next_room':   # shouted from the next room, through the open door
+        y = dsp.lowpass(x, 5500, 2)
+        return space(y, 0.55, wet or 0.2, 3800, 0.008, LIVING_ER, 0.4, 180, seed)
+    if where == 'hall':        # upstairs corridor, 2x12 m: flutter between the long walls
+        return space(x, 0.85, wet or 0.14, 5000, 0.002, HALL_ER, 0.3, 200, seed)
+    if where == 'cellar':      # the 1961 room, 9x9x4 m: brick, sand floor
+        return space(x, 1.3, wet or 0.2, 3600, 0.012, CELLAR_ER, 0.3, 140, seed, build=0.02)
+    if where in ('patio', 'porch'):   # open air: no tail, a few discrete reflections, the barrio far away
+        return space(x, 0.9, wet or (0.035 if where == 'patio' else 0.05), 3200, 0.03, PATIO_ER, 0.42, 250, seed,
+                     build=0.06)
+    if where == 'closet':      # inside the 2x1 m wardrobe, packed with clothes: tiny box, the fabric eats the highs
+        y = space(x, 0.12, 0.2, 2500, 0.0, CLOSET_ER, 0.55, 120, seed)
+        y = dsp.peak(y, 215, 4.0, 3.0)
+        y = dsp.peak(y, 470, 3.0, 3.0)
+        y = dsp.peak(y, 1500, -2.0, 1.5)
+        return dsp.lowpass(y, 2900, 2)
+    if where == 'underbed':    # Lucía hiding under her bed: slats and mattress 30 cm above her mouth
+        y = space(x, 0.1, 0.12, 4000, 0.0, UNDERBED_ER, 0.45, 150, seed)
+        y = dsp.peak(dsp.lowpass(y, 5200, 2), 320, 3.0, 2.5)
+        return space(y, 0.32, 0.06, 4200, 0.004, BEDROOM_ER, 0.25, 160, seed + 1)
+    return x
+
+
+# ---------------------------------------------------------------- delivery helpers
+def effort(y, amount=1.0):
+    """Shouting: open jaw (F1 up), flatter spectral tilt, presence, saturated folds, compression."""
+    y = dsp.peak(y, 850, 3.0 * amount, 1.0)
+    y = shelf_hi(y, 1400, 7.0 * amount)
+    y = dsp.peak(y, 3000, 2.5 * amount, 1.6)
+    y = dsp.drive(norm(y, 1.0) * (1 + 0.7 * amount), 1 + 0.7 * amount)
+    return compress(y, -14, 3.5)
+
+
+def flatten(x, amount=0.5, seed=0, fmin=110.0, fmax=520.0):
+    """Pull the pitch contour toward its median (deadpan / slightly synthetic intonation)."""
+    c, f0 = track_f0(x, fmin, fmax)
+    v = f0 > 0
+    if v.sum() < 6:
+        return x
+    med = float(np.median(f0[v]))
+    ratio = np.where(v, (med / np.maximum(f0, 1.0)) ** amount, 1.0)
+    alpha = np.interp(np.arange(len(x)), c, ratio)
+    marks, per, vf = pitch_marks(x, c, f0)
+    return psola(x, marks, per, vf, len(x), alpha, None, 0.004, 0.03, seed)
+
+
+def mouth_click(seed, amp=1.0):
+    """Lip / tongue smack before an old lady speaks (and the dentures)."""
+    r = dsp.rng(seed)
+    k = n_of(0.02)
+    c = fit(dsp.bandpass(dsp.noise(0.003, 'white', seed) * np.linspace(1, 0, n_of(0.003)) ** 2, 900, 5000, 2), k)
+    f = r.uniform(1500, 2400)
+    ring = np.sin(TWO_PI * f * taxis(k)) * np.exp(-taxis(k) * 260)
+    return norm(norm(c) + 0.5 * ring, amp)
+
+
+def rough_source(f0, n, seed, jitter=0.06, shimmer=0.3, sub=0.5, breath=0.5, fmax=5000.0):
+    """Glottal-ish source for growls: band-limited saw with period jitter, shimmer, sub-harmonic fry, pulsed breath."""
+    f0 = np.broadcast_to(np.asarray(f0, np.float64), (n,))
+    f = f0 * (1 + jitter * snoise(n, 70, seed + 1))
+    ph = np.cumsum(f) / SR + dsp.rng(seed).uniform(0, 1)
+    y = np.zeros(n)
+    for k in range(1, max(2, int(fmax / max(np.max(f), 1))) + 1):
+        y += np.sin(TWO_PI * k * ph) / k
+    y *= 1 + shimmer * snoise(n, 45, seed + 2)
+    if sub:
+        y += sub * 0.6 * np.sign(np.sin(np.pi * ph + 0.3))
+    if breath:
+        puls = 0.5 * (1 + np.cos(TWO_PI * ph)) ** 2
+        y += breath * dsp.highpass(dsp.rng(seed + 3).standard_normal(n).astype(np.float32), 600, 2) * (0.3 + puls) * \
+            np.std(y) * 2
+    return y.astype(np.float32)
+
+
+def crackle(n, seed, rate, lo=1500.0, hi=7000.0, size=1.0):
+    """Wet spitting crackle: Poisson pops (rate = events/s, number or per-sample) with heavy-tailed sizes."""
+    r = dsp.rng(seed)
+    lam = np.broadcast_to(np.asarray(rate, np.float64), (n,))
+    idx = np.nonzero(r.random(n) < lam / SR)[0]
+    imp = np.zeros(n, np.float32)
+    np.add.at(imp, idx, (r.pareto(2.2, len(idx)) + 0.3) * r.choice([-1.0, 1.0], len(idx)))
+    k = max(8, n_of(0.004 * size))
+    kern = r.standard_normal(k) * np.exp(-np.arange(k) / (k / 5))
+    y = signal.fftconvolve(imp, kern)[:n].astype(np.float32)
+    return dsp.bandpass(y, lo, hi, 2)
+
+
+def grill_fat(env, seed):
+    """Fat on a hot grill riding a voice envelope (0..1): pops denser on the words, a frying hiss, a few big spits."""
+    n = len(env)
+    pops = crackle(n, seed, 35 + 320 * env, 1800, 8000, 1.0)
+    spits = crackle(n, seed + 1, 3 + 14 * env, 700, 3200, 3.0)
+    hiss = dsp.highpass(dsp.noise(n / SR, 'white', seed + 2)[:n], 3500, 2)
+    flick = np.abs(dsp.lowpass(dsp.rng(seed + 3).standard_normal(n).astype(np.float32), 220, 2))
+    hiss = hiss * (0.25 + flick / (np.max(flick) + 1e-9)) * (0.25 + env)
+    return norm(pops) + 0.7 * norm(spits) + 0.22 * norm(hiss)
+
+
+def perform(chunks, take, seed, size=1.0):
+    """Assemble a line from directed chunks: [(text, opts)]. opts go to take(text, seed, **kw) except:
+    gap (s of silence after), gain (chunk peak), inhale (dur, gain) breath right before, click (lip smack gain),
+    sigh (dur, gain) exhale in the gap after, cut (s: stop abruptly that long before the last syllable ends),
+    choke (gain of the gasp after a cut). Returns (dry line, list of chunk start samples)."""
+    items = []
+    pos = 0
+    starts = []
+    prev_end = 0
+    for i, (txt, o) in enumerate(chunks):
+        kw = {k: v for k, v in o.items() if k not in ('gap', 'gain', 'inhale', 'click', 'sigh', 'cut', 'choke')}
+        y, _ = take(txt, seed + 37 * i, **kw)
+        y = norm(y, o.get('gain', 0.9))
+        if o.get('cut'):
+            e = rms_env(y, 0.01)
+            last = int(np.where(e > np.max(e) * 10 ** (-30 / 20))[0][-1])
+            y = y[:max(n_of(0.1), last - n_of(o['cut']))].copy()
+            y[-n_of(0.005):] *= np.linspace(1, 0, n_of(0.005))
+        pre = []
+        if o.get('inhale'):
+            d, g = o['inhale']
+            pre.append(breath_in(d, seed + 11 * i + 1, size, g, 0.25))
+        if o.get('click'):
+            pre.append(np.concatenate([mouth_click(seed + 13 * i, o['click']), np.zeros(n_of(0.06), np.float32)]))
+        if pre:
+            p = np.concatenate([np.concatenate([q, np.zeros(n_of(0.03), np.float32)]) for q in pre])
+            st = max(prev_end, pos - len(p))
+            items.append((p, st))
+            pos = st + len(p)
+        items.append((y, pos))
+        starts.append(pos)
+        end = pos + len(y)
+        if o.get('choke'):
+            g = breath_in(0.11, seed + 17 * i, 0.85, o['choke'], 0.0)
+            g = dsp.highpass(g, 900, 2)
+            items.append((g, end + n_of(0.03)))
+            end += n_of(0.03) + len(g)
+        if o.get('sigh'):
+            d, g = o['sigh']
+            s = breath_out(d, seed + 19 * i, size, g, 0.2)
+            items.append((s, end + n_of(0.08)))
+            end += n_of(0.08) + len(s)
+        prev_end = end
+        pos = end + n_of(o.get('gap', 0.0))
+    total = max(s + len(x) for x, s in items)
+    buf = np.zeros(total, np.float32)
+    for x, s in items:
+        buf[s:s + len(x)] += x
+    return buf, starts
+
+
+def chunks_for(text, tw):
+    return tw.get('chunks') or [(text, {})]
+
+
+# ---------------------------------------------------------------- Marta: the mum
+def marta_take(text, seed, speed=1.08, semis=0.6, curve=None, shout=0.0, shaky=1.0, breathy=0.06, flat=0.0):
+    """ef_dora, natural and nervous: fast, a little unsteady in pitch, a flustered breathy edge."""
+    x = say_c(text, 'ef_dora', speed)
+    if flat:
+        x = flatten(x, flat, seed + 9)
+    y = reshape(x, semis=semis, formant=0.25 + 0.3 * shout, wobble=16 * shaky, wobble_rate=3.2, tremor=0.006 * shaky,
+                tremor_rate=6.4, jitter=0.007, shimmer=0.05, curve=None if curve is None else np.asarray(curve, float),
+                seed=seed, fmin=120, fmax=520)
+    y = dsp.highpass(y, 90, 2)
+    y = y + breathy * whisper(y, seed + 1)
+    y = dsp.peak(y, 3000, 2.0, 1.4)
+    y = effort(y, shout) if shout else compress(y, -18, 2.5)
+    return y, x
+
+
+CALL = [   # Marta's call (casa.marta.llamada), phrase by phrase: (text, direction)
+    ('Hola...', dict(speed=1.0, curve=[0.5, 1.2], gap=0.32)),
+    ('¿es la línea de los exorcistas?', dict(speed=1.08, curve=[0, 0, 0.5, 2.0], gap=0.32)),
+    ('Perdón la hora.', dict(speed=1.12, gap=0.3)),
+    ('Es mi perro...', dict(speed=1.06, gap=0.2)),
+    ('Choripán...', dict(speed=1.0, gap=0.18, gain=0.8)),
+    ('camina raro.', dict(speed=1.06, gap=0.3)),
+    ('No, no, el perro no.', dict(speed=1.2, gap=0.1)),
+    ('Mi hija.', dict(speed=1.08, gap=0.42)),
+    ('Bueno...', dict(speed=1.0, gap=0.18, curve=[0, -0.6])),
+    ('los dos, no sé.', dict(speed=1.12, gap=0.45)),
+    ('Y la muñeca...', dict(speed=1.05, gap=0.22)),
+    ('la compré en la feria de San Telmo, re barata.', dict(speed=1.12, gap=0.35)),
+    ('Pasaje Las Glicinas, mil novecientos sesenta y uno.', dict(speed=1.08, gap=0.35)),
+    ('Por favor, venga rápido...', dict(speed=1.08, curve=[0.5, 1.5, 1.0], gap=1.0)),
+    ('y el perro.', dict(speed=1.0, gap=0.4, gain=0.8)),
+    # El Eco made this call with Marta's voice (BIBLIA 2.2 b): the last phrase comes out a touch too flat, and the
+    # line glitches once. Barely there: it reads as deadpan comedy first.
+    ('El perro está raro.', dict(speed=0.98, flat=0.65, gain=0.85, curve=[0, 0, -0.5])),
+]
+
+
+def vox_marta(text, fx, seed, tw, lid=''):
+    if fx == 'phone':
+        y, _ = perform(CALL, marta_take, seed)
+        y = add_breaths(y, seed + 50, 1.0, 'scared', 0.24)
+        dry = y.copy()
+        z = codec_glitches(y, seed + 3, 2)
+        return phone_line(z, seed), np.concatenate([np.zeros(n_of(0.08), np.float32), dry])
+    y, _ = perform(chunks_for(text, tw), marta_take, seed)
+    y = add_breaths(y, seed + 50, 1.0, 'scared', 0.18)
+    return casa_room(y, tw.get('place', 'living'), seed, tw.get('wet')), y
+
+
+# ---------------------------------------------------------------- Jorge: the dad, king of the asado
+def jorge_take(text, seed, speed=0.92, semis=-2.0, curve=None, shout=0.0, hoarse=0.17):
+    """em_alex: big, jovial, low, a bit hoarse (rasp band + a little fold saturation)."""
+    x = say_c(text, 'em_alex', speed)
+    y = reshape(x, semis=semis, formant=-0.8, wobble=10, wobble_rate=1.6, jitter=0.012, shimmer=0.08,
+                curve=None if curve is None else np.asarray(curve, float), seed=seed, fmin=60, fmax=330)
+    y = y + hoarse * dsp.bandpass(whisper(y, seed + 1), 900, 5200, 2)
+    y = dsp.highpass(y, 75, 2)
+    y = dsp.peak(y, 170, 3.0, 1.0)          # chest and belly
+    y = dsp.peak(y, 2500, 1.5, 1.4)
+    y = dsp.drive(norm(y, 1.0) * 1.25, 1.25)
+    y = effort(y, shout) if shout else compress(y, -18, 2.5)
+    return y, x
+
+
+def vox_jorge(text, fx, seed, tw, lid=''):
+    y, _ = perform(chunks_for(text, tw), jorge_take, seed, 1.2)
+    return casa_room(y, tw.get('place', 'patio'), seed, tw.get('wet')), y
+
+
+def jorge_demon_take(text, seed, speed=0.88, curve=None, shout=0.0, demon=0.7):
+    """Jorge with AZAMEL inside: his voice + em_santa -5 st (DTW-aligned to his words), grit."""
+    a = say_c(text, 'em_alex', speed)
+    b = say_c(text, 'em_santa', speed)
+    tm = dtw_map(a, b)
+    cv = None if curve is None else np.asarray(curve, float)
+    va = reshape(a, semis=-2.5, formant=-0.9, wobble=14, wobble_rate=1.2, jitter=0.018, shimmer=0.11, curve=cv,
+                 seed=seed, fmin=60, fmax=330)
+    vb = reshape(b, semis=-5.0, formant=-1.4, wobble=22, wobble_rate=0.9, jitter=0.026, shimmer=0.14, curve=cv,
+                 tmap=tm, n_out=len(a), seed=seed + 1, fmin=45, fmax=260)
+    vb = dsp.lowpass(vb, 3600, 2)
+    y = norm(va) + demon * 0.85 * norm(vb) + 0.12 * whisper(va, seed + 2)
+    y = dsp.highpass(y, 60, 2)
+    y = dsp.peak(y, 150, 3.0, 1.0)
+    y = dsp.drive(norm(y, 1.0) * (1.5 + 0.5 * demon), 1.5 + 0.5 * demon)
+    if shout:
+        y = effort(y, shout)
+    else:
+        y = compress(y, -18, 3.0)
+    return dsp.lowpass(y, 7500, 2), a
+
+
+def vox_jorge_poseido(text, fx, seed, tw, lid=''):
+    y, _ = perform(chunks_for(text, tw), jorge_demon_take, seed, 1.2)
+    # the blue fire right under his words: fat spitting on the grill, denser on every syllable
+    e = uniform_filter1d(rms_env(y, 0.03), n_of(0.05))
+    e = (e / (np.max(e) + 1e-9)) ** 0.8
+    lead, tail = n_of(0.12), n_of(0.25)
+    env = np.concatenate([np.linspace(0.05, e[0], lead), e, np.linspace(e[-1], 0.0, tail)]).astype(np.float32)
+    fat = grill_fat(env, seed + 40)
+    v = np.concatenate([np.zeros(lead, np.float32), y, np.zeros(tail, np.float32)])
+    fat = fat * dsp.env_points(len(fat), [(0, 0), (0.03, 1), (0.95, 1), (1, 0)])
+    mixd = v + 0.2 * fat * np.max(np.abs(v)) / (np.max(np.abs(fat)) + 1e-9)
+    z = casa_room(mixd, 'patio', seed)
+    # outdoors, yet a dark tail that has no business in a patio
+    tail_sig = dsp.lowpass(space(v, 2.2, 1.0, 1400, 0.05, (), 0, 120, seed + 5, dry=0.0), 1400, 2)
+    return send(z, tail_sig, 0.14), v
+
+
+# ---------------------------------------------------------------- la Nona Pocha
+def nona_take(text, seed, speed=0.78, semis=-2.0, curve=None, old=1.0, loud=1.0):
+    """ef_dora -2 st, slow: old rasp, voice tremor, a little deaf-loud (projected, bright, dense)."""
+    x = say_c(text, 'ef_dora', speed)
+    y = reshape(x, semis=semis, formant=-0.6 * old, wobble=16 * old, wobble_rate=2.0, tremor=0.014 * old,
+                tremor_rate=5.2, jitter=0.016 * old, shimmer=0.1 * old,
+                curve=None if curve is None else np.asarray(curve, float), seed=seed, fmin=100, fmax=460)
+    y = y + 0.16 * old * dsp.bandpass(whisper(y, seed + 1), 1100, 6000, 2)
+    y = dsp.tremolo(y, 5.2, 0.14 * old)
+    y = dsp.highpass(y, 110, 2)
+    y = shelf_hi(y, 1500, 3.5 * loud)
+    y = dsp.peak(y, 1100, 2.0 * loud, 1.2)
+    y = compress(y, -16, 3.0)
+    return y, x
+
+
+def vox_nona(text, fx, seed, tw, lid=''):
+    y, _ = perform(chunks_for(text, tw), nona_take, seed, 1.0)
+    return casa_room(y, tw.get('place', 'bedroom'), seed, tw.get('wet')), y
+
+
+def nona_shout_take(text, seed, speed=0.92, curve=(2.5, 4.5, 4.0, 3.0), amount=1.0):
+    """The same woman SHOUTING: no old-age effect at all, strong and clear (her hero moment)."""
+    x = say_c(text, 'ef_dora', speed)
+    y = reshape(x, semis=-1.0, formant=-0.3, wobble=8, wobble_rate=2.5, jitter=0.004, shimmer=0.03,
+                curve=np.asarray(curve, float), seed=seed, fmin=110, fmax=520)
+    y = dsp.highpass(y, 120, 2)
+    y = effort(y, amount)
+    return y, x
+
+
+def vox_nona_grito(text, fx, seed, tw, lid=''):
+    y, _ = perform(chunks_for(text, tw), nona_shout_take, seed, 1.0)
+    return casa_room(y, tw.get('place', 'hall'), seed, tw.get('wet')), y
+
+
+def vox_nona_poseida(text, fx, seed, tw, lid=''):
+    """AZAMEL in the Nona, whispering at your ear while she holds you in the air: her whisper + a demon layer."""
+    sp = tw.get('speed', 0.78)
+    a = say_c(text, 'ef_dora', sp)
+    b = say_c(text, 'em_santa', sp)
+    tm = dtw_map(a, b)
+    va = reshape(a, semis=-2.5, formant=-0.8, wobble=25, wobble_rate=1.0, jitter=0.02, shimmer=0.12, seed=seed,
+                 fmin=100, fmax=460)
+    vb = reshape(b, semis=-8.0, formant=-2.0, wobble=30, wobble_rate=0.8, jitter=0.03, shimmer=0.15, tmap=tm,
+                 n_out=len(a), seed=seed + 1, fmin=45, fmax=260)
+    wa = whisper(va, seed + 3)
+    wb = whisper(vb, seed + 4)
+    y = 0.22 * norm(va) + 1.1 * norm(wa) + 0.45 * norm(vb) + 0.35 * norm(dsp.lowpass(wb, 2500, 2))
+    y = shelf_lo(y, 220, 5.0)              # lips at your ear: proximity bass
+    y = dsp.drive(norm(y, 1.0) * 1.5, 1.5)
+    y = dsp.peak(y, 3800, 3.0, 1.2)
+    pk = np.max(np.abs(y))
+    out = space(y, 0.5, 0.06, 3500, 0.004, [(2.4, 0.25), (4.9, 0.16)], 0.25, 180, seed + 5)
+    pre = breath_in(0.3, seed + 6, 1.1, 0.3 * pk, 0.35)
+    post = dsp.lowpass(breath_out(0.9, seed + 7, 1.25, 0.22 * pk), 1800, 2)    # the cold exhale on your neck
+    gap = np.zeros(n_of(0.04), np.float32)
+    return dsp.concat(pre, gap, out, post), dsp.concat(np.zeros(len(pre) + len(gap), np.float32), y)
+
+
+# ---------------------------------------------------------------- Lucía (8)
+def lucia_take(text, seed, speed=0.88, curve=None, wh=0.25, demon=0.0):
+    """ef_dora +3 st with a child's tract, soft and shy. demon > 0: a faint em_santa unison under her words."""
+    x = say_c(text, 'ef_dora', speed)
+    cv = None if curve is None else np.asarray(curve, float)
+    y = reshape(x, semis=3.0, formant=1.8, wobble=18, wobble_rate=2.4, tremor=0.004, tremor_rate=6.0, jitter=0.006,
+                shimmer=0.05, curve=cv, seed=seed, fmin=110, fmax=480)
+    y = (1 - wh) * y + wh * 1.2 * whisper(y, seed + 4)
+    y = dsp.highpass(y, 160, 2)
+    y = shelf_hi(y, 3500, -2.0)              # shy: little vocal effort
+    y = compress(y, -20, 2.0)
+    if demon:
+        b = say_c(text, 'em_santa', speed)
+        vb = reshape(b, semis=-9.0, formant=-2.0, wobble=20, jitter=0.02, shimmer=0.12, curve=cv,
+                     tmap=dtw_map(x, b), n_out=len(x), seed=seed + 1, fmin=45, fmax=260)
+        y = norm(y) + demon * norm(dsp.lowpass(vb, 2200, 2))
+    return y, x
+
+
+def vox_lucia(text, fx, seed, tw, lid=''):
+    y, _ = perform(chunks_for(text, tw), lucia_take, seed, 0.8)
+    y = add_breaths(y, seed + 50, 0.8, tw.get('breaths', 'scared'), 0.22)
+    return casa_room(y, tw.get('place', 'bedroom'), seed, tw.get('wet')), y
+
+
+def lucia_double_take(text, seed, speed=0.84, curve=None):
+    """Lucía on the ceiling: her small voice in exact unison with em_santa -9 st. Both voices carry the words: the
+    girl the consonants and the top, the demon the vowels underneath."""
+    a = say_c(text, 'ef_dora', speed)
+    b = say_c(text, 'em_santa', speed)
+    tm = dtw_map(a, b)
+    cv = None if curve is None else np.asarray(curve, float)
+    va = reshape(a, semis=3.0, formant=1.8, wobble=12, wobble_rate=2.0, jitter=0.006, shimmer=0.05, curve=cv,
+                 seed=seed, fmin=110, fmax=480)
+    vb = reshape(b, semis=-9.0, formant=-2.0, wobble=18, wobble_rate=0.8, jitter=0.024, shimmer=0.13, curve=cv,
+                 tmap=tm, n_out=len(a), seed=seed + 1, fmin=45, fmax=260)
+    va = dsp.highpass(va, 180, 2)
+    vb = dsp.drive(norm(dsp.lowpass(vb, 3400, 2)) * 1.6, 1.6)
+    y = norm(va) + 0.8 * norm(vb) + 0.2 * whisper(va, seed + 2)
+    y = dsp.peak(y, 140, 2.5, 1.0)
+    return compress(y, -18, 2.5), a
+
+
+def vox_lucia_doble(text, fx, seed, tw, lid=''):
+    y, _ = perform(chunks_for(text, tw), lucia_double_take, seed, 0.8)
+    z = casa_room(y, 'hall', seed, 0.16)
+    tail = dsp.lowpass(space(y, 2.4, 1.0, 2400, 0.04, (), 0, 200, seed + 3, dry=0.0), 2400, 2)
+    return send(z, tail, 0.16), y
+
+
+# ---------------------------------------------------------------- Toti (15), in the wardrobe
+def toti_take(text, seed, speed=1.08, curve=None, shout=0.0):
+    x = say_c(text, 'em_alex', speed)
+    y = reshape(x, semis=2.0, formant=0.9, wobble=12, wobble_rate=2.5, jitter=0.008, shimmer=0.06,
+                curve=None if curve is None else np.asarray(curve, float), seed=seed, fmin=70, fmax=380)
+    y = dsp.highpass(y, 110, 2)
+    y = effort(y, shout) if shout else compress(y, -18, 2.5)
+    return y, x
+
+
+def vox_toti(text, fx, seed, tw, lid=''):
+    y, _ = perform(chunks_for(text, tw), toti_take, seed, 0.95)
+    return casa_room(y, tw.get('place', 'closet'), seed, tw.get('wet')), y
+
+
+# ---------------------------------------------------------------- Choripán speaks
+def chori_take(text, seed, speed=0.86, semis=-5.0, curve=None, sub=0.45, grit=1.8):
+    """em_santa -5 st with an octave-down layer (-17 st, low-passed), grit."""
+    x = say_c(text, 'em_santa', speed)
+    cv = None if curve is None else np.asarray(curve, float)
+    v = reshape(x, semis=semis, formant=-1.5, wobble=18, wobble_rate=1.4, jitter=0.02, shimmer=0.12, curve=cv,
+                seed=seed, fmin=45, fmax=260)
+    o = reshape(x, semis=semis - 12, formant=-2.5, wobble=25, wobble_rate=1.0, jitter=0.03, shimmer=0.15, curve=cv,
+                seed=seed + 1, fmin=45, fmax=260)
+    y = norm(v) + sub * norm(dsp.lowpass(o, 1600, 2)) + 0.12 * whisper(v, seed + 2)
+    y = dsp.highpass(y, 45, 2)
+    y = dsp.drive(norm(y, 1.0) * grit, grit)
+    y = dsp.peak(y, 2600, 2.5, 1.4)
+    return compress(y, -16, 3.0), x
+
+
+def wet_growl(dur, seed):
+    """A sausage dog's growl out of a throat far too big: rough fry source, long dark tract, jowl flutter, two
+    surges, saliva crackle and a sub rumble an octave down."""
+    n = n_of(dur)
+    f0 = dsp.env_points(n, [(0, 64), (0.3, 76), (0.6, 68), (1, 54)]) * (1 + 0.08 * snoise(n, 12, seed))
+    src = rough_source(f0, n, seed, jitter=0.07, shimmer=0.3, sub=0.6, breath=0.6)
+    tract = sum(10 ** (g / 20) * dsp.bandpass(src, f - bw, f + bw, 2)
+                for f, bw, g in [(430, 90, 0), (790, 120, -4), (1900, 200, -12), (2750, 260, -16)])
+    tract = tract + 0.35 * dsp.bandpass(src, 60, 260, 2)
+    t = taxis(n)
+    flutter = 1 + 0.35 * np.sin(TWO_PI * 23 * t + 3 * snoise(n, 2, seed + 1))
+    e = dsp.env_points(n, [(0, 0), (0.12, 0.7), (0.35, 1.0), (0.5, 0.72), (0.68, 0.95), (0.88, 0.55), (1, 0)])
+    y = dsp.drive(norm(tract) * 2.5, 2.5) * e * flutter
+    wet = crackle(n, seed + 3, 25 + 60 * e, 1200, 5000, 1.5) * e
+    rum = np.sin(TWO_PI * np.cumsum(f0 / 2) / SR) * e
+    return norm(norm(y) + 0.3 * norm(wet) + 0.3 * rum).astype(np.float32)
+
+
+def vox_choripan(text, fx, seed, tw, lid=''):
+    """'¿Quién es un buen chico?' (the sing-song you use with a dog, from the demon) ... wet growl ... 'YO NO.'"""
+    a_txt, b_txt = [p.strip() for p in text.split('...')]
+    A, _ = chori_take(a_txt, seed, 0.86, -5.0, [0.5, 2.0, 1.0, 3.5], 0.4, 1.8)
+    B, _ = chori_take(b_txt, seed + 1, 0.74, -6.0, [0.5, -1.5], 0.75, 2.4)
+    G = wet_growl(1.1, seed + 2)
+    A, B = norm(A, 0.8), norm(B, 1.0)
+    tg = len(A) / SR + 0.22
+    tb = tg + len(G) / SR + 0.2
+    y = dsp.mix((A, 0.0, 1.0), (G, tg, 0.6), (B, tb, 1.0))
+    z = casa_room(y, 'hall', seed, 0.12)
+    tail = dsp.lowpass(space(y, 1.8, 1.0, 1600, 0.04, (), 0, 100, seed + 3, dry=0.0), 1600, 2)
+    return send(z, tail, 0.12), y
+
+
+# ---------------------------------------------------------------- the spirit box in Lucía's room
+# Same voice family and speaker as tools/audio/snd_tools.py (spirit_box.voice): ef_dora ghost voice (whisper layer,
+# a faint octave below, slow wobble, a little distant room), the same radio broadcasts in the sweep, the same band.
+_RADIO_C = None
+
+
+def _say_plain(text, voice, speed):
+    """snd_tools.say (no respelling): same TTS cache entries as the spirit box broadcasts."""
+    y = dsp.tts(text, voice, speed)
+    y = dsp.highpass(y, 60, 2)
+    y = dsp.trim(y, -46, 0.03)
+    return norm(dsp.fade(y, 0.003, 0.012), 0.8)
+
+
+def radio_source_c():
+    global _RADIO_C
+    if _RADIO_C is None:
+        a = _say_plain('Y ahora, el pronóstico para Córdoba y alrededores: cielo nublado, frío.', 'em_alex', 1.1)
+        b = _say_plain('¡Llame ya! Ofertas en electrodomésticos, todo el mes de junio.', 'ef_dora', 1.15)
+        c = _say_plain('Gol, gol, gol de Talleres, señores.', 'em_santa', 1.2)
+        n = n_of(1.5)
+        t = taxis(n)
+        mus = np.zeros(n, np.float32)
+        for j, fr in enumerate([196.0, 246.94, 293.66, 392.0, 329.63]):
+            ph = np.cumsum(fr * (1 + 0.003 * np.sin(TWO_PI * 5 * t))) / SR
+            s = sum(np.sin(TWO_PI * k * ph) / k ** 1.2 for k in range(1, int(5000 / fr) + 1))
+            mus += s.astype(np.float32) * (0.6 + 0.4 * (j % 2))
+        mus = mus * (0.6 + 0.4 * np.abs(np.sin(TWO_PI * 2.2 * t)))
+        _RADIO_C = [a, b, c, norm(mus)]
+    return _RADIO_C
+
+
+def sb_radio_band(x):
+    y = dsp.bandpass(x, 280, 4200, 2)
+    y = dsp.peak(y, 1250, 4, 1.4)
+    y = dsp.drive(y * 1.6, 1.8)
+    y = dsp.bitcrush(y, 11, 2)
+    return dsp.lowpass(y, 4800, 4)
+
+
+def sb_voice_band(x):
+    y = dsp.bandpass(x, 190, 6200, 2)
+    y = dsp.peak(y, 1250, 3, 1.4)
+    y = dsp.peak(y, 3000, 3, 1.2)
+    y = dsp.drive(y * 1.4, 1.5)
+    y = dsp.bitcrush(y, 12, 2)
+    return dsp.lowpass(y, 6800, 4)
+
+
+def sb_sweep(dur, seed, voices=0.3, seg=(0.06, 0.11)):
+    """Spirit-box FM sweep (as snd_tools.sweep_static): static / carrier whistles / chopped broadcasts per channel,
+    tuner clicks between them. Returns (signal, channel boundary times)."""
+    r = dsp.rng(seed)
+    n = n_of(dur)
+    y = np.zeros(n, np.float32)
+    src = radio_source_c()
+    bounds = []
+    t = 0.0
+    k = 0
+    while t < dur:
+        d = r.uniform(*seg)
+        m = n_of(d)
+        kind = r.choice(['static', 'whistle', 'voice', 'static', 'hollow'], p=[0.32, 0.18, voices, 0.0, 0.5 - voices])
+        w = dsp.rng(seed + k).standard_normal(m).astype(np.float32)
+        if kind == 'static':
+            g = np.abs(dsp.lowpass(dsp.rng(seed + 100 + k).standard_normal(m + 4096).astype(np.float32), 2500, 2)[4096:])
+            s = w * r.uniform(0.6, 1.0) * (0.7 + 0.3 * g ** 1.5 / (np.mean(g ** 1.5) + 1e-9))
+        elif kind == 'whistle':
+            f0 = r.uniform(500, 3000)
+            s = 0.55 * dsp.osc(dsp.glide(f0, f0 * r.uniform(0.7, 1.4), d), d)[:m] + 0.5 * w
+        elif kind == 'voice':
+            x = src[int(r.integers(0, len(src)))]
+            a = int(r.integers(0, max(1, len(x) - m)))
+            s = fit(x[a:a + m], m)
+            if r.random() < 0.35:
+                s = s[::-1].copy()
+            s = norm(s) * r.uniform(0.6, 1.0) + 0.35 * w
+        else:
+            s = 0.3 * dsp.lowpass(w, 2500, 2) + 0.15 * dsp.osc(r.uniform(150, 400), d)[:m]
+        gap = r.uniform(0.003, 0.012) if r.random() < 0.7 else 0.0
+        e = np.interp(np.arange(m) / SR, [0, gap, gap + 0.002, d - 0.003, d], [0, 0, 1, 1, 0])
+        s = fit(s, m) * e * r.uniform(0.35, 1.0)
+        a0 = n_of(t)
+        L = min(m, n - a0)
+        y[a0:a0 + L] += s[:L]
+        kc = n_of(0.0012)
+        cl = dsp.highpass(dsp.rng(seed + 500 + k).standard_normal(kc).astype(np.float32) * np.linspace(1, 0, kc) ** 2,
+                          800, 2)
+        L = min(kc, n - a0)
+        y[a0:a0 + L] += 0.35 * norm(cl)[:L]
+        bounds.append(t)
+        t += d
+        k += 1
+    y = y * (0.85 + 0.15 * snoise(n, 3, seed + 7))
+    return sb_radio_band(y), bounds
+
+
+def ghost_c(v, seed):
+    """snd_tools.ghost_voice on an already spoken chunk: breathy, a faint octave below, slow wobble, distant room."""
+    w = whisper(v, seed)
+    lo = dsp.pitch_shift(v, -12)
+    y = norm(v) + 0.2 * norm(w) + 0.1 * norm(fit(lo, len(v)))
+    y = wobble_delay(y, 0.9, 1.0, seed, 0.8)
+    y = space(y, 1.0, 0.1, 3500, 0.025, CHAPEL_ER, 0.1, 150, seed)
+    return norm(dsp.trim(y, -50, 0.12))
+
+
+def split_syllables(x, k):
+    """Cut a take into k pieces: at its k-1 longest pauses, else at the deepest loudness dips."""
+    if k <= 1:
+        return [x]
+    pz = sorted(pauses(x, 0.06, -34), key=lambda p: -(p[1] - p[0]))[:k - 1]
+    if len(pz) == k - 1:
+        cuts = sorted((a + b) // 2 for a, b in pz)
+    else:
+        e = uniform_filter1d(rms_env(x, 0.012), n_of(0.02))
+        pk, pr = signal.find_peaks(-e, distance=n_of(0.08), prominence=0)
+        inner = [(p, q) for p, q in zip(pk, pr['prominences']) if n_of(0.06) < p < len(x) - n_of(0.06)]
+        cuts = sorted(p for p, _ in sorted(inner, key=lambda z: -z[1])[:k - 1])
+    edges = [0] + list(cuts) + [len(x)]
+    return [dsp.trim(x[edges[i]:edges[i + 1]], -40, 0.03) for i in range(len(edges) - 1)]
+
+
+def vox_spirit(text, fx, seed, tw, lid=''):
+    """Syllables picked out of the sweep one station at a time: static, a syllable (the sweep ducks under it), static,
+    the next syllable... Each syllable is its own 'lock' with hard tuner edges."""
+    r = dsp.rng(seed)
+    groups = [g.strip() for g in text.split('...') if g.strip(' .')]
+    v = say_c(text, 'ef_dora', tw.get('speed', 0.9))
+    syl = split_syllables(v, len(groups))
+    syl = [ghost_c(s, seed + 7 * i) for i, s in enumerate(syl)]
+    gaps = tw.get('gaps') or [0.3] * (len(syl) - 1)
+    pre, post = r.uniform(0.32, 0.42), 0.3
+    starts = []
+    t = pre
+    for i, s in enumerate(syl):
+        starts.append(t)
+        t += len(s) / SR + (gaps[i] if i < len(gaps) else 0.0)
+    total = t + post
+    st, bounds = sb_sweep(total, seed + 50, 0.3)
+    n = len(st)
+    vm = np.zeros(n, np.float32)
+    vo = np.zeros(n, np.float32)
+    dry = np.zeros(n, np.float32)
+    for i, (s, t0) in enumerate(zip(syl, starts)):
+        a = n_of(t0)
+        L = min(len(s), n - a)
+        e = rms_env(s, 0.01)
+        voiced = np.where(e > np.max(e) * 10 ** (-28 / 20))[0]
+        end = int(voiced[-1]) + n_of(0.06) if len(voiced) else L
+        g = np.zeros(L, np.float32)                     # tuner lock: hard 4 ms edges
+        g[:min(L, end)] = 1.0
+        g = uniform_filter1d(g, n_of(0.004))
+        col = sb_voice_band(s)[:L] * r.uniform(0.85, 1.0)
+        if r.random() < 0.5:
+            col = dsp.lowpass(col, r.uniform(4800, 6200), 2)
+        vo[a:a + L] += col * g
+        dry[a:a + L] += s[:L] * g
+        vm[max(0, a - n_of(0.02)):a + min(L, end) - n_of(0.04)] = 1.0
+    duck = 1 - 0.94 * uniform_filter1d(vm, n_of(0.04))
+    chop = np.ones(n, np.float32)
+    for b in bounds:
+        if r.random() < 0.3:
+            a0 = n_of(b)
+            chop[a0:a0 + n_of(0.01)] = r.uniform(0.6, 0.8)
+    chop = uniform_filter1d(chop, n_of(0.002))
+    y = norm(st) * duck * 0.34 + norm(vo) * chop
+    y = y * np.interp(np.arange(n) / SR, [0, 0.01, total - 0.05, total], [0, 1, 1, 0])
+    z = casa_room(y.astype(np.float32), 'bedroom', seed, 0.05)
+    return z, dry
+
+
+# ---------------------------------------------------------------- Tomi's VOD on Lucía's tablet
+_SYLC = {}
+
+
+def syllables(text, voice, speed, k):
+    key = (text, voice, speed, k)
+    if key not in _SYLC:
+        _SYLC[key] = split_syllables(say_c(text, voice, speed), k)
+    return _SYLC[key]
+
+
+def laugh_m(seed, count=6, semis=4.0):
+    """The streamer's laugh: breathy 'ja' syllables falling in pitch and slowing down, a wheezy inhale at the end."""
+    r = dsp.rng(seed)
+    syl = syllables('ja ja ja ja', 'em_alex', 1.05, 4)
+    parts = []
+    t = 0.0
+    for k in range(count):
+        s0 = syl[k % len(syl)]
+        d = r.uniform(0.12, 0.15) + 0.012 * k
+        g = fit(s0, n_of(d)) * dsp.env_points(n_of(d), [(0, 0), (0.06, 1.0), (0.5, 0.8), (1, 0)])
+        st = semis + 1.2 - k * r.uniform(0.6, 0.9) + r.normal(0, 0.3)
+        v = reshape(g, semis=st, formant=0.4, wobble=25, wobble_rate=6.0, seed=seed + k, fmin=70, fmax=420)
+        v = 0.6 * v + 0.7 * whisper(v, seed + 40 + k)
+        parts.append((norm(v, 1.0 - 0.08 * k), t, 1.0))
+        t += d + r.uniform(0.035, 0.06) + 0.01 * k
+    parts.append((breath_in(0.26, seed + 9, 0.9, 0.5, 0.6), t + 0.03, 1.0))
+    return dsp.mix(*parts)
+
+
+def tablet(x, seed):
+    """The VOD: streamer USB mic (hard compression, the San Lázaro corridor behind him), video codec, and the tablet's
+    tiny speaker on Lucía's bed (no bass, peaky, buzzes when loud)."""
+    y = compress(x, -24, 4.0, 0.006)
+    y = space(y, 1.6, 0.12, 4000, 0.02, CRYPT_ER, 0.12, 300, seed + 1)      # hospital corridor in the stream
+    y = dsp.lowpass(y, 11000, 4)                                            # streaming codec
+    n = len(y)
+    y = y + 0.006 * dsp.bandpass(dsp.noise(n / SR, 'pink', seed + 2)[:n], 300, 8000, 2) * np.max(np.abs(y)) * 4
+    y = dsp.highpass(y, 520, 4)
+    y = dsp.lowpass(y, 7600, 4)
+    y = dsp.peak(y, 1100, 4.0, 1.5)
+    y = dsp.peak(y, 3300, 5.0, 2.0)
+    y = dsp.peak(y, 750, -3.0, 1.0)
+    y = dsp.drive(norm(y, 1.0) * 1.7, 1.7)
+    buzz = dsp.highpass(np.sign(y) * np.maximum(np.abs(y) - 0.7, 0), 2000, 2)    # grille rattle on peaks
+    return (y + 0.5 * buzz).astype(np.float32)
+
+
+def vox_tomi(text, fx, seed, tw, lid=''):
+    head = text.split(',')[:-1]
+    words = ','.join(head) + ','
+    x = say_c(words, 'em_alex', 1.1)
+    v = reshape(x, semis=1.0, formant=0.3, wobble=12, wobble_rate=2.0, jitter=0.006, shimmer=0.05,
+                curve=np.array([1.0, 2.0, 0.5, 2.5, 1.5]), seed=seed, fmin=70, fmax=380)
+    v = dsp.highpass(v, 90, 2)
+    v = shelf_hi(v, 2000, 3.0)                    # hyped streamer: bright, forward
+    lg = laugh_m(seed + 3)
+    y = dsp.concat(norm(v, 0.9), dsp.silence(0.06), norm(lg, 0.8))
+    z = tablet(y, seed)
+    return casa_room(z, 'bedroom', seed, 0.06), y
+
+
+# ---------------------------------------------------------------- per-line direction (BIBLIA 2.2 h, k, l, m)
+def C(text, **o):
+    return (text, o)
+
+
+CASA_DIRECTION = {
+    # 1. arrival: Marta at the door in curlers; Jorge on the sofa; the Nona with the soap opera blaring
+    'casa.marta.hola': dict(place='porch', chunks=[
+        C('Ay, gracias a Dios.', speed=1.02, curve=[1.5, 0.5, -0.5], gap=0.14),
+        C('¿Lo mandó el Padre Ignacio?', speed=1.12, curve=[0, 0, 0.5, 1.8], gap=0.12),
+        C('Pase, pase...', speed=1.15, gap=0.34),
+        C('y límpiese los pies.', speed=1.0, semis=0.2, curve=[0, 0, -0.8], gain=0.85)]),
+    'casa.jorge.humedad': dict(place='living', chunks=[C('Es la humedad, flaco.', speed=0.88, curve=[0.5, 0, 0.8, -0.8])]),
+    'casa.jorge.mucha_humedad': dict(place='living', chunks=[
+        C('Mucha humedad.', speed=0.8, curve=[0, -0.5, -1.2], inhale=(0.3, 0.3), gain=0.8)]),
+    'casa.nona.mate': dict(place='living', chunks=[
+        C('¿Querés un mate, nene?', speed=0.8, curve=[1.5, 1.5, 2.5, 3.0], loud=1.3, click=0.25)]),
+    'casa.jorge.carbon': dict(place='living', chunks=[
+        C('Bueno,', speed=0.95, gap=0.14), C('yo me voy a buscar carbón para el asado.', speed=0.98, gap=0.2),
+        C('Ya vuelvo.', speed=0.95, curve=[0.8, 0])]),
+    # 2. the family chat
+    'casa.marta.chat': dict(place='living', chunks=[C('Mire, mire el grupo de la familia...', speed=1.12)]),
+    'casa.marta.no_celular': dict(place='living', chunks=[
+        C('Lucía no tiene celular.', speed=0.94, semis=0.3, shaky=2.0, breathy=0.22, curve=[0.5, 0, -0.8],
+          inhale=(0.28, 0.4), gain=0.8)]),
+    'casa.marta.telefono': dict(place='living', chunks=[
+        C('¿Yo?', speed=1.0, curve=[0, 2.5], gap=0.28), C('Nos cortaron el teléfono en marzo.', speed=1.1)]),
+    # 3. Lucía's room
+    'casa.lucia.perro': dict(place='underbed', chunks=[
+        C('Ofelia dice que tu perro...', speed=0.86, gap=0.42),
+        C('digo, nuestro perro...', speed=0.8, demon=0.16, gap=0.36),
+        C('tiene hambre.', speed=0.82, curve=[0, -0.5])]),
+    'casa.spirit.azamel': dict(speed=0.9, gaps=[0.3, 0.36]),
+    'casa.spirit.al_perro': dict(speed=0.9, gaps=[0.32, 0.26]),
+    'casa.spirit.nunca': dict(speed=0.9, gaps=[0.42]),
+    'casa.spirit.temperley': dict(speed=0.9, gaps=[0.62]),
+    # 4. the kitchen
+    'casa.marta.sillas': dict(place='living', chunks=[
+        C('¡Esas sillas eran de mi suegra!', shout=0.85, speed=1.08, curve=[2, 4, 3, 3.5, 2], inhale=(0.2, 0.4))]),
+    'casa.nona.son_mias': dict(place='next_room', chunks=[
+        C('¡Todavía son mías!', speed=0.9, curve=[3, 5, 4.5, 5.5, 3.5], inhale=(0.22, 0.5))]),
+    # 5. the calm beat
+    'casa.nona.esperando': dict(place='bedroom', chunks=[
+        C('A vos', speed=0.78, click=0.22, gap=0.14), C('te estaba esperando, nene.', speed=0.76, curve=[0.3, 0, 0, -0.8])]),
+    'casa.nona.guardame': dict(place='bedroom', chunks=[
+        C('Tomá,', speed=0.8, gap=0.16), C('guardame esto.', speed=0.78, curve=[0.5, 0, -0.5])]),
+    'casa.marta.llamalo': dict(place='bedroom', chunks=[
+        C('Llamalo vos, decile Choripán,', speed=1.1, gap=0.12), C('capaz a vos te hace caso.', speed=1.12, curve=[0, 0.5, -0.5])]),
+    # 8. the wardrobe
+    'casa.toti.ocupado': dict(place='closet', chunks=[
+        C('¡Ocupado!', shout=1.0, speed=1.05, curve=[3, 4.5, 3], gap=0.1),
+        C('¡Estoy en ranked!', shout=0.8, speed=1.12, curve=[2.5, 3, 4, 2])]),
+    'casa.toti.callate': dict(place='closet', chunks=[C('¡Callate, Chori!', shout=0.85, speed=1.12, curve=[3, 4, 3, 2])]),
+    # 9-10. fetch, the grill
+    'casa.marta.tirale': dict(place='hall', wet=0.2, chunks=[
+        C('¡Tirale algo!', shout=1.0, speed=1.05, curve=[3, 5, 4], inhale=(0.18, 0.5))]),
+    'casa.marta.choripan': dict(place='kitchen', chunks=[
+        C('¡Lo único que lo calma es un choripán!', shout=0.75, speed=1.12, curve=[2, 3, 2.5, 3.5, 2.5], gap=0.22,
+          inhale=(0.16, 0.4)),
+        C('¡Tomá!', shout=1.0, speed=1.0, curve=[3, 5], inhale=(0.12, 0.45))]),
+    # 11. Jorge
+    'casa.jorge.llegue': dict(place='patio', chunks=[
+        C('¡Llegué!', speed=0.95, curve=[1.5, 2.5], gap=0.2, inhale=(0.35, 0.45)),
+        C('No había carbón en lo de Rubén,', speed=1.02, gap=0.1),
+        C('tuve que ir hasta la', speed=1.05, cut=0.03, choke=0.7)]),
+    'casa.jorge.jugoso': dict(chunks=[C('¿Jugoso o a punto, pibe?', speed=0.86, curve=[1.5, 2.5, 1.0, 2.5], demon=0.55)]),
+    'casa.jorge.es_la_humedad': dict(chunks=[
+        C('Es la humedad...', speed=0.8, demon=0.5, curve=[0, -0.5, -1.2], gap=0.6, gain=0.65),
+        C('¡Es la humedad!', shout=1.0, speed=0.9, demon=1.0, curve=[2.5, 4.5, 4, 2.5])]),
+    'casa.jorge.falta_sal': dict(chunks=[C('¡Le falta sal!', shout=1.0, speed=0.8, demon=1.1, curve=[2, 4, 3, 1])]),
+    'casa.marta.chorizo': dict(place='patio', chunks=[
+        C('¡Te dije que no comas tanto chorizo!', shout=0.6, speed=1.12, curve=[2, 3, 2, 3, 1.5], inhale=(0.18, 0.35))]),
+    # 13-14. Lucía, the slipper
+    'casa.lucia.voces': dict(chunks=[C('Él te llamó.', speed=0.84, gap=0.45), C('Él tiene muchas voces.', speed=0.82)]),
+    'casa.nona.atorrante': dict(place='hall', chunks=[
+        C('¡Salí de mi nieta,', speed=0.95, curve=[3.5, 5.5, 4.5, 4], gap=0.06, inhale=(0.2, 0.55)),
+        C('atorrante!', speed=0.9, curve=[5, 6, 3.5])]),
+    'casa.nona.aca': dict(place='hall', chunks=[
+        C('¡Acá!', speed=0.9, curve=[4, 6], gap=0.24, inhale=(0.2, 0.55)),
+        C('¡Vení con la vieja, como antes!', speed=0.98, curve=[4, 5, 4, 5, 3.5], gap=0.2, inhale=(0.16, 0.45)),
+        C('¡Dejala a la nena!', speed=0.95, curve=[4.5, 5.5, 4.5, 3], inhale=(0.16, 0.45))]),
+    'casa.lucia.liberada': dict(place='hall', breaths='sob', chunks=[
+        C('Ofelia tenía miedo...', speed=0.84, wh=0.35, gap=0.5),
+        C('el señor feo quiere ir con la Nona.', speed=0.86, wh=0.3, curve=[0, 0.5, 0, -0.5])]),
+    # 15-16. the 1961 room, the stitches
+    'casa.nona.nene_veni': dict(speed=0.78),
+    'casa.nona.damelo': dict(place='cellar', chunks=[
+        C('Dámelo, nene.', speed=0.78, old=0.7, curve=[0.5, 0, -0.5], gap=0.42),
+        C('Esta vez lo cierro yo.', speed=0.74, old=0.6, curve=[0, 0, 0.5, -1.0])]),
+    'casa.nona.sesenta': dict(place='cellar', chunks=[
+        C('Sesenta y cinco años esperando para esto.', speed=0.76, old=1.1, sigh=(0.75, 0.35), gap=0.25),
+        C('¿Me alcanzás el mate?', speed=0.82, curve=[0, 0.5, 2.0])]),
+    # 17. breakfast
+    'casa.jorge.asado': dict(place='kitchen', chunks=[C('¿Te quedás al asado?', speed=0.95, curve=[0.5, 0.5, 2.0])]),
+    'casa.toti.que_perdi': dict(place='kitchen', chunks=[C('¿Qué me perdí?', speed=1.0, curve=[0.5, 0, 2.0])]),
+    'casa.nona.quien_asado': dict(place='kitchen', chunks=[
+        C('¿Quién quiere asado?', speed=0.85, curve=[1.5, 1, 1, 3], click=0.2)]),
+    'casa.marta.perro': dict(place='kitchen', chunks=[
+        C('Llevate al perro un par de días,', speed=1.05, gap=0.15), C('nos da miedo.', speed=1.0, curve=[0, -0.5, -1], gain=0.8)]),
+}
+
+
 PRESETS = {
     'madre': vox_madre, 'clara': vox_clara, 'clara84': vox_clara84, 'cura': vox_cura, 'alumna': vox_alumna,
     'paloma': vox_paloma, 'coro': vox_coro, 'monja': vox_monja, 'operadora': vox_operadora,
+    # casa
+    'marta': vox_marta, 'jorge': vox_jorge, 'jorge_poseido': vox_jorge_poseido, 'nona': vox_nona,
+    'nona_grito': vox_nona_grito, 'nona_poseida': vox_nona_poseida, 'lucia': vox_lucia, 'lucia_doble': vox_lucia_doble,
+    'toti': vox_toti, 'choripan': vox_choripan, 'spirit': vox_spirit, 'tomi': vox_tomi,
 }
-NEEDS_ID = {'alumna', 'paloma', 'coro'}
+NEEDS_ID = {'alumna', 'paloma', 'coro', 'marta', 'jorge', 'jorge_poseido', 'nona', 'nona_grito', 'nona_poseida',
+            'lucia', 'lucia_doble', 'toti', 'choripan', 'spirit', 'tomi'}
 
 # per-line direction (speed, pitch contour in semitones, extra grit...)
 TWEAKS = {
@@ -1054,6 +1873,7 @@ TWEAKS = {
     'colegio.cura.r4': dict(speed=0.8),
     'colegio.clara.gracias': dict(speed=0.9),
 }
+TWEAKS.update(CASA_DIRECTION)
 
 
 # ====================================================================== review helpers
@@ -1108,7 +1928,9 @@ def align(ref, y, max_lag=0.6):
 
 
 CREST_DB = 15.0      # peak-to-active-speech-RMS after limiting: similar loudness for every line at -1 dBFS peak
-TRIM_DB = {'alumna': -46, 'coro': -46, 'paloma': -48, 'clara84': -50, 'monja': -48}
+TRIM_DB = {'alumna': -46, 'coro': -46, 'paloma': -48, 'clara84': -50, 'monja': -48,
+           'spirit': -52, 'nona_poseida': -50, 'lucia_doble': -48, 'jorge_poseido': -50, 'choripan': -50}
+CASA_DEESS = {'marta', 'nona', 'nona_grito', 'nona_poseida', 'lucia', 'lucia_doble', 'toti', 'jorge'}
 
 
 def active_rms(x, thresh_db=-30.0):
@@ -1120,7 +1942,7 @@ def active_rms(x, thresh_db=-30.0):
 def finish(y, voice):
     """De-ess hushed voices, limit the crest factor, trim dead air (keeping the audible tail), master -1 dBFS."""
     y = np.asarray(y, np.float32)
-    if voice in ('clara', 'clara84', 'paloma', 'alumna', 'operadora', 'madre'):
+    if voice in ('clara', 'clara84', 'paloma', 'alumna', 'operadora', 'madre') or voice in CASA_DEESS:
         y = deess(y)
     ceiling = active_rms(y) * 10 ** (CREST_DB / 20)
     pk = np.max(np.abs(y))
@@ -1160,7 +1982,8 @@ def build(only=None):
     for lid, d in LINES.items():
         if not d.get('voice'):
             continue
-        if only and not any(o in lid or o == d['voice'] for o in only):
+        if only and not any((o == 'casa' and is_casa(lid)) or (o != 'casa' and (o in lid or o == d['voice']))
+                            for o in only):
             continue
         t0 = time.time()
         voice, y, ref = render(lid)
@@ -1173,7 +1996,9 @@ def build(only=None):
         # intelligibility proxy: final file vs the dry character voice (before room / line / tape)
         lag = align(ref, x)
         si = stoi(np.pad(ref, (lag, max(0, len(x) - len(ref) - lag))), x)
-        dsp.spectrogram_png(x, os.path.join(REVIEW_DIR, lid.replace('.', '_') + '.png'))
+        rd = CASA_REVIEW_DIR if is_casa(lid) else REVIEW_DIR
+        os.makedirs(rd, exist_ok=True)
+        dsp.spectrogram_png(x, os.path.join(rd, lid.replace('.', '_') + '.png'))
         print(f'{lid:30s} {voice:9s} ticks={ticks[lid]:4d} stoi={si:.2f} {st}  ({time.time() - t0:.1f}s)', flush=True)
     want = [k for k, d in LINES.items() if d.get('voice')]
     ticks = {k: ticks[k] for k in want if k in ticks}
