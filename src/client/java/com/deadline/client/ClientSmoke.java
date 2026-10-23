@@ -404,9 +404,10 @@ public final class ClientSmoke {
 		step(1, mc -> mc.options.hideGui = true);
 
 		// --- creature studio (daylight, flat world)
-		String[] keys = {"monja", "poseida", "sombra", "muneca", "anima", "alumna", "madre", "clara"};
+		String[] keys = {"monja", "poseida", "sombra", "muneca", "anima", "alumna", "madre", "clara", "marta", "jorge", "nona", "toti"};
 		List<EntityType<?>> types = List.of(ModEntities.MONJA, ModEntities.POSEIDA, ModEntities.SOMBRA, ModEntities.MUNECA, ModEntities.ANIMA,
-				ModEntities.ALUMNA, ModEntities.MADRE, ModEntities.CLARA);
+				ModEntities.ALUMNA, ModEntities.MADRE, ModEntities.CLARA, com.deadline.casa.FamilyEntities.MARTA, com.deadline.casa.FamilyEntities.JORGE,
+				com.deadline.casa.FamilyEntities.NONA, com.deadline.casa.FamilyEntities.TOTI);
 		for (int i = 0; i < keys.length; i++) {
 			EntityType<?> type = types.get(i);
 			String key = keys[i];

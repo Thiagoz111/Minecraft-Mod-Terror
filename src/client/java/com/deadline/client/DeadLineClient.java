@@ -22,6 +22,7 @@ public class DeadLineClient implements ClientModInitializer {
 		DeadLineKeys.init();
 		DeadParticle.registerAll();
 		ModRenderers.init();
+		com.deadline.client.casa.CasaRenderers.init();
 		BlockRenderLayerMap.putBlocks(ChunkSectionLayer.CUTOUT, ModBlocks.SALT_LINE, ModBlocks.BLOOD_STAIN, ModBlocks.RITUAL_CANDLE);
 		com.deadline.registry.gen.ModBlocksGen.CUTOUT.forEach(b -> BlockRenderLayerMap.putBlock(b, ChunkSectionLayer.CUTOUT));
 		com.deadline.registry.gen.ModBlocksGen.TRANSLUCENT.forEach(b -> BlockRenderLayerMap.putBlock(b, ChunkSectionLayer.TRANSLUCENT));

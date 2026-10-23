@@ -38,6 +38,11 @@ public class DeadLine implements ModInitializer {
 		ModEntities.init();
 		ModAttachments.init();
 		ModNetworking.init();
+		// case 2: the Morales house
+		com.deadline.casa.CasaItems.init();
+		com.deadline.casa.CasaNet.init();
+		com.deadline.casa.CasaSetEntities.init();
+		com.deadline.casa.FamilyEntities.init();
 
 		CommandRegistrationCallback.EVENT.register(DeadLineCommands::register);
 		SmokeTest.register();
