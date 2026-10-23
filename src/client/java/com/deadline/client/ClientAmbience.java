@@ -69,6 +69,8 @@ public final class ClientAmbience {
 			var id = mc.level.dimension().identifier();
 			if (DeadLine.MOD_ID.equals(id.getNamespace()) && id.getPath().startsWith("caso_")) {
 				key = id.getPath().substring(5);
+			} else if (!com.deadline.client.car.GpsHud.caseKey.isEmpty() && com.deadline.client.car.GpsHud.distance(pl) < 64.0) {
+				key = com.deadline.client.car.GpsHud.caseKey;  // an overworld case: its soundscape around the house
 			}
 		}
 		if (!key.equals(current)) {
