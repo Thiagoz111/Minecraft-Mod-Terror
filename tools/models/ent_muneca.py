@@ -363,6 +363,8 @@ def skull_mat(ctx):
         return skull_front_px(ctx.i, ctx.j)
     if chunk3(x, y, z):
         return None
+    if f == 'top' and not near_chunk(x, y, z, 1.2):
+        return pick(HAIR, 0.2)                          # under the wig: the wig cap (never flashes white)
     return porcelain(ctx)
 
 
@@ -480,27 +482,70 @@ def strand(u, v, ctx, seed, sheen_at=None, light=1.0):
     return val
 
 
+PART_X = -1.5      # side parting over her right eye
+WHORL_Z = 2.5      # where the parting ends at the crown
+
+
+def hair_top_v(x, z, ctx):
+    """Top of the wig, the surface players see most (she is under 1 block tall and usually below eye level).
+    Strands leave the parting and are combed out and back (slanted, slightly wavy), so clumps never line up into
+    planks; the gaps between clumps are broken into dashes; the sheen is a curved 'angel ring' round the crown,
+    not a straight line; the rim darkens where the head rounds over."""
+    d = x - PART_X
+    ad = abs(d)
+    u = z - ad * 0.7 + math.sin(ad * 0.7 + (0.0 if d < 0 else 2.0)) * 0.6 + (0.0 if d < 0 else 1.1)
+    cl = math.floor(u / 2.4)
+    fu = (u / 2.4) % 1.0
+    k = hash3(cl, 1 if d < 0 else 2, 0, 71)
+    v = 0.44 + k * 0.06 - min(ad, 7.0) * 0.008
+    gap = fu < 0.3 and hash3(cl, int(ad * 0.8), 0, 13) > 0.15
+    if gap:
+        v -= 0.11                                     # gap between clumps (only now and then interrupted)
+    r = math.sqrt((d / 1.25) ** 2 + (z - 0.4) ** 2)   # elliptical ring round the crown
+    band = 4.2 + (k - 0.5) * 0.5
+    if band <= r < band + 1.1:
+        v += 0.16 if gap else 0.3                     # the satin 'angel ring' of an old mohair wig
+    elif band - 0.8 <= r < band and not gap:
+        v += 0.1                                      # soft inner edge of the ring
+    if z < WHORL_Z:
+        if ad < 0.5 and hash3(int(z + 9), 4, 0, 5) > 0.25:
+            v = 0.2                                   # the parting: a broken seam of shadow, not a line
+        elif ad < 1.1:
+            v -= 0.08                                 # hair lifting off the parting, shadowed
+    if edge(ctx) == 0:
+        v -= 0.07                                     # rounds over at the rim
+    return v
+
+
+def wig_top_px(x, z, ctx):
+    return pick(HAIR, hair_top_v(x, z, ctx))
+
+
 def hair_shell(ctx):
     """Wig over the skull: side parting on top, strands radiating from it, bare over the face/cheeks."""
     f = ctx.face
     x, y, z = A(ctx)
     t = tag(ctx)
-    if f == 'front':
+    if f == 'front' and t not in ('dome', 'crown_hair'):
         return None
     if chunk3(x, y, z):
         return None
     if f == 'bottom':
         return pick(HAIR, 0.18) if z > 2 else None
+    if f == 'front':
+        if t == 'crown_hair':
+            # only its top sliver shows above the face plate: the hairline, dark and shadowed under the fringe
+            return pick(HAIR, 0.3 + (0.08 if ctx.i % 3 == 0 else 0))
+    if t == 'dome' and f != 'top':
+        # the crown's rounded step: short strands combed down over it, darker toward the lower rim
+        u = x if f in ('front', 'back') else z
+        return pick(HAIR, strand(u, y, ctx, 11, sheen_at=None) + 0.04 - (0.06 if ctx.j == ctx.h - 1 else 0))
     if f in ('west', 'east') and z < -2.0 and y > 2.5:
         return None                                   # cheek / jaw left bare
     if near_chunk(x, y, z, 0.7):
         return pick(HAIR, 0.08)                       # torn wig edge
     if f == 'top':
-        if t == 'crown_hair' and abs(x + 1.5) < 0.5 and z < 3.5:
-            return pick(HAIR, 0.14)                   # side parting: 1 px of darker hair
-        u = z
-        v = abs(x + 1.5)
-        return pick(HAIR, strand(u, v, ctx, 3, sheen_at=2.5) + 0.04)
+        return wig_top_px(x, z, ctx)
     if f in ('west', 'east'):
         u = z + (0 if f == 'west' else 40)
         val = strand(u, y, ctx, 5 if f == 'west' else 6, sheen_at=1.0) - clamp((y - 5) / 6) * 0.14
@@ -1038,6 +1083,8 @@ def build(variant=None):
     box('head', (-3, 8.5, -5.4), (6, 2, 0), mat=teeth_mat(["gTTgTg", ".Tt.T."]), name='teeth')
     box('head', (-7, -0.5, -4), (14, 10, 10), mat=hair_shell, inflate=0.5, name='wig')
     box('head', (-6, -1.5, -4), (12, 1, 9), mat=hair_shell, inflate=0.35, name='crown_hair')
+    # domed cranium: one more stepped layer of wig, centred on the parting (clear of the broken temple)
+    box('head', (-5, -2.6, -2.5), (8, 1, 7), mat=hair_shell, inflate=0.3, name='dome')
     box('head', (-7.2, -1.9, -6.35), (8, 2, 0), mat=bangs_mat, name='bangs')
     # stray strands: one across the broken temple, one off the back
     box('head', (6.4, -0.8, -3.4), (0, 5, 1), mat=stray_mat, name='stray')

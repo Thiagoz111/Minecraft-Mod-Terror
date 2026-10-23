@@ -315,7 +315,7 @@ ROOMS = {
     'cucha': dict(decay=0.12, damp=3200.0, predelay=0.001, er=6, er_span=0.004, hf=0.6),    # inside the doghouse
     'pieza': dict(decay=0.8, damp=4400.0, predelay=0.006, er=7, er_span=0.02, hf=0.5),      # the Nona's bedroom
     'eco': dict(decay=2.4, damp=4200.0, predelay=0.02, er=8, er_span=0.06, hf=0.5),         # for the reversed scream
-    'barrio': dict(decay=1.7, damp=1600.0, predelay=0.03, er=6, er_span=0.25, hf=0.5),      # night air between houses
+    'barrio': dict(decay=1.4, damp=1600.0, predelay=0.03, er=6, er_span=0.25, hf=0.5, er_gain=6.0),  # night air between houses
 }
 _IR_CACHE = {}
 
@@ -338,7 +338,7 @@ def room_ir(room, seed=7, **over):
     for _k in range(p['er']):
         q = int(r.uniform(0.002, p['er_span']) * SR)
         if q < n:
-            ir[q] += r.uniform(0.4, 1.0) * r.choice([-1, 1]) * lvl * 14
+            ir[q] += r.uniform(0.4, 1.0) * r.choice([-1, 1]) * lvl * p.get('er_gain', 14.0)
     ir = np.concatenate([np.zeros(N(p['predelay']), np.float32), ir.astype(np.float32)])
     ir /= np.sqrt(np.sum(ir ** 2)) + 1e-9
     _IR_CACHE[key] = ir
@@ -423,13 +423,27 @@ def fgain(f, fr):
     return (A / np.sqrt(1 + ((f[..., None] - F) / (B / 2)) ** 2)).sum(-1)
 
 
-def shaped_noise(fr, n, seed, nper=1024, hf=0.0):
-    """White noise filtered (STFT) by the formant track: breath, aspiration, roar turbulence."""
+def fgain_sharp(f, fr):
+    """Squared-Lorentzian formant sum: skirts fall 12 dB/oct like a cascaded tract, no broadband floor under noise."""
+    F, B, A = fr[:, None, :, 0], fr[:, None, :, 1], fr[:, None, :, 2]
+    return (A / (1 + ((f[..., None] - F) / (B / 2)) ** 2)).sum(-1)
+
+
+def shaped_noise(fr, n, seed, nper=1024, hf=0.0, sharp=0.0, lp=None):
+    """White noise filtered (STFT) by the formant track: breath, aspiration, roar turbulence.
+
+    The plain Lorentzian sum leaves a 1/f floor that, integrated over the wide top octaves, turns into hiss under
+    turbulent sounds; `sharp` blends in the cascade-like response and `lp` adds a 4th-order roll-off (Hz)."""
     hop = nper // 4
     w = white(n + nper, seed)
     f, t, Z = signal.stft(w, SR, nperseg=nper, noverlap=nper - hop)
     fi = np.clip((t * SR / CTRL).astype(int), 0, fr.shape[0] - 1)
-    g = fgain(np.broadcast_to(f[None, :], (len(fi), len(f))), fr[fi])
+    ff = np.broadcast_to(f[None, :], (len(fi), len(f)))
+    g = fgain(ff, fr[fi])
+    if sharp:
+        g = (1 - sharp) * g + sharp * fgain_sharp(ff, fr[fi])
+    if lp:
+        g = g / np.sqrt(1 + (f[None, :] / lp) ** 4)
     if hf:
         g = g * (1 + hf * f[None, :] / 4000.0)
     _, y = signal.istft(Z * g.T, SR, nperseg=nper, noverlap=nper - hop)
@@ -522,7 +536,7 @@ def tag_jingle(seed, hits=4, spread=0.12, amp=1.0):
 
 
 def growl_layer(seed, dur, f0_pts, keys, amp_pts, pulse=(26.0, 0.65), rough=1.0, sub=0.5, noise=0.7, tilt=0.85,
-                fmax=7500.0):
+                fmax=7500.0, nz_lp=3400.0, out_lp=5500.0):
     """Growl: low f0, strong pulsing ('fry' bursts) of voice and turbulent noise through a closed snout."""
     n = N(dur)
     f0 = contour(n, f0_pts)
@@ -534,27 +548,34 @@ def growl_layer(seed, dur, f0_pts, keys, amp_pts, pulse=(26.0, 0.65), rough=1.0,
     am = (1 - pulse[1]) + pulse[1] * am / (np.mean(am) + 1e-9) * 0.5
     v = vsynth(f0, fr, a * am, tilt=tilt, jitter=0.03, shimmer=0.2, rough=rough, rough_hz=55, sub=sub, breath=0.0,
                fmax=fmax, seed=seed)
-    nz = shaped_noise(fr, n, seed + 3, hf=0.3) * a * am
+    nz = shaped_noise(fr, n, seed + 3, sharp=0.85, lp=nz_lp) * a * am
     nz *= rms(v) / (rms(nz) + 1e-9)
-    return (v + noise * nz).astype(np.float32)
+    y = v + noise * nz
+    return (dsp.lowpass(y, out_lp, 2) if out_lp else y).astype(np.float32)
 
 
 # ---------------------------------------------------------------------- gore building blocks
-def snap(seed, amp=1.0, tone=1.0, spread=0.025, fib=0.8, lp=9500.0):
-    """Celery snap / bone fracture: a hard break into stiff quickly-damped modes + a cluster of fibres tearing."""
+def snap(seed, amp=1.0, tone=1.0, spread=0.035, fib=1.0, lp=9500.0):
+    """Celery snap / bone fracture: a hard break into stiff quickly-damped modes, a second smaller give-way a few ms
+    later, and a dense crunch of fibres parting one after another inside a hollow stalk (two resonances)."""
     r = dsp.rng(seed)
-    n = N(spread + 0.12)
+    n = N(spread * 2 + 0.12)
     t = taxis(n)
     exc = np.zeros(n, np.float32)
-    hs = half_sine(0.0007)
+    hs = half_sine(0.0006)
     exc[:len(hs)] = hs
+    t2 = r.uniform(0.006, 0.014)
+    hs2 = half_sine(0.0008) * r.uniform(0.35, 0.6)
+    exc[N(t2):N(t2) + len(hs2)] += hs2
     modes = [(r.uniform(900, 1300) * tone, 140, 1.0), (r.uniform(1900, 2600) * tone, 190, 0.8),
              (r.uniform(3300, 4300) * tone, 260, 0.55), (r.uniform(5200, 6800) * tone, 380, 0.35),
              (r.uniform(480, 620) * tone, 90, 0.5)]
     main = excite(exc, modes, 0.08)[:n]
     click = fit(dsp.highpass(burst(0.0015, seed + 1, 2.0), 1500, 2), n)
-    rate = 9000 * np.exp(-t / (spread * 0.35)) * (t < spread * 1.6)
-    fibres = crackle(n, rate, seed + 2, 1200, 10000, size=(0.0002, 0.0012), pareto=2.0)
+    rate = 14000 * np.exp(-t / (spread * 0.45)) * (t < spread * 2.0)
+    fibres = crackle(n, rate, seed + 2, 900, 10000, size=(0.0002, 0.0014), pareto=1.8)
+    fibres = dsp.peak(fibres, r.uniform(1800, 2600) * tone, 8.0, 3.0)
+    fibres = dsp.peak(fibres, r.uniform(3800, 4800) * tone, 6.0, 3.0)
     y = norm(main) + 0.8 * norm(click) + fib * norm(fibres)
     y = dsp.lowpass(y, lp, 2)
     return norm(y, amp)
@@ -729,7 +750,7 @@ def sneeze():
     t0, d = 0.25, 0.12
     m = N(d)
     fr = ftrack(m, [(0, dogv('closed', 1.15)), (d, dogv('mid', 1.2))])
-    blast = shaped_noise(fr, m, 410, hf=1.6) * env_pts(m, [(0, 0), (0.003, 1), (0.03, 0.5), (0.08, 0.12), (d, 0)])
+    blast = shaped_noise(fr, m, 410, hf=1.6, lp=9500.0) * env_pts(m, [(0, 0), (0.003, 1), (0.03, 0.5), (0.08, 0.12), (d, 0)])
     sq = whine_seg(411, [(0, 1250), (0.035, 1550), (0.08, 1100)], 0.08,
                    amp_pts=[(0, 0), (0.006, 1.0), (0.045, 0.4), (0.08, 0)], vib=(0.1, 0.0), breath=0.25, tilt=1.2)
     tl = taxis(N(0.045))
@@ -761,18 +782,18 @@ def crack(v):
     s = 500 + 20 * v
     if v == 1:    # one clean snap and the thump of it
         add(out, snap(s, 1.0, 1.0), 0.0)
-        add(out, thump(s + 1, 72, 0.3, 0.8), 0.004)
+        add(out, thump(s + 1, 72, 0.3, 0.5), 0.004)
         add(out, squelch(s + 2, 0.13, 1500, 400, 0.3, 2), 0.01)
     elif v == 2:  # double crack, the second one lower and wetter
         add(out, snap(s, 1.0, 1.12), 0.0)
         add(out, snap(s + 1, 0.85, 0.82, spread=0.03), 0.085)
-        add(out, thump(s + 2, 62, 0.32, 0.85), 0.088)
+        add(out, thump(s + 2, 62, 0.32, 0.55), 0.088)
         add(out, squelch(s + 3, 0.22, 1300, 300, 0.5, 4), 0.05)
     elif v == 3:  # a joint twisted until it gives: grinding creak -> snap -> wet pop out of the socket
         add(out, grind(s, 0.38, (48, 140), 0.45), 0.0)
         add(out, snap(s + 1, 1.0, 0.95), 0.37)
         add(out, joint_pop(s + 2, 900, 0.5), 0.372)
-        add(out, thump(s + 3, 80, 0.3, 0.8), 0.375)
+        add(out, thump(s + 3, 80, 0.3, 0.55), 0.375)
         add(out, squelch(s + 4, 0.26, 1200, 280, 0.55, 5), 0.38)
     elif v == 4:  # the ribcage widening: a crunchy cascade over a long sticky stretch
         r = dsp.rng(s)
@@ -780,7 +801,7 @@ def crack(v):
         for k, t0 in enumerate((0.0, 0.06, 0.11, 0.19, 0.25, 0.33)):
             add(out, snap(s + 10 + k, r.uniform(0.45, 0.8) * (0.7 + 0.06 * k), r.uniform(0.8, 1.25), spread=0.015,
                           fib=0.6), t0)
-        add(out, thump(s + 2, 68, 0.3, 0.75), 0.335)
+        add(out, thump(s + 2, 68, 0.3, 0.5), 0.335)
     elif v == 5:  # heavy: a bone breaking deep inside meat - muffled crack, big thump, thick squelch
         add(out, snap(s, 0.8, 0.75, lp=3500.0), 0.0)
         add(out, thump(s + 1, 56, 0.45, 1.0, slap=0.6), 0.006)
@@ -789,7 +810,7 @@ def crack(v):
         for k, (t0, f) in enumerate(((0.0, 1300), (0.07, 1100), (0.13, 1450), (0.21, 950))):
             add(out, joint_pop(s + k, f, 0.55 + 0.08 * k), t0)
         add(out, snap(s + 5, 0.9, 1.2), 0.3)
-        add(out, thump(s + 6, 85, 0.25, 0.6), 0.302)
+        add(out, thump(s + 6, 85, 0.25, 0.45), 0.302)
         add(out, squelch(s + 7, 0.15, 1600, 500, 0.3, 2), 0.31)
     return room(out, 'patio', 0.12)
 
@@ -911,13 +932,16 @@ def demon_roar(v):
     flutter = np.clip(1 + 0.35 * snoise(n, 38, 700 + v) * env_pts(n, [(0, 0), (0.4, 1), (dur, 1)]), 0.2, None)
     voice = vsynth(f0, fr, a * flutter, tilt=0.75, jitter=0.03, shimmer=0.25, rough=rough, rough_hz=45, sub=sub,
                    breath=0.0, fmax=9000, seed=701 + v, coherent=True)
-    nz = shaped_noise(fr, n, 703 + v, hf=0.5) * a * env_pts(n, [(0, 0.35), (0.3, 1.0), (dur, 1.0)])
+    nz = shaped_noise(fr, n, 703 + v, sharp=0.75, lp=4500.0) * a * env_pts(n, [(0, 0.35), (0.3, 1.0), (dur, 1.0)])
     nz *= rms(voice) / (rms(nz) + 1e-9)
     octv = vsynth(f0 * 0.5, ftrack(n, [(0, dogv('open', 0.36))]), a * env_pts(n, [(0, 0), (0.3, 0), (0.55, 1), (dur, 1)]),
                   tilt=0.8, jitter=0.03, shimmer=0.2, rough=1.4, rough_hz=35, sub=0.6, breath=0.0, fmax=4000,
                   seed=705 + v)
-    roar = norm(voice) + 0.75 * norm(nz) + 0.55 * norm(octv)
-    roar = dsp.drive(norm(roar) * 2.2, 2.4)
+    roar = norm(voice) + 0.6 * norm(nz) + 0.6 * norm(octv)
+    roar = dsp.drive(norm(roar) * 1.5, 1.8)
+    # the body closes as the little dog becomes the throat of something huge: bright "arf" -> dark roar
+    roar = tv_filter(roar, 'lp', contour(n, [(0, 9500), (0.14, 9500), (0.5, 3800), (dur, 3200)]), 96)
+    roar = dsp.lowpass(roar, 7000, 2)
     add(out, roar, lead)
     # the mouth opens in four petals: flesh tearing, strings of spit
     add(out, squelch(720 + v, 0.35, 1800, 350, 1.0, 6), lead + t_tear, 0.35)
@@ -930,7 +954,7 @@ def demon_roar(v):
             add(out, joint_pop(731 + k, r.uniform(2300, 3200), 1.0), lead + 0.95 + k * 0.045, 0.12)
     # the reversed scream swells under the roar and stops dead
     sc = rev_scream(740 + v, 1.1, sc_f0)
-    add(out, sc, t_cut - len(sc) / SR, 0.75)
+    add(out, sc, t_cut - len(sc) / SR, 0.95)
     out = norm(out)
     cut = N(t_cut)
     out[cut:] *= 0.0
@@ -946,13 +970,14 @@ def pant(seed, scale=0.55, ex_dur=0.15, in_dur=0.11, voiced=0.3):
     ne = N(ex_dur)
     fr = ftrack(ne, [(0, dogv('open', scale)), (ex_dur, dogv('mid', scale))], glide=ex_dur)
     ee = env_pts(ne, [(0, 0), (0.012, 1), (ex_dur * 0.45, 0.7), (ex_dur, 0)])
-    ex = norm(shaped_noise(fr, ne, seed, hf=0.3) * ee)
+    ex = norm(shaped_noise(fr, ne, seed, hf=0.2, sharp=0.6, lp=4200.0) * ee)
     vf = vsynth(contour(ne, [(0, 150), (ex_dur, 118)]), fr, ee, tilt=1.2, jitter=0.03, rough=0.8, breath=0.0, fmax=5000,
                 seed=seed + 1)
     add(out, ex + voiced * norm(vf), 0.0)
     ni = N(in_dur)
     fri = ftrack(ni, [(0, dogv('mid', scale * 1.1))])
-    inh = shaped_noise(fri, ni, seed + 2, hf=0.8) * env_pts(ni, [(0, 0), (in_dur * 0.5, 1), (in_dur, 0)])
+    inh = shaped_noise(fri, ni, seed + 2, hf=0.5, sharp=0.5, lp=5000.0)
+    inh *= env_pts(ni, [(0, 0), (in_dur * 0.5, 1), (in_dur, 0)])
     add(out, norm(inh), ex_dur + gap, 0.42)
     r = dsp.rng(seed + 3)
     add(out, bubble(r.uniform(900, 1600), seed + 4, rise=0.6, amp=0.12), r.uniform(0.0, 0.03))  # tongue flap
@@ -1046,8 +1071,8 @@ def retch(seed, dur, f0, scale=0.55):
     a = env_pts(n, [(0, 0), (dur * 0.12, 0.8), (dur * 0.4, 1.0), (dur, 0)])
     v = vsynth(contour(n, [(0, f0 * 1.2), (dur * 0.3, f0), (dur, f0 * 0.8)]), fr, a, tilt=0.8, jitter=0.04,
                shimmer=0.25, rough=1.6, rough_hz=45, sub=0.8, breath=0.0, fmax=6000, seed=seed)
-    nz = shaped_noise(fr, n, seed + 1, hf=0.4) * a
-    return norm(norm(v) + 0.9 * norm(nz))
+    nz = shaped_noise(fr, n, seed + 1, sharp=0.8, lp=3600.0) * a
+    return norm(dsp.lowpass(norm(v) + 0.9 * norm(nz), 6000, 2))
 
 
 def vomit():
@@ -1155,7 +1180,7 @@ def metro_retract():
     add(out, cl, tc, 0.9)
     add(out, thump(911, 110, 0.18, 1.0, slap=0.2), tc, 0.4)
     # BOING
-    add(out, boing(912), tc + 0.03, 0.85)
+    add(out, boing(912, 1.15, 200.0), tc + 0.03, 1.25)
     return room(out, 'patio', 0.08)
 
 
@@ -1273,7 +1298,7 @@ def guiro_stroke(seed, dur, rate0, rate1, amp=1.0):
     e = env_pts(n, [(0, 0), (0.004, 0.8), (dur * 0.6, 1.0), (dur, 0.9), (dur + 0.004, 0), (n / SR, 0)])
     idx, a = stick_slip(n, rate, seed, jitter=0.12, amp_env=e, amp_lo=0.55)
     kern = modal_ir([(r.uniform(1900, 2300), 500, 1.0), (r.uniform(3300, 3800), 650, 0.8), (r.uniform(5200, 5900), 800, 0.55),
-                     (r.uniform(900, 1100), 350, 0.4)], 0.012, seed)
+                     (r.uniform(1150, 1400), 380, 0.85), (r.uniform(750, 900), 300, 0.45)], 0.012, seed)
     y = pulse_train(n, idx, a, kern)
     y = norm(y) + 0.25 * norm(bp(white(n, seed + 1), 2500, 8000)) * e
     return norm(y, amp)
@@ -1396,7 +1421,7 @@ def cumbia_stems():
     return _STEMS
 
 
-MIX = {'bass': 0.95, 'acc': 0.72, 'comp': 0.3, 'guiro': 0.3, 'conga': 0.3, 'timb': 0.38, 'kick': 0.5}
+MIX = {'bass': 0.9, 'acc': 0.72, 'comp': 0.3, 'guiro': 0.62, 'conga': 0.4, 'timb': 0.58, 'kick': 0.5}
 MELODIC = ('bass', 'acc', 'comp')
 DRUMS = ('guiro', 'conga', 'timb', 'kick')
 
@@ -1428,7 +1453,7 @@ def wind(n, L, circular=True):
     return gain.astype(np.float32), np.clip(bright, 0, 1).astype(np.float32)
 
 
-def far_chain(x, pre, circular=True, stereo=True, bright_hz=1700.0, L=None):
+def far_chain(x, pre, circular=True, stereo=True, bright_hz=1900.0, L=None):
     """The neighbour's boombox flat out, heard three houses away at night."""
     n0 = len(x)
     if not circular:
@@ -1440,8 +1465,8 @@ def far_chain(x, pre, circular=True, stereo=True, bright_hz=1700.0, L=None):
     bright = cfilt(spk, lambda f: hp2(f, 90) * lp2(f, bright_hz * 1.35) * lp1(f, 4500) * (1 + bump(f, 150, 0.5, 0.6)))
     dark = cfilt(spk, lambda f: hp2(f, 90) * lp2(f, bright_hz * 0.7) * lp1(f, 3500) * (1 + bump(f, 150, 0.5, 0.6)))
     direct = (dark * (1 - mb) + bright * mb) * gb
-    taps = ((0.043, 0.42, 0.55, 1300), (0.097, 0.33, -0.6, 1150), (0.152, 0.26, 0.8, 1000), (0.236, 0.2, -0.35, 900),
-            (0.371, 0.13, 0.5, 800))
+    taps = ((0.043, 0.22, 0.55, 1300), (0.097, 0.17, -0.6, 1150), (0.152, 0.13, 0.8, 1000), (0.236, 0.1, -0.35, 900),
+            (0.371, 0.06, 0.5, 800))
     if stereo:
         out = pan(direct, -0.3)
     else:
@@ -1450,9 +1475,9 @@ def far_chain(x, pre, circular=True, stereo=True, bright_hz=1700.0, L=None):
         tap = np.roll(cfilt(direct, lambda f, fc=fc: lp2(f, fc)), N(d)) * g
         out = out + (pan(tap, p) if stereo else tap)
     if stereo:
-        out = verb_st(out, 'barrio', wet=0.42, dry=1.0, seed=31, circular=True)
+        out = verb_st(out, 'barrio', wet=0.16, dry=1.0, seed=31, circular=True)
     else:
-        out = verb(out, 'barrio', wet=0.42, dry=1.0, seed=31, circular=True)
+        out = verb(out, 'barrio', wet=0.16, dry=1.0, seed=31, circular=True)
     if not circular:
         out = out[N(0.5):]
         out = out[:n0 + N(2.4)]
@@ -1483,10 +1508,10 @@ def cumbia_cut():
     far_stems()
     pre = _FAR['pre']
     dry = stem_mix(MELODIC) + stem_mix(DRUMS)
-    total = 3.6
+    total = 3.0
     n = N(total)
     t = taxis(n)
-    ts = 1.45
+    ts = 0.85
     v = np.ones(n)
     for a0, a1, v0, v1 in ((ts, ts + 0.055, 1.0, -2.3), (ts + 0.055, ts + 0.12, -2.3, 2.6), (ts + 0.12, ts + 0.19, 2.6, -1.0)):
         i0, i1 = N(a0), N(a1)

@@ -2211,21 +2211,24 @@ def make_beg():
     # the base: center the tower over the origin
     k.shift((0.0, 0.0, -float(F['link_5'][1][2]) - 6.0))
     F = {n: (k.R(n), k.wpos(n)) for n in BODY}
-    k.neck_head(F, wdir(-20, 0), R_deg(0, 4, 0) @ R_deg(0, 0, 20) @ R_deg(26, 0, 0))
+    # the neck stands up out of the chest so the head sits ON TOP of the tower, looking down at you with the dog
+    # head tilt; nothing of the begging below it (paws, tag, praying hands) hides behind the skull
+    k.neck_head(F, wdir(-86, 0), R_deg(0, 4, 0) @ R_deg(0, 0, 18) @ R_deg(7, 0, 0), slide=2.0)
     k.flaps(3, 10, 2, 6)
     k.brows(15, -0.7)
-    k.set('tongue', 14, 6, 0)
-    k.set('tongue_tip', 18, 10, 0)
-    # stubby front paws up, bent down at the wrist
+    k.set('tongue', 10, 34, 0)                                 # lolling out of the side of the mouth
+    k.set('tongue_tip', 30, 10, 0)
+    # stubby front paws up, bent down at the wrist (under the chin, either side of the name tag)
     for side, sx in (('right', -1), ('left', 1)):
         lb, pb = f'front_{side}_leg', f'front_{side}_paw'
-        k.set_world_rot(lb, R_deg(0, 0, 14 * sx) @ R_deg(-112, 0, 0))
-        k.set_world_rot(pb, R_deg(0, 10 * sx, 0) @ R_deg(62, 0, 0))
-    # pair 1: human palms pressed together 'por favor' in front of the chest, under the paws
-    ch = k.wpos('link_1', (0.0, 9.0, 8.0))
+        k.set_world_rot(lb, R_deg(0, 0, 16 * sx) @ R_deg(-98, 0, 0))
+        k.set_world_rot(pb, R_deg(0, 10 * sx, 0) @ R_deg(72, 0, 0))
+    # pair 1: human palms pressed together 'por favor' in front of the belly, under the name tag
+    # (held well out in front of the belly: the forearms are far too long to fold the hands in any closer)
+    ch = k.wpos('link_2', (0.0, 9.0, 7.0))
     for side, sx in (('right', -1), ('left', 1)):
-        W = np.array([sx * 1.0, ch[1] + 2.0, ch[2] - 2.0])
-        k.arm(1, side, W, (sx * 1.0, 0.4, 0.2), prayer_rot(sx, -8))
+        W = np.array([sx * 1.0, ch[1] - 1.0, ch[2] - 13.0])
+        k.arm(1, side, W, (sx * 1.0, -0.7, 0.1), prayer_rot(sx, -14))     # elbows jut out to the sides: a mantis
     # pairs 2 and 3: planted round the base, elbows out: it sits on its arms
     base = k.wpos('link_6')
     spots = {(2, 'right'): (-22, -14, 34), (2, 'left'): (22, -12, -150), (3, 'right'): (-24, 10, -20),
