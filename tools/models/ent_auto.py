@@ -35,8 +35,8 @@ def H(*cs):
     return [hx(c) for c in cs]
 
 
-GREY = H('#16181b', '#22252a', '#30343a', '#40454c', '#51575e', '#636a71', '#757c83', '#878e94', '#9aa0a5', '#aeb3b7',
-         '#c2c6c9', '#d4d7d9')
+GREY = H('#17191a', '#232625', '#313432', '#404440', '#50544f', '#61655f', '#737770', '#868981', '#999b93', '#acaea6',
+         '#bfc1b9', '#d1d2cb')
 PRIMER = H('#2e2b28', '#45403b', '#5d5750', '#77706a')
 RUST = H('#1e0c05', '#331307', '#4d1d0a', '#6a2a0e', '#874015', '#a3561f', '#bb6d2c', '#cf8640')
 MUD = H('#1d1712', '#2b231b', '#3b3025', '#4c3e2f', '#5d4d3a', '#6e5d47')
@@ -115,7 +115,7 @@ def side_dent(ctx, x, y, z):
         if d < r:
             k = 1.0 - d / r
             # light comes from the front-top: the wall of the dent toward it is in shade, the far wall catches light
-            v += (-(da / r) * 0.22 + (db / r) * 0.12) * k * depth
+            v += (-(da / r) * 0.38 + (db / r) * 0.2) * k * depth
             if 0.35 < d / r < 0.55 and h2(int(da * 3), int(db * 3), 5) > 0.55:
                 v -= 0.08 * depth   # creased paint
     return v
@@ -123,18 +123,18 @@ def side_dent(ctx, x, y, z):
 
 def rust_amount(x, y, z, extra=0.0):
     """0..1 rust coverage: the sills, the wheel arches, the bottom of the doors and a few spots elsewhere."""
-    low = max(0.0, (y - 12.0) / 7.0)
+    low = max(0.0, (y - 11.0) / 7.0)
     arch = 0.0
     for az in (FRONT_AXLE, REAR_AXLE):
         d = math.sqrt((z - az) ** 2 + (y - AXLE_Y) ** 2)
-        if 5.5 < d < 9.5:
-            arch = max(arch, 1.0 - abs(d - 7.0) / 2.5)
-    n = fbm(x * 0.21 + 7, y * 0.21, z * 0.21, 3, 11)
-    spots = fbm(x * 0.45, y * 0.45 + 3, z * 0.45, 2, 19)
-    t = 0.66 - 0.2 * low - 0.18 * arch - extra
-    a = (n - t) * 6.0
-    if spots > 0.78:
-        a = max(a, (spots - 0.78) * 9.0)
+        if WHEEL_R - 0.5 < d < WHEEL_R + 4.5:
+            arch = max(arch, 1.0 - abs(d - (WHEEL_R + 1.5)) / 3.0)
+    n = fbm(x * 0.13 + 7, y * 0.13, z * 0.13, 3, 11)
+    t = 0.7 - 0.24 * low - 0.2 * arch - extra
+    a = (n - t) * 5.0
+    spots = fbm(x * 0.32, y * 0.32 + 3, z * 0.32, 2, 19)
+    if spots > 0.8:
+        a = max(a, (spots - 0.8) * 7.0)
     return max(0.0, min(1.0, a))
 
 
@@ -154,41 +154,64 @@ def paint_mat(ctx):
     """The body: chalky grey paint, panel gaps, dents, scratches, rust and mud."""
     x, y, z = ctx.pos
     cube = ctx.cube
-    v = 0.6 + face_light(ctx) * 1.1
-    v += (fbm(x * 0.3, y * 0.3, z * 0.3, 3, 2) - 0.5) * 0.12     # faded, uneven paint
+    v = 0.43 + face_light(ctx) * 0.85
+    v += (fbm(x * 0.18, y * 0.18, z * 0.18, 3, 2) - 0.5) * 0.14    # faded, uneven paint
     if ctx.n[1] < -0.5:
-        v += (fbm(x * 0.15, 0, z * 0.15, 2, 4) - 0.5) * 0.2      # sun-bleached patches on the top
+        v += (fbm(x * 0.12, 0, z * 0.12, 2, 4) - 0.5) * 0.16 + 0.04  # sun-bleached patches on the top
     v += side_dent(ctx, x, y, z)
     e = ctx.edge()
-    if e == 0 and getattr(cube, 'gaps', True):
-        v -= 0.16                                                 # panel gaps
-    elif e == 1 and getattr(cube, 'gaps', True) and ctx.n[1] > -0.5:
-        v += 0.04
+    gaps = getattr(cube, 'gaps', True)
+    if e == 0 and gaps:
+        v -= 0.13                                                 # panel gaps
+    elif e == 1 and gaps and ctx.n[1] > -0.5:
+        v += 0.03
+    v += (h2(ctx.i, ctx.j, 77) - 0.5) * 0.04
     col = lum(v, GREY)
-    # the chrome strip along the flanks, just under the beltline, and the drip rail line
-    if abs(ctx.n[0]) > 0.5 and 12.3 <= y <= 13.1 and getattr(cube, 'trim', True):
-        tv = 0.55 + (0.25 if (int(z) % 5) == 0 else 0) + (h2(int(z), 1, 3) - 0.5) * 0.3
+    # the chrome strip along the flanks and round the wheel arches
+    if abs(ctx.n[0]) > 0.5 and TRIM_Y - 0.4 <= y <= TRIM_Y + 0.4 and abs(x) > 17:
+        tv = 0.62 + (0.2 if (int(z) % 6) == 0 else 0) + (h2(int(z), 1, 3) - 0.5) * 0.2
         col = lum(tv, CHROME)
-        if rust_amount(x, y, z, 0.15) > 0.4:
-            col = lum(0.4, RUST)
-    # key scratch: somebody keyed the right flank long ago (bare primer, then rust in the line)
-    if ctx.n[0] < -0.5 and x < -16 and abs(y - (9.6 + (z + 15) * 0.035)) < 0.5 and -15 < z < 17 and h2(int(z * 2), 3, 9) > 0.15:
-        col = lum(0.55 + (h2(int(z), 2, 4) - 0.5) * 0.4, PRIMER)
-    # chipped paint on the edges of the doors and the bonnet
-    if e <= 1 and h2(ctx.i, ctx.j, cube.seed if hasattr(cube, 'seed') else 1) > 0.9:
-        col = lum(0.5, PRIMER)
+    # a chrome line round the window openings (beltline)
+    if abs(ctx.n[0]) > 0.5 and BELT <= y <= BELT + 0.5 and abs(x) > 17:
+        col = lum(0.55, CHROME)
+    # key scratch: somebody keyed the right flank long ago (primer in the line)
+    if ctx.n[0] < -0.5 and x < -17 and abs(y - (8.0 + (z + 15) * 0.03)) < 0.5 and -15 < z < 17 and h2(int(z * 2), 3, 9) > 0.2:
+        col = lum(0.6 + (h2(int(z), 2, 4) - 0.5) * 0.3, PRIMER)
+    name = getattr(cube, 'name', '')
+    if name == 'hood' and ctx.face == 'top':
+        if abs(abs(x) - 7.5) < 0.5:
+            col = lum(v + 0.1, GREY)                              # the two bonnet creases
+        elif abs(abs(x) - 8.5) < 0.5:
+            col = lum(v - 0.08, GREY)
+        if z > -22 and abs(x) < 12 and int(x) % 2 == 0:
+            col = lum(0.12, GRILLE)                               # cowl vents under the windscreen
+    if name == 'quarter' and ctx.n[0] < -0.5 and (z - 30) ** 2 + (y - BELT - 2.5) ** 2 < 2.3:
+        col = lum(0.62 if (z - 30) + (y - BELT - 2.5) < 0 else 0.4, CHROME)    # fuel cap
+    if name == 'trunk' and ctx.face == 'back':
+        if abs(x) < 0.8 and abs(y - (BELT + 1.5)) < 0.8:
+            col = lum(0.7, CHROME)                                # boot lock
+        if abs(y - (BELT + 0.5)) < 0.4 and abs(x) < 11:
+            col = lum(0.55, CHROME)                               # chrome strip over the plate
+    # chipped paint along the edges
+    if e == 0 and h2(ctx.i, ctx.j, 5) > 0.88:
+        col = lum(0.45, PRIMER)
     r = rust_amount(x, y, z)
     if r > 0:
-        if r < 0.35:
-            col = mix(col, lum(0.3, RUST), 0.55)                 # bubbling under the paint
-        else:
-            rv = 0.35 + (fbm(x * 0.8, y * 0.8, z * 0.8, 2, 31) - 0.5) * 0.8 + face_light(ctx)
-            col = lum(rv, RUST)
+        rv = 0.3 + r * 0.25 + (fbm(x * 0.9, y * 0.9, z * 0.9, 2, 31) - 0.5) * 0.45 + face_light(ctx) * 0.6
+        rc = lum(rv, RUST)
+        col = mix(col, rc, 0.45) if r < 0.3 else rc               # orange bloom under the paint, then bare rust
     d = dirt_amount(x, y, z)
     if d > 0.25:
         dv = 0.45 + (fbm(x * 1.1, y * 1.1, z * 1.1, 2, 41) - 0.5) * 0.5 + face_light(ctx) * 0.5
         col = mix(col, lum(dv, MUD), min(0.85, (d - 0.25) * 1.6))
     return col
+
+
+def chassis_mat(ctx):
+    """Valance and chassis boxes: painted where they show, dark underneath."""
+    if ctx.face == 'bottom' or (abs(ctx.n[0]) > 0.5):
+        return under_mat(ctx)
+    return paint_mat(ctx)
 
 
 def chrome_mat(ctx):
@@ -224,20 +247,25 @@ def rubber_mat(ctx):
 
 
 def hubcap_mat(ctx):
-    """Chrome hubcap: dished, with rust weeping from the slots (same on all four: painted once)."""
+    """Steel rim painted dark grey with its ring of holes, a small chrome cap in the middle (painted once for 4)."""
     if ctx.face not in ('east', 'west'):
-        return lum(0.45 + face_light(ctx), CHROME)
+        return lum(0.35 + face_light(ctx), GREY)
     cx, cy = (ctx.w - 1) / 2.0, (ctx.h - 1) / 2.0
     dx, dy = ctx.i - cx, ctx.j - cy
     d = math.sqrt(dx * dx + dy * dy)
+    if d > 3.9:
+        return lum(0.12, RUBBER)
     if d > 3.2:
-        return lum(0.3, CHROME)
-    v = 0.75 - d * 0.08 + (0.2 if dx < 0 and dy < 0 else 0)
-    if 1.6 < d < 2.6 and (abs(dx) < 0.6 or abs(dy) < 0.6):
-        return lum(0.1, CHROME)                                   # the four slots
-    col = lum(v, CHROME)
-    if h2(ctx.i, ctx.j, 9) > 0.8:
-        col = lum(0.4, RUST)
+        return lum(0.42 + (0.1 if dy < 0 else -0.05), GREY)      # rim lip
+    if d < 1.7:
+        v = 0.8 - d * 0.15 + (0.15 if dx < 0 and dy < 0 else 0)
+        return lum(v, CHROME)                                     # chrome cap
+    ang = math.atan2(dy, dx)
+    if int((ang + 3.2) / (math.pi / 3)) % 2 == 0 and 2.0 < d < 3.0:
+        return lum(0.05, RUBBER)                                  # holes in the steel wheel
+    col = lum(0.3 + (h2(ctx.i, ctx.j, 3) - 0.5) * 0.1, GREY)
+    if h2(ctx.i, ctx.j, 9) > 0.75:
+        col = lum(0.35, RUST)
     return col
 
 
@@ -256,33 +284,34 @@ def glass_mat(kind):
             u, w = x, ctx.t
         else:
             u, w = z, (y + 6) / 13.0
-        grime = 0.06 + 0.25 * max(0.0, w - 0.75) * 4
+        grime = 0.01 + 0.16 * max(0.0, w - 0.8) * 5
         if kind == 'ws':
             # the two wiper sweeps (pivots under the glass) stay clean; outside them, a film of dust
             inside = False
             for px in (-8.0, 7.0):
-                dd = math.sqrt((u - px) ** 2 + ((1.0 - w) * 16 + 2.5) ** 2)
-                if dd < 13.0:
+                dd = math.sqrt((u - px) ** 2 + ((1.0 - w) * WS_LEN + 2.0) ** 2)
+                if dd < 11.5:
                     inside = True
-            grime = 0.025 if inside else 0.22 + 0.2 * max(0.0, w - 0.7) * 3
-            # a crack from a stone hit on the passenger side
-            cx, cy = -9.0, 0.35
-            ax, ay = u - cx, (w - cy) * 16
+            grime = 0.004 if inside else 0.07 + 0.2 * max(0.0, w - 0.75) * 4
+            # a crack from a stone hit on the passenger side: a small star, thin dark-and-light lines
+            cx, cy = -9.0, 0.3
+            ax, ay = u - cx, (w - cy) * WS_LEN
             r = math.sqrt(ax * ax + ay * ay)
-            if r < 7.5:
+            if r < 6.0:
                 ang = math.atan2(ay, ax)
-                for k in range(7):
-                    a0 = k * 0.9 + 0.3 * math.sin(k * 3.1)
-                    if abs(math.sin(ang - a0)) * r < 0.45 and math.cos(ang - a0) > 0 and r < 3 + (k * 37 % 5):
-                        return A(lum(0.8, GLASS_STREAK)) if (k + int(r)) % 3 else A(GRIME[0])
-                if r < 0.8:
-                    return A(GLASS_STREAK[3])
+                for k in range(6):
+                    a0 = k * 1.05 + 0.35 * math.sin(k * 3.1)
+                    length = 2.5 + (k * 37 % 4)
+                    if abs(math.sin(ang - a0)) * r < 0.35 and math.cos(ang - a0) > 0 and r < length:
+                        return A(lum(0.45, GLASS_STREAK)) if (k + int(r)) % 2 else A(GRIME[0])
+                if r < 0.7:
+                    return A(GLASS_STREAK[2])
         if h2(int(u * 2), int(w * 40), 13 + len(kind)) < grime:
-            return A(lum(h2(int(u), int(w * 9), 2), GRIME))
+            return A(lum(h2(int(u), int(w * 9), 2) * 0.7, GRIME))
         # streaky reflections (diagonal)
-        s = (u * 0.55 + w * 14) % 11
-        if s < 0.8 and h2(int(u), int(w * 30), 7) > 0.45:
-            return A(lum(0.4 + h2(int(u * 3), 1, 1) * 0.6, GLASS_STREAK))
+        s = (u * 0.55 + w * 14) % 13
+        if kind != 'side' and s < 0.5 and h2(int(u), int(w * 30), 7) > 0.7:
+            return A(lum(0.1 + h2(int(u * 3), 1, 1) * 0.25, GLASS_STREAK))
         return None
     return f
 
@@ -377,6 +406,35 @@ def vinyl_mat(ctx):
     if x > 3 and x < 7 and ctx.face == 'top' and -6 < z < -1:
         col = H('#8a7a5a', '#a8976f')[int(h2(ctx.i, ctx.j, 3) * 2)]    # foam showing through the split
     return col
+
+
+def beads_mat(ctx):
+    """The driver's seat wears a wooden-bead cover (every taxi and every uncle's car had one)."""
+    if ctx.face not in ('back', 'front', 'top'):
+        return vinyl_mat(ctx)
+    i, j = ctx.i, ctx.j
+    if i % 2 == 0 and j % 2 == 0:
+        return lum(0.55 + (h2(i, j, 7) - 0.5) * 0.35 + (0.12 if (i // 2 + j // 2) % 3 == 0 else 0), WOOD)
+    if i % 2 == 1 and j % 2 == 1:
+        return lum(0.1, VINYL)
+    return lum(0.25, WOOD)
+
+
+def paper_mat(ctx):
+    """An old folded newspaper on the parcel shelf (columns of grey 'text', a dark photo block)."""
+    i, j = ctx.i, ctx.j
+    v = 0.6 + face_light(ctx) * 0.5
+    col = lum(v, HEADLINER)
+    if ctx.face == 'top':
+        if j % 2 == 1 and i % 4 != 3 and h2(i, j, 5) > 0.25:
+            col = lum(0.3, HEADLINER)
+        if 1 <= i <= 3 and 1 <= j <= 3:
+            col = lum(0.15, HEADLINER)
+    return col
+
+
+def flap_mat(ctx):
+    return lum(0.35 + face_light(ctx) + (h2(ctx.i, ctx.j, 3) - 0.5) * 0.15, RUBBER)
 
 
 def carpet_mat(ctx):
@@ -495,12 +553,12 @@ def door_mat(side):
             return paint_mat(ctx)
         v = 0.45 + (fbm(y * 0.5, z * 0.5, x, 2, 121) - 0.5) * 0.2
         col = lum(v, VINYL)
-        if 8.5 < y < 9.5:
+        if BELT + 1.5 < y < BELT + 2.5:
             col = lum(0.6, CHROME)                                # chrome trim strip
         zc = z - getattr(ctx.cube, 'zc', 0)
-        if abs(zc - 4) < 1.5 and 10 < y < 11.5:
+        if abs(zc - 4) < 1.5 and BELT + 3 < y < BELT + 4.5:
             col = lum(0.7, CHROME)                                # door handle
-        if abs(zc + 2) < 1.2 and abs(y - 12.5) < 1.2:
+        if abs(zc + 2) < 1.2 and abs(y - (BELT + 6)) < 1.2:
             col = lum(0.5, CHROME)                                # window winder
         if y > 16:
             col = lum(0.4, CARPET)
@@ -521,9 +579,9 @@ MATS = {
     'ws_glass': glass_mat('ws'), 'rw_glass': glass_mat('rw'), 'side_glass': glass_mat('side'),
     'headlight': lens_mat(LENS, 'head'), 'taillight': lens_mat(RED_LENS, 'tail'), 'indicator': lens_mat(AMBER, 'ind'),
     'grille': grille_mat, 'plate': plate_mat, 'under': under_mat, 'vinyl': vinyl_mat, 'carpet': carpet_mat,
-    'roof': roof_mat, 'dash': dash_mat, 'binnacle': binnacle_mat, 'bakelite': bakelite_mat, 'mirror': mirror_mat,
+    'roof': roof_mat, 'chassis': chassis_mat, 'dash': dash_mat, 'binnacle': binnacle_mat, 'bakelite': bakelite_mat, 'mirror': mirror_mat,
     'rosary': rosary_mat, 'cross': cross_mat, 'door_l': door_mat(1), 'door_r': door_mat(-1), 'wood': wood_mat,
-    'antenna': antenna_mat, 'skip': lambda ctx: None,
+    'antenna': antenna_mat, 'beads': beads_mat, 'paper': paper_mat, 'flap': flap_mat, 'skip': lambda ctx: None,
 }
 
 
@@ -610,88 +668,97 @@ def build():
             setattr(c, k, v)
         return c
 
+    W_TOP = AXLE_Y - WHEEL_R            # top of the wheel arch
+    FA0, FA1 = FRONT_AXLE - WHEEL_R, FRONT_AXLE + WHEEL_R
+    RA0, RA1 = REAR_AXLE - WHEEL_R, REAR_AXLE + WHEEL_R
+
     # ---------------------------------------------------------------- body (shell)
     bone('body', (0, 18, 0))
-    # front wings (upper) and the corners ahead of / behind the front wheels
     for s in (1, -1):
         x0 = 14 if s > 0 else -18
-        box('body', (x0, BELT, -40), (4, 5, 21), 'paint', 'wing')
-        box('body', (x0, 12, -40), (4, 5, 7), 'paint', 'wing_nose')
-        box('body', (x0, 12, -20), (4, 6, 1), 'paint', 'wing_tail')
-        # rear quarters (upper), behind the rear wheel, ahead of it
-        box('body', (x0, BELT, 20), (4, 5, 20), 'paint', 'quarter')
-        box('body', (x0, 12, 34), (4, 5, 6), 'paint', 'quarter_tail')
-        box('body', (x0, 12, 20), (4, 6, 1), 'paint', 'quarter_nose')
-        # B pillar between the door windows
-        box('body', (16 if s > 0 else -18, ROOF_BOT, 0), (2, 13, 2), 'paint', 'b_pillar')
-        # drip rail along the roof edge
-        box('body', (17 if s > 0 else -18, ROOF_TOP + 1, -9), (1, 1, 24), 'chrome', 'drip')
-    # chassis between the wheels, front and rear (dark, under the bonnet / boot)
-    box('body', (-14, 12, -40), (28, 6, 21), 'under', 'front_chassis')
-    box('body', (-14, 12, 22), (28, 6, 18), 'under', 'rear_chassis')
-    # grille panel, headlights, indicators, front bumper
-    box('body', (-17, 8, -41), (34, 4, 1), 'grille', 'grille')
+        # front wing above the wheel, the corner ahead of it, the strip behind it
+        box('body', (x0, BELT, -40), (4, W_TOP - BELT, 21), 'paint', 'wing')
+        box('body', (x0, W_TOP, -40), (4, 17 - W_TOP, FA0 + 40), 'paint', 'wing_nose')
+        box('body', (x0, W_TOP, FA1), (4, 18 - W_TOP, -19 - FA1), 'paint', 'wing_tail')
+        # rear quarter above the wheel, ahead of it, behind it
+        box('body', (x0, BELT, 20), (4, W_TOP - BELT, 20), 'paint', 'quarter')
+        box('body', (x0, W_TOP, 20), (4, 18 - W_TOP, RA0 - 20), 'paint', 'quarter_nose')
+        box('body', (x0, W_TOP, RA1), (4, 17 - W_TOP, 40 - RA1), 'paint', 'quarter_tail')
+        # B pillar between the door windows, drip rail along the roof edge
+        box('body', (16 if s > 0 else -18, ROOF_BOT, 0), (2, BELT - ROOF_BOT, 2), 'paint', 'b_pillar', gaps=False)
+        box('body', (17 if s > 0 else -18, ROOF_TOP + 1, -9), (1, 1, 23), 'chrome', 'drip')
+    # valance + chassis between the wheels, front and rear (painted faces, dark underside)
+    box('body', (-14, W_TOP, -40), (28, 18 - W_TOP, 21), 'chassis', 'front_chassis')
+    box('body', (-14, W_TOP, 22), (28, 18 - W_TOP, 18), 'chassis', 'rear_chassis')
+    # grille panel, headlights, indicators, bumpers, plates, exhaust
+    box('body', (-17, BELT + 1, -41), (34, 4, 1), 'grille', 'grille')
     for s in (1, -1):
-        hx0 = 10 if s > 0 else -16
-        box('body', (hx0, 8, -41.6), (6, 4, 1), 'headlight', 'headlight', decals={'eyes:front': glow_fill((255, 244, 214, 255), 1, (255, 255, 245, 255))})
-        box('body', (12 if s > 0 else -16, 12, -41), (4, 1, 1), 'indicator', 'indicator')
-        # tail-lights (tall clusters at the rear corners)
-        box('body', (12 if s > 0 else -17, 8, 40), (5, 5, 1), 'taillight', 'taillight', decals={'eyes:back': glow_fill((255, 40, 30, 255), 1)})
-    box('body', (-18, 13, -43), (36, 2, 2), 'chrome', 'bumper_front')
-    box('body', (-18, 13, 41), (36, 2, 2), 'chrome', 'bumper_rear')
-    box('body', (-4, 9, 40.2), (8, 3, 0), 'plate', 'plate')
-    box('body', (-4, 15, -42.6), (8, 3, 0), 'plate', 'plate_front')
+        box('body', (10 if s > 0 else -16, BELT + 1, -41.6), (6, 4, 1), 'headlight', 'headlight',
+            decals={'eyes:front': glow_fill((255, 244, 214, 255), 1, (255, 255, 245, 255))})
+        box('body', (11 if s > 0 else -16, BELT + 5, -41), (5, 1, 1), 'indicator', 'indicator')
+        box('body', (12 if s > 0 else -17, BELT + 1, 40), (5, 5, 1), 'taillight', 'taillight',
+            decals={'eyes:back': glow_fill((255, 40, 30, 255), 1)})
+    bone('bumper_front', (0, 12, -42), 'body', rot=(0, 0, 1.6))      # bent in some old parking manoeuvre
+    box('bumper_front', (-18, 11, -43), (36, 2, 2), 'chrome', 'bumper_front')
+    for s in (1, -1):
+        box('bumper_front', (7 if s > 0 else -9, 10, -43.6), (2, 4, 1), 'flap', 'overrider')
+        box('body', (7 if s > 0 else -9, 10, 42.6), (2, 4, 1), 'flap', 'overrider_rear')
+    box('body', (-18, 11, 41), (36, 2, 2), 'chrome', 'bumper_rear')
+    box('body', (-4, BELT + 2, 40.2), (8, 3, 0), 'plate', 'plate')
+    box('body', (-4, 13, -42.2), (8, 3, 0), 'plate', 'plate_front')
     box('body', (-11, 17, 36), (2, 1, 6), 'under', 'exhaust')
-    # cabin floor + firewall + the parcel shelf
+    for s in (1, -1):
+        box('body', (14 if s > 0 else -18, 15, REAR_AXLE + WHEEL_R + 0.3), (4, 4, 0), 'flap', 'mud_flap')
+    box('body', (-6, BELT - 1.5, 19.5), (7, 1, 2), 'paper', 'newspaper')
+    # cabin floor, firewall, parcel shelf, roof
     box('body', (-16, FLOOR, -19), (32, 1, 41), 'carpet', 'floor')
-    box('body', (-16, 11, -19), (32, 7, 1), 'dash', 'firewall')
-    box('body', (-15, 6, 19), (30, 1, 3), 'dash', 'parcel_shelf')
-    # roof
-    box('body', (-17, ROOF_TOP, -9), (34, 2, 24), 'roof', 'roof')
+    box('body', (-16, BELT + 4, -19), (32, 18 - BELT - 4, 1), 'dash', 'firewall')
+    box('body', (-15, BELT - 1, 19), (30, 1, 3), 'dash', 'parcel_shelf')
+    box('body', (-17, ROOF_TOP, -9), (34, 2, 23), 'roof', 'roof')
     # radio aerial on the right wing
     bone('antenna', (-16, BELT, -36), 'body', rot=(-12, 0, 0))
     box('antenna', (-16.5, BELT - 13, -36.5), (1, 13, 1), 'antenna', 'antenna')
 
-    # bonnet and boot (hinged lids over the engine bay / the boot)
+    # bonnet and boot lids
     bone('hood', (0, BELT, -19), 'body')
-    box('hood', (-14, BELT, -40), (28, 5, 21), 'paint', 'hood')
+    box('hood', (-14, BELT, -40), (28, W_TOP - BELT, 21), 'paint', 'hood')
     bone('trunk', (0, BELT, 22), 'body')
-    box('trunk', (-14, BELT, 22), (28, 5, 18), 'paint', 'trunk')
+    box('trunk', (-14, BELT, 22), (28, W_TOP - BELT, 18), 'paint', 'trunk')
 
     # ---------------------------------------------------------------- doors (hinged at the front edge)
     for name, s, z0, z1 in (('door_fl', 1, -19, 1), ('door_rl', 1, 1, 20), ('door_fr', -1, -19, 1), ('door_rr', -1, 1, 20)):
         xo = 16 if s > 0 else -18
         bone(name, (17 * s, BELT, z0), 'body')
-        box(name, (xo, BELT, z0), (2, 12, z1 - z0), 'door_l' if s > 0 else 'door_r', 'door', zc=(z0 + z1) / 2.0)
-        # window glass in the door (stepped at the front to follow the A pillar on the front doors)
+        box(name, (xo, BELT, z0), (2, 18 - BELT, z1 - z0), 'door_l' if s > 0 else 'door_r', 'door', zc=(z0 + z1) / 2.0)
         gx = 17 if s > 0 else -17
+        gh = BELT - ROOF_BOT
         if name.startswith('door_f'):
-            box(name, (gx, ROOF_BOT, -8), (0, 13, 8), 'side_glass', 'glass')
-            box(name, (gx, -1, -13), (0, 8, 5), 'side_glass', 'glass')
-            box(name, (gx, 3, -16), (0, 4, 3), 'side_glass', 'glass')
+            # stepped at the front to follow the raked A pillar
+            box(name, (gx, ROOF_BOT, -9), (0, gh, 9), 'side_glass', 'glass')
+            box(name, (gx, ROOF_BOT + 4, -13), (0, gh - 4, 4), 'side_glass', 'glass')
+            box(name, (gx, ROOF_BOT + 8, -16), (0, gh - 8, 3), 'side_glass', 'glass')
         else:
-            box(name, (gx, ROOF_BOT, 2), (0, 13, 12), 'side_glass', 'glass')
-            box(name, (gx, 1, 14), (0, 6, 4), 'side_glass', 'glass')
-        # chrome handle
+            box(name, (gx, ROOF_BOT, 2), (0, gh, 12), 'side_glass', 'glass')
+            box(name, (gx, ROOF_BOT + 6, 14), (0, gh - 6, 4), 'side_glass', 'glass')
         hz = z1 - 4 if name.startswith('door_f') else z1 - 5
-        box(name, (17.6 if s > 0 else -18.6, 9, hz), (1, 1, 3), 'chrome', 'handle')
-    # driver's door mirror
-    box('door_fl', (18, 5, -17), (1, 1, 1), 'chrome', 'mirror_arm')
-    box('door_fl', (18.5, 3, -17.5), (2, 2, 2), 'chrome', 'mirror_head')
+        box(name, (17.6 if s > 0 else -18.6, BELT + 2, hz), (1, 1, 3), 'chrome', 'handle')
+    # the driver's door mirror
+    box('door_fl', (18, BELT - 1, -17), (1, 1, 1), 'chrome', 'mirror_arm')
+    box('door_fl', (18.5, BELT - 3, -17.5), (2, 2, 2), 'chrome', 'mirror_head')
 
     # ---------------------------------------------------------------- greenhouse
     bone('windshield', WS_PIVOT, 'body', rot=(WS_RAKE, 0, 0))
-    box('windshield', (-16, BELT - 16, -18), (32, 16, 0), 'ws_glass', 'ws')
+    box('windshield', (-16, BELT - WS_LEN, -18), (32, WS_LEN, 0), 'ws_glass', 'ws')
     box('windshield', (-13, BELT - 2, -18.6), (11, 1, 1), 'bakelite', 'wiper')
     box('windshield', (1, BELT - 2, -18.6), (11, 1, 1), 'bakelite', 'wiper')
     bone('a_pillars', WS_PIVOT, 'body', rot=(WS_RAKE, 0, 0))
     for s in (1, -1):
-        box('a_pillars', (15 if s > 0 else -18, BELT - 17, -19), (3, 17, 2), 'paint', 'a_pillar', gaps=False)
+        box('a_pillars', (15 if s > 0 else -18, BELT - WS_LEN - 1, -19), (3, WS_LEN + 1, 2), 'paint', 'a_pillar', gaps=False)
     bone('rear_window', RW_PIVOT, 'body', rot=(RW_RAKE, 0, 0))
-    box('rear_window', (-15, BELT - 15, 22), (30, 15, 0), 'rw_glass', 'rw')
+    box('rear_window', (-15, BELT - RW_LEN, 22), (30, RW_LEN, 0), 'rw_glass', 'rw')
     bone('c_pillars', RW_PIVOT, 'body', rot=(RW_RAKE, 0, 0))
     for s in (1, -1):
-        box('c_pillars', (15 if s > 0 else -18, BELT - 16, 16), (3, 16, 6), 'paint', 'c_pillar', gaps=False)
+        box('c_pillars', (15 if s > 0 else -18, BELT - RW_LEN - 1, 16), (3, RW_LEN + 1, 6), 'paint', 'c_pillar', gaps=False)
 
     # ---------------------------------------------------------------- interior
     bone('dashboard', (0, BELT, -16), 'body')
@@ -700,15 +767,16 @@ def build():
     box('dashboard', (-1, 11, -11), (1, 6, 1), 'chrome', 'gear_lever')
     box('dashboard', (-1.5, 10, -11.5), (2, 2, 2), 'bakelite', 'gear_knob')
     # steering: the column tilts toward the driver, the wheel turns about the column (zRot)
-    bone('steering_column', (8.5, 4, -9), 'dashboard', rot=(25, 0, 0))
-    box('steering_column', (7.5, 3, -14), (2, 2, 5), 'bakelite', 'column')
-    bone('steering_wheel', (8.5, 4, -9), 'steering_column')
-    box('steering_wheel', (4.5, -1, -9.5), (8, 1, 1), 'bakelite', 'rim_top')
-    box('steering_wheel', (4.5, 8, -9.5), (8, 1, 1), 'bakelite', 'rim_bottom')
-    box('steering_wheel', (3.5, 0, -9.5), (1, 8, 1), 'bakelite', 'rim_left')
-    box('steering_wheel', (12.5, 0, -9.5), (1, 8, 1), 'bakelite', 'rim_right')
-    box('steering_wheel', (4.5, 3.5, -9.3), (8, 1, 0), 'bakelite', 'spoke')
-    box('steering_wheel', (7.5, 3, -10), (2, 2, 1), 'chrome', 'horn_button')
+    wy = 6.0
+    bone('steering_column', (8.5, wy, -9), 'dashboard', rot=(25, 0, 0))
+    box('steering_column', (7.5, wy - 1, -14), (2, 2, 5), 'bakelite', 'column')
+    bone('steering_wheel', (8.5, wy, -9), 'steering_column')
+    box('steering_wheel', (4.5, wy - 5, -9.5), (8, 1, 1), 'bakelite', 'rim_top')
+    box('steering_wheel', (4.5, wy + 4, -9.5), (8, 1, 1), 'bakelite', 'rim_bottom')
+    box('steering_wheel', (3.5, wy - 4, -9.5), (1, 8, 1), 'bakelite', 'rim_left')
+    box('steering_wheel', (12.5, wy - 4, -9.5), (1, 8, 1), 'bakelite', 'rim_right')
+    box('steering_wheel', (4.5, wy - 0.5, -9.3), (8, 1, 0), 'bakelite', 'spoke')
+    box('steering_wheel', (7.5, wy - 1, -10), (2, 2, 1), 'chrome', 'horn_button')
     # sun visors
     for s in (1, -1):
         box('body', (2 if s > 0 else -15, ROOF_BOT, -9), (13, 1, 5), 'roof', 'visor', gaps=False)
@@ -718,11 +786,11 @@ def build():
         bone(name, (8.5 * s, 16, 1), 'body')
         box(name, (x0, 16, -8), (11, 2, 9), 'vinyl', 'cushion')
         bone(name + '_back', (8.5 * s, 16, 1), name, rot=(-9, 0, 0))
-        box(name + '_back', (x0, 1, 0.5), (11, 15, 3), 'vinyl', 'back')
+        box(name + '_back', (x0, 1, 0.5), (11, 15, 3), 'beads' if s > 0 else 'vinyl', 'back')
     bone('bench', (0, 16, 18.5), 'body')
     box('bench', (-15, 16, 8), (30, 2, 11), 'vinyl', 'bench')
     bone('bench_back', (0, 16, 18.5), 'bench', rot=(-10, 0, 0))
-    box('bench_back', (-15, 1, 18.5), (30, 15, 3), 'vinyl', 'bench_back')
+    box('bench_back', (-15, 2, 18.5), (30, 14, 3), 'vinyl', 'bench_back')
 
     # rear-view mirror and the rosary hanging from it
     bone('mirror', (0, ROOF_BOT, -9), 'body')
@@ -736,23 +804,25 @@ def build():
 
     # ---------------------------------------------------------------- wheels (roots at the axles)
     src = {}
+    R = WHEEL_R
     for name, s, az in (('wheel_fl', 1, FRONT_AXLE), ('wheel_rl', 1, REAR_AXLE), ('wheel_fr', -1, FRONT_AXLE), ('wheel_rr', -1, REAR_AXLE)):
-        wx = 16 * s
-        bone(name, (wx, AXLE_Y, az))
+        bone(name, (16 * s, AXLE_Y, az))
         x0 = 14 if s > 0 else -18
         parts = [
-            ((x0, AXLE_Y - 6, az - 4), (4, 12, 8), 'rubber', 'tyre_a'),
-            ((x0, AXLE_Y - 4, az - 6), (4, 8, 12), 'rubber', 'tyre_b'),
-            ((17.4 if s > 0 else -18.4, AXLE_Y - 3, az - 3), (1, 6, 6), 'hubcap', 'hubcap'),
-            ((17.9 if s > 0 else -18.9, AXLE_Y - 1, az - 1), (1, 2, 2), 'nut', 'nut'),
+            ((x0, AXLE_Y - R, az - R + 2), (4, 2 * R, 2 * R - 4), 'rubber', 'tyre_a'),
+            ((x0, AXLE_Y - R + 2, az - R), (4, 2 * R - 4, 2 * R), 'rubber', 'tyre_b'),
+            ((x0, AXLE_Y - R + 1, az - R + 1), (4, 2 * R - 2, 2 * R - 2), 'rubber', 'tyre_c', -0.05),
+            ((17.3 if s > 0 else -18.3, AXLE_Y - 4, az - 4), (1, 8, 8), 'hubcap', 'hubcap'),
+            ((17.8 if s > 0 else -18.8, AXLE_Y - 1, az - 1), (1, 2, 2), 'nut', 'nut'),
         ]
-        for k, (frm, size, kind, nm) in enumerate(parts):
-            key = (k,)
+        for k, part in enumerate(parts):
+            frm, size, kind, nm = part[:4]
+            inf = part[4] if len(part) > 4 else 0.0
             if name == 'wheel_fl':
-                src[key] = box(name, frm, size, kind, nm)
+                src[k] = box(name, frm, size, kind, nm, inflate=inf)
             else:
                 # painted once (wheel_fl): the others reuse its UV, the right side mirrored
-                box(name, frm, size, 'skip', nm, mirror=s < 0, share=src[key])
+                box(name, frm, size, 'skip', nm, inflate=inf, mirror=s < 0, share=src[k])
 
     m = AutoModel('auto', 256, 256, r.roots)
     m.scale = 1.0
