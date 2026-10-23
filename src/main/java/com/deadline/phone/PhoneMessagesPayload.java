@@ -11,7 +11,7 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
  * Server -> client: every thread of the hunter's phone (most recent first). notify = the thread whose last message just
  * arrived (vibration, tone and toast on the client), "" for a silent refresh.
  */
-public record PhoneMessagesPayload(String notify, List<View> threads) implements CustomPacketPayload {
+public record PhoneMessagesPayload(String notifyThread, List<View> threads) implements CustomPacketPayload {
 	/** One thread as the phone draws it; typing = ticks of "escribiendo..." left. */
 	public record View(String id, int unread, int typing, List<PhoneMsg> messages) {
 	}
@@ -38,7 +38,7 @@ public record PhoneMessagesPayload(String notify, List<View> threads) implements
 	}
 
 	private void write(RegistryFriendlyByteBuf buf) {
-		buf.writeUtf(notify);
+		buf.writeUtf(notifyThread);
 		buf.writeVarInt(threads.size());
 		for (View t : threads) {
 			buf.writeUtf(t.id());

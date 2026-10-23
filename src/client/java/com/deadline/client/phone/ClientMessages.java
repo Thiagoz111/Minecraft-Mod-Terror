@@ -43,10 +43,10 @@ public final class ClientMessages {
 				TYPING.put(v.id(), v.typing());
 			}
 		}
-		if (p.notify().isEmpty()) {
+		if (p.notifyThread().isEmpty()) {
 			return;
 		}
-		PhoneMessagesPayload.View t = find(p.notify());
+		PhoneMessagesPayload.View t = find(p.notifyThread());
 		if (t == null || t.messages().isEmpty()) {
 			return;
 		}

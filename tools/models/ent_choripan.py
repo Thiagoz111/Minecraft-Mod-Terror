@@ -58,7 +58,7 @@ import sys
 
 import numpy as np
 
-from mcmodel import Model, hash3, face_light, pick, rot_matrix
+from mcmodel import Model, hash3, fbm, vnoise, face_light, pick, rot_matrix
 from rig import Rig
 from paint import hx, mix
 
@@ -1062,18 +1062,123 @@ def scarf_mat(ctx):
 # ------------------------------------------------------------------ looks (VARIANT_MATS) + toggles
 def make_mat(look):
     """Every cube keeps its painter in cube.fn (no per-cube / per-bone mat), so one look-aware material paints the
-    whole sheet.  'bufanda': the sweater (cube.knit) is gone -- those texels are transparent."""
+    whole sheet.  'bufanda': the sweater (cube.knit) is gone -- those texels are transparent.  'muerto': the same
+    painters, then the dead-dog pass (muerto_px) on top."""
     def mat(ctx):
         c = ctx.cube
         if look == 'bufanda' and getattr(c, 'knit', False):
             return None
-        return c.fn(ctx)
+        col = c.fn(ctx)
+        if look == 'muerto' and col is not None:
+            return muerto_px(ctx, col)
+        return col
     mat.look = look
     return mat
 
 
+# ------------------------------------------------------------------ look 'muerto' (B3: the dog that watches the house)
+# What stands on two legs at the back of the patio is not the dog any more: the eyes are fully black and wet (a single
+# cold glint), the gums are raw and bloody, blood has dried down the chin, the throat and the sweater, and the coat is
+# matted into wet dark clumps with mud on the paws.  Same geometry and poses; only the texture changes.
+DEAD_BLACK = pal('#020102', '#070407', '#0e080c', '#1a1016')
+DEAD_GLINT = hx('#b9b4bc')
+GORE = pal('#140103', '#2a0306', '#46070b', '#650d12', '#86171b', '#a52824')
+MUD = pal('#1a120c', '#2b1e14', '#3d2b1c')
+FUR_PARTS = ('core', 'tall', 'keel', 'prow', 'rump', 'leg', 'paw', 'thigh', 'base', 'tip', 'neck', 'skull', 'dome',
+             'cheek', 'muzzle', 'bridge', 'ear', 'lobe', 'fold', 'brow', 'lid', 'twist')
+MOUTH_PARTS = ('lips', 'jaw', 'mouth', 'teeth', 'canine', 'tongue')
+
+
+def _lum(c):
+    return (c[0] * 0.3 + c[1] * 0.59 + c[2] * 0.11) / 255.0
+
+
+def _dead_tone(c, k=0.72, grey=0.35):
+    """Darker, colder, greyer: the colour of a coat soaked and dried many times."""
+    g = int(_lum(c) * 255)
+    r = int((c[0] * (1 - grey) + g * grey) * k)
+    gg = int((c[1] * (1 - grey) + g * grey) * k * 0.97)
+    b = int((c[2] * (1 - grey) + g * grey) * k * 0.95)
+    return (max(0, min(255, r)), max(0, min(255, gg)), max(0, min(255, b)), c[3])
+
+
+def _blood_at(x, y, z, seed, thresh):
+    """Organic stain mask in model space (blotches that run downward: +y is down)."""
+    v = fbm(x * 0.33, y * 0.16, z * 0.33, 3, seed)
+    return v > thresh
+
+
+def muerto_px(ctx, col):
+    c = ctx.cube
+    name = getattr(c, 'name', '') or ''
+    f = ctx.face
+    x, y, z = ctx.pos
+    # the eyes: fully black and wet; one cold glint, a raw red rim on the lower lid
+    if name == 'eye':
+        if f == 'front':
+            if (ctx.i, ctx.j) in ((1, 1), (2, 1)):
+                return DEAD_GLINT if ctx.i == 1 else mix(DEAD_GLINT, DEAD_BLACK[2], 0.55)
+            if ctx.j == ctx.h - 1:
+                return GORE[2] if ctx.i % 2 else GORE[1]
+            if ctx.j == 0:
+                return DEAD_BLACK[3]
+            return DEAD_BLACK[0] if (ctx.i + ctx.j) % 3 else DEAD_BLACK[1]
+        if outward(ctx):
+            return DEAD_BLACK[1] if ctx.j < ctx.h - 1 else GORE[1]
+        return _dead_tone(col)
+    if name in ('wrong_eye',):
+        return col
+    # the mouth: gums raw, teeth stained brown at the roots, a grey dead tongue, blood pooled in it
+    if name in MOUTH_PARTS:
+        lum = _lum(col)
+        if name == 'tongue':
+            return mix(_dead_tone(col, 0.7, 0.6), hx('#4a3a46'), 0.35)
+        if name in ('teeth', 'canine'):
+            if col is None or col[3] == 0:
+                return col
+            if lum > 0.6:                                   # enamel: yellowed, a red line at the gum
+                stain = mix(col, hx('#a08a5c'), 0.4)
+                return mix(stain, GORE[3], 0.5) if (ctx.j == 0 or hash3(x * 3, y * 3, z * 3, 5) > 0.7) else stain
+            return GORE[3]                                  # the gum rows between the teeth
+        if col[0] > col[2] + 30 and col[0] > 120 and col[1] < col[0] * 0.8:
+            return pick(GORE, 0.35 + 0.5 * lum)            # pink gums / palate -> raw red
+        base = _dead_tone(col)
+        # dried blood running from the lips down the chin
+        if f in ('front', 'west', 'east') and hash3(math.floor(x * 2), 0, math.floor(z * 2), 31) > 0.55:
+            return GORE[1] if hash3(x * 4, y * 4, z * 4, 2) > 0.4 else GORE[2]
+        return base
+    if getattr(c, 'knit', False) or name in ('bib', 'collar', 'wrap', 'knot'):
+        # the sweater: soaked dark, blood dried down the front
+        base = _dead_tone(col, 0.62, 0.3)
+        if y > 12 and z < -2 and _blood_at(x, y, z, 7, 0.52):
+            return mix(base, GORE[2], 0.75)
+        if _blood_at(x, y, z, 19, 0.66):
+            return mix(base, GORE[1], 0.6)
+        return base
+    if name in FUR_PARTS:
+        # matted coat: dark wet clumps along the hair direction, a few lighter dried tips, mud on the paws
+        clump = vnoise(x * 0.9, y * 0.45, z * 0.9, 41)
+        base = _dead_tone(col, 0.6 + 0.22 * clump, 0.4)
+        if hash3(x * 2, y * 2, z * 2, 77) > 0.93:
+            base = mix(base, hx('#8a7a6c'), 0.25)              # dried, stiff tips
+        if name in ('paw',) or (name == 'leg' and y > 20.5):
+            return mix(base, MUD[1], 0.55)
+        # blood: down the chin and the throat, crusted round the muzzle
+        if name in ('muzzle', 'bridge', 'cheek') and y > 11 and _blood_at(x, y, z, 3, 0.47):
+            return mix(base, GORE[1], 0.85)
+        if name in ('neck', 'prow', 'keel') and z < -5 and y > 13 and _blood_at(x, y, z, 11, 0.5):
+            return mix(base, GORE[2], 0.7)
+        # black tears from the eyes
+        if name in ('skull', 'cheek') and f == 'front':
+            for ex in (-4.8, 3.8):
+                if abs(x - ex) < 0.6 and 10.0 < y < 15.5 and hash3(ex * 7, math.floor(y), 0, 9) > 0.2:
+                    return DEAD_BLACK[2]
+        return base
+    return _dead_tone(col, 0.8, 0.3)
+
+
 DEFAULT_MAT = make_mat('normal')
-VARIANT_MATS = {'normal': DEFAULT_MAT, 'bufanda': make_mat('bufanda')}
+VARIANT_MATS = {'normal': DEFAULT_MAT, 'bufanda': make_mat('bufanda'), 'muerto': make_mat('muerto')}
 FOCUS = 'head'
 
 TOGGLE_DEFAULT = {'scarf': False, 'eyelids': False, 'wrong_face': False, 'neck_twist': False}
