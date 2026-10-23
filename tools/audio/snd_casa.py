@@ -67,7 +67,11 @@ fragments for the soap opera on the Nona's TV.
                            barrio, the house settling (beams, roof tiles, a pipe knock).
 
 Positional sounds are mono (tv_novela / tv_static too: the TV is a block in the living room); only morning.birds and
-ambient.casa are stereo. Loudness: stingers -0.5 dBFS, foley/UI -3 dBFS, loops/streams -4 dBFS.
+ambient.casa are stereo. Loudness: stingers -0.5 dBFS, voices -1 dBFS, foley/UI -3 dBFS, loops/streams -4 dBFS.
+Loops (tv_novela, tv_static, grill.sizzle, rocking.creak_slow, morning.birds, ambient.casa) live on a periodic timeline:
+events wrap round, beds and reverbs are circular (FFT), IIR stages run over two periods; dsp.master is applied to three
+tiled periods and the middle one is kept, so its edge fades never touch the loop point. Review PNGs + stats.json go
+to <WORK>/audio/casa_sfx (tools/workdir.py). Runtime ~35 s.
 """
 import sys as _sys, os as _os
 _sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), '..'))
@@ -917,7 +921,9 @@ def tv_novela():
             add(buf, sting2(), t, 0.95)
             continue
         x = novela_line(voice, speed, text, semis, style, 400 + k)
-        add(dlg, x, t, 1.0 if style != 'stunned' else 0.85)
+        # broadcast-style loudness per line: the quiet acting still reads over the underscore
+        loud = {'shout': 1.0, 'stunned': 0.62, 'sob': 0.66, 'girl': 0.6}[style]
+        add(dlg, x * (0.3 * loud / rms(x[np.abs(x) > 0.02])), t, 1.0)
         t += len(x) / SR
     assert t < 17.0, f'novela script too long ({t:.1f}s)'
     # the underscore: low strings slowly breathing through Dm - Bb - Gm - A, four 5 s chords round the loop
@@ -1861,7 +1867,7 @@ def chancleta_hit():
     # ... the thwack of flesh and EVA rubber (a dull knock that dies at once) and a bass punch for the cartoon
     add(out, knock(3303, FLESH, 0.12, contact=0.0025, click=0.0), ti, 0.85)
     tb = taxis(N(0.15))
-    add(out, np.sin(TWO_PI * np.cumsum(92 + 130 * np.exp(-tb / 0.006)) / SR) * np.exp(-tb * 32) * np.minimum(1, tb / 0.001), ti, 0.75)
+    add(out, np.sin(TWO_PI * np.cumsum(92 + 130 * np.exp(-tb / 0.006)) / SR) * np.exp(-tb * 48) * np.minimum(1, tb / 0.001), ti, 0.6)
     add(out, dsp.lowpass(bp(burst(0.012, 3304, 1.5), 400, 3500), 3000, 2), ti + 0.004, 0.3)   # trapped air 'pff'
     # the toe of the sole flaps on a beat later: p-TAP
     add(out, norm(bp(burst(0.0025, 3305, 1.2), 1200, 12000)), ti + 0.042, 0.32)
@@ -1872,7 +1878,8 @@ def chancleta_hit():
     add(out, knock(3308, PLOP, 0.15, contact=0.003, click=0.15), 0.745, 0.12)
     y = out + 0.22 * fit(np.concatenate([np.zeros(N(0.017)), out]), len(out)) \
         + 0.12 * fit(np.concatenate([np.zeros(N(0.034)), out]), len(out))     # slapback off the hallway walls
-    return verb(y.astype(np.float32), 'pasillo', wet=0.15)
+    wet = verb(dsp.highpass(y.astype(np.float32), 250, 2), 'pasillo', wet=0.15, dry=0.0)   # the hall rings, not boom
+    return fit(y, len(wet)) + wet
 
 
 # ====================================================================== 24. the floating rocking chair (loop)
@@ -1883,7 +1890,6 @@ ROCKER = [(165, 22, 0.8), (290, 28, 1.0), (480, 34, 0.75), (760, 42, 0.55), (115
 def rocking_creak_slow():
     L = N(4.0)
     buf = np.zeros(L + N(1.0), np.float32)
-    r = dsp.rng(3400)
     # swing period 4 s, no floor under the rockers: only the joints talk, once per half swing
     c1 = creak(1.5, 3401, [(0, 28), (0.5, 72), (1.0, 60), (1.5, 30)], ROCKER,
                [(0, 0), (0.25, 0.6), (0.7, 1.0), (1.2, 0.5), (1.5, 0)], jitter=0.35, tail=0.25)
@@ -2051,7 +2057,6 @@ def flame_out(seed, flutter, amp=1.0):
     """A candle flame bent by breath: fluttering combustion roar, the 'pfft' as it goes, the wick ticking."""
     r = dsp.rng(seed)
     nf = N(flutter + 0.6)
-    tf = taxis(nf)
     flick = 1 + 0.8 * snoise(nf, r.uniform(15, 25), seed)
     env = env_pts(nf, [(0, 0), (0.04, 1.0), (flutter, 0.8), (flutter + 0.03, 0)])
     roar = bp(white(nf, seed + 1), 60, 900) * flick * env
@@ -2141,7 +2146,6 @@ def wall_break():
         add(out, brick(4100 + j, a), tb_)
         if r.random() < 0.5:
             add(out, brick(4300 + j, a * 0.35, 0.5), tb_ + r.uniform(0.05, 0.16))
-    tt = taxis(n)
     rum_env = env_pts(n, [(0, 0), (t2, 0), (t2 + 0.15, 1.0), (t2 + 0.9, 0.7), (t2 + 2.2, 0.15), (total, 0)])
     out[:n] += 0.3 * norm(dsp.lowpass(colored(n, 'brown', 4050), 220, 2)) * rum_env
     slide_env = env_pts(n, [(0, 0), (t2 + 0.2, 0), (t2 + 0.4, 1.0), (t2 + 1.4, 0.5), (t2 + 2.6, 0.08), (total, 0)])
@@ -2516,8 +2520,13 @@ def rotate_to_lull(x):
 
 def finish(x, peak_db, loop):
     x = np.asarray(x, np.float32)
-    if loop:  # exact period kept; circular high-pass so master's filter has nothing left to settle
-        return dsp.master(rotate_to_lull(cfft_hp(x, 32.0)), peak_db=peak_db)
+    if loop:
+        # exact period kept, circular high-pass, start rotated into a lull. dsp.master runs on three tiled periods
+        # and the middle one is kept: its high-pass state is settled and its edge fades land on the outer copies,
+        # so the loop point has no dip (a 23 ms fade at the seam is audible on steady beds like static or sizzle)
+        x = rotate_to_lull(cfft_hp(x, 32.0))
+        L = len(x)
+        return dsp.master(np.concatenate([x, x, x], 0), peak_db=peak_db)[L:2 * L]
     x = dsp.trim(x, -62, 0.08)
     return dsp.master(x, peak_db=peak_db)
 

@@ -491,33 +491,27 @@ WHORL_Z = 2.5      # where the parting ends at the crown
 
 
 def hair_top_v(x, z, ctx):
-    """Top of the wig, the surface players see most (she is under 1 block tall and usually below eye level).
-    Strands leave the parting and are combed out and back (slanted, slightly wavy), so clumps never line up into
-    planks; the gaps between clumps are broken into dashes; the sheen is a curved 'angel ring' round the crown,
-    not a straight line; the rim darkens where the head rounds over."""
+    """Top of the wig, the surface players see most (she is under 1 block tall and usually seen from above).  Clean,
+    readable shapes instead of noise: a crisp 1-px parting from the fringe to the crown; on each side the strands are
+    combed away from it in 3 tone bands (a dark gap, a lit strand, the mid tone) that slant back, so the two sides
+    meet in a chevron at the parting; one continuous 2-tone satin 'angel ring' round the crown; the rim darkens
+    where the head rounds over."""
     d = x - PART_X
     ad = abs(d)
-    u = z - ad * 0.7 + math.sin(ad * 0.7 + (0.0 if d < 0 else 2.0)) * 0.6 + (0.0 if d < 0 else 1.1)
-    cl = math.floor(u / 2.4)
-    fu = (u / 2.4) % 1.0
-    k = hash3(cl, 1 if d < 0 else 2, 0, 71)
-    v = 0.44 + k * 0.06 - min(ad, 7.0) * 0.008
-    gap = fu < 0.3 and hash3(cl, int(ad * 0.8), 0, 13) > 0.15
-    if gap:
-        v -= 0.11                                     # gap between clumps (only now and then interrupted)
-    r = math.sqrt((d / 1.25) ** 2 + (z - 0.4) ** 2)   # elliptical ring round the crown
-    band = 4.2 + (k - 0.5) * 0.5
-    if band <= r < band + 1.1:
-        v += 0.16 if gap else 0.3                     # the satin 'angel ring' of an old mohair wig
-    elif band - 0.8 <= r < band and not gap:
-        v += 0.1                                      # soft inner edge of the ring
-    if z < WHORL_Z:
-        if ad < 0.5 and hash3(int(z + 9), 4, 0, 5) > 0.25:
-            v = 0.2                                   # the parting: a broken seam of shadow, not a line
-        elif ad < 1.1:
-            v -= 0.08                                 # hair lifting off the parting, shadowed
+    if z < WHORL_Z + 0.5 and ad < 0.5:
+        return 0.14                                   # the parting
+    u = z - ad * 0.5 + (0.0 if d < 0 else 2.0)
+    gap = u % 4.0 < 1.0 and ad > 1.5                  # (no gap touches the parting: no stray cross shapes)
+    v = 0.34 if gap else 0.47                         # strand gaps every 4 texels, slanting back off the parting
+    if ad < 1.5 and z < WHORL_Z + 0.5:
+        v -= 0.07                                     # hair lifting off the parting, in its shadow
+    r = math.sqrt((x / 1.4) ** 2 + (z - 1.0) ** 2)    # elliptical ring round the crown (centred on the head)
+    if 3.4 <= r < 4.4:
+        v = 0.78                                      # the satin ring: one bright continuous arc...
+    elif 4.4 <= r < 5.4 or 2.6 <= r < 3.4:
+        v = 0.64 if not gap else 0.55                 # ...with a softer tone on both edges
     if edge(ctx) == 0:
-        v -= 0.07                                     # rounds over at the rim
+        v -= 0.08                                     # rounds over at the rim
     return v
 
 
@@ -1137,8 +1131,8 @@ def build(variant=None):
     # dusty bow pinned on the top-left of her hairline, in front of the fringe
     bone('bow', (-5.5, -1.9, -6.9), parent='head', rot=(0, 0, -3), mat=bow_mat)
     box('bow', (-6.5, -2.9, -7.4), (2, 2, 1), name='knot')
-    box('bow', (-11.5, -3.9, -7.2), (5, 4, 1), name='loop', side='l')
-    box('bow', (-4.5, -3.9, -7.2), (5, 4, 1), name='loop', side='r')
+    box('bow', (-11.5, -3.9, -7.4), (5, 4, 2), name='loop', side='l')
+    box('bow', (-4.5, -3.9, -7.4), (5, 4, 2), name='loop', side='r')
     box('bow', (-9.4, -1.6, -7.0), (2, 6, 0), name='tail')
     box('bow', (-11.0, -1.8, -6.8), (2, 5, 0), name='tail')
 
@@ -1216,15 +1210,17 @@ def build(variant=None):
 
 
 _POSES = {
-    # head rolled to 40 degrees in total, the intact right arm raised beside the head, reaching for the viewer
-    'creep': {'head': (0.1, 0.1, 0.94, 0, 0, 0), 'jaw': (0.25, 0, 0, 0, 0.8, 0),
+    # the scare beat, played as a joke: her head flops ~33 deg onto her LEFT shoulder (resting on the puff sleeve,
+    # not swallowing it; that shoulder sags 1 texel), the jaw ajar, and the good right hand pops up beside the empty
+    # side of her head in a stiff little wave -- palm to camera, fingers splayed, wrist cocked -- clear of the wig
+    'creep': {'head': (0.2, 0.15, 0.82, 0, 0, 0), 'jaw': (0.25, 0, 0, 0, 0.8, 0),
               'body': (0.08, 0, 0, 0, -0.05, 0), 'right_leg': (-0.08, 0, 0, 0, 0, 0),
               'left_leg': (-0.08, 0, 0, 0, 0, 0),
-              'right_arm': (-1.85, 0.4, -0.2, 0, 0, 0), 'right_forearm': (-0.3, 0, 0, 0, 0, 0),
-              'right_hand': (-0.45, 0, 0.2, 0, 0, 0), 'right_finger1': (-0.5, 0, 0.45, 0, 0, 0),
+              'right_arm': (-2.26, -0.22, -1.09, -0.75, -1.5, 0), 'right_forearm': (0.13, 0, 0.27, 0, 0, 0),
+              'right_hand': (0.19, 0, -0.31, 0, 0, 0), 'right_finger1': (-0.5, 0, 0.45, 0, 0, 0),
               'right_finger2': (-0.6, 0, 0.05, 0, 0, 0), 'right_finger3': (-0.5, 0, -0.4, 0, 0, 0),
-              'left_arm': (0.12, 0, -0.1, 0, 0, 0),
-              'thread_right_tip': (0, 0, -0.3, 0, 0, 0), 'thread_left_tip': (0, 0, -0.35, 0, 0, 0)},
+              'left_arm': (0.13, -0.08, 0.0, 1.16, 1.0, 0), 'left_forearm': (-0.38, 0, -0.1, 0, 0, 0),
+              'thread_right_tip': (0, 0, -0.3, 0, 0, 0), 'thread_left_tip': (-0.2, 0, -0.35, 0, 0, 0)},
     # lunge: jaw dropped, both arms flung out and forward at the viewer, the splayed hands wide beside the dropped
     # jaw and in front of the face plane (solved so no hand or finger enters the oversized head)
     'attack': {'body': (0.3, 0, 0, 0, 0.0, -1.0), 'right_leg': (-0.3, 0, 0, 0, 0, 0), 'left_leg': (-0.3, 0, 0, 0, 0, 0),
@@ -1234,11 +1230,15 @@ _POSES = {
                'right_finger1': (0, 0, 0.5, 0, 0, 0), 'right_finger3': (0, 0, -0.5, 0, 0, 0),
                'left_finger1': (0.7, 0, 0.4, 0, 0, 0), 'left_finger3': (0.7, 0, -0.4, 0, 0, 0),
                'thread_right_tip': (0.35, 0, 0.25, 0, 0, 0), 'thread_left_tip': (0.4, 0, -0.3, 0, 0, 0)},
-    # head thrown back, jaw fully dropped; the good arm straight up with the hand clawing beside her temple, the
-    # broken one raised as far as its cord lets it, the hand dangling beside the jaw (no hand enters the head)
-    'scream': {'head': (-0.5, 0, -0.22, 0, 0, 0), 'jaw': (0.55, 0, 0, 0, 1.3, 0),
-               'right_arm': (-2.88, -0.02, -1.28, 0, 0, 0), 'left_arm': (-3.2, 0.33, 0.6, 0, 0, 0),
-               'right_forearm': (0.23, 0, -0.15, 0, 0, 0), 'left_forearm': (0.54, 0, 0.82, 0, 0, 0),
+    # head thrown back and rolled AWAY from the good arm, jaw fully dropped; both hands flung up beside her face: the
+    # good right arm raised high and wide (shoulder hitched up), its splayed claw beside her cheek and temple, clear
+    # of wig and ringlets; the broken left arm yanked up on its cord, the dead hand dangling beside the jaw.  Solved
+    # against head, curls, skirt and body: no arm, hand or finger enters them.
+    'scream': {'head': (-0.5, 0.1, 0.28, 0, 0, 0), 'jaw': (0.55, 0, 0, 0, 1.3, 0),
+               'right_arm': (-2.27, -0.56, -1.54, -1.14, -0.9, 0), 'right_forearm': (-0.05, 0, -0.33, 0, 0, 0),
+               'right_hand': (-0.04, 0, -0.27, 0, 0, 0),
+               'left_arm': (-2.36, 0.75, 1.67, 0.19, -0.36, 0), 'left_forearm': (-0.46, 0, -0.53, 0, 0, 0),
+               'left_hand': (0.68, 0, 0.25, 0, 0, 0),
                'right_finger1': (0, 0, 0.5, 0, 0, 0), 'right_finger3': (0, 0, -0.5, 0, 0, 0),
                'left_finger1': (0.7, 0, 0.4, 0, 0, 0), 'left_finger3': (0.7, 0, -0.4, 0, 0, 0)},
     # "just a doll", propped up on a bed / chair seat / lap: bottom on the surface (the entity origin), the torso
@@ -1264,9 +1264,10 @@ _POSES = {
 # snap of the attack flings them forward and apart across the black mouth; they are still swinging from the head
 # snap of 'creep'; the plumb() entries keep them hanging under gravity otherwise
 THREAD_SWAY = {
-    'creep': {'thread_right': (-0.12, -0.32), 'thread_left': (-0.1, -0.26)},
+    'creep': {'thread_right': (-0.15, -0.3), 'thread_left': (-0.6, -0.15)},
     'attack': {'thread_right': (-0.5, 0.3), 'thread_left': (-0.65, -0.35)},
-    'scream': {'thread_right': (0.1, 0.12), 'thread_left': (0.12, 0.08)},
+    'scream': {'thread_right': (-0.55, 0.1), 'thread_left': (-0.15, 0.1)},
+    'sit': {'thread_right': (-0.15, 0.08), 'thread_left': (-0.12, -0.08)},
 }
 POSES = {k: dict(v, **plumb(v, THREAD_SWAY.get(k))) for k, v in _POSES.items()}
 

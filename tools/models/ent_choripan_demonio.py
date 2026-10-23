@@ -1247,6 +1247,8 @@ NECK_SOCKET = (0.0, -2.0, 0.0)          # where the neck leaves the chest (link_
 NECK_LEN = 11.0                          # socket -> head joint
 NECK_REST = (-35.0, 0.0, -CHEST_ROLL * 0.6)   # neck rest rotation relative to the chest (deg)
 COLLAR_Z = 3.5                           # collar position along the neck (neck-local, from the head joint back)
+TONGUE_YAW = -36.0                       # rest yaw of the tongue (deg): out of the side of the mouth
+TONGUE_POSE_YAW = -13.0                  # the centred yaw the posed tongue values are relative to
 MOUTH = (0.0, 0.5, -22.0)                # head-local: where a fetched item / the choripan sits between the teeth
 # body links after the chest: (bone, link in front, skin band length, fur length, width, height, inflate,
 #                              rest pitch deg (+ = rear up), blood drips)
@@ -1563,7 +1565,8 @@ def build():
             box(lb, (-5.1, 4, -11), (0, 5, 1), mat=drool_mat, name='drool')
 
     # black tongue lolling out of the front
-    b.lbone('tongue', 'head', (0, -0.5, -8), rot=(0, -13, 0), mat=tongue_mat)
+    # (rest: lolling out of the LEFT side of the mouth like a panting dog, so the name tag below stays readable)
+    b.lbone('tongue', 'head', (0, -0.5, -8), rot=(0, TONGUE_YAW, 0), mat=tongue_mat)
     box('tongue', (-2.5, -0.5, -18), (5, 1, 18), name='tongue')
     b.lbone('tongue_tip', 'tongue', (0, 0, -18), rot=(62, -10, 18), mat=tongue_mat)
     box('tongue_tip', (-2.5, -0.5, -9), (5, 1, 9), name='tongue')
@@ -1721,6 +1724,8 @@ class Kit:
         self.m = build()
         self.b = {bn.name: bn for bn in self.m.bones()}
         self.rest = {n: (bn.rot, bn.pivot) for n, bn in self.b.items()}
+        # posed tongue values are written against the centred yaw; table() re-bases them on the real rest
+        self.rest['tongue'] = ((0.0, TONGUE_POSE_YAW, 0.0), self.rest['tongue'][1])
         self.d = {}
         # effective forearm length (elbow -> wrist, through the extra joint of the broken arm)
         self.l2eff = {key: float(np.linalg.norm(self.wpos(arm_names(*key)[3]) - self.wpos(arm_names(*key)[1])))
@@ -1790,6 +1795,9 @@ class Kit:
 
     def table(self):
         out = {}
+        if 'tongue' in self.d:
+            # pose tongue values were authored against the old centred rest yaw: keep each pose's look exactly
+            self.d['tongue'][1] += TONGUE_POSE_YAW - TONGUE_YAW
         for n, d in self.d.items():
             if any(abs(v) > 1e-6 for v in d):
                 out[n] = tuple(math.radians(v) for v in d[:3]) + tuple(float(v) for v in d[3:])
@@ -2343,7 +2351,7 @@ def make_catch():
     k.set('tail', -10, 32, 0)
     k.set('tail_tip', 10, 26, 0)
     k.hang_ears(0)
-    k.hang_tag(15)
+    k.hang_tag(-14)                                          # swung forward off the reared chest
     return k.table()
 
 
@@ -2506,7 +2514,7 @@ POSES = make_poses()
 
 # ------------------------------------------------------------------ ANIM_NOTES (the Java contract; numbers computed)
 def _posed_model(name=None):
-    m = build().pack()
+    m = build()                                            # (no UV packing: only transforms are read)
     if name:
         for bn in m.bones():
             p = POSES[name].get(bn.name)
@@ -2559,6 +2567,8 @@ def _landmarks():
               for b in m.bones() if b.name not in TOGGLE_DEFAULT for c in b.cubes
               for i in (0, 1) for j in (0, 1) for q in (0, 1)]
         out[name] = {'head': _wp(m, 'head'), 'mouth': _wp(m, 'mouth_item'), 'link_7': _wp(m, 'link_7'),
+                     'top': min(float(_wp(m, b.name, c.origin)[1]) for b in m.bones() for c in b.cubes
+                                if b.name not in TOGGLE_DEFAULT),
                      'center': np.mean([_wp(m, n) for n in BODY], axis=0), 'zmin': min(zs), 'zmax': max(zs)}
     return out
 
@@ -2576,7 +2586,7 @@ def _anim_notes():
     ur, lr = flower['jaw_upper_right'], flower['jaw_lower_right']
     fl = (f'upper flaps xRot {ur[0]:.2f}, yRot +-{abs(ur[1]):.2f} (right +), zRot -+{abs(ur[2]):.2f} (right -); '
           f'lower flaps xRot {lr[0]:.2f}, yRot +-{abs(lr[1]):.2f} (right +), zRot +-{abs(lr[2]):.2f} (right +)')
-    beg_top = (24.0 - float(min(_wp(_posed_model('beg'), 'head', (0.0, -17.0, 0.0))[1], 24.0))) / 32.0
+    beg_top = (24.0 - float(L['beg']['top'])) / 32.0
     return f"""Choripan, version completa (ChoripanEntity, form BEAST) -- animation contract.
 {nb} bones, {nc} cubes, texture {m.tex_w}x{m.tex_h} (choripan_demonio.png), scale 0.5, RenderTypes::entityCutoutNoCull.
 Units: radians for POSES and for every value quoted 'rad'; 'deg' values are degrees; offsets (dx, dy, dz) in model \
@@ -2659,7 +2669,8 @@ jaw_upper_right / jaw_upper_left / jaw_lower_right / jaw_lower_left (children of
   together.  Idle in BEAST: they breathe open 0.05..0.15 rad (sin(t * 0.2)) and quiver (+-0.03 random each tick).
   Chomp (catch -> chewing): close fully and reopen to 50 % 3 times, 5 ticks each.
 tongue / tongue_tip (tongue child of head, pivot inside the mouth; tongue_tip at its end): the long black tongue.
-  Rest: lolling out of the front, the tip curling down.  Chase: flapping, tongue.yRot = sin(t * 0.7) * 0.3,
+  Rest: lolling out of the LEFT side of the mouth like a panting dog (rest yRot {TONGUE_YAW:g} deg; keeps the name tag
+  clear from the front), the tip curling down.  Chase: flapping, tongue.yRot += sin(t * 0.7) * 0.3,
   tongue_tip.xRot += sin(t * 0.7 - 1) * 0.4.  Retract: tongue dz +12 (sucked back in).
 right_ear / left_ear + right_ear_tip / left_ear_tip (children of head): long limp ears, almost to the ground.  They
   hang plumb: every frame give each ear the world rotation yRot(face heading) * EAR_WORLD (EAR_WORLD = (4, -+22,
@@ -2682,7 +2693,7 @@ choripan (child of head; TOGGLE, hidden by default): the blessed choripan caught
 front_right_leg / front_left_leg + front_right_paw / front_left_paw (children of link_1): the two short, bowed, normal
   dachshund front legs and their cute paws -- the only dog legs left.  Rest: planted, paws turned out.  They trot in
   the gait keys; in 'beg' they are held up under the chin; in 'catch' they dangle (it jumped).
-shred_1 .. shred_4 (children of link_2..link_5, pivot on the spine): strips of the Nona's red sweater hanging off the
+shred_1, shred_2, shred_3, shred_4 (children of link_2, link_3, link_4, link_5; pivot on the spine): strips of the Nona's red sweater hanging off the
   back (a band + two strips, loose yarn ends).  Secondary only: zRot = sin(t * 0.15 + k) * 0.06; chase: +0.25 xRot
   (blown back); never driven by poses.
 tail / tail_tip (children of link_7): the big dachshund tail carried high, tan tip.  ALWAYS WAGGING, added on top of
@@ -2691,10 +2702,13 @@ tail / tail_tip (children of link_7): the big dachshund tail carried high, tan t
   inside the doghouse (t * 0.7) -- that is the gag of the reveal.
 arm_1_right / arm_1_left (on link_3), arm_2_right / arm_2_left (on link_5), arm_3_right / arm_3_left (on link_7):
   three pairs of far-too-long, NOT symmetric human upper arms bursting out of the flanks (torn fur collar, raw base),
-  spider elbows above the spine.  forearm_k_side: the forearms (knobbly elbow, ulna ridge, knobbly wrist).
-  joint_2_left: the extra joint of the broken arm 2-left (a second elbow; its wrist is broken backwards).
-  hand_k_side: dirty hands, cracked black nails -- hand_1_right flat, hand_1_left on its knuckles (fist), hand_2_right
-  clawing on its fingertips, hand_2_left twisted backwards, hand_3_right flat, hand_3_left claw.  Animated only by
+  spider elbows above the spine.  forearm_1_right, forearm_1_left, forearm_2_right, forearm_2_left, forearm_3_right,
+  forearm_3_left (children of the upper arms, pivot at the elbow): the forearms (knobbly elbow, ulna ridge, knobbly
+  wrist).  joint_2_left (child of forearm_2_left): the extra joint of the broken arm 2-left (a second elbow; its wrist
+  is broken backwards).  hand_1_right, hand_1_left, hand_2_right, hand_2_left, hand_3_right, hand_3_left (children of
+  the forearms / of joint_2_left, pivot at the wrist): dirty hands, cracked black nails -- hand_1_right flat,
+  hand_1_left on its knuckles (fist), hand_2_right clawing on its fingertips, hand_2_left twisted backwards,
+  hand_3_right flat, hand_3_left clawing.  Animated only by
   POSES (all arm values are IK-solved so planted hands sit exactly on the floor): gait keys in trail mode, the pose
   tables otherwise.  Idle: finger twitch = one random hand xRot -0.15 for 3 ticks every 1-3 s.
 
