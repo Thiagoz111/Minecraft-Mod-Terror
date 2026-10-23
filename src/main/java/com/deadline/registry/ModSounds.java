@@ -139,6 +139,16 @@ public final class ModSounds {
 	public static final SoundEvent WALL_BREAK = register("wall.break");
 	public static final SoundEvent MORNING_BIRDS = register("morning.birds");
 	public static final SoundEvent KETTLE_WHISTLE = register("kettle.whistle");
+	public static final SoundEvent CAR_ENGINE_START = register("car.engine_start");
+	public static final SoundEvent CAR_IDLE = register("car.idle");
+	public static final SoundEvent CAR_REV = register("car.rev");
+	public static final SoundEvent CAR_DOOR_OPEN = register("car.door_open");
+	public static final SoundEvent CAR_DOOR_CLOSE = register("car.door_close");
+	public static final SoundEvent CAR_HORN = register("car.horn");
+	public static final SoundEvent CAR_RADIO_STATIC = register("car.radio_static");
+	public static final SoundEvent CAR_GRAVEL = register("car.gravel");
+	public static final SoundEvent CAR_BUMP = register("car.bump");
+	public static final SoundEvent CAR_LIGHTS = register("car.lights");
 
 	/** Single-file events of multi-take sounds, so a take can be chosen (e.g. the spirit box answer matching its subtitle). */
 	private static final java.util.Map<String, SoundEvent[]> VARIANTS = new java.util.HashMap<>();

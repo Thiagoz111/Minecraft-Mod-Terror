@@ -883,6 +883,66 @@
    "deadline:kettle/whistle"
   ]
  },
+ "car.engine_start": {
+  "subtitle": "subtitles.deadline.car.engine_start",
+  "sounds": [
+   "deadline:car/engine_start"
+  ]
+ },
+ "car.idle": {
+  "subtitle": "subtitles.deadline.car.idle",
+  "sounds": [
+   "deadline:car/idle"
+  ]
+ },
+ "car.rev": {
+  "subtitle": "subtitles.deadline.car.rev",
+  "sounds": [
+   "deadline:car/rev"
+  ]
+ },
+ "car.door_open": {
+  "subtitle": "subtitles.deadline.car.door_open",
+  "sounds": [
+   "deadline:car/door_open"
+  ]
+ },
+ "car.door_close": {
+  "subtitle": "subtitles.deadline.car.door_close",
+  "sounds": [
+   "deadline:car/door_close"
+  ]
+ },
+ "car.horn": {
+  "subtitle": "subtitles.deadline.car.horn",
+  "sounds": [
+   "deadline:car/horn"
+  ]
+ },
+ "car.radio_static": {
+  "subtitle": "subtitles.deadline.car.radio_static",
+  "sounds": [
+   "deadline:car/radio_static"
+  ]
+ },
+ "car.gravel": {
+  "subtitle": "subtitles.deadline.car.gravel",
+  "sounds": [
+   "deadline:car/gravel"
+  ]
+ },
+ "car.bump": {
+  "subtitle": "subtitles.deadline.car.bump",
+  "sounds": [
+   "deadline:car/bump"
+  ]
+ },
+ "car.lights": {
+  "subtitle": "subtitles.deadline.car.lights",
+  "sounds": [
+   "deadline:car/lights"
+  ]
+ },
  "spirit_box.voice_1": {
   "subtitle": "subtitles.deadline.spirit_box.voice",
   "sounds": [

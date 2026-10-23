@@ -1087,7 +1087,7 @@ COPIA_FACE = copia.check([
     "5EEOE677776EOEE5",   # r7  the pinpoints, turned in: she looks straight at you
     "5eEEE677776EEEe5",   # r8  white BELOW the pupil: wide open
     "N5666666nn66665N",   # r9  the grin's corners pulled up into the cheeks
-    "4NZZZZZZZZZZZZN4",   # r10 the upper lip line, edge to edge
+    "4NZGGGGGGGGGGZN4",   # r10 the lips pulled back off the gums, edge to edge
     "4" + copia.teeth_row(14) + "4",   # r11 upper teeth
     "xZ" + copia.teeth_row(12, 'Y') + "Zx",   # r12 lower teeth (jaw + jowls)
     "x4GZZZZZZZZZZG4x",   # r13 gum line
@@ -1098,6 +1098,13 @@ _FACE_ACTIVE = [FACE]
 
 
 def copia_mat(ctx):
+    if nm(ctx) == 'dollop':
+        return A(copia.grey(pick(SKIN, 0.55 + face_light(ctx))))   # no cream: the blob is just a grey lump of cheek
+    if ctx.cube.kind == 'skin' and ctx.face == 'front' and nm(ctx) in ('skull', 'jaw', 'jowl'):
+        x, y, z = apos(ctx)
+        cc = copia.char_rgba(grid_char(COPIA_FACE, x, y) or '.')
+        if cc is not None:
+            return A(cc)                                  # the copy's own eyes and teeth keep their colours
     _FACE_ACTIVE[0] = COPIA_FACE
     try:
         col = marta_mat(ctx)

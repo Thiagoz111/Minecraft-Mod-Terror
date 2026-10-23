@@ -829,12 +829,11 @@ def furnish_pb(s, hs):
     # ---------------------------------------------------------------- NONA (x -15..-10, z 2..7): the raised lustred bed,
     # the home altar with its candles (lit) and the rocker facing it, wool basket, walker, the big placard (hiding place)
     placard(s, hs, 'ropero_nona', [(-15, 0, 6), (-14, 0, 6)], 'south', 'nona')
-    raised_bed(s, [(-15, 3, 'cama_nona_cabecera', 'east'), (-14, 3, 'cama_nona_pie', 'east')], 0, [(-14, 3)])
-    HIDES['cama_nona'] = ((-14, 0, 3, 'east'), (-13, 0, 3, 'west'))
+    raised_bed(s, [(-15, 3, 'cama_nona_cabecera', 'east'), (-14, 3, 'cama_nona_pie', 'east')], 0, [(-15, 3)])
+    HIDES['cama_nona'] = ((-15, 0, 3, 'south'), (-15, 0, 4, 'north'))
     K(s, -16, 1, 3, 'empapelado_nona_cruz', replace=True)          # the ghost of a crucifix over the bed
     K(s, -15, 0, 2, 'mesa_luz_nona', 'east')
     lamp(s, -15, 1, 2, 'velador', 'luces_nona_cuarto', facing='east')
-    K(s, -15, 0, 4, 'mesa_luz', 'east')
     K(s, -13, 0, 3, 'pantuflas', 'west')
     lamp(s, -10, 0, 4, 'altar', ('altar_velas', 'luces_nona_cuarto'), lit=True, facing='west')
     K(s, -10, 1, 4, 'altar_estampitas', 'west')
@@ -1077,8 +1076,8 @@ def furnish_1p(s, hs):
     # ---------------------------------------------------------------- HUESPEDES (x 2..8, z 2..7): the player's room: a
     # raised old single bed, a bedside table, a chair, the crucifix, a placard (hiding place)
     placard(s, hs, 'ropero_huespedes', [(7, 5, 6), (8, 5, 6)], 'south', 'huespedes')
-    raised_bed(s, [(2, 4, 'cama_nona_cabecera', 'east'), (3, 4, 'cama_nona_pie', 'east')], 5, [(3, 4)])
-    HIDES['cama_huespedes'] = ((3, 5, 4, 'east'), (4, 5, 4, 'west'))
+    raised_bed(s, [(2, 4, 'cama_nona_cabecera', 'east'), (3, 4, 'cama_nona_pie', 'east')], 5, [(2, 4)])
+    HIDES['cama_huespedes'] = ((2, 5, 4, 'south'), (2, 5, 5, 'north'))
     K(s, 2, 5, 3, 'mesa_luz', 'east')
     lamp(s, 2, 6, 3, 'velador', 'luces_huespedes', facing='east')
     K(s, 6, 5, 3, 'silla_comedor', 'west')
@@ -1091,10 +1090,10 @@ def furnish_1p(s, hs):
     # ---------------------------------------------------------------- LUCIA (x -12..-7, z 14..20): the raised canopy bed,
     # the doll shelves on the east wall, the desk with the notebook, the toy chest, the placard (hiding place)
     placard(s, hs, 'ropero_lucia', [(-12, 5, 15), (-11, 5, 15)], 'north', 'lucia')
-    raised_bed(s, [(-12, 18, 'cama_dosel_cabecera', 'east'), (-11, 18, 'cama_dosel_pie', 'east')], 5, [(-11, 18)])
+    raised_bed(s, [(-12, 18, 'cama_dosel_cabecera', 'east'), (-11, 18, 'cama_dosel_pie', 'east')], 5, [(-12, 18)])
     for x in (-12, -11):
         K(s, x, 7, 18, 'tope', 'east')
-    HIDES['cama_lucia'] = ((-11, 5, 18, 'east'), (-10, 5, 18, 'west'))
+    HIDES['cama_lucia'] = ((-12, 5, 18, 'north'), (-12, 5, 17, 'south'))
     K(s, -12, 5, 19, 'mesa_luz', 'east')
     lamp(s, -12, 6, 19, 'lampara_hongo', 'luces_lucia', facing='east')
     shelves = []
@@ -1106,7 +1105,7 @@ def furnish_1p(s, hs):
     K(s, -8, 5, 19, 'silla_nena', 'south')
     K(s, -7, 5, 20, 'cuaderno_lemaza', 'north')
     K(s, -7, 6, 20, 'dibujo_lemaza', 'north')
-    K(s, -12, 5, 17, 'baul_juguetes', 'east')
+    K(s, -10, 5, 20, 'baul_juguetes', 'north')
     for (x, z, f) in ((-10, 17, 'north'), (-9, 17, 'east'), (-10, 18, 'west'), (-9, 18, 'south')):
         K(s, x, 5, z, 'alfombra_lucia', f)
     K(s, -9, 5, 20, 'juguetes', 'north')
@@ -1116,8 +1115,8 @@ def furnish_1p(s, hs):
     # ---------------------------------------------------------------- TOTI (x -4..1, z 14..20): the raised unmade bed, the
     # gaming desk, posters, the toy chest, the louvred placard (hiding place)
     placard(s, hs, 'ropero_toti', [(-4, 5, 15), (-3, 5, 15)], 'north', 'toti')
-    raised_bed(s, [(1, 18, 'cama_toti_cabecera', 'west'), (0, 18, 'cama_toti_pie', 'west')], 5, [(0, 18)])
-    HIDES['cama_toti'] = ((0, 5, 18, 'west'), (-1, 5, 18, 'east'))
+    raised_bed(s, [(1, 18, 'cama_toti_cabecera', 'west'), (0, 18, 'cama_toti_pie', 'west')], 5, [(1, 18)])
+    HIDES['cama_toti'] = ((1, 5, 18, 'north'), (1, 5, 17, 'south'))
     pair(s, -4, 5, 18, 'east', 'escritorio_pc_izq_apagado', 'escritorio_pc_der_apagado')
     group(s, 'luces_toti', (-4, 5, 18), (-4, 5, 19))
     K(s, -3, 5, 18, 'silla_gamer', 'west')

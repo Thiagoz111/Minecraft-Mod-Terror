@@ -277,20 +277,20 @@ FACE_R = [
     "...V........V...",   # r1
     "....V......V....",   # r2
     "..ddd......ddd..",   # r3   the brow ridge overhangs dark sockets
-    ".dRRRRd..dRRRRd.",   # r4   raw upper lids
-    "DwWWWwD..DwWWWwD",   # r5   milky cataracts, 5 wide
-    "DWWgWWD..DWWgWWD",   # r6   the drowned ghost of the iris
+    ".dRRRRd...dddd..",   # r4   raw upper lid (her right eye sits higher: the face is no longer level)
+    "DdwwwdD..dRRRRd.",   # r5   milky cataracts, the lid's shadow over their top
+    "DwWgWwD..DdwwwdD",   # r6   the drowned ghost of the iris (g)
     "DwWgWwD..DwWgWwD",   # r7
-    "dRwwwRd..dRwwwRd",   # r8   raw lower lids
-    ".dBrRBd..dBRrBd.",   # r9   blood wells under the eyes
-    "..B..B....B..B..",   # r10  ... and runs down the cheeks
-    "..B..b....b..B..",   # r11
-    "..b...rBBr...b..",   # r12  both nostrils bleed over the lip
-    "..B..MMMMMM..B..",   # r13  the mouth hangs open, black
-    "..B.BbrBBrbB.B..",   # r14  (jaw) blood pours over the lower lip
-    "..b..BrBBrB..b..",   # r15
-    ".....BbBBbB.....",   # r16
-    "......B..B......",   # r17
+    "dRwwwRd..DwWgWwD",   # r8   raw lower lids
+    ".dB.RBd..dRwwwRd",   # r9   blood wells under the eyes ...
+    "..B......dB.RBd.",   # r10  ... and runs down the cheeks in thin lines
+    "..B.......B.....",   # r11
+    "..b....BB.b.....",   # r12  the nostrils bleed over the lip
+    "..b..MMMMMM.....",   # r13  the mouth hangs open, black
+    ".....bMMMMb.....",   # r14  (jaw) the lower lip, black inside, blood at the corners
+    "......B...B.....",   # r15
+    "......b...B.....",   # r16
+    "..........b.....",   # r17
 ]
 assert all(len(r) == 16 for r in FACE_R), [len(r) for r in FACE_R]
 SKIN_R = pal('#14181e', '#1d232b', '#28303a', '#343e4a', '#424d59', '#525e69', '#646f79', '#78828a', '#8c959b',
@@ -1673,8 +1673,8 @@ def rota_skin(ctx):
         return A(BLOOD[1])                                              # the nostrils bleed
     if n == 'neck' and f == 'front':
         lx, ly, lz = local(ctx)
-        if abs(lx - 2.5) < 1.2 or (fl(lx) == 4 and ly < 3.5):
-            return A(BLOOD[2] if fl(ly + lx) % 3 else BLOOD[3])         # the blood keeps running down the neck
+        if fl(lx) == 3 or (fl(lx) == 1 and ly < 2.5):
+            return A(BLOOD[2] if fl(ly) % 3 else BLOOD[3])             # the blood keeps running down the neck
     v = _lum(base)
     idx = max(0, min(9, int(v * 12.0) - 1))
     c = SKIN_R[idx]
@@ -1691,11 +1691,11 @@ def rota_gown(ctx, src):
     n = nm(ctx)
     x, y, z = bpos(ctx)
     lx, ly, lz = local(ctx)
-    v = _lum(src) * 0.55 + 0.42 + face_light(ctx) * 0.6
+    v = _lum(src) * 0.4 + 0.52 + face_light(ctx) * 0.6
     g = fbm(x * 0.21 + 50, y * 0.21 + 9, z * 0.21, 3, 41)
-    c = pick(GOWN, v - (0.18 if g > 0.62 else 0.0))
-    if g > 0.58:
-        c = mix(c, GRIME, (g - 0.58) * 2.2)
+    c = pick(GOWN, v - (0.12 if g > 0.68 else 0.0))
+    if g > 0.64:
+        c = mix(c, GRIME, (g - 0.64) * 2.0)
     if f == 'front' and n in ('torso', 'cpanel', 'hips', 'cpanel_lo', 'skirt_f', 'hem') and abs(x) < 5.0:
         # the bib: soaked under the collar, drip columns running down the front, dried brown below
         col = fl(x + 20)
@@ -1706,8 +1706,8 @@ def rota_gown(ctx, src):
             return A(BLOOD[3] if h2(col, fl(y), 2) > 0.3 else BLOOD[2])
         if n in ('hips', 'cpanel_lo', 'skirt_f', 'hem') and h2(col, 7, 5) > 0.7 and ly < 4.0:
             return A(BLOOD_DRY[1])
-    if fbm(x * 0.33 + 3, y * 0.33 + 70, z * 0.33, 2, 77) > 0.72:
-        return A(mix(c, BLOOD_DRY[1], 0.7))                             # old dried stains
+    if fbm(x * 0.33 + 3, y * 0.33 + 70, z * 0.33, 2, 77) > 0.8:
+        return A(mix(c, BLOOD_DRY[1], 0.6))                             # old dried stains
     if f in SIDE and n in ('skirt_f', 'skirt_b', 'hem') and ly > ctx.cube.size[1] - 2.0:
         return A(mix(c, GRIME, 0.55))                                   # the hem dragged over floors
     return A(c)
@@ -1780,11 +1780,12 @@ def jawlong_paint(ctx, P):
     c = pick(SKIN_R, v)
     if f == 'front':
         col = fl(lx)
-        if col in (3, 6) or (col in (2, 7) and ly < 4):
-            return A(BLOOD[3] if fl(ly) % 4 else BLOOD[2])             # sheets of blood off the lip
-        if col in (1, 8) and fl(ly) % 2 == 0:
+        chin = nm(ctx) == 'jawchin'
+        if (not chin and col == 2) or (chin and col == 1 and ly < 2):
+            return A(BLOOD[3] if fl(ly) % 4 else BLOOD[2])             # blood off the corner of the lip
+        if not chin and col in (0, w - 1) and fl(ly) % 2 == 0:
             return A(SKIN_R[2])                                         # tendons straining
-        if ly > h - 1.5:
+        if chin and ly > h - 1.5:
             return A(SKIN_R[5])                                         # the chin knob at the bottom
     if f in ('west', 'east') and fl(ly) % 3 == 0:
         return A(SKIN_R[2])
@@ -2179,7 +2180,8 @@ def build(variant=None, pose=None):
     bone('teeth_upper', H, (0, 0, 0))
     box('teeth_upper', (-4.5, -0.2, -8.7), (9, 2, 0), 'fang', 'fang_up')
     bone('jaw_long', 'jaw', (0, 0, 0))
-    box('jaw_long', (-5, 2.5, -7.6), (10, 10, 6), 'jawlong', 'jawlong')
+    box('jaw_long', (-4, 2.5, -7.2), (8, 6, 4), 'jawlong', 'jawlong')
+    box('jaw_long', (-3, 8.5, -6.8), (6, 3, 3), 'jawlong', 'jawchin')
     box('jaw_long', (-4.5, -2.2, -7.9), (9, 2, 0), 'fang', 'fang_lo', up=True)
 
     # possessed: the bun undone into long white locks drifting as if under water (toggles).  Radial: one up from

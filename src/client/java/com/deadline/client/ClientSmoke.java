@@ -203,6 +203,35 @@ public final class ClientSmoke {
 		});
 	}
 
+	/** The car (com.deadline.car): outside in daylight, then the view from the driver's seat by day and at night with the lights. */
+	private static void carStudio() {
+		step(10, mc -> spawnSubject(mc, com.deadline.car.Cars.CAR));
+		step(1, mc -> frameSubject(mc, 9.0, 35, 0.45));
+		shot(25, "car_34");
+		step(1, mc -> frameSubject(mc, 9.5, 150, 0.45));
+		shot(15, "car_back34");
+		step(1, mc -> server(mc, p -> {
+			if (subject instanceof com.deadline.car.CarEntity car) {
+				car.setNoGravity(false);
+				// face where the car faces first (a teleport carries the view to the client), then take the wheel
+				p.teleportTo((ServerLevel) p.level(), car.getX(), car.getY(), car.getZ(), Set.of(), car.getYRot(), 8F, false);
+				car.seat(p, com.deadline.car.CarEntity.DRIVER);
+			}
+		}));
+		shot(30, "car_driver");
+		step(1, mc -> server(mc, p -> {
+			((ServerLevel) p.level()).setDayTime(18000);
+			if (subject instanceof com.deadline.car.CarEntity car) {
+				car.setLights(true);
+			}
+		}));
+		shot(40, "car_driver_night");
+		step(1, mc -> server(mc, p -> {
+			p.stopRiding();
+			((ServerLevel) p.level()).setDayTime(6000);
+		}));
+	}
+
 	private static void frameSubject(Minecraft mc, double dist, double angle, double eye) {
 		server(mc, p -> {
 			if (subject != null) {
@@ -415,6 +444,7 @@ public final class ClientSmoke {
 			step(1, mc -> frameSubject(mc, 1.6, 0, 0.86));
 			shot(15, "mob_" + key + "_face");
 		}
+		carStudio();
 		step(5, mc -> server(mc, p -> {
 			if (subject != null) {
 				subject.discard();
