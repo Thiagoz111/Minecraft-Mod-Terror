@@ -756,8 +756,8 @@ public class CarEntity extends Mob {
 		return Entity.MovementEmission.NONE;
 	}
 
-	@Override
-	public AABB getBoundingBoxForCulling() {
+	/** Render-culling box: the hitbox is one seat wide, the body is a whole car. */
+	public AABB cullingBox() {
 		return this.getBoundingBox().inflate(HALF_LENGTH - 1.0, 0.3, HALF_LENGTH - 1.0);
 	}
 

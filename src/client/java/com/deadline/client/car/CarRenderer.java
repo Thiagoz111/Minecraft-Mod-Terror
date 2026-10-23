@@ -14,6 +14,7 @@ import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
+import net.minecraft.world.phys.AABB;
 
 /** The car: generated model (tools/models/ent_auto.py), headlights/tail-lights glowing on the eyes layer when lit. */
 public class CarRenderer extends MobRenderer<CarEntity, CarRenderState, AutoModel> {
@@ -33,6 +34,11 @@ public class CarRenderer extends MobRenderer<CarEntity, CarRenderState, AutoMode
 	@Override
 	public Identifier getTextureLocation(CarRenderState state) {
 		return TEXTURE;
+	}
+
+	// overrides EntityRenderer#getBoundingBoxForCulling (no @Override: public widens either access level)
+	public AABB getBoundingBoxForCulling(CarEntity car) {
+		return car.cullingBox();
 	}
 
 	@Override
