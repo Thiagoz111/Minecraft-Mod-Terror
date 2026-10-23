@@ -105,6 +105,7 @@ public final class DeadLineHud {
 			renderTitle(g, font, w, h, pt);
 			renderCaseEnd(g, font, w, h);
 			StoryHud.render(g, font, w, h, pt);
+			com.deadline.client.car.GpsHud.render(g, font, w, h, pt);
 		}
 
 		// full-screen flashes

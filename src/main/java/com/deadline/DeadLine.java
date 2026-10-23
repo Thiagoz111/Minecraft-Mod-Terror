@@ -43,6 +43,9 @@ public class DeadLine implements ModInitializer {
 		// case 2: the Morales house
 		com.deadline.casa.CasaSetEntities.init();
 		com.deadline.casa.FamilyEntities.init();
+		// the car, its keys and the GPS; overworld cases (the house in the real world, the frozen night)
+		com.deadline.car.Cars.init();
+		com.deadline.caseload.OverworldCase.register();
 
 		CommandRegistrationCallback.EVENT.register(DeadLineCommands::register);
 		SmokeTest.register();
