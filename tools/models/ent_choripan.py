@@ -92,6 +92,7 @@ GLINT = hx('#fff4e2')          # big glint in the base texture: cream, not pure 
 GLINT_SOFT = hx('#e9cdb0')     # the rest of the 2x2 glint: soft, so the eye still reads brown
 GLINT2 = hx('#ffe2bc')
 GLOW = hx('#fff1dc')           # the only emissive pixels: warm
+GLOW2 = hx('#f3d6b4')          # the small second glint, a step dimmer
 WET = hx('#d99a72')            # pale peach wet line on the lower lid
 WET_D = hx('#b57a52')
 
@@ -215,8 +216,11 @@ def coat(ctx, base=0.6, stripe=True, light_below=None):
     """Red coat; darker dorsal stripe on top, optional blend to the light chest/muzzle colour below a y."""
     x, y, z = A(ctx)
     v = coat_v(ctx, base)
-    if stripe and ctx.face == 'top' and abs(x) < 2.2:
-        v -= 0.16 - abs(x) * 0.04
+    if stripe and ctx.face == 'top':
+        if abs(x) < 0.5:
+            v += 0.07                                   # the spine ridge catches the light
+        elif abs(x) < 2.6:
+            v -= 0.12 - abs(x) * 0.02                   # darker saddle either side of it
     c = pick(COAT, v)
     if light_below is not None and ctx.face != 'top':
         y0, y1 = light_below
@@ -227,47 +231,90 @@ def coat(ctx, base=0.6, stripe=True, light_below=None):
 
 
 # ------------------------------------------------------------------ body
+def _blob(a, b, ca, cb, ra, rb):
+    """1 at the centre of an ellipse, falling to 0 at its rim."""
+    d = ((a - ca) / ra) ** 2 + ((b - cb) / rb) ** 2
+    return clamp(1.0 - d)
+
+
+# hand-placed coat tufts: (face, cube tag, side, list of (u from the cube's front edge, row, +-step))
+CHEST_TUFT = [(2, 4, 1), (3, 5, 1), (4, 4, 1), (3, 3, -1), (1, 3, 1), (5, 3, 1)]
+
+
 def body_mat(ctx):
+    """Bare coat on the barrel (only seen in the 'bufanda' look and round the sweater): form shading so it reads as
+    a round, short-haired dog and not a plank -- a lit spine ridge, lighter masses over the shoulder and the haunch,
+    a darker band where the barrel turns under, and the cream chest carried back under the belly to the pink tummy."""
     x, y, z = A(ctx)
     t = tag(ctx)
     f = ctx.face
     if f == 'bottom':
-        # pink tummy (seen in belly_up), furrier toward the chest
-        v = 0.55 + fur_noise(ctx, 0.06)
-        c = pick(BELLY, v)
-        if z < -1:
-            c = mix(c, pick(LIGHT, 0.6), clamp((-1 - z) / 4))
+        # cream chest fur carried back under the barrel, the pink tummy behind the ribs (seen in belly_up)
+        v = 0.6 + fur_noise(ctx, 0.07)
+        c = pick(BELLY, v - 0.04)
+        cream = pick(LIGHT, v + 0.02)
+        c = mix(cream, c, clamp((z - 3.5) / 4))
+        if abs(x) > 3.6:
+            c = mix(c, pick(LIGHT, v - 0.12), 0.6)       # the flanks turning up into the side
         return c
     if t == 'keel':
-        return pick(LIGHT, coat_v(ctx, 0.62))
+        v = coat_v(ctx, 0.66)
+        if f == 'front' and ctx.j == 0:
+            v += 0.05
+        return pick(LIGHT, v)
     if t == 'prow':
         if f == 'front':
-            # proud chest: cream blaze, a little darker at the rim so the prow reads as a rounded bulge
-            v = coat_v(ctx, 0.6) - (0.08 if edge(ctx) == 0 else 0) - clamp((16 - y) / 3) * 0.1
-            return mix(pick(COAT, v), pick(LIGHT, v), clamp(0.9 - abs(x) * 0.35) * clamp((y - 15) / 3))
+            # proud chest: cream blaze with a hand-placed V tuft, darker at the rim so the prow reads as a bulge
+            v = coat_v(ctx, 0.62) - (0.07 if edge(ctx) == 0 else 0) - clamp((16 - y) / 3) * 0.08
+            for i, j, s in CHEST_TUFT:
+                if (ctx.i, ctx.j) == (i, j):
+                    v += 0.09 * s
+            return mix(pick(COAT, v), pick(LIGHT, v + 0.04), clamp(1.0 - abs(x) * 0.3) * clamp((y - 14.5) / 2.5))
         if f == 'top':
             return coat(ctx, 0.6)
-        return mix(coat(ctx, 0.6, False), pick(LIGHT, coat_v(ctx, 0.58)), clamp((y - 15) / 3))
+        return mix(coat(ctx, 0.6, False), pick(LIGHT, coat_v(ctx, 0.6)), clamp((y - 15) / 3))
     if t == 'rump':
         if f == 'back':
             v = coat_v(ctx, 0.56) - abs(x) * 0.02 - (0.06 if edge(ctx) == 0 else 0)
+            v += _blob(x, y, 0, 13.5, 4, 2.2) * 0.06            # the round top of the rump
             if abs(x) < 0.6 and y > 15.5:
                 v -= 0.12                                   # crease between the haunches
             c = pick(COAT, v)
             if y > 16.5 and abs(x) > 0.6:
                 c = mix(c, pick(LIGHT, v), 0.35)           # paler fur under the tail
             return c
-        return coat(ctx, 0.6, light_below=(17, 19))
+        v = coat_v(ctx, 0.6) + _blob(z, y, 16, 13.8, 3, 2.5) * 0.07
+        c = pick(COAT, v)
+        return mix(c, pick(LIGHT, v), clamp((y - 17) / 2))
     if f == 'front':
         cx = abs(x) / 5.0
         c = coat(ctx, 0.62, False)
-        return mix(c, pick(LIGHT, coat_v(ctx, 0.6)), clamp(1.15 - cx * 1.1 + (y - 14) * 0.08))
+        return mix(c, pick(LIGHT, coat_v(ctx, 0.62)), clamp(1.15 - cx * 1.1 + (y - 14) * 0.08))
     if f == 'back':
         v = coat_v(ctx, 0.56) - abs(x) * 0.025 + (0.04 if y < 14 else 0)
         if abs(x) < 1.6 and y < 13.5:
             v -= 0.14                                   # tail root shadow / end of the dorsal stripe
         return pick(COAT, v)
-    return coat(ctx, 0.6, light_below=(17.5, 20.5))
+    if f == 'top':
+        return coat(ctx, 0.6)
+    # the flanks
+    v = coat_v(ctx, 0.6)
+    v += _blob(z, y, -1.5, 13.6, 4.2, 2.6) * 0.08          # shoulder mass
+    v += _blob(z, y, 12.0, 13.8, 4.0, 2.6) * 0.08          # haunch mass
+    v -= _blob(z, y, 5.0, 14.2, 3.5, 1.4) * 0.04           # the soft hollow of the ribs behind the shoulder
+    if t == 'tall':
+        # the 1-texel strips of the taller box show above (spine) and below (belly) the core
+        if y > 19:
+            return pick(LIGHT, coat_v(ctx, 0.48))
+        return pick(COAT, v + 0.04)
+    if 16.8 <= y < 18.8:
+        v -= 0.09                                       # the barrel turning under: a darker 2-texel band
+    c = pick(COAT, v)
+    if y >= 18.8:
+        c = mix(c, pick(LIGHT, v - 0.06), 0.7)          # pale belly fringe on the last row
+    elif z < -3.5 and y > 15:
+        c = mix(c, pick(LIGHT, v), clamp((-3.5 - z) / 3) * clamp((y - 15) / 3))   # the chest cream wraps the side
+    return c
 
 
 # ------------------------------------------------------------------ the sweater
@@ -314,6 +361,20 @@ def sweater_mat(ctx):
     f = ctx.face
     t = tag(ctx)
     x, y, z = A(ctx)
+    if t == 'bib':
+        # the turtleneck chest panel (brings the red to the front view): k1p1 ribs running down, a fat rolled
+        # edge on top under the collar, shadowed where it tucks between the forelegs
+        if f == 'front':
+            v = rib_v(ctx, ctx.i) + 0.04
+            if ctx.j <= 1:
+                v = 0.62 + face_light(ctx) * 0.9 + (0.08 if ctx.j == 0 else -0.02) + (0.05 if ctx.i % 2 else 0)
+            v -= clamp((ctx.j - 4) / 3) * 0.1
+            if ctx.i in (0, ctx.w - 1):
+                v -= 0.06
+            return pick(SWEATER, v)
+        if f == 'top':
+            return pick(SWEATER, 0.66 + (0.05 if ctx.i % 2 else 0))
+        return pick(SWEATER, rib_v(ctx, ctx.j) - 0.06)
     if t == 'cuff':
         if f in ('front', 'back'):
             return pick(SWEATER, rib_v(ctx, ctx.i) - 0.02)   # ribbed rolled edge, ribs run round the opening
@@ -375,13 +436,38 @@ def cable_mat(ctx):
 
 
 # ------------------------------------------------------------------ neck, collar, tag
+NECK_TUFT = {(1, 6): 1, (2, 7): 1, (1, 7): -1, (3, 8): 1, (2, 8): -1}   # (u from front, row): a ruff behind the jaw
+
+
 def neck_mat(ctx):
     x, y, z = A(ctx)
     if ctx.face == 'top':
         return coat(ctx, 0.6)
     if ctx.face == 'bottom':
-        return pick(LIGHT, coat_v(ctx, 0.55))
+        return pick(LIGHT, coat_v(ctx, 0.6))
+    if ctx.face in ('west', 'east'):
+        s = NECK_TUFT.get((front_u(ctx), ctx.j))
+        if s:
+            v = coat_v(ctx, 0.62) + 0.1 * s
+            return mix(pick(COAT, v), pick(LIGHT, v), 0.5 if s > 0 else 0.2)
     return coat(ctx, 0.62, light_below=(12.5, 16.5)) if z < -7 else coat(ctx, 0.6, light_below=(14, 18))
+
+
+def twist_mat(ctx):
+    """Toggle 'neck_twist' (bipedal_180 only): the neck fur WRUNG like a towel -- two dark helical creases with a
+    lit ridge beside each, wrapping round the neck axis; everything else transparent so the coat shows through."""
+    if ctx.face in ('front', 'back'):
+        return None
+    x, y, z = A(ctx)
+    phi = math.atan2(y - 13.5, x) / (2 * math.pi)
+    ph = (z / 4.5 + 2 * phi) % 1.0
+    if ph < 0.18:
+        return pick(COAT, 0.16)
+    if ph < 0.32:
+        return pick(COAT, 0.34)
+    if 0.42 < ph < 0.56:
+        return pick(LIGHT, 0.42)
+    return None
 
 
 def collar_mat(ctx):
@@ -538,9 +624,9 @@ def cheek_mat(ctx):
     if f == 'top':
         return pick(LIGHT, v + 0.04) if z < -14 else coat(ctx, 0.6, False)
     if f == 'front':
-        if ctx.j == 0 and abs(x) < 3.5:
-            return pick(LIGHT, 0.7)                     # the stop band between the eyes and the nose
-        c = mix(pick(COAT, v), pick(LIGHT, v + 0.04), clamp(1.0 - abs(x) * 0.17))
+        if ctx.j == 0 and abs(x) < 1.3:
+            return pick(LIGHT, 0.74)                    # the stop between the eyes, above the bridge
+        c = mix(pick(COAT, v), pick(LIGHT, v + 0.08), clamp(1.05 - abs(x) * 0.17))
         if ctx.j == 2 and abs(x) in (3.5, 4.5):
             c = pick(LIGHT, 0.28)                       # whisker dots
         if edge(ctx) == 0 and ctx.j > 0:
@@ -555,56 +641,66 @@ def dome_mat(ctx):
     return coat(ctx, 0.63)
 
 
+def _muzzle_top(ctx, x, z):
+    v = 0.66 + 0.16 + fur_noise(ctx, 0.05)              # lit like a top face whatever face it is painted on
+    return mix(pick(COAT, v), pick(LIGHT, v + 0.04), 0.42 + clamp((-z - 17) * 0.08) + (0.2 if abs(x) < 1 else 0))
+
+
 def muzzle_mat(ctx):
     x, y, z = A(ctx)
     f = ctx.face
+    if tag(ctx) == 'bridge':
+        # the rise of the muzzle into the stop: the SAME tone as the muzzle top on every face, no edge line, so it
+        # melts into the muzzle instead of reading as a brick glued on top
+        return _muzzle_top(ctx, x, z)
     if f == 'top':
-        v = coat_v(ctx, 0.66)
-        c = pick(COAT, v)
-        return mix(c, pick(LIGHT, v), 0.3 + clamp((-z - 17) * 0.08) + (0.2 if abs(x) < 1 else 0))
+        return _muzzle_top(ctx, x, z)
     if f in ('west', 'east'):
-        c = pick(LIGHT, coat_v(ctx, 0.56))
+        c = pick(LIGHT, coat_v(ctx, 0.62))
         u = front_u(ctx)
         if (u, ctx.j) in ((2, 1), (4, 1), (3, 0)):
-            c = pick(LIGHT, 0.28)                       # whisker dots
+            c = pick(LIGHT, 0.32)                       # whisker dots
         return c
-    return pick(LIGHT, coat_v(ctx, 0.5))
+    return pick(LIGHT, coat_v(ctx, 0.58))
 
 
-NOSE_ART = ["kmskkk",
-            "kNkkNk"]
-NOSE_COLS = {'k': NOSE[2], 'm': NOSE[6], 's': NOSE[4], 'N': NOSE[0]}
+# the nose: a 5-wide leather pad (same width as the muzzle) under a 3-wide rounded bulb.  Charcoal, not pure black,
+# so the two comma nostrils (curling out and down) read; the 2-texel wet shine sits on the bulb.
+NOSE_ART = ["kNsNk",
+            "NkskN"]
+NOSE_COLS = {'k': NOSE[4], 's': NOSE[5], 'N': NOSE[0]}
 
 
 def nose_mat(ctx):
     f = ctx.face
     if tag(ctx) == 'bulb':
-        # leather bulb on top of the nose: the crisp wet highlight lives here
         if f == 'front':
-            return [NOSE[3], NOSE[7], NOSE[5], NOSE[2]][min(3, ctx.i)]
+            return [NOSE[7], NOSE[6], NOSE[4]][min(2, ctx.i)]
         if f == 'top':
-            return NOSE[6] if ctx.i == 1 else NOSE[3]
-        return NOSE[2]
+            return [NOSE[6], NOSE[7], NOSE[5]][min(2, ctx.i)]
+        return NOSE[4]
     if f == 'front':
-        return art(NOSE_ART, NOSE_COLS, ctx, NOSE[2])
+        return art(NOSE_ART, NOSE_COLS, ctx, NOSE[3])
     if f == 'top':
-        return NOSE[5] if ctx.i in (1, 2) and ctx.j == ctx.h - 1 else NOSE[3]
+        return NOSE[5] if ctx.j == ctx.h - 1 else NOSE[4]
     if f == 'bottom':
-        return NOSE[0]                                  # dark underside
+        return NOSE[1]                                  # dark underside
     if f in ('west', 'east'):
-        return NOSE[3] if ctx.j == 0 else NOSE[1]
-    return NOSE[1]
+        return NOSE[4] if ctx.j == 0 else NOSE[2]
+    return NOSE[2]
 
 
+# the mouth on the lip front: a 1-texel philtrum under the nose that splits into two diagonal strokes (an inverted
+# Y), the dog's mouth -- not a vertical bar between two blocks
 LIPS_FRONT = ["..K..",
-              "k.K.k"]
+              ".K.K."]
 
 
 def lips_mat(ctx):
     f = ctx.face
     if f == 'front':
-        c = art(LIPS_FRONT, {'K': COAT[2], 'k': COAT[4]}, ctx)
-        return c or pick(LIGHT, coat_v(ctx, 0.62))
+        c = art(LIPS_FRONT, {'K': COAT[3]}, ctx)
+        return c or pick(LIGHT, coat_v(ctx, 0.66))
     if f in ('west', 'east'):
         u = front_u(ctx)
         c = pick(LIGHT, coat_v(ctx, 0.58))
@@ -676,12 +772,12 @@ def canine_mat(ctx):
 EYE_ART = [
     "cLLLLc",
     "L1111L",
-    "rWVK2r",
+    "rWWK2r",
     "rVKKwr",
-    "r4444r",
-    "cqppqc",
+    "r3443r",
+    "ccppcc",
 ]
-EYE_SIDE = ["LL", "1r", "Wr", "3r", "4r", "pc"]     # outer side face, column 0 = front edge
+EYE_SIDE = ["LL", "1r", "Wr", "3r", "4r", "cc"]     # outer side face, column 0 = front edge
 
 
 def _eye_cols(j):
@@ -704,7 +800,75 @@ def eye_mat(ctx):
     return pick(COAT, 0.4 + face_light(ctx))
 
 
-EYE_GLOW = [(1, 2, GLOW), (4, 3, GLOW)]           # only 2 px per eye are full-bright
+EYE_GLOW = [(1, 2, GLOW), (2, 2, GLOW), (4, 3, GLOW2)]   # a 2-px main glint + the small one: warm, never a mob glow
+
+
+# toggle 'wrong_face' (bipedal_180 only): caps over the eyes -- the lids pulled back so the eyeball shows white all
+# round, milk-white like the demon's (ent_choripan_demonio), a 1-texel red pinpoint pupil turned slightly inward and
+# NO glint.  The pinpoint is the only emissive texel: two tiny red dots in the 3:33 blackout.
+WRONG_EYE = [
+    "cLLLLc",
+    "LHHHHL",
+    "rHaaHr",
+    "rabbar",
+    "rbbbbr",
+    "cwwwwc",
+]
+MILK = pal('#56606e', '#7d8894', '#a3adb6', '#c3cbd0', '#dce1e2', '#eef0ee', '#ffffff')
+PIN = hx('#ff2a14')
+PIN_D = hx('#9a0e10')
+BLOODSHOT = hx('#c4706c')
+
+
+def _wrong_pupil(side):
+    return (3, 2) if side == 'r' else (2, 2)          # looking slightly inward (toward the nose)
+
+
+def wrong_eye_mat(ctx):
+    f = ctx.face
+    side = getattr(ctx.cube, 'side', 'r')
+    if f == 'front':
+        i, j = ctx.i, ctx.j
+        if (i, j) == _wrong_pupil(side):
+            return PIN
+        pi, pj = _wrong_pupil(side)
+        if (i, j) == (pi, pj + 1):
+            return PIN_D
+        ch = WRONG_EYE[j][i]
+        c = {'c': pick(COAT, 0.36), 'L': EYE_LID, 'H': MILK[6], 'a': MILK[5], 'b': MILK[4], 'r': EYE_RING[2],
+             'w': WET_D}[ch]
+        if ch in 'ab' and abs(i - pi) + abs(j - pj) == 1:
+            c = mix(c, BLOODSHOT, 0.35)                 # pink ring round the pinpoint
+        if ch in 'ab' and ((side == 'r' and (i, j) in ((1, 3), (1, 4))) or (side == 'l' and (i, j) in ((4, 3), (4, 4)))):
+            c = mix(c, BLOODSHOT, 0.45)                 # bloodshot thread from the outer corner
+        return c
+    if outward(ctx):
+        return [EYE_LID, MILK[4], MILK[4], MILK[3], MILK[3], WET_D][min(ctx.j, 5)]
+    if f == 'top':
+        return EYE_LID
+    return pick(COAT, 0.4)
+
+
+def wrong_eye_glow(side):
+    pi, pj = _wrong_pupil(side)
+    return at([(pi, pj, hx('#ff3a1e'))])
+
+
+# toggle 'wrong_face': the GRIN.  A zero-thickness plane on the front of the jowls: a crescent of small clenched
+# teeth between two dark lip lines that runs from the corners of the real mouth UP into the cheeks, far wider than
+# any dog's mouth -- the 'deeply wrong' read from the player's side.  The centre is behind the muzzle (unpainted).
+GRIN = [
+    "Kt........tK",
+    "dTK......KTd",
+    ".dtK....KtD.",
+    "..dTK..KTd..",
+]
+
+
+def grin_mat(ctx):
+    if ctx.face != 'front':
+        return None
+    return art(GRIN, {'K': MOUTH[1], 'd': MOUTH[2], 'D': MOUTH[2], 'T': TEETH[3], 't': TEETH[1]}, ctx)
 
 
 def brow_mat(ctx):
@@ -801,6 +965,14 @@ def leg_mat(ctx):
     v = coat_v(ctx, 0.62) - clamp((y - 16) / 7) * 0.1
     if f == 'back':
         v -= 0.07
+    if t == 'leg' and ctx.h == 6:
+        # the elbow tuft: a little feathering of longer hair at the back of the foreleg, under the chest
+        if f == 'back' and (ctx.i, ctx.j) in ((1, 0), (0, 1), (2, 1), (1, 2)):
+            v += 0.1 if ctx.j != 1 else -0.06
+        if outward(ctx) and (front_u(ctx), ctx.j) in ((2, 0), (2, 1), (1, 1)):
+            v += 0.08
+        if f == 'front' and ctx.j >= 4:
+            return mix(pick(COAT, v), pick(LIGHT, v), 0.3)   # paler 'socks' toward the paw
     if t == 'thigh':
         if f in ('west', 'east') and ctx.t < 0.35:
             v += 0.04
@@ -824,57 +996,66 @@ def garter_v(ctx, row):
     return 0.58 + face_light(ctx) * 0.9 + (0.11 if row % 2 == 0 else -0.09)
 
 
+ROLL_SHADE = [0.05, 0.1, 0.06, 0.0, -0.07, -0.15]     # the roll is round: lit on top, tucked into shadow below
+
+
 def scarf_mat(ctx):
-    """Chunky red garter-stitch scarf in the same wool as the sweater.  The wrap: ridges run round the neck, a dark
-    crease where the two turns overlap, rolled edges on the rims; the knot: ridges + pinched shadow; the tails: ridges
-    across, two cream bands and a fringe (cutout) at the end."""
+    """Chunky red garter-stitch scarf in the same wool as the sweater.  The wrap is a fat ROLL on the shoulders,
+    wider than the jowls (it bulges past the cheeks in the front view): garter ridges running across the scarf (so
+    vertical on the roll), round shading, a diagonal crease where the outer turn crosses the inner one; the knot:
+    ridges + a pinched waist; the tails: ridges across, two cream bands and a cut-out fringe at the end."""
     f = ctx.face
     t = tag(ctx)
     h = ctx.h
     if t == 'wrap':
+        if f == 'bottom':
+            return pick(SWEATER, 0.3 + (0.05 if ctx.i % 2 else 0))
         if f in ('front', 'back'):
-            # the rims of the cowl: rolled lip outside, folds going in, the neck hole in deep shadow
-            e = edge(ctx)
-            v = [0.64, 0.5, 0.4, 0.32][min(e, 3)] + face_light(ctx) * 0.6
-            if e == 1 and (ctx.i + ctx.j) % 3 == 0:
-                v += 0.07
+            v = 0.58 + ROLL_SHADE[min(ctx.j * 6 // max(1, h), 5)] + (0.07 if ctx.i % 2 == 0 else -0.06)
+            if f == 'front' and ctx.i - ctx.j in (3, 4) and ctx.i < ctx.w // 2:
+                v -= 0.16 if ctx.i - ctx.j == 3 else -0.05     # the outer turn crossing over: crease + lit edge
+            if f == 'front' and ctx.i + ctx.j in (ctx.w - 3,) and ctx.i > ctx.w // 2:
+                v -= 0.12
+            if ctx.i in (0, ctx.w - 1):
+                v -= 0.06
             return pick(SWEATER, v)
         if f in ('west', 'east'):
-            row, n = ctx.i, ctx.w
-            # the two turns cross on the sides: the outer turn's edge runs diagonally from the nape to the throat
-            cross = abs(ctx.i - (ctx.j * (ctx.w - 1) / max(1, ctx.h - 1))) < 0.6
-        else:
-            row, n = ctx.j, ctx.h
-            cross = False
-        v = garter_v(ctx, row) * 0.6 + 0.24
-        if cross:
-            v -= 0.18
-        if row in (0, n - 1):
-            v -= 0.06
-        if f in ('west', 'east'):
-            v += (0.4 - ctx.t) * 0.14                       # round: lit on the shoulder of the wrap
+            # the ends of the roll: the scarf wrapping round, ridges in rings
+            v = 0.56 + ROLL_SHADE[min(ctx.j * 6 // max(1, h), 5)] + (0.07 if (ctx.i + ctx.j) % 2 == 0 else -0.05)
+            if edge(ctx) == 0:
+                v -= 0.05
+            return pick(SWEATER, v)
+        # top: ridges across, the lit crown of the roll
+        v = 0.7 + (0.07 if ctx.i % 2 == 0 else -0.05) - (0.06 if ctx.j in (0, ctx.h - 1) else 0)
         return pick(SWEATER, v)
     if t == 'knot':
         v = garter_v(ctx, ctx.j) + 0.03
         if ctx.i == ctx.w // 2 and f in ('front', 'back', 'top', 'bottom'):
-            v -= 0.14                                       # the pinch of the knot
+            v -= 0.16                                       # the pinch of the knot
+        if f == 'front' and ctx.j in (1, 2) and ctx.i in (1, ctx.w - 2):
+            v += 0.06                                       # the two lobes catch the light
         if edge(ctx) == 0:
             v -= 0.07
         return pick(SWEATER, v)
-    # tails: soft ridges across, one cream band above a red band, then a two-row red fringe (cutout tassels)
+    # tails: soft ridges across, two cream bands, then a two-row red fringe (cut-out tassels)
     j = ctx.j
     fringe = h - 2
+    sx, _, sz = ctx.cube.size
+    broad = f in ('front', 'back') if sx >= sz else f in ('west', 'east')
     if f == 'top':
         return pick(SWEATER, 0.6)
     if f == 'bottom':
         return None
     if j >= fringe:
-        if f in ('front', 'back') and (ctx.i + j) % 2 == 0:
+        if broad and (ctx.i + j) % 2 == 0:
             return pick(SWEATER, 0.56 if j == fringe else 0.44)
         return None
-    if j == fringe - 2:
-        return pick(YARN, 0.5 + face_light(ctx) * 0.6 + (0.1 if ctx.i % 2 == 0 else 0))
+    if j in (fringe - 1, fringe - 3):
+        v = 0.56 + face_light(ctx) * 0.6 + (0.1 if ctx.i % 2 == 0 else 0) - (0.08 if f in ('west', 'east') else 0)
+        return pick(YARN, v)
     v = 0.56 + face_light(ctx) * 0.9 + (0.06 if j % 2 == 0 else -0.05) - (0.06 if f in ('west', 'east') else 0)
+    if broad and ctx.i in (0, ctx.w - 1):
+        v -= 0.05
     return pick(SWEATER, v)
 
 
@@ -895,9 +1076,10 @@ DEFAULT_MAT = make_mat('normal')
 VARIANT_MATS = {'normal': DEFAULT_MAT, 'bufanda': make_mat('bufanda')}
 FOCUS = 'head'
 
-TOGGLE_DEFAULT = {'scarf': False, 'eyelids': False}
+TOGGLE_DEFAULT = {'scarf': False, 'eyelids': False, 'wrong_face': False, 'neck_twist': False}
 VARIANT_TOGGLES = {'normal': {}, 'bufanda': {'scarf': True}}
-POSE_TOGGLES = {'sleep': {'eyelids': True}, 'sneeze': {'eyelids': True}}
+POSE_TOGGLES = {'sleep': {'eyelids': True}, 'sneeze': {'eyelids': True},
+                'bipedal_180': {'wrong_face': True, 'neck_twist': True}}
 
 
 def visible_set(variant=None, pose=None):
@@ -1008,12 +1190,13 @@ class ChoriModel(Model):
 DZ = -0.5          # authoring z -> model z (recentres the long dog on the entity origin)
 HY = 1.0           # the whole head subtree sits this much lower than authored...
 HZ = -2.0          # ...and this much further forward, so a real neck (with the collar on it) shows
-HEAD_BONES = {'head', 'lips', 'jaw', 'tongue', 'right_brow', 'left_brow', 'right_ear', 'left_ear', 'eyelids'}
+HEAD_BONES = {'head', 'lips', 'jaw', 'tongue', 'right_brow', 'left_brow', 'right_ear', 'left_ear', 'eyelids',
+              'wrong_face'}
 COLLAR_A = (0.0, 13.5, -10.0)      # collar pivot (authoring); the collar is tilted -30 deg to sit across the neck
 COLLAR_TILT = -30.0
 TAG_A = (0.0, 19.2, -10.8)         # the D-ring, in the collar's unrotated frame (authoring)
-SCARF_A = (0.0, 13.5, -8.0)        # scarf pivot (authoring, child of neck): the wrap sits on the shoulders
-SCARF_TILT = -8.0
+SCARF_A = (0.0, 16.0, -9.0)        # scarf pivot (authoring, child of neck): the roll sits on the shoulders
+SCARF_TILT = -6.0
 
 
 def _tag_world():
@@ -1065,6 +1248,9 @@ def build(variant=None, pose=None):
     box('body', (-4, 11, -5.2), (8, 9, 1), mat=sweater_mat, inflate=1.0, name='cuff', knit=True)
     box('body', (-5, 12, 10.2), (10, 7, 1), mat=sweater_mat, inflate=0.8, name='cuff', knit=True)
     box('body', (-4, 11, 10.2), (8, 9, 1), mat=sweater_mat, inflate=0.8, name='cuff', knit=True)
+    # the turtleneck chest panel: brings the red (and the Nona) to the front view, between the forelegs and
+    # under the chin
+    box('body', (-5, 12, -8.4), (10, 7, 3), mat=sweater_mat, inflate=0.3, name='bib', knit=True)
 
     # ---------------- legs + paws (paw bones pivot at the wrist / ankle)
     for sd, sx in (('right', -1), ('left', 1)):
@@ -1079,9 +1265,11 @@ def build(variant=None, pose=None):
         cx = 3.0 * sx
         bone(bl, (cx, 16, 12.5), parent='body', mat=leg_mat)
         box(bl, (cx - 2 + 0.6 * sx, 14.5, 10), (4, 5, 5), name='thigh', side=sd[0])
-        box(bl, (cx - 1.5 + 0.3 * sx, 19.5, 11.5), (3, 3, 3), name='leg', side=sd[0])
+        bs = f'{sd}_back_shin'
+        bone(bs, (cx + 0.3 * sx, 19.5, 13), parent=bl, mat=leg_mat)
+        box(bs, (cx - 1.5 + 0.3 * sx, 19.5, 11.5), (3, 3, 3), name='leg', side=sd[0])
         bp = f'{sd}_back_paw'
-        bone(bp, (cx + 0.3 * sx, 22.2, 13), parent=bl, mat=leg_mat)
+        bone(bp, (cx + 0.3 * sx, 22.2, 13), parent=bs, mat=leg_mat)
         box(bp, (cx - 1.5 + 0.3 * sx, 22, 10.5), (3, 2, 4), name='paw', side=sd[0])
 
     # ---------------- tail (raised, happy curve)
@@ -1105,14 +1293,21 @@ def build(variant=None, pose=None):
     tag_box((-3.9, ty + 1.15, tz - 0.4), (8, 5, 1), -0.1, tag_plate_mat, 'plate')
     tag_box((-3.5, ty + 1.55, tz - 0.45), (TXT_W, TXT_H, int(2 * TXT_K)), -TXT_K, tag_text_mat, 'text')
 
+    # ---------------- the wrung neck (TOGGLE: hidden by default, shown in 'bipedal_180')
+    bone('neck_twist', (0, 13, -4.5), parent='neck', mat=twist_mat)
+    box('neck_twist', (-3, 9, -13), (6, 9, 8), inflate=0.32, name='twist')
+
     # ---------------- the Nona's scarf (TOGGLE: hidden by default, shown in the 'bufanda' look)
+    # a fat roll on the shoulders (16 wide with the inflate: wider than the jowls, so it shows past the cheeks
+    # in the front view), the knot on his left under the jaw, behind the tag, one tail hanging over the knot down
+    # to the floor in front of the left foreleg, the other down his left side
     bone('scarf', SCARF_A, parent='neck', rot=(SCARF_TILT, 0, 0), mat=scarf_mat)
-    box('scarf', (-4, 9, -9.5), (8, 9, 4), inflate=0.45, name='wrap')
-    box('scarf', (2.5, 15.3, -11), (3, 3, 3), inflate=0.3, name='knot')
-    bone('scarf_tail_front', (4, 17.6, -9.5), parent='scarf', rot=(-SCARF_TILT, 0, -4), mat=scarf_mat)
-    box('scarf_tail_front', (2.4, 17.6, -10.3), (4, 6, 1), name='tail')
-    bone('scarf_tail_back', (4.6, 17.2, -8.6), parent='scarf', rot=(-SCARF_TILT + 12, 0, -18), mat=scarf_mat)
-    box('scarf_tail_back', (3.2, 17.2, -9.1), (4, 5, 1), name='tail')
+    box('scarf', (-7.5, 13, -12), (15, 6, 6), inflate=0.5, name='wrap')
+    box('scarf', (2.8, 15.5, -12.5), (5, 5, 4), inflate=0.3, name='knot')
+    bone('scarf_tail_front', (6.0, 16.5, -12.9), parent='scarf', rot=(-SCARF_TILT, 0, -3), mat=scarf_mat)
+    box('scarf_tail_front', (3.5, 16.5, -13.4), (5, 8, 1), name='tail')
+    bone('scarf_tail_back', (8.3, 16.5, -10.5), parent='scarf', rot=(-SCARF_TILT, 0, -8), mat=scarf_mat)
+    box('scarf_tail_back', (7.8, 16.5, -13.0), (1, 7, 5), name='tail')
 
     # ---------------- head
     bone('head', (0, 11, -8.5), parent='neck', mat=skull_mat)
@@ -1121,8 +1316,8 @@ def build(variant=None, pose=None):
     box('head', (-6, 11, -16.5), (12, 4, 6), mat=cheek_mat, name='cheek')
     box('head', (-2.5, 12.5, -23), (5, 2, 7), mat=muzzle_mat, name='muzzle')
     box('head', (-1.5, 11.5, -20), (3, 1, 4), mat=muzzle_mat, name='bridge')
-    box('head', (-3, 12.3, -23.6), (6, 2, 1), mat=nose_mat, name='nose')
-    box('head', (-2, 11.8, -23.35), (4, 1, 1), mat=nose_mat, name='bulb')
+    box('head', (-2.5, 12.3, -23.6), (5, 2, 1), mat=nose_mat, name='nose')
+    box('head', (-1.5, 11.8, -23.35), (3, 1, 1), mat=nose_mat, name='bulb')
     for sd, x0 in (('r', -7.3), ('l', 1.3)):
         box('head', (x0, 5, -16.3), (6, 6, 2), mat=eye_mat, name='eye', side=sd,
             decals={'eyes:front': at(EYE_GLOW)})
@@ -1135,6 +1330,14 @@ def build(variant=None, pose=None):
     bone('eyelids', (0, 8, -16.3), parent='head', mat=lid_mat)
     for sd, x0 in (('r', -7.3), ('l', 1.3)):
         box('eyelids', (x0, 5, -16.3), (6, 6, 1), inflate=0.08, name='lid', side=sd)
+
+    # the WRONG face (TOGGLE: hidden by default, shown in 'bipedal_180'): milk eyes with red pinpoints over the
+    # eyes, and the too-wide grin on the jowls
+    bone('wrong_face', (0, 8, -16.3), parent='head', mat=wrong_eye_mat)
+    for sd, x0 in (('r', -7.3), ('l', 1.3)):
+        box('wrong_face', (x0, 5, -16.3), (6, 6, 1), inflate=0.14, name='wrong_eye', side=sd,
+            decals={'eyes:front': wrong_eye_glow(sd)})
+    box('wrong_face', (-6, 11, -16.62), (12, 4, 0), mat=grin_mat, name='grin')
 
     bone('lips', (0, 14.5, -16), parent='head', mat=lips_mat)
     box('lips', (-2.5, 14.5, -23), (5, 2, 7), inflate=0.06, name='lips')

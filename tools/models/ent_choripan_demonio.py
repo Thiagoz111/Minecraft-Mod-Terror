@@ -1844,7 +1844,7 @@ def build():
         ol = R2w.T @ out
         ol[1] = 0.0
         ol = ol / max(1e-6, float(np.linalg.norm(ol)))
-        box(fb, (ol[0] * 1.6 - 2.5, -2.5, ol[2] * 1.6 - 2.5), (5, 4, 5), name='knob')      # the elbow point
+        box(fb, (ol[0] * 1.6 - 2.5, -2.5, ol[2] * 1.6 - 2.5), (5, 4, 5), name='knob', inflate=0.25)   # elbow point
         lf1 = max(4, int(round(L2 * 0.58)))
         box(fb, (-2, 0, -2), (4, lf1, 4), name='fore', inflate=0.05, yb=0.0, limb=L2 + L3)
         box(fb, (-1.5, lf1 - 1, -1.5), (3, L2 - lf1 + 1, 3), name='wrist', inflate=0.1, yb=float(lf1 - 1),
@@ -2308,8 +2308,12 @@ def make_lunge():
     k.legacy_neck(F, neck_rel=(27, 0, 0), head_rel=(-14, 0, -HEAD_TILT), head_slide=(0, 0, -3))
     k.flower(76, 80, jitter=4.0, curl=10.0)
     k.brows(-22, 0.3)
-    k.set('tongue', 4, -10, 0, 0, 4.0, 0.0)                   # lying on the floor of the maw, out over a lower petal
-    k.set('tongue_tip', 14, 0, 0)
+    # the tongue lies along the floor of the maw and out over the lower-left petal (the maw stays clear)
+    k.set('tongue', 0, 0, 0, 0, 4.0, 0.0)
+    pd = k.R('jaw_lower_left') @ np.array([0.0, 0.0, -1.0])
+    fwd = k.R('head') @ np.array([0.0, 0.0, -1.0])
+    k.set_world_rot('tongue', look_rot(-(pd * 0.7 + fwd * 0.3), k.R('head') @ np.array([0.0, -1.0, 0.0])))
+    k.set('tongue_tip', 30, 0, 0)
     k.set('right_ear_tip', 25)
     k.set('left_ear_tip', 25)
     k.set('tail', 10, 26, 0)
@@ -2721,8 +2725,12 @@ def make_unspool():
     k.neck_head(F, wdir(-52, 10), R_deg(0, 6, 0) @ R_deg(0, 0, 12) @ R_deg(-14, 0, 0))
     k.flower(70, 74, jitter=4.0, curl=10.0)
     k.brows(-8, 0.25)
-    k.set('tongue', 6, -12, 0, 0, 4.0, 0.0)                   # on the floor of the maw, out over a lower petal
-    k.set('tongue_tip', 14, 0, 0)
+    # the tongue lies along the floor of the maw and out over the lower-left petal (the maw stays clear)
+    k.set('tongue', 0, 0, 0, 0, 4.0, 0.0)
+    pd = k.R('jaw_lower_left') @ np.array([0.0, 0.0, -1.0])
+    fwd = k.R('head') @ np.array([0.0, 0.0, -1.0])
+    k.set_world_rot('tongue', look_rot(-(pd * 0.7 + fwd * 0.3), k.R('head') @ np.array([0.0, -1.0, 0.0])))
+    k.set('tongue_tip', 30, 0, 0)
     k.plant_leg('right', -80, paw_yaw=10)
     k.plant_leg('left', -80, paw_yaw=-10)
     # arms of the links still inside: folded flat, like a grasshopper's legs -- the upper arm pressed down the flank,
