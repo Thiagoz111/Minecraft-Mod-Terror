@@ -61,6 +61,7 @@ import numpy as np
 from mcmodel import Model, hash3, face_light, pick, rot_matrix
 from rig import Rig
 from paint import hx, mix
+import ent_copia_look as copia
 
 
 # ------------------------------------------------------------------ palettes (hand-picked, hue shifted)
@@ -132,6 +133,11 @@ LOOKS = {
         'tip': True,
     },
 }
+# B3 'copia': the normal look drained grey (skin, lips, cheeks, nails); the copy's eyes and teeth come from COPIA_FACE
+LOOKS['copia'] = dict(LOOKS['normal'], copia=True, skin=[copia.grey(c) for c in SKIN_N],
+                      **{k: copia.grey(LOOKS['normal'][k]) for k in ('spec', 'crease', 'deep', 'bag', 'ruddy', 'ruddy2',
+                                                                      'ruddy3', 'lip', 'lip2', 'liphi', 'corner', 'chin',
+                                                                      'chin2', 'nail', 'nail2', 'lid2')})
 
 
 def A(c, a=255):
@@ -318,11 +324,35 @@ VEINS = [
 assert all(len(r) == 16 for r in SOCKET + VEINS)
 
 
+# ------------------------------------------------------------------ B3: the copy (look 'copia')
+COPIA_FACE = copia.check([
+    "556677hhh7776655",   # r0
+    "5667kk7w87kk7665",   # r1
+    "5678888ww8888765",   # r2
+    "566kkk7887kkk665",   # r3
+    "5566777887776655",   # r4
+    "4LLLL678876LLLL4",   # r5  no heavy lids any more: a thin lash line, the eyes one texel further out
+    "4EEEE766667EEEE4",   # r6  white above...
+    "5EEOE766667EOEE5",   # r7  ...a pinpoint turned in at you...
+    "reEEE766667EEEer",   # r8  ...and white below: wide open, never blinking
+    "rq555566776555qr",   # r9
+    "Rrq5555665555qrR",   # r10 (moustache over cols 2-13 from here to r12)
+    "Rrs5555555555srR",   # r11
+    "Nss5555555555ssN",   # r12 the corners pulled up past the moustache
+    "4NZGGGGGGGGGGZN4",   # r13 the lips pulled back off the gums, jowl to jowl
+    "4" + copia.teeth_row(14) + "4",   # r14 upper teeth
+    "4Z" + copia.teeth_row(12, 'Y') + "Z4",   # r15 lower teeth
+    "3sGZZZZZZZZZZGs3",   # r16
+], 16)
+_FACE_ACTIVE = [FACE]
+
+
 def face_char(x, y):
     c = int(math.floor(x - GX0))
     r = int(math.floor(y - GY0))
-    if 0 <= r < len(FACE) and 0 <= c < 16:
-        return FACE[r][c], c, r
+    F = _FACE_ACTIVE[0]
+    if 0 <= r < len(F) and 0 <= c < 16:
+        return F[r][c], c, r
     if 13 <= r < len(FACE) and c in (-1, 16):
         return 'J', c, r                                     # the jowls: the jaw is 2 texels wider than the skull
     return None, c, r
@@ -330,6 +360,10 @@ def face_char(x, y):
 
 def face_rgba(ch, L, c, r):
     S = L['skin']
+    if L.get('copia'):
+        cc = copia.char_rgba(ch)
+        if cc is not None:
+            return cc
     if ch == 'J':
         # jowl front: the outermost column turns away (darker), stubbled, darkest at the jaw line
         base = S[4] if r < 16 else S[3]
@@ -1661,7 +1695,26 @@ def make_mat(look):
 
 
 DEFAULT_MAT = make_mat('normal')
-VARIANT_MATS = {'normal': DEFAULT_MAT, 'poseido': make_mat('poseido')}
+
+
+def _copia_mat():
+    """B3 look 'copia' (casa_terror.md 2 Act 5, event 41): Jorge's own face with grey skin, the eyes one texel further
+    apart and wide open round a pinpoint (unblinking), and under the moustache a grin from jowl to jowl showing every
+    tooth and the gums.  Java index 2 (FamilyEntity.LOOK_COPIA) -> jorge_copia.png; no toggles (the possessed grin and
+    eyes stay hidden)."""
+    base = make_mat('copia')
+
+    def mat(ctx):
+        _FACE_ACTIVE[0] = COPIA_FACE
+        try:
+            return base(ctx)
+        finally:
+            _FACE_ACTIVE[0] = FACE
+    mat.look = 'copia'
+    return mat
+
+
+VARIANT_MATS = {'normal': DEFAULT_MAT, 'poseido': make_mat('poseido'), 'copia': _copia_mat()}
 FOCUS = 'head'
 
 

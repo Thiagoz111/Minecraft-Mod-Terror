@@ -276,17 +276,17 @@ FACE_R = [
     "................",   # r0
     "...V........V...",   # r1
     "....V......V....",   # r2
-    "..ddd......ddd..",   # r3   the brow ridge overhangs dark sockets
-    ".dRRRRd...dddd..",   # r4   raw upper lid (her right eye sits higher: the face is no longer level)
-    "DdwwwdD..dRRRRd.",   # r5   milky cataracts, the lid's shadow over their top
-    "DwWgWwD..DdwwwdD",   # r6   the drowned ghost of the iris (g)
-    "DwWgWwD..DwWgWwD",   # r7
-    "dRwwwRd..DwWgWwD",   # r8   raw lower lids
-    ".dB.RBd..dRwwwRd",   # r9   blood wells under the eyes ...
-    "..B......dB.RBd.",   # r10  ... and runs down the cheeks in thin lines
-    "..B.......B.....",   # r11
-    "..b....BB.b.....",   # r12  the nostrils bleed over the lip
-    "..b..MMMMMM.....",   # r13  the mouth hangs open, black
+    "V.ddd......ddd.V",   # r3   the brow ridge overhangs black sockets; veins at the temples
+    ".dDDDDd...dddd..",   # r4   (her right eye sits higher: the face is no longer level)
+    "DDwWwDD..dDDDDd.",   # r5   milky cataracts, no pupil
+    "DwWWWgD..DDwWwDD",   # r6   the drowned ghosts of the irises look two different ways (g)
+    "DgWWWwD..DwWWWgD",   # r7
+    "DDwwwDD..DgWWWwD",   # r8
+    ".dRddd...DDwwwDD",   # r9   blood wells under the eyes ...
+    "..B.......dRddd.",   # r10  ... and runs down the cheeks in thin lines
+    "..B........B....",   # r11
+    "..b....BB..B....",   # r12  the nostrils bleed over the lip
+    "..b..MMMMMMb....",   # r13  the mouth hangs open, black
     ".....bMMMMb.....",   # r14  (jaw) the lower lip, black inside, blood at the corners
     "......B...B.....",   # r15
     "......b...B.....",   # r16
@@ -1662,7 +1662,7 @@ def rota_skin(ctx):
         if ch and ch != '.':
             if ch in CATARACT:
                 return A(CATARACT[ch])
-            return A({'D': SKIN_R[0], 'd': SKIN_R[2], 'R': mix(BLOOD[3], SKIN_R[5], 0.3), 'B': BLOOD[2], 'b': BLOOD[3],
+            return A({'D': hx('#07080b'), 'd': SKIN_R[1], 'R': BLOOD[3], 'B': BLOOD[2], 'b': BLOOD[3],
                       'r': BLOOD[4], 'V': VEIN_R, 'M': hx('#060203')}[ch])
         base_ch = face_char(x, y, FACE)
         if base_ch and base_ch.isdigit():
@@ -1691,7 +1691,9 @@ def rota_gown(ctx, src):
     n = nm(ctx)
     x, y, z = bpos(ctx)
     lx, ly, lz = local(ctx)
-    v = _lum(src) * 0.4 + 0.52 + face_light(ctx) * 0.6
+    v = 0.66 + face_light(ctx) * 0.7 - (0.12 if _lum(src) < 0.16 else 0.0)   # seams / creases stay dark
+    if f in SIDE:
+        v += 0.05 * math.sin((around(ctx) + ctx.cube.seed) * 2 * math.pi / 5.0)  # soft folds
     g = fbm(x * 0.21 + 50, y * 0.21 + 9, z * 0.21, 3, 41)
     c = pick(GOWN, v - (0.12 if g > 0.68 else 0.0))
     if g > 0.64:
@@ -1700,7 +1702,7 @@ def rota_gown(ctx, src):
         # the bib: soaked under the collar, drip columns running down the front, dried brown below
         col = fl(x + 20)
         drip = -9.0 + 7.0 * h2(col, 3, 17) + (8.0 if n in ('hips', 'cpanel_lo') else 0.0)
-        if n == 'torso' and y < -4.5 + 1.5 * h2(col, 1, 9):
+        if n in ('torso', 'cpanel') and y < -4.0 + 2.0 * h2(col, 1, 9):
             return A(BLOOD[2] if (fl(x) + fl(y)) % 4 else BLOOD[1])
         if n == 'torso' and h2(col, 5, 3) > 0.45 and y < drip + 6.0:
             return A(BLOOD[3] if h2(col, fl(y), 2) > 0.3 else BLOOD[2])
@@ -1746,7 +1748,7 @@ def rota_paint(ctx):
         src = maw_paint(ctx, True)
         if src is None:
             return None
-        return A(mix(src, BLOOD[1], 0.35))
+        return A(mix(src, hx('#030102'), 0.45))                         # a black gullet
     fn = MATS.get(k)
     return fn(ctx, True) if fn else A(hx('#ff00ff'))
 
@@ -1807,12 +1809,14 @@ def vertebra_paint(ctx, P):
     f = ctx.face
     n = nm(ctx)
     if n == 'tear':
-        lx, ly, lz = local(ctx)
-        if ctx.i in (0, ctx.w - 1) or ctx.j in (0, ctx.h - 1):
-            return A(BLOOD[2])
-        return A(MOUTH[2])
-    v = 0.55 + face_light(ctx)
-    return A(pick(ROT_TEETH, v) if f != 'bottom' else BLOOD[1])
+        # a ragged hole torn in the gown over the spine: wet dark flesh, frayed edges
+        if (ctx.i in (0, ctx.w - 1) or ctx.j in (0, ctx.h - 1)) and h2(ctx.i, ctx.j, 71) > 0.45:
+            return None
+        return A(MOUTH[3] if (ctx.i + ctx.j) % 3 else BLOOD[1])
+    v = 0.32 + face_light(ctx)
+    if ctx.j == ctx.h - 1 or f == 'bottom':
+        return A(BLOOD[1])                                              # wet where it broke through
+    return A(pick(ROT_TEETH, v))
 
 
 MATS.update({'fang': fang_paint, 'jawlong': jawlong_paint, 'talon': talon_paint, 'vertebra': vertebra_paint})
@@ -1979,14 +1983,14 @@ LOOSE = tuple(f'hair_loose_{k}' for k in range(5))
 # B2 'rota' bones (glasses become a toggle too: she loses them in the hunt)
 ROTA_BONES = ('jaw_long', 'teeth_upper', 'right_talons', 'left_talons', 'spine')
 TOGGLE_DEFAULT = dict({
-    'walker': True, 'bun': True, 'right_slipper': True, 'glasses': True,
+    'walker': True, 'bun': True, 'right_slipper': True, 'glasses': True, 'yarn_ball': True,
     'rocker': False, 'needle_right': False, 'needle_left': False, 'mate': False, 'chancleta': False,
     'yarn_right': False, 'yarn_left': False, 'dentures': False,
 }, **{h: False for h in LOOSE}, **{b: False for b in ROTA_BONES})
 VARIANT_TOGGLES = {
     'normal': {},
     'poseida': dict({'bun': False}, **{h: True for h in LOOSE}),
-    'rota': dict({'bun': False, 'glasses': False, 'walker': False}, **{h: True for h in LOOSE},
+    'rota': dict({'bun': False, 'glasses': False, 'walker': False, 'yarn_ball': False}, **{h: True for h in LOOSE},
                  **{b: True for b in ROTA_BONES}),
 }
 SEATED = {'walker': False, 'rocker': True}
@@ -2107,8 +2111,8 @@ def build(variant=None, pose=None):
     box('spine', (-2.5, -5, 0.05), (5, 10, 0), 'vertebra', 'tear')
     for k in range(5):
         box('spine', (-1, -4.5 + 2.2 * k, -0.6), (2, 2, 2), 'vertebra', 'vertebra')
-    box('spine', (-6.0, -4.0, -0.3), (3, 5, 1), 'vertebra', 'blade')
-    box('spine', (3.0, -4.0, -0.3), (3, 5, 1), 'vertebra', 'blade')
+    box('spine', (-5.0, -3.0, -0.4), (2, 2, 1), 'vertebra', 'blade')
+    box('spine', (3.0, -3.0, -0.4), (2, 2, 1), 'vertebra', 'blade')
 
     # ---------------- neck + head (the head juts forward and looks up at you)
     bone('neck', 'chest', (0, -8.5, -1), rot=(NECK_TILT, 0, 0))
@@ -2416,7 +2420,7 @@ POSE_TARGETS = {
     # ---- B2 hunt poses (the 'rota' look, Act 5).  Java (NonaRotaModel) adds the stretch scales and the gait cycles.
     # listen: frozen mid-step, head cocked hard to one side, chin up, sniffing; the talons hang in front of her
     'listen': {
-        'add': {'chest': (-10, 8, 0), 'neck': (-14, 22, 0), 'head': (18, 28, 34), 'jaw': (16, 0, 0),
+        'add': {'chest': (-10, 8, 0), 'neck': (-14, 22, 0), 'head': (18, 26, 26), 'jaw': (16, 0, 0),
                 'right_brow': (0, 0, -10), 'left_brow': (0, 0, 10)},
         'ik': [('right', ('body', (-8.0, -3.0, -11.0)), (0.2, 1.0, -0.2), (-0.2, 0.7, -0.7), ('body', (-12, -8, -4))),
                ('left', ('body', (9.0, -6.0, -10.0)), (-0.2, 1.0, -0.3), (0.3, 0.5, -0.8), ('body', (13, -10, -4)))],
@@ -2970,7 +2974,7 @@ POSES = {
     'listen': {
         'chest': (-0.1745, 0.1396, 0, 0, 0, 0),
         'neck': (-0.2443, 0.384, 0, 0, 0, 0),
-        'head': (0.3142, 0.4887, 0.5934, 0, 0, 0),
+        'head': (0.3142, 0.4538, 0.4538, 0, 0, 0),
         'right_brow': (0, 0, -0.1745, 0, 0, 0),
         'left_brow': (0, 0, 0.1745, 0, 0, 0),
         'jaw': (0.2793, 0, 0, 0, 0, 0),

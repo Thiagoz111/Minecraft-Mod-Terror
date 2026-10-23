@@ -7,14 +7,14 @@ rear-view mirror. NO brand names, badges or logos anywhere.
 
 Scale: a VEHICLE, authored at 1x texel density (model.scale = 1.0; a 2x car would not fit a 256 x 256 atlas):
 16 texels = 1 block. +Y down, ground y = 24, the car faces -Z, the driver sits on the LEFT (+X; right_* is -X).
-Length 84 (5.25 blocks, bumper to bumper z -42..42), width 36 (2.25 blocks), height 32 (2.0 blocks, roof top y -8).
-The seated occupants decide the cabin: car floor y = 18 (0.375 above the ground); CarEntity seats the riders' feet
-0.145 below the car base, so a seated player's eye is 1.1 above the floor and the head top just under the roof
-(y -6). Front hips at z -2, rear hips at z +16 (CarEntity.SEAT).
+Length 86 (bumper to bumper z -43..43), width 36 (2.25 blocks), height 32 (2.0 blocks, roof top y -8), beltline
+y 5, wheels radius 7 (0.44 blocks, CarEntity.WHEEL_RADIUS). The seated occupants decide the cabin: car floor y = 18
+(0.375 above the ground); CarEntity seats the riders' feet 0.145 below the car base, so a seated player's eye is 1.1
+above the floor and the head top just under the roof (y -6). Front hips at z -2, rear hips at z +16 (CarEntity.SEAT).
 
 Bones (contract with com.deadline.client.model.AutoModel):
   body                       everything sprung (shell, cabin, interior); trembles while the engine idles
-  wheel_fl/fr/rl/rr          roots at the axles: xRot = roll (distance / 6 texels), front yRot = steering
+  wheel_fl/fr/rl/rr          roots at the axles: xRot = roll (distance / 7 texels), front yRot = steering
   door_fl/fr/rl/rr           hinged at their front edges (closed; can open with yRot)
   hood, trunk                hinged at the windscreen / the rear window (closed)
   windshield, rear_window    raked glass planes (+ wipers), a_pillars, c_pillars
@@ -540,7 +540,7 @@ def rosary_mat(ctx):
 
 
 def cross_mat(ctx):
-    return lum(0.3 + face_light(ctx) + (0.15 if ctx.edge() == 0 else 0), SILVER)
+    return lum(0.12 + face_light(ctx) * 0.6 + (0.12 if ctx.edge() == 0 else 0), SILVER)
 
 
 def door_mat(side):
@@ -650,7 +650,7 @@ POSES = {
     'doors_open': {'door_fl': (0, 1.1, 0, 0, 0, 0), 'door_fr': (0, -1.1, 0, 0, 0, 0), 'door_rl': (0, 1.0, 0, 0, 0, 0),
                    'door_rr': (0, -1.0, 0, 0, 0, 0)},
 }
-ANIM_NOTES = """wheel_*: xRot += distance driven / 6 texels (forward = positive); wheel_fl/fr yRot = -steer * 0.45 (steer +1 = left).
+ANIM_NOTES = """wheel_*: xRot += distance driven / 7 texels (forward = positive); wheel_fl/fr yRot = -steer * 0.45 (steer +1 = left).
 steering_wheel: zRot = steer * 2.2. body: tiny tremble while idling. rosary: pendulum, pushed by turns and bumps.
 doors/hood/trunk: hinged, closed at rest."""
 
@@ -716,6 +716,7 @@ def build():
     box('body', (-16, BELT + 4, -19), (32, 18 - BELT - 4, 1), 'dash', 'firewall')
     box('body', (-15, BELT - 1, 19), (30, 1, 3), 'dash', 'parcel_shelf')
     box('body', (-17, ROOF_TOP, -9), (34, 2, 23), 'roof', 'roof')
+    box('body', (-14, ROOF_TOP - 1, -7), (28, 1, 19), 'paint', 'roof_crown', gaps=False)   # the roof is crowned
     # radio aerial on the right wing
     bone('antenna', (-16, BELT, -36), 'body', rot=(-12, 0, 0))
     box('antenna', (-16.5, BELT - 13, -36.5), (1, 13, 1), 'antenna', 'antenna')

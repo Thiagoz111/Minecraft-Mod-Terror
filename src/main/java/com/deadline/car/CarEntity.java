@@ -61,7 +61,7 @@ public class CarEntity extends Mob {
 	 * (feet + 1.62) ends up 1.1 above the car floor (the floor is 0.375 above the ground; tools/models/ent_auto.py).
 	 */
 	private static final double[][] SEAT = {{0.53, -0.145, 0.125}, {-0.53, -0.145, 0.125}, {0.53, -0.145, -1.0}, {-0.53, -0.145, -1.0}};
-	public static final double HALF_LENGTH = 2.62;
+	public static final double HALF_LENGTH = 2.65;
 	public static final double HALF_WIDTH = 1.12;
 	public static final float WHEEL_RADIUS = 0.4375F;
 	public static final float MAX_SPEED = 0.9F;

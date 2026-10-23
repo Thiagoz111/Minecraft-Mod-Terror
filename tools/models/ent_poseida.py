@@ -1855,6 +1855,85 @@ def _round(t):
     return tuple(round(float(v), 4) for v in t)
 
 
+# ------------------------------------------------------------------ B3: 'ceiling_crawl' and 'sit_chair'
+def _model_fk(pose):
+    """World 4x4 per bone of the built model under an additive pose table (Euler sums, offsets on the pivot)."""
+    m = build(variant='poseida')
+    out = {}
+
+    def walk(b, M):
+        p = tuple(pose.get(b.name, (0, 0, 0, 0, 0, 0))) + (0,) * 6
+        T = np.eye(4)
+        T[:3, 3] = (b.pivot[0] + p[3], b.pivot[1] + p[4], b.pivot[2] + p[5])
+        R = np.eye(4)
+        R[:3, :3] = rot_matrix(math.radians(b.rot[0]) + p[0], math.radians(b.rot[1]) + p[1], math.radians(b.rot[2]) + p[2])
+        W = M @ T @ R
+        out[b.name] = (W, b)
+        for c in b.children:
+            walk(c, W)
+    for root in m.roots:
+        walk(root, np.eye(4))
+    return out
+
+
+def _local_entry(fk, name, R_world):
+    """Additive entry giving bone `name` the world rotation R_world (its parent as in `fk`)."""
+    W, b = fk[name]
+    P = fk[b.parent.name][0][:3, :3] if b.parent is not None else np.eye(3)
+    loc = _euler(P.T @ R_world)
+    r = [math.radians(a) for a in b.rot]
+    return tuple(_wrap(loc[i] - r[i]) for i in range(3)) + (0.0, 0.0, 0.0)
+
+
+def _axis_rot(axis, ang):
+    a = np.array(axis, float)
+    a /= np.linalg.norm(a)
+    K = np.array([[0, -a[2], a[1]], [a[2], 0, -a[0]], [-a[1], a[0], 0]])
+    return np.eye(3) + math.sin(ang) * K + (1 - math.cos(ang)) * (K @ K)
+
+
+def _bent_wrong(base, flip=2.3):
+    """crawl_ceiling with every elbow and knee swung round the shoulder->wrist / hip->ankle line by `flip` radians
+    (hands and feet stay planted on the plaster, the joints now point the wrong way) and the face turned DOWN to the
+    floor (the top of the skull forward, the chin back toward her chest), tipped onto one side."""
+    pose = {k: tuple(v) + (0,) * (6 - len(v)) for k, v in base.items()}
+    for root, mid, end, sgn in (('right_arm', 'right_forearm', 'right_hand', 1), ('left_arm', 'left_forearm', 'left_hand', -1),
+                                ('right_leg', 'right_shin', 'right_foot', -1), ('left_leg', 'left_shin', 'left_foot', 1)):
+        fk = _model_fk(pose)
+        S = fk[root][0][:3, 3]
+        E = fk[end][0][:3, 3]
+        keep_end = fk[end][0][:3, :3]
+        Q = _axis_rot(E - S, flip * sgn)
+        pose[root] = _local_entry(fk, root, Q @ fk[root][0][:3, :3])
+        fk = _model_fk(pose)
+        pose[end] = _local_entry(fk, end, keep_end)
+    fk = _model_fk(pose)
+    face_down = rot_matrix(math.pi / 2, 0, 0) @ rot_matrix(0, 0, 0.42)
+    pose['head'] = _local_entry(fk, 'head', face_down)
+    pose['jaw'] = (0.55, 0, 0, 0, 0, 0)
+    return pose
+
+
+_POSES['ceiling_crawl'] = _bent_wrong(_POSES['crawl_ceiling'])
+HEM_HANG['ceiling_crawl'] = HEM_HANG['crawl_ceiling']
+# the face looks DOWN: the mane must not curtain it, so it is swept back along the plaster and out to the sides
+HAIR_SWING['ceiling_crawl'] = {'hair_back': (1.45, 0, 0), 'hair_right': (0.9, 0, 1.1), 'hair_left': (0.9, 0, -1.1)}
+
+# NORMAL at the dinner table (Act 2-3, silla_4): sitting on a chair seat at the height of her hips (0.5 block: the
+# entity stands on the chair's block, Java lifts nothing), thighs level, shins straight down with the feet dangling
+# (she is small), hands in her lap, head bowed: she does not look at you.
+_POSES['sit_chair'] = {
+    'base': (0, 0, 0, 0, 0.5, 0), 'body': (0.06, 0, 0, 0, 0, 0), 'head': (0.32, 0.1, 0.22, 0, 0, 0),
+    'right_leg': (-1.5708, 0.06, 0, 0, 0, 0), 'left_leg': (-1.5708, -0.06, 0, 0, 0, 0),
+    'right_shin': (1.5708, 0, 0, 0, 0, 0), 'left_shin': (1.5708, 0, 0, 0, 0, 0),
+    'hem_front': (-1.2, 0, 0, 0, 0, 0), 'hem_back': (0.2, 0, 0, 0, 0, 0),
+    'right_arm': (-0.62, -0.08, 0.06, 0, 0, 0), 'right_forearm': (-0.55, -0.1, -0.6, 0, 0, 0),
+    'right_hand': (0.4, 0, 0.6, 0, 0, 0), 'left_arm': (-0.62, 0.08, -0.06, 0, 0, 0),
+    'left_forearm': (-0.55, 0.1, 0.6, 0, 0, 0), 'left_hand': (0.4, 0, -0.6, 0, 0, 0),
+}
+POSE_LOOK['sit_chair'] = 'normal'
+
+
 POSES = {k: {b: _round(v) for b, v in dict(p, **hang_entries(k, p)).items()} for k, p in _POSES.items()}
 
 ANIM_NOTES = """Lucia (PoseidaEntity, and the normal Lucia NPC on the same model) -- animation notes.  Units: radians, offsets in

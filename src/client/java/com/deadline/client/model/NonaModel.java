@@ -88,6 +88,12 @@ public class NonaModel extends NonaModelBase {
 		walker.visible = stand + offer > 0.5F;
 		rocker.visible = seatedW > 0.5F;
 		bun.visible = !possessed;
+		// B2: the bones of the 'rota' look (the hunt, client/hunt/NonaRotaModel) never show on the family's Nona
+		jawLong.visible = false;
+		teethUpper.visible = false;
+		rightTalons.visible = false;
+		leftTalons.visible = false;
+		spine.visible = false;
 		for (ModelPart p : loose) {
 			p.visible = possessed;
 		}

@@ -53,6 +53,7 @@ import numpy as np
 from mcmodel import Model, hash3, face_light, pick, rot_matrix
 from rig import Rig
 from paint import hx, mix
+import ent_copia_look as copia
 
 
 def H(*cs):
@@ -252,6 +253,10 @@ assert all(len(r) == 14 for r in JAW) and len(JAW) == 4
 
 
 def face_rgba(ch):
+    if _ACT['copia']:
+        cc = copia.char_rgba(ch)
+        if cc is not None:
+            return cc
     if ch.isdigit():
         return SKIN[int(ch)]
     return {
@@ -350,7 +355,7 @@ def skin_mat(ctx):
     x, y, z = A(ctx)
     if t == 'skull':
         if f == 'front':
-            return face_rgba(FACE[ctx.j][ctx.i])
+            return face_rgba(_ACT['face'][ctx.j][ctx.i])
         if f in ('west', 'east'):
             if z > -4.0 or y < -26.5:
                 return pick(HAIR, 0.18)                     # under the hair shell / behind the cup
@@ -378,7 +383,7 @@ def skin_mat(ctx):
             return pick(HAIR, 0.1)                          # inside the nape hair: seen only through its ragged tips
         if f == 'front':
             col = int(clamp(math.floor(x + 7.0), 0, 13))
-            return face_rgba(JAW[ctx.j][col])
+            return face_rgba(_ACT['jaw'][ctx.j][col])
         if f == 'bottom':
             v = 0.42 - lz / d * 0.12
             return pick(SKIN, v)
@@ -1255,6 +1260,50 @@ def toti_mat(ctx):
 
 
 DEFAULT_MAT = toti_mat
+
+# ------------------------------------------------------------------ B3: look 'copia' (casa_terror.md 2 Act 5, event 41)
+# Toti's face with grey skin (face, neck, hands), the eyes one texel further apart and wide open round a pinpoint
+# (unblinking), and a grin from jowl to jowl showing every tooth and the gums.  Java index 2 (FamilyEntity.LOOK_COPIA)
+# -> toti_copia.png, WITHOUT the emissive layer (the copy's face is not lit by the game: dead, grey, no screen in the
+# eyes).
+COPIA_FACE = copia.check([
+    "hhhhhhhhhhhhhhhh",   # r0
+    "5667777777777665",   # r1
+    "5678888888888765",   # r2
+    "5678888998888765",   # r3
+    "5677777887777765",   # r4
+    "5LLLL678876LLLL5",   # r5  a thin lash line, the eyes one texel further out
+    "5EEEE678876EEEE5",   # r6  white above...
+    "5EEOE678876EOEE5",   # r7  ...a pinpoint turned in at you...
+    "5eEEE678876EEEe5",   # r8  ...white below: wide open
+    "5677777887777765",   # r9
+    "N56777888777765N",   # r10 the corners pulled up into the cheeks
+    "4NZGGGGGGGGGGZN4",   # r11 the lips pulled back off the gums
+], 16)
+COPIA_JAW = copia.check([
+    copia.teeth_row(14),                       # j0 upper teeth, jowl to jowl
+    "Z" + copia.teeth_row(12, 'Y') + "Z",      # j1 lower teeth
+    "4GZZZZZZZZZZG4",                          # j2 the gum line
+    "....345543....",                          # j3 chin
+], 14)
+_ACT = {'face': FACE, 'jaw': JAW, 'copia': False}
+
+
+def copia_mat(ctx):
+    _ACT.update(face=COPIA_FACE, jaw=COPIA_JAW, copia=True)
+    try:
+        col = toti_mat(ctx)
+    finally:
+        _ACT.update(face=FACE, jaw=JAW, copia=False)
+    if col is None or kind(ctx) not in ('skin', 'hand'):
+        return col
+    if ctx.face == 'front' and tag(ctx) in ('skull', 'jaw', 'jowl') and col[:3] in [c[:3] for c in copia.COPIA_CHARS.values()]:
+        return col                                       # the copy's own eyes and teeth keep their colours
+    return copia.grey(col)
+
+
+copia_mat.look = 'copia'
+VARIANT_MATS = {'normal': DEFAULT_MAT, 'copia': copia_mat}
 FOCUS = 'head'
 
 
