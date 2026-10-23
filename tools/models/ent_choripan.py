@@ -1,16 +1,17 @@
-"""Choripan -- the Morales family dachshund, normal form (DEAD LINE, case 20 'La Muneca').
+"""Choripan -- the Morales family dachshund, host #1 of CASO 2 'Casa Morales' (DEAD LINE).  DOG form of ChoripanEntity.
 
 Authored at 2x texel density (model.scale = 0.5).  +Y down, ground y = 24, faces -Z, right_* on -X.
 
 Design
 ------
-The dog the audience has to fall in love with before he turns into a 4.5-block worm-dog, so every
-choice is about charm.  About 0.62 blocks tall and 1.25 blocks from nose to rump (plus the tail).
-A long low red sausage: core + taller/narrower barrel give a rounded cross-section, a chest prow and a
-low keel give the proud dachshund chest, and a rump cap rounds the back end.  Four stubby legs, each
-with its own paw bone (toe beans, tiny claws) so paws can curl in 'beg' and flop in 'belly_up'.  A plush
-oversized head (13 wide, puppy proportions) on a short neck, huge floppy ears hanging to chest level,
-chubby cream jowls, and a long whip tail (two bones) carried up in a happy curve.
+The dog the audience has to fall in love with before he turns into a 4.5-block worm-dog (ent_choripan_demonio), so
+every choice is about charm -- until 3:33, when he stands up on two legs, turns his head all the way round and says in
+a deep voice "¿Quién es un buen chico?... YO NO."  About 0.62 blocks tall and 1.25 blocks from nose to rump (plus the
+tail).  A long low red sausage: core + taller/narrower barrel give a rounded cross-section, a chest prow and a low keel
+give the proud dachshund chest, and a rump cap rounds the back end.  Four stubby legs, each with its own paw bone (toe
+beans, tiny claws) so paws can curl in 'beg' and flop in 'belly_up'.  A plush oversized head (13 wide, puppy
+proportions) on a short neck, huge floppy ears hanging to chest level, chubby cream jowls, and a long whip tail (two
+bones) carried up in a happy curve.
 
 Face (the 'aww' close-up), laid out so the eyes and the nose never overlap in any view:
 * big glossy BROWN eyes (6x6) on their own cubes that bulge a little past the skull: a dark-brown upper
@@ -26,6 +27,8 @@ Face (the 'aww' close-up), laid out so the eyes and the nose never overlap in an
 * the upper lip is its own bone: it lifts in 'growl' to show the upper teeth row, two real canine cubes
   and pink gums painted on the sides of the mouth (they show in profile too); the jaw opens and a pink
   tongue bone pokes out.
+* closed lids (toggle 'eyelids', shown in 'sleep' and 'sneeze'): fur-coloured lid caps over both eyes with a
+  curved dark lash line -- the content little "u u" of a sleeping puppy.
 Coat: #7a3a1c -> #c06a33 hue-shifted ramp painted as soft directional hair strokes, darker dorsal stripe,
 cream chest / muzzle / jowls, pink tummy, dark tail tip, pink inner ears with wavy locks on the outside.
 
@@ -33,12 +36,29 @@ Outfit: the red Aran sweater the Nona knitted: two shells over the barrel, a rai
 spine between purl gutters, chevron stockinette, side panels with two 4-px S-twist rope cables framing
 a cream 'C' with a dark-red outline (reads at night), ribbed cuffs at the neck and tail ends, and an open
 belly (dog sweaters are) so 'belly_up' and 'beg' show the pink tummy.  A celeste collar (white saddle
-stitch, gold buckle on the right) sits low on the throat so it shows under the chin, with a small
-bone-shaped gold name tag (engraved line) on its own swinging bone.
+stitch, gold buckle on the right) sits low on the throat so it shows under the chin.
+
+The name tag (BIBLIA: "la chapita 'CHORIPÁN' tiene que leerse"): a gold tag hanging plumb from a split ring under
+the chin, the SAME design as the demon form's big brass tag (ent_choripan_demonio) so the audience recognises it after
+the transformation: rounded corners, bevelled rim, "CHORI" / "PÁN" engraved in two lines.  A
+3x5 font needs 17 x 14 texels and there are only ~4.8 texels between the throat and the floor, so the engraved face is
+a HIGH-DENSITY PLATE: a (17, 14, 10) box with CubeDeformation -5 renders as a 7 x 4 x 0 card (2.4 x 3.5 texels per
+unit; the font is drawn 6 rows tall so the letters keep a 0.7 aspect), laid 0.05 in front of a normal-density gold
+backing (rim, rounded corners, scratched back).  Box UV ignores the deformation, so the 17 x 14 face keeps every texel.
+
+Looks (VARIANT_MATS): 'normal' (the sweater) and 'bufanda' (the ending, casa.desayuno + the base: the demon shredded
+the sweater, so in the last look he wears the Nona's red SCARF instead -- the sweater texels are transparent in that
+texture and the 'scarf' toggle bone is shown: a chunky garter-stitch wrap on the shoulders that rides over the collar
+at the nape, a fat knot on his left under the chin and two long tails with cream bands and fringe hanging down his
+left side, too long for a sausage dog -- the collar, the D-ring and the tag stay visible in front of it).
 """
 import math
+import os
+import sys
 
-from mcmodel import Model, hash3, face_light, pick
+import numpy as np
+
+from mcmodel import Model, hash3, face_light, pick, rot_matrix
 from rig import Rig
 from paint import hx, mix
 
@@ -379,26 +399,99 @@ def collar_mat(ctx):
     return c
 
 
-TAG_ART = ["..rr..",
-           "hS..SG",
-           ".GeeG.",
-           "Gd..dd"]
-TAG_COLS = {'h': GOLD[6], 'S': GOLD[5], 'G': GOLD[4], 'd': GOLD[2], 'e': GOLD[1], 'r': GOLD[3]}
+# The name tag.  Same lettering as the demon form's tag (ent_choripan_demonio): 3-wide glyphs (N is 4 wide: a 3-wide N
+# reads as H), here 6 rows tall because the high-density card squeezes rows harder than columns (see build()).
+FONT6 = {
+    'C': [".##", "#..", "#..", "#..", "#..", ".##"],
+    'H': ["#.#", "#.#", "###", "#.#", "#.#", "#.#"],
+    'O': [".#.", "#.#", "#.#", "#.#", "#.#", ".#."],
+    'R': ["##.", "#.#", "#.#", "##.", "#.#", "#.#"],
+    'I': ["#", "#", "#", "#", "#", "#"],
+    'P': ["##.", "#.#", "#.#", "##.", "#..", "#.."],
+    'A': [".#.", "#.#", "#.#", "###", "#.#", "#.#"],
+    'N': ["#..#", "##.#", "##.#", "#.##", "#.##", "#..#"],
+}
+TXT_W, TXT_H = 19, 16              # 1-texel margin, "CHORI" rows 1-6, gap, the accent row, "PAN" rows 9-14, margin
+TXT_K = 6.0                        # CubeDeformation of the card: (19, 16, 12) -> 7 x 4 x 0
+ENGRAVE = hx('#1c0f05')
 
 
-def tag_mat(ctx):
-    """Bone-shaped gold name tag (alpha cutout), engraved line along the shaft."""
+def _tag_text():
+    rows = [[0] * TXT_W for _ in range(TXT_H)]
+
+    def put(word, x0, y0):
+        x = x0
+        for ch in word:
+            g = FONT6[ch]
+            for j, r in enumerate(g):
+                for i, c in enumerate(r):
+                    if c == '#':
+                        rows[y0 + j][x + i] = 1
+            x += len(g[0]) + 1
+
+    put('CHORI', 1, 1)
+    w2 = sum(len(FONT6[c][0]) for c in 'PAN') + 2
+    x2 = 1 + (TXT_W - 2 - w2) // 2
+    put('PAN', x2, 9)
+    rows[8][x2 + len(FONT6['P'][0]) + 1 + 2] = 1          # the acute accent: up-right of the A's apex
+    return rows
+
+
+TAG_TXT = _tag_text()
+
+
+def tag_text_mat(ctx):
+    """The engraved face (high-density card): letters cut flat-dark into polished gold, the gold lighter toward the
+    top, a soft sheen line in the gap between the two words.  Only the front face exists (the card has zero
+    thickness; its back is transparent so it never z-fights its own front)."""
+    if ctx.face != 'front':
+        return None
+    i, j, w, h = ctx.i, ctx.j, ctx.w, ctx.h
+    if i in (0, w - 1) and j in (0, h - 1):
+        return None                                          # rounded corners
+    if TAG_TXT[j][i]:
+        return ENGRAVE
+    if j in (7, 8) and not TAG_TXT[j][i]:
+        return GOLD[5]                                       # sheen across the gap between the lines
+    if j == 0 or i == 0:
+        return GOLD[5]
+    if j == h - 1 or i == w - 1:
+        return GOLD[3]
+    return GOLD[4]
+
+
+def tag_plate_mat(ctx):
+    """Normal-density backing: bevelled rim (lit top / left, shaded bottom / right), rounded corners, a scratched
+    back with a darker rim, gold edges."""
     f = ctx.face
-    if f == 'front':
-        return art(TAG_ART, TAG_COLS, ctx)
-    if f == 'back':
-        return art(TAG_ART, {'h': GOLD[3], 'S': GOLD[3], 'G': GOLD[3], 'd': GOLD[2], 'e': GOLD[3], 'r': GOLD[2]}, ctx,
-                   i=ctx.w - 1 - ctx.i)
+    i, j, w, h = ctx.i, ctx.j, ctx.w, ctx.h
+    if f in ('front', 'back'):
+        if i in (0, w - 1) and j in (0, h - 1):
+            return None
+        if f == 'back':
+            if edge(ctx) == 0:
+                return GOLD[2]
+            return pick(GOLD, 0.48 + (0.1 if (i - j) % 3 == 0 else 0) - (0.1 if hash3(i, j, 4, 41) > 0.8 else 0))
+        if j == 0 or i == 0:
+            return GOLD[5]
+        if j == h - 1 or i == w - 1:
+            return GOLD[2]
+        return GOLD[4]
+    if f == 'top':
+        return GOLD[5]
     if f in ('west', 'east'):
-        col = 0 if f == 'west' else 5
-        return GOLD[3] if TAG_ART[ctx.j][col] != '.' else None
-    row = 0 if f == 'top' else 3
-    return (GOLD[5] if f == 'top' else GOLD[2]) if TAG_ART[row][ctx.i] != '.' else None
+        return GOLD[3] if 0 < ctx.j < ctx.h - 1 else None
+    return GOLD[2]
+
+
+def tag_ring_mat(ctx):
+    """Split ring: a gold square loop (the centre texel of the front / back is the hole)."""
+    f = ctx.face
+    if f in ('front', 'back') and ctx.i == 1 and ctx.j == 1:
+        return None
+    if f in ('front', 'back'):
+        return GOLD[5] if (ctx.i + ctx.j) % 2 == 0 else GOLD[3]
+    return GOLD[3]
 
 
 # ------------------------------------------------------------------ head
@@ -605,6 +698,36 @@ def brow_mat(ctx):
     return pick(LIGHT, 0.7)
 
 
+# closed lids (toggle 'eyelids'): fur caps over the eye cubes; a curved dark lash line, lower lid in cream.
+LID_ART = [
+    "cLLLLc",
+    "LllllL",
+    "llllll",
+    "KllllK",
+    "kKKKKk",
+    "cwwwwc",
+]
+LID_SIDE = ["L", "l", "l", "K", "l", "w"]           # outer side face (1 wide), top to bottom
+
+
+def _lid_cols(ctx):
+    return {'c': pick(COAT, 0.36), 'L': pick(COAT, 0.52), 'l': pick(COAT, 0.62 + (0.03 if ctx.j == 1 else 0)),
+            'K': EYE_LID, 'k': pick(COAT, 0.3), 'w': pick(LIGHT, 0.62)}
+
+
+def lid_mat(ctx):
+    f = ctx.face
+    if f == 'front':
+        return art(LID_ART, _lid_cols(ctx), ctx, pick(COAT, 0.6))
+    if outward(ctx):
+        return _lid_cols(ctx)[LID_SIDE[min(ctx.j, 5)]]
+    if f == 'top':
+        return pick(COAT, 0.58)
+    if f == 'bottom':
+        return pick(LIGHT, 0.6)
+    return pick(COAT, 0.45)
+
+
 # ------------------------------------------------------------------ ears
 EAR_LOCKS = {(1, 6), (2, 7), (2, 8), (1, 9),       # 3 wavy lock lines near the tip (u from front, row)
              (3, 5), (4, 6), (4, 7), (3, 8), (3, 9),
@@ -682,29 +805,237 @@ def tail_mat(ctx):
     return c
 
 
-# ------------------------------------------------------------------ module contract
-DEFAULT_MAT = body_mat
+# ------------------------------------------------------------------ the Nona's scarf (toggle 'scarf', look 'bufanda')
+def garter_v(ctx, row):
+    """Garter stitch: a raised lit ridge every other row, the purl row between in shadow."""
+    return 0.58 + face_light(ctx) * 0.9 + (0.11 if row % 2 == 0 else -0.09)
+
+
+def scarf_mat(ctx):
+    """Chunky red garter-stitch scarf in the same wool as the sweater.  The wrap: ridges run round the neck, a dark
+    crease where the two turns overlap, rolled edges on the rims; the knot: ridges + pinched shadow; the tails: ridges
+    across, two cream bands and a fringe (cutout) at the end."""
+    f = ctx.face
+    t = tag(ctx)
+    h = ctx.h
+    if t == 'wrap':
+        if f in ('front', 'back'):
+            # the rims of the cowl: rolled lip outside, folds going in, the neck hole in deep shadow
+            e = edge(ctx)
+            v = [0.64, 0.5, 0.4, 0.32][min(e, 3)] + face_light(ctx) * 0.6
+            if e == 1 and (ctx.i + ctx.j) % 3 == 0:
+                v += 0.07
+            return pick(SWEATER, v)
+        if f in ('west', 'east'):
+            row, n = ctx.i, ctx.w
+            # the two turns cross on the sides: the outer turn's edge runs diagonally from the nape to the throat
+            cross = abs(ctx.i - (ctx.j * (ctx.w - 1) / max(1, ctx.h - 1))) < 0.6
+        else:
+            row, n = ctx.j, ctx.h
+            cross = False
+        v = garter_v(ctx, row) * 0.6 + 0.24
+        if cross:
+            v -= 0.18
+        if row in (0, n - 1):
+            v -= 0.06
+        if f in ('west', 'east'):
+            v += (0.4 - ctx.t) * 0.14                       # round: lit on the shoulder of the wrap
+        return pick(SWEATER, v)
+    if t == 'knot':
+        v = garter_v(ctx, ctx.j) + 0.03
+        if ctx.i == ctx.w // 2 and f in ('front', 'back', 'top', 'bottom'):
+            v -= 0.14                                       # the pinch of the knot
+        if edge(ctx) == 0:
+            v -= 0.07
+        return pick(SWEATER, v)
+    # tails: soft ridges across, one cream band above a red band, then a two-row red fringe (cutout tassels)
+    j = ctx.j
+    fringe = h - 2
+    if f == 'top':
+        return pick(SWEATER, 0.6)
+    if f == 'bottom':
+        return None
+    if j >= fringe:
+        if f in ('front', 'back') and (ctx.i + j) % 2 == 0:
+            return pick(SWEATER, 0.56 if j == fringe else 0.44)
+        return None
+    if j == fringe - 2:
+        return pick(YARN, 0.5 + face_light(ctx) * 0.6 + (0.1 if ctx.i % 2 == 0 else 0))
+    v = 0.56 + face_light(ctx) * 0.9 + (0.06 if j % 2 == 0 else -0.05) - (0.06 if f in ('west', 'east') else 0)
+    return pick(SWEATER, v)
+
+
+# ------------------------------------------------------------------ looks (VARIANT_MATS) + toggles
+def make_mat(look):
+    """Every cube keeps its painter in cube.fn (no per-cube / per-bone mat), so one look-aware material paints the
+    whole sheet.  'bufanda': the sweater (cube.knit) is gone -- those texels are transparent."""
+    def mat(ctx):
+        c = ctx.cube
+        if look == 'bufanda' and getattr(c, 'knit', False):
+            return None
+        return c.fn(ctx)
+    mat.look = look
+    return mat
+
+
+DEFAULT_MAT = make_mat('normal')
+VARIANT_MATS = {'normal': DEFAULT_MAT, 'bufanda': make_mat('bufanda')}
 FOCUS = 'head'
+
+TOGGLE_DEFAULT = {'scarf': False, 'eyelids': False}
+VARIANT_TOGGLES = {'normal': {}, 'bufanda': {'scarf': True}}
+POSE_TOGGLES = {'sleep': {'eyelids': True}, 'sneeze': {'eyelids': True}}
+
+
+def visible_set(variant=None, pose=None):
+    vis = dict(TOGGLE_DEFAULT)
+    vis.update(VARIANT_TOGGLES.get(variant or 'normal', {}))
+    vis.update(POSE_TOGGLES.get(pose, {}))
+    return {k for k, v in vis.items() if v}
+
+
+def _argv(flag):
+    a = sys.argv
+    return a[a.index(flag) + 1] if flag in a and a.index(flag) + 1 < len(a) else None
+
+
+class ChoriModel(Model):
+    """Exports every bone to Java; the preview / gallery JSON hides the toggle bones the current look / pose hides.
+
+    UV packing by FACE MASKS instead of bounding blocks: a box-UV block leaves two d x d corners that no face samples
+    (the body core alone wastes 2 x 22 x 22), so smaller cubes nest into them.  The engraved tag card is a zero-thickness
+    box, so only its front and back rects are real (its four side faces have zero area) and only those must be free.
+    Texels are never shared: every sampled face rect owns its texels, with a 1-texel extruded gutter round it."""
+    visible = None
+
+    @staticmethod
+    def _rects(c):
+        w, h, d = c.size
+        thin = getattr(c, 'name', '') == 'text'
+        rects = {'top': (d, 0, w, d), 'bottom': (d + w, 0, w, d), 'west': (0, d, d, h),
+                 'front': (d, d, w, h), 'east': (d + w, d, d, h), 'back': (2 * d + w, d, w, h)}
+        keep = ('front', 'back') if thin else tuple(rects)
+        return [rects[k] for k in keep if rects[k][2] > 0 and rects[k][3] > 0]
+
+    def pack(self, pad=1):
+        """Face-mask packing with a `pad`-texel gutter round every face (filled by paint(), see below)."""
+        W, H = self.tex_w, self.tex_h
+        used = np.zeros((H, W), bool)
+        items = [c for b in self.bones() for c in b.cubes]
+        items.sort(key=lambda c: (-c.uv_size()[0] * c.uv_size()[1], -c.uv_size()[1]))
+        for c in items:
+            bw, bh = c.uv_size()
+            S = np.zeros((H + 1, W + 1), np.int32)
+            S[1:, 1:] = used.cumsum(0).cumsum(1)
+            V = np.arange(pad, H - bh - pad + 1)[:, None]
+            U = np.arange(pad, W - bw - pad + 1)[None, :]
+            ok = np.ones((V.shape[0], U.shape[1]), bool)
+            for dx, dy, fw, fh in self._rects(c):
+                y0, x0 = V + dy - pad, U + dx - pad
+                fw2, fh2 = fw + 2 * pad, fh + 2 * pad
+                ok &= (S[y0 + fh2, x0 + fw2] - S[y0, x0 + fw2] - S[y0 + fh2, x0] + S[y0, x0]) == 0
+            hit = np.argwhere(ok)
+            if not len(hit):
+                raise RuntimeError(f'{self.name}: no room for cube {c.size} (texture {W}x{H})')
+            v, u = (int(x) + pad for x in hit[0])
+            c.uv = (u, v)
+            for dx, dy, fw, fh in self._rects(c):
+                used[v + dy:v + dy + fh, u + dx:u + dx + fw] = True
+        return self
+
+    def paint(self, default_mat, seed=1, layer='base'):
+        """Paint, then extrude every face's border texels one texel into the free gutter round it, so a face edge
+        seen at a grazing angle never samples a neighbouring cube's colours."""
+        img = super().paint(default_mat, seed=seed, layer=layer)
+        if layer != 'base':
+            return img
+        W, H = img.size
+        own = np.zeros((H, W), bool)
+        rects = []
+        for b in self.bones():
+            for c in b.cubes:
+                for dx, dy, fw, fh in self._rects(c):
+                    u0, v0 = c.uv[0] + dx, c.uv[1] + dy
+                    own[v0:v0 + fh, u0:u0 + fw] = True
+                    rects.append((u0, v0, fw, fh))
+        px = img.load()
+        for u0, v0, fw, fh in rects:
+            for j in range(-1, fh + 1):
+                for i in range(-1, fw + 1):
+                    if 0 <= i < fw and 0 <= j < fh:
+                        continue
+                    x, y = u0 + i, v0 + j
+                    if not (0 <= x < W and 0 <= y < H) or own[y, x] or px[x, y][3] > 0:
+                        continue
+                    src = px[u0 + min(max(i, 0), fw - 1), v0 + min(max(j, 0), fh - 1)]
+                    if src[3] > 0:
+                        px[x, y] = src
+        return img
+
+    def to_json(self):
+        d = super().to_json()
+        d['toggles'] = {'default': dict(TOGGLE_DEFAULT),
+                        'variants': {v: dict(t) for v, t in VARIANT_TOGGLES.items()},
+                        'poses': {p: dict(t) for p, t in POSE_TOGGLES.items()}}
+        if self.visible is None:
+            return d
+        hide = set()
+        for b in self.bones():
+            if b.name in TOGGLE_DEFAULT and b.name not in self.visible:
+                for sub in b.walk():
+                    hide.add(sub.name)
+        for bd in d['bones']:
+            if bd['name'] in hide and bd['cubes']:
+                bd['hidden_cubes'] = bd['cubes']
+                bd['cubes'] = []
+        return d
+
+
+# ------------------------------------------------------------------ geometry constants
 DZ = -0.5          # authoring z -> model z (recentres the long dog on the entity origin)
 HY = 1.0           # the whole head subtree sits this much lower than authored...
 HZ = -2.0          # ...and this much further forward, so a real neck (with the collar on it) shows
-HEAD_BONES = {'head', 'lips', 'jaw', 'tongue', 'right_brow', 'left_brow', 'right_ear', 'left_ear'}
+HEAD_BONES = {'head', 'lips', 'jaw', 'tongue', 'right_brow', 'left_brow', 'right_ear', 'left_ear', 'eyelids'}
+COLLAR_A = (0.0, 13.5, -10.0)      # collar pivot (authoring); the collar is tilted -30 deg to sit across the neck
+COLLAR_TILT = -30.0
+TAG_A = (0.0, 19.2, -10.8)         # the D-ring, in the collar's unrotated frame (authoring)
+SCARF_A = (0.0, 13.5, -8.0)        # scarf pivot (authoring, child of neck): the wrap sits on the shoulders
+SCARF_TILT = -8.0
 
 
-def build():
+def _tag_world():
+    """D-ring in model space (before DZ): the tag bone cancels the collar tilt, so tag children are world-aligned."""
+    R = rot_matrix(math.radians(COLLAR_TILT), 0, 0)
+    rel = np.array(TAG_A) - np.array(COLLAR_A)
+    return tuple(float(v) for v in np.array(COLLAR_A) + R @ rel)
+
+
+TAG_W = _tag_world()
+
+
+def build(variant=None, pose=None):
     r = Rig()
+    fns = {}
 
-    def box(bone, frm, size, mat=None, inflate=0.0, decals=None, name=None, side=''):
+    def box(bone, frm, size, mat=None, inflate=0.0, decals=None, name=None, side='', knit=False):
         dy, dz = (HY, HZ) if bone in HEAD_BONES else (0.0, 0.0)
-        c = r.box(bone, (frm[0], frm[1] + dy, frm[2] + DZ + dz), size, mat=mat, inflate=inflate, decals=decals)
+        c = r.box(bone, (frm[0], frm[1] + dy, frm[2] + DZ + dz), size, inflate=inflate, decals=decals)
         c.a0 = tuple(float(v) for v in frm)            # materials work in authoring coordinates
         c.name = name
         c.side = side
+        c.fn = mat or fns[bone]
+        c.knit = knit
         return c
 
     def bone(name, pivot, parent=None, rot=(0, 0, 0), mat=None):
         dy, dz = (HY, HZ) if name in HEAD_BONES else (0.0, 0.0)
-        return r.bone(name, (pivot[0], pivot[1] + dy, pivot[2] + DZ + dz), parent=parent, rot=rot, mat=mat)
+        fns[name] = mat
+        return r.bone(name, (pivot[0], pivot[1] + dy, pivot[2] + DZ + dz), parent=parent, rot=rot)
+
+    def tag_box(wmin, size, inflate, mat, name):
+        """Tag child cube placed by its RENDERED min corner in model space (before DZ); handles the deformation."""
+        frm = tuple(wmin[i] + inflate - TAG_W[i] + TAG_A[i] for i in range(3))
+        return box('tag', frm, size, mat=mat, inflate=inflate, name=name)
 
     # ---------------- body (root, pivot at the hips so sit / beg rotate around the rump)
     bone('body', (0, 16, 11), mat=body_mat)
@@ -714,13 +1045,13 @@ def build():
     box('body', (-3, 13, -7.2), (6, 6, 3), name='prow')
     box('body', (-4, 12.5, 15.5), (8, 6, 2), name='rump')
     # sweater: two shells (open belly), raised spine cable, ribbed cuff rings at the neck and the tail end
-    box('body', (-5, 12, -4.5), (10, 7, 15), mat=sweater_mat, inflate=0.55, name='shell_w')
-    box('body', (-4, 11, -4.5), (8, 9, 15), mat=sweater_mat, inflate=0.55, name='shell_t')
-    box('body', (-2, 9.8, -3.5), (4, 1, 13), mat=cable_mat, name='cable')
-    box('body', (-5, 12, -5.2), (10, 7, 1), mat=sweater_mat, inflate=1.0, name='cuff')
-    box('body', (-4, 11, -5.2), (8, 9, 1), mat=sweater_mat, inflate=1.0, name='cuff')
-    box('body', (-5, 12, 10.2), (10, 7, 1), mat=sweater_mat, inflate=0.8, name='cuff')
-    box('body', (-4, 11, 10.2), (8, 9, 1), mat=sweater_mat, inflate=0.8, name='cuff')
+    box('body', (-5, 12, -4.5), (10, 7, 15), mat=sweater_mat, inflate=0.55, name='shell_w', knit=True)
+    box('body', (-4, 11, -4.5), (8, 9, 15), mat=sweater_mat, inflate=0.55, name='shell_t', knit=True)
+    box('body', (-2, 9.8, -3.5), (4, 1, 13), mat=cable_mat, name='cable', knit=True)
+    box('body', (-5, 12, -5.2), (10, 7, 1), mat=sweater_mat, inflate=1.0, name='cuff', knit=True)
+    box('body', (-4, 11, -5.2), (8, 9, 1), mat=sweater_mat, inflate=1.0, name='cuff', knit=True)
+    box('body', (-5, 12, 10.2), (10, 7, 1), mat=sweater_mat, inflate=0.8, name='cuff', knit=True)
+    box('body', (-4, 11, 10.2), (8, 9, 1), mat=sweater_mat, inflate=0.8, name='cuff', knit=True)
 
     # ---------------- legs + paws (paw bones pivot at the wrist / ankle)
     for sd, sx in (('right', -1), ('left', 1)):
@@ -746,16 +1077,29 @@ def build():
     bone('tail_tip', (0, 12.8, 20.5), parent='tail', rot=(18, 0, 0), mat=tail_mat)
     box('tail_tip', (-1, 11.8, 20), (2, 2, 5), name='tip')
 
-    # ---------------- neck, collar, bone-shaped tag
-    # The collar is a slab on its own bone, tilted 30 degrees so it sits perpendicular to the forward-leaning
-    # neck: it crosses the back of the neck just behind the skull and wraps under the throat, where the tag
-    # hangs below the chin.  (Children of a rotated bone are authored in that bone's unrotated frame.)
+    # ---------------- neck, collar, name tag
+    # The collar is a slab on its own bone, tilted 30 degrees so it sits perpendicular to the forward-leaning neck: it
+    # crosses the back of the neck just behind the skull and wraps under the throat, where the tag hangs below the
+    # chin.  (Children of a rotated bone are authored in that bone's unrotated frame.)
     bone('neck', (0, 13, -4.5), parent='body', mat=neck_mat)
     box('neck', (-3, 9, -13), (6, 9, 8), name='neck')
-    bone('collar', (0, 13.5, -10), parent='neck', rot=(-30, 0, 0), mat=collar_mat)
+    bone('collar', COLLAR_A, parent='neck', rot=(COLLAR_TILT, 0, 0), mat=collar_mat)
     box('collar', (-3.5, 8, -11), (7, 11, 2), inflate=0.2, name='collar')
-    bone('tag', (0, 19.2, -10.8), parent='collar', rot=(30, 0, 0), mat=tag_mat)
-    box('tag', (-3, 19.4, -11.3), (6, 4, 1), name='tag')
+    bone('tag', TAG_A, parent='collar', rot=(-COLLAR_TILT, 0, 0), mat=tag_plate_mat)
+    tx, ty, tz = TAG_W
+    # split ring through the D-ring, then the backing plate and the engraved high-density card 0.05 in front of it
+    tag_box((-0.75, ty - 0.1, tz - 0.25), (3, 3, 2), -0.75, tag_ring_mat, 'ring')
+    tag_box((-3.9, ty + 1.15, tz - 0.4), (8, 5, 1), -0.1, tag_plate_mat, 'plate')
+    tag_box((-3.5, ty + 1.55, tz - 0.45), (TXT_W, TXT_H, int(2 * TXT_K)), -TXT_K, tag_text_mat, 'text')
+
+    # ---------------- the Nona's scarf (TOGGLE: hidden by default, shown in the 'bufanda' look)
+    bone('scarf', SCARF_A, parent='neck', rot=(SCARF_TILT, 0, 0), mat=scarf_mat)
+    box('scarf', (-4, 9, -9.5), (8, 9, 4), inflate=0.45, name='wrap')
+    box('scarf', (2.5, 15.3, -11), (3, 3, 3), inflate=0.3, name='knot')
+    bone('scarf_tail_front', (4, 17.6, -9.5), parent='scarf', rot=(-SCARF_TILT, 0, -4), mat=scarf_mat)
+    box('scarf_tail_front', (2.4, 17.6, -10.3), (4, 6, 1), name='tail')
+    bone('scarf_tail_back', (4.6, 17.2, -8.6), parent='scarf', rot=(-SCARF_TILT + 12, 0, -18), mat=scarf_mat)
+    box('scarf_tail_back', (3.2, 17.2, -9.1), (4, 5, 1), name='tail')
 
     # ---------------- head
     bone('head', (0, 11, -8.5), parent='neck', mat=skull_mat)
@@ -773,6 +1117,11 @@ def build():
     box('head', (-2.5, 15.5, -22.65), (1, 1, 1), mat=canine_mat, name='canine')
     box('head', (1.5, 15.5, -22.65), (1, 1, 1), mat=canine_mat, name='canine')
     box('head', (-2, 14.7, -22.4), (4, 2, 6), mat=mouth_mat, inflate=-0.1, name='mouth')
+
+    # closed lids over both eyes (TOGGLE: hidden by default, shown in 'sleep' / 'sneeze')
+    bone('eyelids', (0, 8, -16.3), parent='head', mat=lid_mat)
+    for sd, x0 in (('r', -7.3), ('l', 1.3)):
+        box('eyelids', (x0, 5, -16.3), (6, 6, 1), inflate=0.08, name='lid', side=sd)
 
     bone('lips', (0, 14.5, -16), parent='head', mat=lips_mat)
     box('lips', (-2.5, 14.5, -23), (5, 2, 7), inflate=0.06, name='lips')
@@ -798,12 +1147,89 @@ def build():
         box(e, (x0, 14.5, -12.5), (2, 2, 4), name='lobe', side=sd[0])
         box(e, (x0, 3.9, -13), (2, 2, 5), inflate=0.25, name='fold', side=sd[0])
 
-    m = Model('choripan', 128, 128, r.roots)
+    m = ChoriModel('choripan', 128, 128, r.roots)
     m.scale = 0.5
+    if pose is None and os.path.basename(sys.argv[0]) == 'preview.py':
+        pose = _argv('--pose')
+    if variant is None and os.path.basename(sys.argv[0]) == 'preview.py':
+        variant = _argv('--variant')
+    m.visible = visible_set(variant, pose)
     return m
 
 
-POSES = {
+# ------------------------------------------------------------------ FK helpers (pose maths, used to build POSES)
+def _euler_zyx(R):
+    """MC Euler angles (xRot, yRot, zRot) of R = Rz * Ry * Rx."""
+    y = math.asin(max(-1.0, min(1.0, -R[2, 0])))
+    x = math.atan2(R[2, 1], R[2, 2])
+    z = math.atan2(R[1, 0], R[0, 0])
+    return x, y, z
+
+
+def fk(model, pose):
+    """World 4x4 per bone for a pose table (bone -> (xRot, yRot, zRot, dx, dy, dz), ADDED to the rest pose), the way
+    HauntModel / the preview apply it: Euler angles summed, offsets added to the pivot."""
+    out = {}
+
+    def walk(b, M):
+        p = (pose or {}).get(b.name, (0, 0, 0, 0, 0, 0))
+        p = tuple(p) + (0,) * (6 - len(p))
+        T = np.eye(4)
+        T[:3, 3] = (b.pivot[0] + p[3], b.pivot[1] + p[4], b.pivot[2] + p[5])
+        R = np.eye(4)
+        R[:3, :3] = rot_matrix(math.radians(b.rot[0]) + p[0], math.radians(b.rot[1]) + p[1],
+                               math.radians(b.rot[2]) + p[2])
+        W = M @ T @ R
+        out[b.name] = W
+        for c in b.children:
+            walk(c, W)
+    for root in model.roots:
+        walk(root, np.eye(4))
+    return out
+
+
+def plumb(model, pose, name, swing=(0.0, 0.0)):
+    """Pose entry that makes bone `name` hang straight down (gravity) while facing its parent's heading, plus a swing
+    (world xRot, zRot; -xRot = lower end toward its front).  Returns (xRot, yRot, zRot) to ADD to the rest pose."""
+    W = fk(model, pose)
+    b = next(x for x in model.bones() if x.name == name)
+    P = W[b.parent.name][:3, :3]
+    fwd = P @ np.array([0.0, 0.0, -1.0])
+    if math.hypot(fwd[0], fwd[2]) < 0.2:                    # parent points straight up / down: use its 'down' axis
+        fwd = P @ np.array([0.0, 1.0, 0.0])
+    yaw = math.atan2(-fwd[0], -fwd[2])                      # heading of -Z rotated by Ry(yaw)
+    Wd = rot_matrix(0, yaw, 0) @ rot_matrix(swing[0], 0, swing[1])
+    L = P.T @ Wd
+    ex, ey, ez = _euler_zyx(L)
+    rx, ry, rz = [math.radians(a) for a in b.rot]
+    return (ex - rx, ey - ry, ez - rz)
+
+
+def world_bounds(model, pose, bones=None):
+    """Model-space AABB of the posed cubes (for ground / centring checks)."""
+    W = fk(model, pose)
+    mn = np.array([1e9] * 3)
+    mx = -mn
+    for b in model.bones():
+        if bones and b.name not in bones:
+            continue
+        M = W[b.name]
+        for c in b.cubes:
+            x0, y0, z0 = c.origin
+            w, h, d = c.size
+            g = c.inflate
+            for px in (x0 - g, x0 + w + g):
+                for py in (y0 - g, y0 + h + g):
+                    for pz in (z0 - g, z0 + d + g):
+                        q = (M @ np.array([px, py, pz, 1.0]))[:3]
+                        mn = np.minimum(mn, q)
+                        mx = np.maximum(mx, q)
+    return mn, mx
+
+
+# ------------------------------------------------------------------ poses
+PI = math.pi
+_POSES = {
     'sit': {'body': (-0.34, 0, 0, 0, 3.06, 0),
             'right_front_leg': (0.34, 0, 0.04, 0, 1.58, 0), 'left_front_leg': (0.34, 0, -0.04, 0, 1.58, 0),
             'right_back_leg': (-1.25, 0.25, 0, 0, 1.6, 0), 'left_back_leg': (-1.25, -0.25, 0, 0, 1.6, 0),
@@ -817,14 +1243,14 @@ POSES = {
             'neck': (0.62, 0, 0, 0, 0, 0), 'head': (0.3, 0, 0, 0, 0, 0),
             'right_ear': (0.2, 0, 0, 0, 0, 0), 'left_ear': (0.2, 0, 0, 0, 0, 0),
             'right_brow': (0, 0, 0.15, 0, -0.3, 0), 'left_brow': (0, 0, -0.15, 0, -0.3, 0),
-            'jaw': (0.16, 0, 0, 0, 0, 0), 'tongue': (0.6, 0, 0, 0, 0.6, -1.7), 'tag': (-0.9, 0, 0, 0, 0, 0),
+            'jaw': (0.16, 0, 0, 0, 0, 0), 'tongue': (0.6, 0, 0, 0, 0.6, -1.7),
             'tail': (1.45, 0.35, 0, 0, 0, 0), 'tail_tip': (-0.25, 0.3, 0, 0, 0, 0)},
     'belly_up': {'body': (0, 0, 3.02, 0, 1.35, 0),
                  'right_front_leg': (-0.5, 0, 0.25, 0, 1.2, 0), 'left_front_leg': (-0.5, 0, -0.25, 0, 1.2, 0),
                  'right_front_paw': (1.0, 0, 0, 0, 0, 0), 'left_front_paw': (1.0, 0, 0, 0, 0, 0),
                  'right_back_leg': (-0.5, 0, 0.7, 0, 1.0, 0), 'left_back_leg': (-0.5, 0, -0.7, 0, 1.0, 0),
                  'right_back_paw': (1.0, 0, 0, 0, 0, 0), 'left_back_paw': (1.0, 0, 0, 0, 0, 0),
-                 'neck': (1.13, 0, 0, 0, 0, 0), 'head': (-0.4, 0, 0.15, 0, 0, 0), 'tag': (-0.6, 0, 0.4, 0, 0, 0),
+                 'neck': (1.13, 0, 0, 0, 0, 0), 'head': (-0.4, 0, 0.15, 0, 0, 0),
                  'right_ear': (0, 0, 1.25, 0, 0, 0), 'left_ear': (0, 0, -1.25, 0, 0, 0),
                  'jaw': (0.14, 0, 0, 0, 0, 0), 'tongue': (-0.15, 0.85, 0, 1.2, 0.2, -1.0),
                  'right_brow': (0, 0, 0.12, 0, -0.3, 0), 'left_brow': (0, 0, -0.12, 0, -0.3, 0),
@@ -834,16 +1260,244 @@ POSES = {
     'growl': {'body': (0.07, 0, 0, 0, 0, 0),
               'right_front_leg': (-0.07, 0, 0, 0, -1.1, 0), 'left_front_leg': (-0.07, 0, 0, 0, -1.1, 0),
               'right_back_leg': (-0.07, 0, 0, 0, 0, 0), 'left_back_leg': (-0.07, 0, 0, 0, 0, 0),
-              'neck': (0.2, 0, 0, 0, 0, 0), 'head': (-0.3, 0, 0, 0, 0, 0), 'tag': (0.6, 0, 0, 0, 0, 0),
+              'neck': (0.2, 0, 0, 0, 0, 0), 'head': (-0.3, 0, 0, 0, 0, 0),
               'lips': (-0.1, 0, 0, 0, -1.4, 0), 'jaw': (0.1, 0, 0, 0, 0, 0),
               'right_brow': (0, 0, -0.45, 0, 0.3, 0), 'left_brow': (0, 0, 0.45, 0, 0.3, 0),
               'right_ear': (0.35, 0, -0.15, 0, 0, 0), 'left_ear': (0.35, 0, 0.15, 0, 0, 0),
               'tail': (-0.6, 0, 0, 0, 0, 0)},
-    'turn': {'body': (-0.34, 0, 0, 0, 3.06, 0),
-             'right_front_leg': (0.34, 0, 0.04, 0, 1.58, 0), 'left_front_leg': (0.34, 0, -0.04, 0, 1.58, 0),
-             'right_back_leg': (-1.25, 0.25, 0, 0, 1.6, 0), 'left_back_leg': (-1.25, -0.25, 0, 0, 1.6, 0),
-             'neck': (0.34, 0, 0, 0, 0, 0), 'head': (-0.85, math.pi, 0, 0, -5, 0), 'jaw': (0.1, 0, 0, 0, 0, 0),
-             'tail': (-0.95, 0.6, 0, 0, 0, 0), 'tail_tip': (-0.25, 0.35, 0, 0, 0, 0)},
+    # THE CLIP (casa.buen_chico, 3:33).  The entity keeps facing the player; the BODY turns its back on the camera
+    # (yRot pi) and stands up on the hind legs, and the neck spins the head 180 deg round the spine so the face (with
+    # the collar and the tag under the chin) stares straight back at the player over the sweater's spine.
+    'bipedal_180': {'body': (-1.48, PI, 0, 0, -1.5, -10.6),
+                    'right_back_leg': (1.48, 0, 0.05, 0, 0, 0), 'left_back_leg': (1.48, 0, -0.05, 0, 0, 0),
+                    'right_front_leg': (1.35, 0, 0.75, 0, 0, 0), 'left_front_leg': (1.35, 0, -0.75, 0, 0, 0),
+                    'right_front_paw': (0.5, 0, 0.2, 0, 0, 0), 'left_front_paw': (0.5, 0, -0.2, 0, 0, 0),
+                    'neck': (1.4, 0, PI, 0, 0, 0), 'head': (-0.12, 0, 0.3, 0, 0, 0),
+                    'jaw': (0.14, 0, 0, 0, 0, 0), 'lips': (-0.05, 0, 0, 0, -0.6, 0),
+                    'right_ear': (0, 0, -0.25, 0, 0, 0), 'left_ear': (0, 0, -0.3, 0, 0, 0),
+                    'right_brow': (0, 0, -0.3, 0, 0.6, 0), 'left_brow': (0, 0, 0.3, 0, 0.6, 0),
+                    'tail': (1.15, 0.4, 0, 0, 0, 0), 'tail_tip': (0.45, 0.3, 0, 0, 0, 0)},
+    'sneeze': {'body': (0.04, 0, 0, 0, 0, 0),
+               'right_front_leg': (-0.22, 0, 0.06, 0, -0.3, 0), 'left_front_leg': (-0.22, 0, -0.06, 0, -0.3, 0),
+               'neck': (0.22, 0, 0, 0, 0, 0), 'head': (0.12, 0, 0, 0, 0, 0),
+               'lips': (-0.12, 0, 0, 0, -0.6, 0), 'jaw': (0.2, 0, 0, 0, 0, 0), 'tongue': (0.15, 0, 0, 0, 0, -0.4),
+               'right_brow': (0, 0, -0.3, 0, 0.9, 0), 'left_brow': (0, 0, 0.3, 0, 0.9, 0),
+               'right_ear': (-0.75, 0, -0.25, 0, 0, 0), 'left_ear': (-0.75, 0, 0.25, 0, 0, 0),
+               'tail': (-0.25, 0, 0, 0, 0, 0)},
+    # curled at the Nona's feet: lying on the chest, the front legs stretched out, the hind legs tucked to his left,
+    # the chin on the floor beside the right paw, the head turned back toward the hip, the tail curled round the front
+    'sleep': {'body': (0.04, 0.0, 0.18, 0, 3.0, 0),
+              'right_front_leg': (-1.4, 0.15, 0.05, 0, 1.2, 0), 'left_front_leg': (-1.4, -0.25, -0.1, 0, 1.2, 0),
+              'right_front_paw': (1.3, 0, 0, 0, 0, 0), 'left_front_paw': (1.3, 0, 0, 0, 0, 0),
+              'right_back_leg': (-1.0, 0.55, 0.15, 0, 1.0, 0), 'left_back_leg': (-1.0, 0.75, -0.2, 0, 1.0, 0),
+              'right_back_paw': (0.9, 0, 0, 0, 0, 0), 'left_back_paw': (0.9, 0, 0, 0, 0, 0),
+              'neck': (0.42, 0.55, 0.1, 0, 0, 0), 'head': (-0.08, 0.5, -0.12, 0, 0, 0),
+              'right_ear': (0.25, 0, 0.5, 0, 0, 0), 'left_ear': (-0.2, 0, -0.35, 0, 0, 0),
+              'right_brow': (0, 0, 0.1, 0, 0.5, 0), 'left_brow': (0, 0, -0.1, 0, 0.5, 0),
+              'tail': (-0.55, -1.5, 0, 0, 0, 0), 'tail_tip': (0.2, -1.0, 0, 0, 0, 0)},
+    'sniff': {'neck': (0.52, 0, 0, 0, 0, 0), 'head': (-0.36, 0, 0, 0, 0, 0),
+              'right_ear': (-0.35, 0, -0.1, 0, 0, 0), 'left_ear': (-0.35, 0, 0.1, 0, 0, 0),
+              'right_brow': (0, 0, -0.15, 0, -0.3, 0), 'left_brow': (0, 0, 0.15, 0, -0.3, 0),
+              'tail': (-0.35, 0.3, 0, 0, 0, 0)},
+    'bark': {'body': (-0.08, 0, 0, 0, 0, 0),
+             'right_front_leg': (-0.2, 0, 0.08, 0, -0.3, 0), 'left_front_leg': (-0.2, 0, -0.08, 0, -0.3, 0),
+             'neck': (-0.25, 0, 0, 0, 0, 0), 'head': (-0.15, 0, 0, 0, 0, 0),
+             'jaw': (0.5, 0, 0, 0, 0, 0), 'lips': (-0.06, 0, 0, 0, -0.4, 0), 'tongue': (0.1, 0, 0, 0, 0, 0),
+             'right_ear': (0.5, 0, 0.15, 0, 0, 0), 'left_ear': (0.5, 0, -0.15, 0, 0, 0),
+             'right_brow': (0, 0, 0.2, 0, -0.6, 0), 'left_brow': (0, 0, -0.2, 0, -0.6, 0),
+             'tail': (-0.5, 0, 0, 0, 0, 0)},
 }
+# the tag and the scarf tails hang plumb in every pose (+ a small swing where the motion would throw them)
+TAG_SWING = {'beg': (-0.3, 0), 'bark': (0.2, 0), 'sneeze': (-0.35, 0), 'belly_up': (0, 0.3),
+             'bipedal_180': (0.05, 0.08), 'sleep': (0, 0)}
 
-ANIM_NOTES = """(rewritten below)"""
+
+GROUND = 24.0
+HANG = ('tag', 'scarf', 'scarf_tail_front', 'scarf_tail_back')     # flexible parts: never used to ground a pose
+NO_SNAP = ('belly_up',)                                             # hand-placed (rolling on the back)
+HEAD_SET = ('head', 'lips', 'jaw', 'tongue', 'right_brow', 'left_brow', 'right_ear', 'left_ear', 'eyelids')
+# poses whose head goes down to the floor: the dog is grounded on its legs / body first, then the head pitch is solved
+# so the chin rests ON the floor (clearance 0) or just clears it
+HEAD_FLOOR = {'sniff': 0.05, 'sleep': 0.05, 'sneeze': 0.8}
+
+
+def _hang(m, t, name, sw):
+    """Plumb + swing, and if the hanging part would sink into the floor, swing it (the smaller way) until it rests on it."""
+    best = None
+    for k in range(0, 31):
+        for sgn in ((1,) if k == 0 else (-1, 1)):
+            cand = (sw[0] + sgn * k * 0.06, sw[1])
+            v = plumb(m, t, name, cand)
+            t2 = dict(t)
+            t2[name] = v
+            if world_bounds(m, t2, [name])[1][1] <= GROUND - 0.03:
+                return v
+            best = best or v
+    return best
+
+
+def _with_plumb(poses):
+    m = build(variant='bufanda', pose=None)
+    body_set = [b.name for b in m.bones() if b.name not in HANG and not b.name.startswith('scarf')]
+    out = {}
+    for name, table in poses.items():
+        t = dict(table)
+        if name not in NO_SNAP:
+            # ground snap: the lowest point of the dog itself sits exactly on the floor
+            snap_set = [n for n in body_set if not (name in HEAD_FLOOR and n in HEAD_SET)]
+            low = world_bounds(m, t, snap_set)[1][1]
+            bx = tuple(t.get('body', (0, 0, 0, 0, 0, 0))) + (0,) * 6
+            t['body'] = bx[:4] + (bx[4] + GROUND - low,) + bx[5:6]
+        if name in HEAD_FLOOR:
+            hx0 = tuple(t.get('head', (0, 0, 0, 0, 0, 0))) + (0,) * 6
+            target = GROUND - HEAD_FLOOR[name]
+            lo, hi = -1.2, 1.2                              # head xRot delta: + = nose down
+            for _ in range(40):
+                mid = (lo + hi) / 2
+                t['head'] = (hx0[0] + mid,) + hx0[1:6]
+                if world_bounds(m, t, list(HEAD_SET))[1][1] > target:
+                    hi = mid
+                else:
+                    lo = mid
+            t['head'] = (hx0[0] + lo,) + hx0[1:6]
+        sw = TAG_SWING.get(name, (0.0, 0.0))
+        t['tag'] = _hang(m, t, 'tag', sw)
+        for tb, extra in (('scarf_tail_front', (0, -0.07)), ('scarf_tail_back', (0.2, -0.28))):
+            t[tb] = _hang(m, t, tb, (sw[0] + extra[0], sw[1] + extra[1]))
+        out[name] = {k: tuple(round(float(x), 4) for x in v) for k, v in t.items()}
+    return out
+
+
+POSES = _with_plumb(_POSES)
+
+ANIM_NOTES = """Choripan (ChoripanEntity, form DOG) -- animation notes.  Units: radians, offsets in model texels (2x density
+inside scale_root: 2 texels = 1 vanilla pixel, 32 texels = 1 block).  t = ageInTicks, s = walk speed 0..1.  Every pose
+is ADDED to the rest pose (Euler angles summed, offsets added to the pivot, the way HauntModel applies POSES).
+Blend between poses over 4-6 ticks unless a note says SNAP (1-2 ticks).  right_* is on -X; MC applies Z * Y * X;
+a positive xRot swings a hanging part's lower end backwards (+Z).
+He is the audience's dog: every motion is bouncy, quick and a little clumsy (squash on landings, overshoot on head
+turns).  The only exception is bipedal_180, which is slow, smooth and WRONG.
+
+Looks (VARIANT_MATS; Java picks the texture by the entity's variant index)
+* 0 'normal'  -> choripan.png (+ choripan_eyes.png).  The whole case: the Nona's red Aran sweater with the cream 'C'.
+* 1 'bufanda' -> choripan_bufanda.png (+ choripan_bufanda_eyes.png, same glints).  The ending (casa.desayuno, the
+  base, the bed in transition 2): the demon shredded the sweater, so the sweater texels (shells, spine cable, the four
+  cuffs) are TRANSPARENT in this texture and the plain coat shows; set scarf.visible = true (VARIANT_TOGGLES).  Same
+  geometry, same poses.
+Render: entityCutoutNoCull + the emissive layer 'eyes' (choripan_eyes.png) drawn full-bright on top: 2 warm px per
+eye (the glints), so at night he sparkles instead of glowing like a hostile mob.  When eyelids is visible the lids sit
+in front of the glints and the depth test hides them (optionally skip the eyes layer while asleep).
+
+Toggles (ModelPart.visible).  Every frame: start from TOGGLE_DEFAULT, apply VARIANT_TOGGLES[look], then
+POSE_TOGGLES[pose] (a pose wins over the look).  Hiding a parent hides its children.
+* scarf (child of neck; + its children scarf_tail_front, scarf_tail_back)   hidden by default; visible in 'bufanda'.
+  The Nona's red garter-stitch scarf: a wrap on the shoulders (it rides over the collar at the nape; the collar, the
+  D-ring and the tag stay in front of it at the throat), a knot on his left under the chin, two tails with a cream
+  band and a red fringe hanging down his left side.
+* eyelids (child of head)   hidden by default; visible in poses 'sleep' and 'sneeze'.  Fur lid caps over both eyes
+  with a curved lash line.  ALSO the blink: in every look and pose, show it for 2 ticks every 60-120 ticks (double
+  blink 1 time in 4), and for 3-4 ticks on a sudden scare (he squeezes his eyes shut).
+
+Bones
+* body (root, pivot at the hips, (0, 16, 10.5)): the barrel, chest prow, keel, rump and the sweater.  Idle: breathing
+  dy = sin(t * 0.09) * 0.12.  Walk (dachshund trot, short fast steps): dy = -abs(sin(walk * 2)) * 0.35, zRot =
+  sin(walk) * 0.035, xRot = sin(walk * 2) * 0.02.  Happy wag: the rear end wiggles WITH the tail -- body yRot =
+  -sin(wag) * 0.05 * wagAmp (a dachshund wags from the hips).  Landing / hop: squash = body dy +0.6 for 2 ticks.
+* right_front_leg, left_front_leg (pivot at the elbow, under the chest): walk xRot = +-sin(walk) * 0.7 * s, diagonal
+  pairs with the back legs (right front with left back).
+* right_front_paw, left_front_paw (wrist): lift-off flick xRot = max(0, -frontLegXRot) * 0.8; curl in 'beg' / 'sleep'.
+* right_back_leg, left_back_leg (pivot at the hip, the thigh): walk xRot = -+sin(walk) * 0.6 * s.  Scratch-behind-the-
+  ear gag (optional): right_back_leg xRot -0.9 + sin(t * 1.6) * 0.25 while sitting.
+* right_back_paw, left_back_paw (ankle): follow the leg, flick like the front paws.
+* tail (root at the rump, rest +32 deg = carried up in a happy curve) and tail_tip (rest +18 deg): THE WAG, every
+  frame in every pose (it is how the audience reads his mood, and the demon form keeps it).  tail yRot =
+  sin(t * wagSpeed) * wagAmp; tail_tip yRot = sin(t * wagSpeed - 0.7) * wagAmp * 1.4 (whip, lags the root).
+  Moods: idle wagSpeed 0.55 / amp 0.35; happy (player near, being petted, family calls him) 0.95 / 0.6 + the body
+  wiggle; excited (choripan in hand, fetch) 1.3 / 0.75; uneasy (form UNEASY, near Ofelia) 0.25 / 0.12 with xRot +0.5
+  (tail low); growl / bark: wag off, tail stiff (pose value); sleep: no wag, a tail_tip twitch every 4-8 s; sneeze
+  shake-off: wag 1.3 / 0.75.  In 'bipedal_180' a SLOW wag (0.2 / 0.25) is the creepiest thing in the shot.
+* neck (pivot at the chest top): 30% of the head-look yaw/pitch.  Sniff walk: neck +0.35 and head -0.25 while
+  following a scent, bob dy sin(t * 1.2) * 0.3.
+* collar (child of neck, rest -30 deg so it sits across the forward-leaning neck): never animated.
+* tag (child of collar, pivot at the D-ring; ring + backing plate + the engraved high-density card): hangs plumb by
+  gravity.  Every frame set its rotation to cancel the collar's world rotation (plumb() in this file is the reference
+  maths) and ADD a damped pendulum (world xRot / zRot; impulse -k * dAngle of the head/body, k ~ 0.7, damping 0.86 per
+  tick, clamp +-0.6) so it jingles when he trots, barks or shakes.  FLOOR CLAMP: the tag must never sink below y 24;
+  when the throat is low (growl, sniff, sleep) swing it until its lower edge rests on the floor (the POSES values are
+  pre-solved that way).  It is the identity marker shared with the demon form: keep it facing where the throat faces.
+  The name reads fully whenever the head is up (sit, beg, bark, tilt, bipedal_180); at rest the long muzzle hides the
+  top line from the front, as on a real dachshund -- for a cinematic close-up of the tag use 'sit' or lift the head.
+* scarf (toggle; child of neck): no motion.
+* scarf_tail_front, scarf_tail_back (children of scarf, pivots at the knot): pendulums exactly like the tag (plumb +
+  swing, 2-4 ticks of lag behind the tag, 1.3x its amplitude), floor clamp too.  Trotting: they flap outward (zRot
+  -0.15 * s).
+* head (pivot at the skull base): 70% of the head-look.  Idle: the occasional curious head-tilt (blend to 'tilt' for
+  40 ticks every 10-20 s), ear perks.  Head turns overshoot by 10% and settle (puppy energy).
+* eyelids (toggle): see Toggles (sleep, sneeze, blinks).
+* lips (upper lip, pivot at the muzzle root): lifts in 'growl' (dy -1.4) to bare the upper teeth and canines; while
+  growling, tremble dy += sin(t * 2.8) * 0.15.  Small lift in 'bark' / 'sneeze' / 'bipedal_180'.
+* jaw (pivot under the cheek): pant after running or in the heat of the parrilla: xRot 0.14 + sin(t * 0.8) * 0.05
+  with the tongue out.  Bark: SNAP to 0.5 then close over 4 ticks.  Dialogue (choripan.buen_chico): xRot = 0.14 +
+  envelope * 0.35 from DialogueLines (10 Hz envelope).
+* tongue (child of jaw): pant = xRot +0.3, dz -1.0 (the tip hangs out past the lips); 'beg' and 'belly_up' already
+  loll it out (pose values).  Lick after eating: dz -1.5 for 4 ticks, twice.
+* right_brow, left_brow (thin planes above the eyes, rest = puppy-worried): the whole acting range.  Raised and apart
+  = curious / begging ('tilt', 'beg'); inner ends down = growl / bipedal_180; pushed down onto the eyes = sneeze.
+* right_ear, left_ear (huge floppy ears, pivot at the top of the skull): pendulums.  Follow the head with 3-4 ticks of
+  lag and overshoot (spring k 0.25, damping 0.8), flap outward on every trot step (zRot +-0.12 * s) and on the sneeze
+  shake (+-0.6).  Alert (hears something): xRot -0.25 both, 6 ticks.  'tilt' flips the right ear inside out (a pose
+  value: zRot -2.3) -- keep it, it is the gag.
+
+Poses (POSES; the 'tag' / 'scarf_tail_*' entries are their plumb + floor-clamped hang for that frozen frame, and every
+pose except 'belly_up' was grounded by FK: the lowest point of the dog sits exactly on y 24)
+* sit: the default "te mira fijo" (casa.buen_chico before 3:33), waiting at the table, the calm beat.  Haunches down,
+  chest up, the tag hanging free in front of the chest (the best tag close-up).  Wag on the floor (amp 0.35).
+* beg: sitting up on the haunches, front paws curled, tongue out (Marta's choripan, the asado).  The tag hangs in
+  front of the curled paws.  Bounce: body dy sin(t * 0.5) * 0.3, paws xRot sin(t * 0.5 + 1) * 0.15.
+* belly_up: the calm beat ("rascada de panza"): rolled onto his back, legs up, head upside down, tongue out, ears
+  splayed on the floor.  While rubbed: back legs kick xRot sin(t * 1.4) * 0.35 (the scratch reflex), tail thumps.
+  Hand-placed (no FK grounding); enter it with a 10-tick roll (body zRot 0 -> 3.02 with an overshoot).
+* tilt: the curious head tilt with the inside-out right ear.  Use it for "¿qué?" moments and whenever someone says
+  his name.  Additive with walk.
+* growl: at a hallucination (SanityManager delays it 40 ticks; he growls at that point first, so the audience learns to
+  believe him).  Head low and aimed at the target (keep the head-look on the hallucination point), lips up, brows
+  down, ears back, tail stiff and low, front legs braced.  Lip tremble (see lips).  Blend in over 8 ticks.
+* bark: at spectral things (Ofelia when she moves, the voluta, the Nona's chair).  Front legs braced, chest up, mouth
+  wide (teeth, tongue), ears thrown back, brows up.  Each bark SNAPS into the pose in 2 ticks with choripan.bark_cute,
+  then relaxes 30% over 4 ticks; 2-4 barks per burst.
+* sniff: nose to the floor following the family or a scent: neck down, muzzle level along the floor (chin touching
+  it), ears forward, tail up and wagging.  Walkable: add the walk cycle; bob the neck (see neck).
+* sneeze: THE END of casa.parrilla (after the retract and the voluta, "un salchicha temblando estornuda y mueve la
+  cola").  Sequence: (1) wind-up 8 ticks: blend toward neck -0.2 / head -0.15 / lips -0.06 / jaw 0.06 with eyelids
+  visible ("ah... ah..."); (2) SNAP to 'sneeze' in 2 ticks on choripan.sneeze (head snapped down, eyes squeezed, nose
+  wrinkled, mouth open, ears flung forward), hold 3 ticks; (3) shake-off 20 ticks: body zRot = sin(t * 2.2) * 0.22 *
+  decay, head zRot = -sin(t * 2.2) * 0.35 * decay, ears zRot +-0.6 * decay, tag + scarf tails swinging, wag 1.3 /
+  0.75; eyelids hidden when the shake ends.  Then 'tilt' for 20 ticks (dazed, proud).  Shivering before it: body
+  zRot sin(t * 3.1) * 0.03.
+* sleep: curled at the Nona's feet (casa.calma) and asleep on your bed with the scarf ('bufanda', the base).  Lying on
+  the chest, front legs stretched forward, hind legs tucked to his left, the head turned back toward the hip with the
+  chin on the floor (solved by FK), the tail curled forward round his right side, eyelids on.  Breathing: body dy
+  sin(t * 0.06) * 0.2 and ribs (no extra bone: the breathing is enough); ear twitch every 5-10 s; dream paddle: front
+  paws xRot sin(t * 0.9) * 0.2 for 20 ticks every 20-40 s; tail_tip twitch.  Wake-up: hide eyelids, 'tilt' for 10.
+* bipedal_180: THE CLIP (casa.buen_chico, 3:33): "¿Quién es un buen chico?... YO NO."  Standing upright on the hind
+  legs with his BACK to the player, the neck spun 180 deg round the spine so the face (with the collar and the gold
+  'CHORIPÁN' tag under the chin, fully legible) stares straight back at the player over the sweater; Exorcist head
+  roll (head zRot 0.3), chin up, lip lifted over the teeth, brows down, the limp front legs splayed behind him, the
+  tail poking out of his lower back TOWARD the camera (it is what tells you he is backwards).  The entity keeps
+  facing the player as usual (the pose itself turns the body away: body yRot pi, dz -10.6 recentres the feet on the
+  entity origin).  Disable the head-look while in this pose (the pose aims the face).
+  Staging (works with the beat's light flicker): (1) 'sit', staring.  (2) During a 3-tick blackout SNAP to
+  'bipedal_180' but with neck zRot 0 instead of pi and head zRot 0: he is standing with his back to you, looking
+  away.  (3) Lights on, hold 12 ticks.  (4) THE TURN: neck zRot 0 -> pi over 36 ticks, ease-in-out with two 3-tick
+  hitches (at ~60 and ~120 deg; choripan.crack on each), head zRot 0 -> 0.3 in the last 10; the tag swings with it.
+  (5) The line: jaw from the dialogue envelope (see jaw), a slow wag (0.2 / 0.25).  (6) "YO NO.": SNAP jaw 0.5 for
+  4 ticks.  (7) Drop to all fours (blend to rest in 6 ticks, neck spin back to 0 in the same 6) and run to the patio.
+  The previous 'turn' pose (a sitting head-spin that hid the face behind the skull) is superseded by this one.
+
+Geometry notes for Java
+* The engraved card is a (19, 16, 12) box with CubeDeformation -6 (renders 7 x 4 x 0): box UV ignores the
+  deformation, so its front keeps all 19 x 16 texels (2.7 x 4 texels per unit; the glyphs are 6 rows tall to stay
+  ~0.7 wide-to-tall).  Its four side faces have zero area and its back is transparent; it sits 0.05 in front of the
+  gold backing.  The generated createBodyLayer() reproduces it exactly (texOffs + addBox + CubeDeformation).
+* UV: packed by face masks with a 1-texel extruded gutter (ChoriModel.pack / paint); no texel is shared.
+"""
