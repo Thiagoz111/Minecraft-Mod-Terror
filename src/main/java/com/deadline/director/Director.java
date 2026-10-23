@@ -54,6 +54,7 @@ public final class Director {
 						m = r.markerAt(pos.relative(hit.getDirection()));  // a prop hanging on the wall that was clicked through
 					}
 					if (m != null && r.def.doors.containsKey(m) && r.locked(m)) {
+						r.post("use:" + m);  // knocking on a locked door is still something the script can answer
 						world.playSound(null, pos, net.minecraft.sounds.SoundEvents.CHEST_LOCKED, net.minecraft.sounds.SoundSource.BLOCKS, 1.0F, 0.8F);
 						sp.displayClientMessage(net.minecraft.network.chat.Component.translatable("deadline.door.locked"), true);
 						return InteractionResult.FAIL;

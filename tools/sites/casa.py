@@ -32,6 +32,7 @@ Nona's altar candles and ONE light upstairs (the dead grandfather's room).
 import sys as _sys, os as _os
 _sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), '..'))
 from workdir import WORK  # noqa: E402
+import glob
 import json
 import math
 import os
@@ -83,12 +84,14 @@ FAMILY = {'living': 'beige', 'hall': 'beige', 'escritorio': 'beige', 'costurero'
           'huespedes': 'beige'}
 
 # ----------------------------------------------------------------------------------------- kit lookup + overwrite guard
-_PREVIEW = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'blocks', 'out', 'preview_all.json')
-try:
-    KIND = {b['key'][5:]: b['kind'] for kit in ('casa_estructura', 'casa_muebles')
-            for b in json.load(open(_PREVIEW))['kits'][kit]}
-except (OSError, ValueError, KeyError):
-    KIND = {}
+_PREVIEW = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'blocks', 'out')
+KIND = {}
+for _p in sorted(glob.glob(os.path.join(_PREVIEW, 'preview_*.json')), key=os.path.getmtime):
+    try:   # preview_all.json (build_blocks.py --all) or preview_casa.json (build_blocks.py casa), newest wins
+        _kits = json.load(open(_p))['kits']
+        KIND.update({b['key'][5:]: b['kind'] for kit in ('casa_estructura', 'casa_muebles') for b in _kits.get(kit, [])})
+    except (OSError, ValueError, KeyError):
+        pass
 CLASHES = []
 
 

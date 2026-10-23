@@ -48,6 +48,8 @@ public class DeadLine implements ModInitializer {
 		com.deadline.caseload.OverworldCase.register();
 
 		CommandRegistrationCallback.EVENT.register(DeadLineCommands::register);
+		// /deadline horror status|event|act|tension|pause (the horror director's debug tools)
+		CommandRegistrationCallback.EVENT.register((dispatcher, ctx, env) -> com.deadline.horror.HorrorCommands.register(dispatcher));
 		SmokeTest.register();
 		com.deadline.director.Director.register();
 		// scripted actors (the nun, chalk text...) go away before the final save, so they are never saved as orphans
