@@ -39,8 +39,18 @@ public final class SmokeTest {
 			return 1;
 		}
 		long t0 = System.nanoTime();
-		BlockPos origin = CaseSites.origin(950);
-		int placed = com.deadline.site.SitePlacer.placeNow(level, origin, def);
+		BlockPos origin;
+		int placed;
+		if (type.overworld()) {
+			// the real overworld: find a plain 150-400 blocks from the world origin, level the pad, place the site
+			origin = com.deadline.caseload.OverworldSite.findOrigin(level, BlockPos.ZERO, def, level.getRandom());
+			placed = com.deadline.caseload.OverworldSite.prepareNow(level, type, origin, def);
+			DeadLine.LOGGER.info("DEADLINE-SMOKE {} overworld origin {} biome {}", type.key(), origin,
+					level.getBiome(origin).unwrapKey().map(k -> k.identifier().toString()).orElse("?"));
+		} else {
+			origin = CaseSites.origin(950);
+			placed = com.deadline.site.SitePlacer.placeNow(level, origin, def);
+		}
 		com.deadline.director.Run run = com.deadline.director.Director.create(type, 950, level, origin, def);
 		for (com.deadline.director.Chapter c : run.compiled.chapters()) {
 			if (!def.points.containsKey(c.checkpoint)) {

@@ -15,7 +15,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 
-/** The DEAD LINE phone. Right-click to open it; it rings (and its screen glows) while calls are pending. */
+/** The DEAD LINE phone. Right-click to open it; its screen glows while there are unread text messages. */
 public class PhoneItem extends Item {
 	public PhoneItem(Properties props) {
 		super(props);
@@ -33,7 +33,7 @@ public class PhoneItem extends Item {
 	@Override
 	public void inventoryTick(ItemStack stack, ServerLevel level, Entity entity, EquipmentSlot slot) {
 		if (entity instanceof ServerPlayer p && p.tickCount % 10 == 0) {
-			ItemUtil.setFlags(stack, !ModAttachments.get(p).requests.isEmpty());
+			ItemUtil.setFlags(stack, com.deadline.phone.PhoneMessages.unread(ModAttachments.get(p)) > 0);
 		}
 	}
 }

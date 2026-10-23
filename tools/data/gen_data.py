@@ -29,7 +29,7 @@ def write(path, obj):
 # ------------------------------------------------------------------ dimensions
 CASE_ENV = {
     # key: fog, water, water_fog, particles, sky_light, fog_end, mood_delay
-    'casa': ('#120f16', '#4a0b0e', '#1a0608', 'minecraft:white_ash', 0.004, 2.0, 40.0),
+    # (no 'casa': the Casa Morales happens in the player's real overworld, docs/design/casa_terror.md 6.10)
     'colegio': ('#0a0b12', '#141a2a', '#05070d', 'minecraft:white_ash', 0.005, 1.5, 36.0),
 }
 

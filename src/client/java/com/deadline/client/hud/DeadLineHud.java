@@ -17,7 +17,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 
-/** In-game overlays: sanity ECG, objective, incoming calls, VHS camera, jumpscares and screen effects. */
+/** In-game overlays: sanity ECG, objective, incoming text messages, VHS camera, jumpscares and screen effects. */
 public final class DeadLineHud {
 	private DeadLineHud() {
 	}
@@ -25,7 +25,6 @@ public final class DeadLineHud {
 	private static final Identifier VIGNETTE = DeadLine.id("textures/gui/overlay/vignette.png");
 	private static final Identifier STATIC = DeadLine.id("textures/gui/overlay/static.png");
 	private static final Identifier FIGURE = DeadLine.id("textures/gui/overlay/shadow_figure.png");
-	private static final Identifier AVATARS = DeadLine.id("textures/gui/phone/avatars.png");
 	private static final Identifier APPS = DeadLine.id("textures/gui/phone/apps.png");
 
 	public static Identifier jumpscareTexture(String key) {
@@ -102,7 +101,7 @@ public final class DeadLineHud {
 				renderObjective(g, font, w);
 			}
 			renderItemInfo(g, font, pl, w, h);
-			renderCall(g, font, w, pt);
+			renderMessageToast(g, font, w, pt);
 			renderTitle(g, font, w, h, pt);
 			renderCaseEnd(g, font, w, h);
 			StoryHud.render(g, font, w, h, pt);
@@ -237,36 +236,42 @@ public final class DeadLineHud {
 		}
 	}
 
-	// ------------------------------------------------------------------ incoming call
-	private static void renderCall(GuiGraphics g, Font font, int w, float pt) {
-		if (ClientState.callTicks <= 0) {
+	// ------------------------------------------------------------------ incoming text message
+	/** Top right banner when a text arrives (even with the phone closed): contact, first line, how to open the phone. */
+	private static void renderMessageToast(GuiGraphics g, Font font, int w, float pt) {
+		com.deadline.phone.PhoneMsg m = com.deadline.client.phone.ClientMessages.toastMsg;
+		int ticks = com.deadline.client.phone.ClientMessages.toastTicks;
+		if (ticks <= 0 || m == null || Minecraft.getInstance().screen instanceof com.deadline.client.screen.PhoneScreen) {
 			return;
 		}
-		int pw = 168;
-		int ph = 44;
-		int life = 20 * 20 - ClientState.callTicks;
-		float slide = Mth.clamp((life + pt) / 8F, 0F, 1F);
-		int x = w - (int) ((pw + 6) * (1F - (1F - slide) * (1F - slide)));
+		int pw = 172;
+		int ph = 42;
+		float life = com.deadline.client.phone.ClientMessages.TOAST_LEN - ticks + pt;
+		float in = Mth.clamp(life / 6F, 0F, 1F);
+		float out = Mth.clamp((ticks - pt) / 10F, 0F, 1F);
+		float k = Math.min(1F - (1F - in) * (1F - in), out);
+		int x = w - (int) ((pw + 6) * k);
 		int y = 6;
-		// vibration
-		if ((ClientState.ticks / 6) % 2 == 0) {
+		// the buzz: a short shiver while it lands
+		if (life < 14F) {
 			x += (int) (Math.sin((ClientState.ticks + pt) * 3.1) * 1.5);
 		}
-		g.fill(x, y, x + pw, y + ph, 0xE0101014);
-		g.fill(x, y, x + pw, y + 1, 0xFF2BD96B);
-		g.renderOutline(x, y, pw, ph, 0x55FFFFFF);
-		int row = ClientState.caseRow(ClientState.callCase);
-		g.blit(RenderPipelines.GUI_TEXTURED, AVATARS, x + 6, y + 6, ClientState.callCaller * 32F, row * 32F, 32, 32, 160, 160);
-		boolean on = (ClientState.ticks / 8) % 2 == 0;
-		g.drawString(font, Component.translatable("deadline.hud.call"), x + 44, y + 6, on ? 0xFF2BD96B : 0xFF1A8040, false);
-		Component name = Component.translatable("deadline.case." + ClientState.callCase + ".caller." + ClientState.callCaller);
-		g.drawString(font, font.plainSubstrByWidth(name.getString(), pw - 50), x + 44, y + 18, 0xFFFFFFFF, false);
+		g.fill(x, y, x + pw, y + ph, 0xE60B141A);
+		g.fill(x, y, x + pw, y + 1, 0xFF00A884);
+		g.renderOutline(x, y, pw, ph, 0x40FFFFFF);
+		g.fill(x + 6, y + 6, x + 22, y + 22, 0xFF120406);
+		g.blit(RenderPipelines.GUI_TEXTURED, APPS, x + 6, y + 6, 0F, 0F, 16, 16, 32, 32, 128, 32);
+		String thread = com.deadline.client.phone.ClientMessages.toastThread;
+		String name = com.deadline.client.phone.ClientMessages.name(thread).getString();
+		g.drawString(font, font.plainSubstrByWidth(name, pw - 34), x + 28, y + 5, 0xFFE9EDEF, false);
+		String first = com.deadline.client.phone.ClientMessages.preview(m).getString();
+		g.drawString(font, font.plainSubstrByWidth(first, pw - 34), x + 28, y + 17, 0xFFB8C2C8, false);
 		Component hint = Component.translatable("deadline.hud.open_phone", DeadLineKeys.PHONE.getTranslatedKeyMessage());
-		g.drawString(font, hint, x + 44, y + 30, 0xFF9A9AA6, false);
-		// little ringing phone glyph
-		int ix = x + pw - 18;
-		int iy = y + 6;
-		g.blit(RenderPipelines.GUI_TEXTURED, APPS, ix, iy, 0F, 0F, 12, 12, 32, 32, 128, 32);
+		g.pose().pushMatrix();
+		g.pose().translate(x + 28, y + 30);
+		g.pose().scale(0.75F, 0.75F);
+		g.drawString(font, hint, 0, 0, 0xFF6F7C84, false);
+		g.pose().popMatrix();
 	}
 
 	// ------------------------------------------------------------------ titles

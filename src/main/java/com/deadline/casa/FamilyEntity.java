@@ -1,6 +1,5 @@
 package com.deadline.casa;
 
-import com.deadline.director.Run;
 import com.deadline.entity.HauntEntity;
 import com.deadline.registry.ModSounds;
 import net.minecraft.core.BlockPos;
@@ -42,8 +41,7 @@ import net.minecraft.world.phys.Vec3;
  *   <li>While standing, the head follows the nearest hunter (or {@link #watch(Entity)}); the body keeps the yaw the
  *   script gave it ({@link #face(Vec3)}, or the yaw set by {@code Props.spawn / place}): vanilla's body control is
  *   overridden on both sides, so a rocker, a grill or a wardrobe door posed against the body stays put.</li>
- *   <li>{@link #say(Run, String)} plays a voice line at the mouth and moves the jaw for its length
- *   ({@link #talk(int)}).</li>
+ *   <li>{@link #talk(int)} moves the jaw for a while (nobody is heard: there are no voices, only the mouth moving).</li>
  *   <li>{@link #shove(Vec3)}: a scripted physical shove (vanilla {@code push} / knockback are left alone).</li>
  * </ul>
  * <p><b>P6 integration notes</b> (not fixable inside P1's files):
@@ -217,13 +215,6 @@ public class FamilyEntity extends HauntEntity {
 
 	public boolean isTalking() {
 		return this.entityData.get(TALK_UNTIL) - (int) this.level().getGameTime() > 0;
-	}
-
-	/** Plays a voice line (Run.say) from this actor's mouth with its subtitle, and talks for its length. */
-	public int say(Run r, String lineId) {
-		int ticks = r.say(lineId, this.getEyePosition());
-		this.talk(ticks);
-		return ticks;
 	}
 
 	// ------------------------------------------------------------------ facing / looking

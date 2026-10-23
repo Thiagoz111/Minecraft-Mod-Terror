@@ -411,7 +411,6 @@ public class ColegioScript extends CaseScript {
 				run(e -> {
 					int n = e.run.inc("mate");
 					for (ServerPlayer p : e.run.hunters()) {
-						Fx.subtitle(p, "deadline.speaker.tu", "deadline.line.colegio.mate.lavado" + (n == 1 ? 1 : 2), 70);
 						if (n == 2) {
 							SanityManager.add(p, 5F);
 						}
@@ -423,7 +422,7 @@ public class ColegioScript extends CaseScript {
 				sound(ModSounds.CONFESIONARIO_REJILLA, "direccion_legajo", 1.1F),
 				run(e -> {
 					for (ServerPlayer p : e.run.hunters()) {
-						Fx.subtitle(p, "deadline.speaker.cartel", "deadline.colegio.caption.archivero", 90);
+						Fx.subtitle(p, "", "deadline.colegio.caption.archivero", 90);
 					}
 				}));
 

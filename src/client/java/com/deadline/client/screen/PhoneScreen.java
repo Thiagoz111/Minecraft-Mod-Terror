@@ -2,12 +2,13 @@ package com.deadline.client.screen;
 
 import com.deadline.DeadLine;
 import com.deadline.caseload.CaseManager;
-import com.deadline.caseload.CaseType;
 import com.deadline.client.ClientState;
 import com.deadline.client.hud.DeadLineHud;
+import com.deadline.client.phone.ClientMessages;
 import com.deadline.net.PhoneActionPayload;
 import com.deadline.net.PhoneDataPayload;
-import com.deadline.registry.ModSounds;
+import com.deadline.phone.PhoneMessagesPayload;
+import com.deadline.phone.PhoneMsg;
 import java.util.ArrayList;
 import java.util.List;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
@@ -26,7 +27,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemStack;
 import org.lwjgl.glfw.GLFW;
 
-/** The hunter's cursed smartphone: calls from victims, the active case, a shop and the bestiary. */
+/** The hunter's cursed smartphone: text messages (cases arrive as threads), the active case, a shop and the bestiary. */
 public class PhoneScreen extends Screen {
 	private static final Identifier FRAME = DeadLine.id("textures/gui/phone/frame.png");
 	private static final Identifier WALLPAPER = DeadLine.id("textures/gui/phone/wallpaper.png");
@@ -45,7 +46,7 @@ public class PhoneScreen extends Screen {
 	private static final String[] BEASTS = {"monja", "poseida", "sombra", "muneca", "anima"};
 
 	private enum App {
-		HOME, CALLS, CALL, CASE, SHOP, BESTIARY, BEAST
+		HOME, MESSAGES, THREAD, CASE, SHOP, BESTIARY, BEAST
 	}
 
 	private record Hit(int x, int y, int w, int h, Runnable action) {
@@ -55,6 +56,9 @@ public class PhoneScreen extends Screen {
 	private App app = App.HOME;
 	private int sel;
 	private float scroll;
+	/** The open conversation (App.THREAD) and how far it is scrolled up from the newest message. */
+	private String threadId = "";
+	private float chatScroll;
 	private int age;
 	private boolean confirmAbandon;
 	private float scale = 1F;
@@ -65,23 +69,24 @@ public class PhoneScreen extends Screen {
 		super(Component.translatable("item.deadline.phone"));
 	}
 
-	/** Opens directly on an app (used by the screenshot test). app: home|calls|call|case|shop|bestiary|beast. */
+	/** Opens directly on an app (used by the screenshot test). app: home|messages|thread|case|shop|bestiary|beast. */
 	public static PhoneScreen at(String app, int sel) {
 		PhoneScreen s = new PhoneScreen();
 		s.app = App.valueOf(app.toUpperCase(java.util.Locale.ROOT));
 		s.sel = sel;
 		s.age = 20;
+		if (s.app == App.THREAD) {
+			PhoneMessagesPayload.View t = ClientMessages.at(sel);
+			s.threadId = t == null ? "" : t.id();
+		}
 		return s;
 	}
 
 	@Override
 	protected void init() {
-		if (age == 0) {
-			PhoneDataPayload d = ClientState.phone;
-			if (ClientState.callTicks > 0 && !d.requests().isEmpty()) {
-				app = App.CALLS;
-			}
-			ClientState.callTicks = 0;
+		if (age == 0 && ClientMessages.toastTicks > 0 && ClientMessages.find(ClientMessages.toastThread) != null) {
+			// a message just came in: the phone opens on it
+			openThread(ClientMessages.toastThread);
 		}
 	}
 
@@ -119,8 +124,8 @@ public class PhoneScreen extends Screen {
 		PhoneDataPayload d = ClientState.phone;
 		switch (app) {
 			case HOME -> drawHome(g, d);
-			case CALLS -> drawCalls(g, d);
-			case CALL -> drawCall(g, d);
+			case MESSAGES -> drawMessages(g);
+			case THREAD -> drawThread(g, pt);
 			case CASE -> drawCase(g, d);
 			case SHOP -> drawShop(g, d);
 			case BESTIARY -> drawBestiary(g, d);
@@ -181,11 +186,6 @@ public class PhoneScreen extends Screen {
 		return true;
 	}
 
-	private void avatar(GuiGraphics g, String caseKey, int caller, int x, int y, int size) {
-		int row = ClientState.caseRow(caseKey);
-		g.blit(RenderPipelines.GUI_TEXTURED, AVATARS, x, y, caller * 32F, row * 32F, size, size, 32, 32, 160, 160);
-	}
-
 	private int wrap(GuiGraphics g, Component text, int x, int y, int w, int color) {
 		List<FormattedCharSequence> lines = font.split(text, w);
 		for (FormattedCharSequence l : lines) {
@@ -195,14 +195,11 @@ public class PhoneScreen extends Screen {
 		return y;
 	}
 
-	private static String ago(int secs) {
-		if (secs < 60) {
-			return secs + "s";
+	private void wrapCentered(GuiGraphics g, Component text, int y, int color) {
+		for (FormattedCharSequence l : font.split(text, SW - 24)) {
+			g.drawString(font, l, SX + SW / 2 - font.width(l) / 2, y, color, false);
+			y += 10;
 		}
-		if (secs < 3600) {
-			return secs / 60 + "m";
-		}
-		return secs / 3600 + "h";
 	}
 
 	private static void send(int action, int arg) {
@@ -248,18 +245,19 @@ public class PhoneScreen extends Screen {
 		g.fill(SX + SW - 66, wy + 30, SX + SW - 66 + (int) (50 * d.sanity() / 100F), wy + 33, sc);
 
 		// apps
-		Component[] names = {Component.translatable("deadline.phone.calls"), Component.translatable("deadline.phone.case"),
+		Component[] names = {Component.translatable("deadline.phone.messages"), Component.translatable("deadline.phone.case"),
 				Component.translatable("deadline.phone.shop"), Component.translatable("deadline.phone.bestiary")};
-		App[] targets = {App.CALLS, App.CASE, App.SHOP, App.BESTIARY};
+		App[] targets = {App.MESSAGES, App.CASE, App.SHOP, App.BESTIARY};
 		for (int i = 0; i < 4; i++) {
 			int cx = SX + 44 + (i % 2) * 88;
 			int cy = SY + 140 + (i / 2) * 62;
 			g.fill(cx - 19, cy - 3, cx + 19, cy + 35, 0x55000000);
 			g.blit(RenderPipelines.GUI_TEXTURED, APPS, cx - 16, cy, i * 32F, 0F, 32, 32, 128, 32);
 			g.drawCenteredString(font, names[i], cx, cy + 38, 0xFFFFFFFF);
-			if (i == 0 && !d.requests().isEmpty()) {
+			int unread = ClientMessages.unreadTotal();
+			if (i == 0 && unread > 0) {
 				g.fill(cx + 10, cy - 5, cx + 21, cy + 6, 0xFFE01B24);
-				g.drawCenteredString(font, String.valueOf(d.requests().size()), cx + 16, cy - 3, 0xFFFFFFFF);
+				g.drawCenteredString(font, String.valueOf(Math.min(9, unread)), cx + 16, cy - 3, 0xFFFFFFFF);
 			}
 			if (i == 1 && !d.activeCase().isEmpty() && (ClientState.ticks / 10) % 2 == 0) {
 				g.fill(cx + 12, cy - 3, cx + 18, cy + 3, 0xFFFFC23A);
@@ -284,104 +282,293 @@ public class PhoneScreen extends Screen {
 		}
 	}
 
-	// ------------------------------------------------------------------ calls
-	private void drawCalls(GuiGraphics g, PhoneDataPayload d) {
-		g.fill(SX, SY, SX + SW, SY + SH, 0xFF0B0B10);
-		header(g, Component.translatable("deadline.phone.calls"), App.HOME);
-		List<PhoneDataPayload.Request> reqs = d.requests();
-		if (reqs.isEmpty()) {
-			wrapCentered(g, Component.translatable("deadline.phone.no_calls"), SY + SH / 2 - 10, 0xFF6A6A76);
+	// ------------------------------------------------------------------ messages (WhatsApp-like threads)
+	private static final int HY = SY + 12;
+	private static final int BT = HY + 24;
+	private static final int BB = SY + SH - 4;
+	private static final int CHAT_BG = 0xFF0B141A;
+	private static final int CHAT_BAR = 0xFF1F2C34;
+	private static final int BUBBLE = 0xFF1F2C34;
+	private static final int TEXT = 0xFFE9EDEF;
+	private static final int GREY = 0xFF8696A0;
+	private static final int GREEN = 0xFF00A884;
+	private static final int PHOTO_W = 112;
+	private static final int PHOTO_H = 84;
+
+	/** True while this phone shows that conversation (a message landing in it is read at once). */
+	public boolean viewing(String thread) {
+		return app == App.THREAD && thread.equals(threadId);
+	}
+
+	private void openThread(String id) {
+		app = App.THREAD;
+		threadId = id;
+		chatScroll = 0F;
+		ClientMessages.markRead(id);
+	}
+
+	/** Contact picture: the case avatars atlas for the known contacts, an initial on a disc for the rest. */
+	private void contactAvatar(GuiGraphics g, String id, int x, int y, int size) {
+		int[] cell = switch (id) {
+			case "marta" -> new int[] {0, 0};
+			case "ignacio" -> new int[] {1, 0};
+			case "clara" -> new int[] {0, 4};
+			case "desconocido" -> new int[] {3, 4};
+			default -> null;
+		};
+		if (cell != null) {
+			g.blit(RenderPipelines.GUI_TEXTURED, AVATARS, x, y, cell[0] * 32F, cell[1] * 32F, size, size, 32, 32, 160, 160);
 			return;
 		}
-		int y = TOP + 26;
-		for (int i = 0; i < reqs.size() && y + 40 <= SY + SH; i++) {
-			PhoneDataPayload.Request r = reqs.get(i);
-			g.fill(SX + 4, y, SX + SW - 4, y + 38, 0xFF15151C);
-			avatar(g, r.caseKey(), r.caller(), SX + 7, y + 3, 32);
-			Component name = Component.translatable("deadline.case." + r.caseKey() + ".caller." + r.caller());
-			g.drawString(font, font.plainSubstrByWidth(name.getString(), SW - 70), SX + 44, y + 6, 0xFFFFFFFF, false);
-			Component place = Component.translatable("deadline.case." + r.caseKey() + ".place");
-			g.drawString(font, font.plainSubstrByWidth(place.getString(), SW - 56), SX + 44, y + 20, 0xFFE33A3A, false);
-			String a = ago(r.ageSeconds());
-			g.drawString(font, a, SX + SW - 8 - font.width(a), y + 6, 0xFF6A6A76, false);
-			int idx = i;
-			hits.add(new Hit(SX + 4, y, SW - 8, 38, () -> {
-				sel = idx;
-				app = App.CALL;
-				// the caller's voice message, through a bad line
-				Minecraft.getInstance().getSoundManager().play(SimpleSoundInstance.forUI(ModSounds.PHONE_VOICE, 1.0F, 0.9F));
-			}));
-			y += 42;
+		disc(g, x + size / 2, y + size / 2, size / 2, 0xFF6A7175);
+		String n = ClientMessages.name(id).getString();
+		String initial = n.isEmpty() ? "?" : n.substring(0, 1).toUpperCase(java.util.Locale.ROOT);
+		g.drawString(font, initial, x + size / 2 + 1 - font.width(initial) / 2, y + size / 2 - 4, 0xFF0B141A, false);
+	}
+
+	private static void disc(GuiGraphics g, int cx, int cy, int r, int color) {
+		for (int dy = -r; dy <= r; dy++) {
+			int half = (int) Math.round(Math.sqrt(r * r - dy * dy));
+			g.fill(cx - half, cy + dy, cx + half + 1, cy + dy + 1, color);
 		}
 	}
 
-	private void wrapCentered(GuiGraphics g, Component text, int y, int color) {
-		for (FormattedCharSequence l : font.split(text, SW - 24)) {
-			g.drawString(font, l, SX + SW / 2 - font.width(l) / 2, y, color, false);
-			y += 10;
+	private void small(GuiGraphics g, String s, int x, int y, int color) {
+		g.pose().pushMatrix();
+		g.pose().translate(x, y);
+		g.pose().scale(0.75F, 0.75F);
+		g.drawString(font, s, 0, 0, color, false);
+		g.pose().popMatrix();
+	}
+
+	private int smallWidth(String s) {
+		return (int) Math.ceil(font.width(s) * 0.75F);
+	}
+
+	private void drawMessages(GuiGraphics g) {
+		g.fill(SX, SY, SX + SW, SY + SH, CHAT_BG);
+		header(g, Component.translatable("deadline.phone.messages"), App.HOME);
+		List<PhoneMessagesPayload.View> threads = ClientMessages.THREADS;
+		if (threads.isEmpty()) {
+			wrapCentered(g, Component.translatable("deadline.phone.no_messages"), SY + SH / 2 - 10, 0xFF6A6A76);
+			return;
+		}
+		int top = TOP + 24;
+		int bottom = SY + SH - 4;
+		int rowH = 40;
+		float maxScroll = Math.max(0, threads.size() * rowH - (bottom - top));
+		scroll = Mth.clamp(scroll, 0F, maxScroll);
+		for (int i = 0; i < threads.size(); i++) {
+			int y = top + i * rowH - (int) scroll;
+			if (y < top || y + rowH - 2 > bottom) {
+				continue;
+			}
+			PhoneMessagesPayload.View t = threads.get(i);
+			g.fill(SX + 4, y, SX + SW - 4, y + rowH - 2, 0xFF111B21);
+			contactAvatar(g, t.id(), SX + 7, y + 4, 30);
+			PhoneMsg last = t.messages().isEmpty() ? null : t.messages().get(t.messages().size() - 1);
+			String time = last == null ? "" : ClientMessages.clock(last.time());
+			g.drawString(font, time, SX + SW - 8 - font.width(time), y + 6, t.unread() > 0 ? GREEN : GREY, false);
+			String name = ClientMessages.name(t.id()).getString();
+			g.drawString(font, font.plainSubstrByWidth(name, SW - 52 - font.width(time) - 6), SX + 42, y + 6, TEXT, false);
+			boolean typing = ClientMessages.typing(t.id()) > 0;
+			String prev = typing ? Component.translatable("deadline.phone.typing").getString()
+					: last == null ? "" : ClientMessages.preview(last).getString();
+			int prevW = SW - 52 - (t.unread() > 0 ? 18 : 0);
+			g.drawString(font, font.plainSubstrByWidth(prev, prevW), SX + 42, y + 21, typing ? GREEN : GREY, false);
+			if (t.unread() > 0) {
+				String n = t.unread() > 99 ? "99" : String.valueOf(t.unread());
+				int bx = SX + SW - 15;
+				disc(g, bx, y + 24, 6, GREEN);
+				g.drawString(font, n, bx + 1 - font.width(n) / 2, y + 20, 0xFF0B141A, false);
+			}
+			String id = t.id();
+			hits.add(new Hit(SX + 4, y, SW - 8, rowH - 2, () -> openThread(id)));
+		}
+		if (maxScroll > 0) {
+			int track = bottom - top;
+			int knob = Math.max(16, (int) (track * track / (float) (track + maxScroll)));
+			int ky = top + (int) ((track - knob) * (scroll / maxScroll));
+			g.fill(SX + SW - 3, ky, SX + SW - 1, ky + knob, 0x88FFFFFF);
 		}
 	}
 
-	private void drawCall(GuiGraphics g, PhoneDataPayload d) {
-		g.fill(SX, SY, SX + SW, SY + SH, 0xFF0B0B10);
-		header(g, Component.translatable("deadline.phone.calls"), App.CALLS);
-		if (sel < 0 || sel >= d.requests().size()) {
-			app = App.CALLS;
-			return;
-		}
-		PhoneDataPayload.Request r = d.requests().get(sel);
-		CaseType type = ClientState.caseType(r.caseKey());
-		int cx = SX + SW / 2;
-		int y = TOP + 28;
-		boolean unknown = r.caller() == type.callers() - 1 && !"casa".equals(r.caseKey());
-		int ring = unknown ? 0xFFB3121B : 0xFF2BD96B;
-		g.fill(cx - 35, y - 3, cx + 35, y + 67, ring);
-		avatar(g, r.caseKey(), r.caller(), cx - 32, y, 64);
-		y += 72;
-		Component name = Component.translatable("deadline.case." + r.caseKey() + ".caller." + r.caller());
-		g.drawCenteredString(font, name, cx, y, 0xFFFFFFFF);
-		y += 11;
-		g.drawCenteredString(font, Component.translatable("deadline.case." + r.caseKey() + ".place"), cx, y, 0xFFE33A3A);
-		y += 15;
-		Component msg = Component.translatable("deadline.case." + r.caseKey() + ".msg." + r.caller());
-		List<FormattedCharSequence> lines = font.split(msg, SW - 28);
-		int bh = lines.size() * 10 + 8;
-		g.fill(SX + 8, y, SX + SW - 8, y + bh, 0xFF1C1C26);
-		g.fill(SX + 8, y, SX + 10, y + bh, ring);
-		int ly = y + 5;
-		for (FormattedCharSequence l : lines) {
-			g.drawString(font, l, SX + 14, ly, 0xFFE8E2D8, false);
-			ly += 10;
-		}
-		y += bh + 8;
-		g.drawString(font, Component.translatable("deadline.phone.difficulty"), SX + 10, y, 0xFF9A9AA6, false);
-		StringBuilder skulls = new StringBuilder();
-		for (int i = 0; i < 5; i++) {
-			skulls.append(i < type.difficulty() ? "☠" : "·");
-		}
-		g.drawString(font, skulls.toString(), SX + SW - 10 - font.width(skulls.toString()), y, 0xFFE33A3A, false);
-		y += 12;
-		g.drawString(font, Component.translatable("deadline.phone.reward"), SX + 10, y, 0xFF9A9AA6, false);
-		String pay = "$" + type.reward();
-		g.drawString(font, pay, SX + SW - 10 - font.width(pay), y, 0xFF6BFF8E, false);
+	/** One laid-out line of a conversation: a day chip (msg == null) or a bubble. */
+	private record Row(int index, PhoneMsg msg, String chip, List<FormattedCharSequence> lines, boolean head, int w, int h) {
+	}
 
-		int by = SY + SH - 30;
-		if (!d.activeCase().isEmpty()) {
-			wrapCentered(g, Component.translatable("deadline.phone.busy"), by - 14, 0xFFFFC23A);
-			button(g, SX + 10, by, SW - 20, 22, Component.translatable("deadline.phone.decline"), 0xFFA01E26, () -> {
-				send(PhoneActionPayload.DECLINE, r == null ? 0 : sel);
-				app = App.CALLS;
-			});
+	private Row layout(int index, PhoneMsg m, boolean head) {
+		int maxW = SW - 44;
+		String time = ClientMessages.clock(m.time());
+		int timeW = smallWidth(time);
+		return switch (m.kind()) {
+			case PhoneMsg.PHOTO -> new Row(index, m, null, List.of(), head, PHOTO_W + 6, PHOTO_H + 6 + 9);
+			case PhoneMsg.CASE -> new Row(index, m, null, List.of(), head, SW - 40, 94);
+			default -> {
+				List<FormattedCharSequence> lines = font.split(Component.translatable(m.value()), maxW);
+				int textW = 0;
+				for (FormattedCharSequence l : lines) {
+					textW = Math.max(textW, font.width(l));
+				}
+				int last = lines.isEmpty() ? 0 : font.width(lines.get(lines.size() - 1));
+				boolean inline = last + 6 + timeW <= maxW;
+				int w = Math.max(textW, inline ? last + 6 + timeW : timeW) + 8;
+				int h = 6 + lines.size() * 10 + (inline ? 0 : 8);
+				yield new Row(index, m, null, lines, head, w, h);
+			}
+		};
+	}
+
+	private void drawThread(GuiGraphics g, float pt) {
+		PhoneMessagesPayload.View t = ClientMessages.find(threadId);
+		if (t == null) {
+			app = App.MESSAGES;
 			return;
 		}
-		int idx = sel;
-		button(g, SX + 10, by, 74, 22, Component.translatable("deadline.phone.decline"), 0xFFA01E26, () -> {
-			send(PhoneActionPayload.DECLINE, idx);
-			app = App.CALLS;
-		});
-		button(g, SX + SW - 84, by, 74, 22, Component.translatable("deadline.phone.accept"), 0xFF1FAF5A, () -> {
-			send(PhoneActionPayload.ACCEPT, idx);
-			onClose();
+		g.fill(SX, SY, SX + SW, SY + SH, CHAT_BG);
+		// faint wallpaper dots
+		for (int y = BT + 6; y < BB; y += 16) {
+			for (int x = SX + 6 + ((y / 16) % 2) * 8; x < SX + SW; x += 16) {
+				g.fill(x, y, x + 1, y + 1, 0x14FFFFFF);
+			}
+		}
+		List<Row> rows = new ArrayList<>();
+		int total = 6;
+		long lastDay = Long.MIN_VALUE;
+		for (int i = 0; i < t.messages().size(); i++) {
+			PhoneMsg m = t.messages().get(i);
+			long day = ClientMessages.day(m.time());
+			boolean head = day != lastDay;
+			if (day != lastDay) {
+				lastDay = day;
+				Row chip = new Row(-1, null, Component.translatable("deadline.phone.day", day).getString(), List.of(), false, 0, 18);
+				rows.add(chip);
+				total += chip.h();
+			}
+			Row r = layout(i, m, head || i == 0);
+			rows.add(r);
+			total += r.h() + 3;
+		}
+		boolean typing = ClientMessages.typing(t.id()) > 0;
+		if (typing) {
+			total += 20;
+		}
+		int view = BB - BT;
+		float max = Math.max(0, total - view);
+		chatScroll = Mth.clamp(chatScroll, 0F, max);
+		int y = BB - total + (int) chatScroll;
+		for (Row r : rows) {
+			if (r.msg() == null) {
+				if (y >= BT && y + r.h() <= BB) {
+					int cw = font.width(r.chip()) + 10;
+					int cx = SX + SW / 2;
+					g.fill(cx - cw / 2, y + 4, cx + cw / 2, y + 15, 0xFF182229);
+					g.drawString(font, r.chip(), cx - font.width(r.chip()) / 2, y + 6, GREY, false);
+				}
+				y += r.h();
+				continue;
+			}
+			y += 3;
+			if (y >= BT && y + r.h() <= BB) {
+				drawBubble(g, r, y);
+			}
+			y += r.h();
+		}
+		if (typing && y + 4 >= BT && y + 18 <= BB) {
+			y += 4;
+			int x = SX + 8;
+			g.fill(x, y, x + 30, y + 14, BUBBLE);
+			for (int i = 0; i < 3; i++) {
+				float bob = (float) Math.sin((ClientState.ticks + pt) * 0.5F - i * 0.9F);
+				int dy = bob > 0.3F ? -1 : 0;
+				g.fill(x + 8 + i * 6, y + 6 + dy, x + 11 + i * 6, y + 9 + dy, bob > 0.3F ? 0xFFD0D7DB : GREY);
+			}
+		}
+		// header over the conversation
+		g.fill(SX, HY, SX + SW, HY + 24, CHAT_BAR);
+		g.drawString(font, "‹", SX + 5, HY + 8, TEXT, false);
+		contactAvatar(g, t.id(), SX + 14, HY + 4, 16);
+		String name = ClientMessages.name(t.id()).getString();
+		g.drawString(font, font.plainSubstrByWidth(name, SW - 40), SX + 35, HY + (typing ? 3 : 8), TEXT, false);
+		if (typing) {
+			small(g, Component.translatable("deadline.phone.typing").getString(), SX + 35, HY + 14, GREEN);
+		}
+		hits.add(new Hit(SX, HY, 60, 24, () -> {
+			app = App.MESSAGES;
+			scroll = 0F;
+		}));
+		g.fill(SX, BB, SX + SW, SY + SH, CHAT_BG);
+		if (max > 0) {
+			int track = view;
+			int knob = Math.max(16, (int) (track * track / (float) (track + max)));
+			int ky = BT + (int) ((track - knob) * (1F - chatScroll / max));
+			g.fill(SX + SW - 3, ky, SX + SW - 1, ky + knob, 0x55FFFFFF);
+		}
+	}
+
+	private void drawBubble(GuiGraphics g, Row r, int y) {
+		PhoneMsg m = r.msg();
+		int x = SX + 8;
+		g.fill(x, y, x + r.w(), y + r.h(), BUBBLE);
+		if (r.head()) {
+			// the little tail on the first bubble of the day
+			g.fill(x - 4, y, x, y + 1, BUBBLE);
+			g.fill(x - 2, y + 1, x, y + 3, BUBBLE);
+		}
+		String time = ClientMessages.clock(m.time());
+		int tw = smallWidth(time);
+		int ty = y + 3;
+		switch (m.kind()) {
+			case PhoneMsg.PHOTO -> {
+				g.fill(x + 3, ty, x + 3 + PHOTO_W, ty + PHOTO_H, 0xFF000000);
+				g.blit(RenderPipelines.GUI_TEXTURED, DeadLine.id("textures/gui/photo/" + m.value() + ".png"), x + 3, ty, 0F, 0F,
+						PHOTO_W, PHOTO_H, 128, 96, 128, 96);
+			}
+			case PhoneMsg.CASE -> drawLocation(g, r, x, ty);
+			default -> {
+				for (FormattedCharSequence l : r.lines()) {
+					g.drawString(font, l, x + 4, ty, TEXT, false);
+					ty += 10;
+				}
+			}
+		}
+		small(g, time, x + r.w() - 4 - tw, y + r.h() - 8, GREY);
+	}
+
+	/** A shared location: a dark map tile with a red pin, the place, and the "Aceptar caso" button. */
+	private void drawLocation(GuiGraphics g, Row r, int x, int y) {
+		PhoneMsg m = r.msg();
+		int mx = x + 3;
+		int mw = r.w() - 6;
+		int mh = 40;
+		g.fill(mx, y, mx + mw, y + mh, 0xFF15201B);
+		for (int gx = mx + 7; gx < mx + mw; gx += 14) {
+			g.fill(gx, y, gx + 1, y + mh, 0x18FFFFFF);
+		}
+		for (int gy = y + 6; gy < y + mh; gy += 12) {
+			g.fill(mx, gy, mx + mw, gy + 1, 0x18FFFFFF);
+		}
+		g.fill(mx, y + 25, mx + mw, y + 28, 0x30FFFFFF);
+		g.fill(mx + mw / 3, y, mx + mw / 3 + 3, y + mh, 0x30FFFFFF);
+		int px = mx + mw / 2;
+		int py = y + 16;
+		disc(g, px, py, 5, 0xFFE0242C);
+		disc(g, px, py, 2, 0xFF5A0A0E);
+		g.fill(px - 1, py + 4, px + 2, py + 11, 0xFFE0242C);
+		int ty = y + mh + 4;
+		Component place = Component.translatable("deadline.case." + m.value() + ".place");
+		g.drawString(font, font.plainSubstrByWidth(place.getString(), mw), mx, ty, TEXT, false);
+		small(g, Component.translatable("deadline.phone.location").getString(), mx, ty + 11, GREY);
+		int by = ty + 20;
+		boolean accepted = m.is(PhoneMsg.ACCEPTED);
+		Component label = Component.translatable(accepted ? "deadline.phone.case_accepted" : "deadline.phone.accept_case");
+		String thread = threadId;
+		int index = r.index();
+		button(g, mx, by, mw, 16, label, accepted ? 0xFF2A3A34 : 0xFF1F8A55, () -> {
+			if (!accepted) {
+				ClientMessages.accept(thread, index);
+				onClose();
+			}
 		});
 	}
 
@@ -395,11 +582,11 @@ public class PhoneScreen extends Screen {
 		}
 		String key = d.activeCase();
 		int y = TOP + 28;
-		avatar(g, key, d.activeCaller(), SX + 8, y, 32);
+		String contact = "colegio".equals(key) ? "clara" : "marta";
+		contactAvatar(g, contact, SX + 8, y, 32);
 		Component place = Component.translatable("deadline.case." + key + ".place");
 		wrap(g, place, SX + 46, y + 2, SW - 54, 0xFFE33A3A);
-		g.drawString(font, font.plainSubstrByWidth(Component.translatable("deadline.case." + key + ".caller." + d.activeCaller()).getString(), SW - 54),
-				SX + 46, y + 22, 0xFF9A9AA6, false);
+		g.drawString(font, font.plainSubstrByWidth(ClientMessages.name(contact).getString(), SW - 54), SX + 46, y + 22, 0xFF9A9AA6, false);
 		y += 42;
 
 		// progress (a scripted case shows its chapter and the HUD checklist instead of the four legacy stages)
@@ -577,7 +764,11 @@ public class PhoneScreen extends Screen {
 
 	@Override
 	public boolean mouseScrolled(double mx, double my, double sx, double sy) {
-		scroll -= (float) sy * 14F;
+		if (app == App.THREAD) {
+			chatScroll += (float) sy * 16F;
+		} else {
+			scroll -= (float) sy * 14F;
+		}
 		return true;
 	}
 
@@ -585,7 +776,7 @@ public class PhoneScreen extends Screen {
 	public boolean keyPressed(KeyEvent e) {
 		if (e.key() == GLFW.GLFW_KEY_ESCAPE && app != App.HOME) {
 			app = switch (app) {
-				case CALL -> App.CALLS;
+				case THREAD -> App.MESSAGES;
 				case BEAST -> App.BESTIARY;
 				default -> App.HOME;
 			};

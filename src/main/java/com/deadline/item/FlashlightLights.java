@@ -92,13 +92,45 @@ public final class FlashlightLights {
 	}
 
 	public static void clear(ServerPlayer p) {
-		Placed old = LIGHTS.remove(p.getUUID());
+		clear(p.level().getServer(), p.getUUID());
+	}
+
+	/** Removes the light block a key (a player's flashlight, a car headlight beam) placed, if it is still there. */
+	public static void clear(MinecraftServer server, UUID key) {
+		Placed old = LIGHTS.remove(key);
 		if (old == null) {
 			return;
 		}
-		ServerLevel level = p.level().getServer().getLevel(old.dim());
-		if (level != null && level.getBlockState(old.pos()).is(Blocks.LIGHT)) {
+		ServerLevel level = server.getLevel(old.dim());
+		if (level != null && level.isLoaded(old.pos()) && level.getBlockState(old.pos()).is(Blocks.LIGHT)) {
 			level.setBlock(old.pos(), Blocks.AIR.defaultBlockState(), 3);
+		}
+	}
+
+	/**
+	 * Any other beam of light (the car's headlights): moves the light block of `key` to where a ray from `from` along
+	 * `dir` hits within `range` (in the air just before the hit). Call every tick or two; {@link #clear(MinecraftServer,
+	 * UUID)} when it goes dark.
+	 */
+	public static void beam(UUID key, ServerLevel level, Vec3 from, Vec3 dir, double range, int lightLevel, net.minecraft.world.entity.Entity source) {
+		Vec3 end = from.add(dir.normalize().scale(range));
+		BlockHitResult hit = level.clip(new ClipContext(from, end, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, source));
+		BlockPos target = hit.getType() == HitResult.Type.MISS ? BlockPos.containing(end) : hit.getBlockPos().relative(hit.getDirection());
+		Placed old = LIGHTS.get(key);
+		if (old != null && old.pos().equals(target) && old.dim() == level.dimension()) {
+			return;
+		}
+		clear(level.getServer(), key);
+		for (BlockPos p : new BlockPos[] {target, target.above()}) {  // tall grass or a flower where the beam lands: one up
+			if (!level.isLoaded(p)) {
+				return;
+			}
+			BlockState st = level.getBlockState(p);
+			if (st.isAir() || st.is(Blocks.LIGHT)) {
+				level.setBlock(p, Blocks.LIGHT.defaultBlockState().setValue(LightBlock.LEVEL, Math.max(1, Math.min(15, lightLevel))), 3);
+				LIGHTS.put(key, new Placed(level.dimension(), p));
+				return;
+			}
 		}
 	}
 }

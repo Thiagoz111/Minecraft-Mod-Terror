@@ -1,4 +1,4 @@
-"""GUI textures for DEAD LINE: phone frame, wallpaper, app icons, caller avatars, overlays."""
+"""GUI textures for DEAD LINE: phone frame, wallpaper, app icons (messages, case, shop, bestiary), contact avatars, overlays."""
 import math
 import os
 import sys
@@ -154,10 +154,13 @@ def app_icon(bg, draw):
 
 def icons():
     def calls(s):
-        HANDSET = Material(['#7a0d15', '#b4141f', '#e02a33', '#ff6a63', '#ffc2b8'], spec=0.5)
-        s.capsule(10, 22, 22, 10, 3.0, HANDSET)
-        s.ellipse(9, 23, 4, 4, HANDSET)
-        s.ellipse(23, 9, 4, 4, HANDSET)
+        # the messages app (there are no calls any more): a speech bubble with three dots of "escribiendo..."
+        BUBBLE = Material(['#7a0d15', '#b4141f', '#e02a33', '#ff6a63', '#ffc2b8'], spec=0.5)
+        s.ellipse(16, 14, 10.5, 8, BUBBLE)
+        s.poly([(8, 18), (12, 20), (6, 26)], BUBBLE, bevel=0.5)
+        DOT = Material(['#2a0406', '#3a070a', '#4a0a0e', '#5a0e12', '#6a1216'])
+        for cx in (11.5, 16, 20.5):
+            s.ellipse(cx, 14, 1.6, 1.6, DOT, outline=False)
     def case(s):
         FOLDER = Material(['#5c3d14', '#8a5d22', '#b88a3c', '#d9b062', '#f0d496'], spec=0.2)
         s.rect(6, 9, 26, 25, FOLDER, bevel=1.5)

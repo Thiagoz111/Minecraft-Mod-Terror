@@ -2,8 +2,8 @@
 
 Mod de terror para **Minecraft 1.21.11 (Fabric)**, pensado para grabar videos.
 
-Sos exorcista. Tu teléfono suena de madrugada y del otro lado alguien pide ayuda. Aceptás la llamada, te ponés la sotana
-y el teléfono te lleva al lugar. Dos casos, cada uno con su historia, sus personajes y su edificio hecho a mano:
+Sos exorcista. Tu teléfono vibra de madrugada: alguien te escribe pidiendo ayuda. No llama: ella escucha todo.
+Aceptás el caso, te ponés la sotana y vas al lugar. Dos casos, cada uno con su historia, sus personajes y su edificio hecho a mano:
 
 - **Colegio Santa Inés de la Vigilia** — un internado de monjas cerrado desde 1984. Sor Agonía sigue tomando lista.
   *(jugable de punta a punta)*
@@ -22,7 +22,7 @@ y el teléfono te lleva al lugar. Dos casos, cada uno con su historia, sus perso
 
 ## Cómo se juega
 
-- **G** abre el teléfono (llamadas, casos, tienda, bestiario). **H** activa la cámara VHS para grabar.
+- **G** abre el teléfono (mensajes, casos, tienda, bestiario). **H** activa la cámara VHS para grabar.
 - Arriba a la izquierda tenés el **capítulo** y la lista de **objetivos**; si te trabás, a los tres minutos aparece una
   pista. Si morís, volvés al principio del capítulo.
 - Abajo a la izquierda, la **cordura**. Baja en la oscuridad y cerca de lo que no tiene que estar ahí.
@@ -40,12 +40,11 @@ y el teléfono te lleva al lugar. Dos casos, cada uno con su historia, sus perso
 | `/deadline flag <nombre>` | Marca un paso como hecho (por ejemplo `lista_done` para saltear la lista) |
 | `/deadline voice on\|off` | Usa o ignora tu micrófono en el caso |
 | `/deadline home [jugador]` | Vuelve a casa |
-| `/deadline call <caso> [jugador]` | Hace sonar el teléfono con un caso |
+| `/deadline msg <caso> [jugador]` | Manda ya el hilo de mensajes del caso (casa: Marta, foto y "Aceptar caso") |
 | `/deadline sanity <0-100> [jugador]` | Fija la cordura (10 = modo pesadilla) |
 | `/deadline jumpscare <entidad> [jugador]` | Jumpscare a pantalla completa (`monja`, `poseida`, `sombra`, `muneca`, `anima`) |
 | `/deadline kit [jugador]` | Traje y equipo completos |
 | `/deadline money <cantidad> [jugador]` | Da dinero |
-| `/deadline calls <minSeg> <maxSeg>` | Cada cuánto suena el teléfono |
 
 ## Compilar
 

@@ -17,7 +17,7 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 
-/** Applies server effect packets and runs the client-side horror ambience (heartbeat, ringing...). */
+/** Applies server effect packets and runs the client-side horror ambience (heartbeat, screen effects...). */
 public final class ClientFx {
 	private ClientFx() {
 	}
@@ -26,7 +26,6 @@ public final class ClientFx {
 	private static int heartbeatCooldown;
 	private static String postEffect = null;
 	private static int postCheck;
-	private static int ringCooldown;
 
 	public static void onFx(FxPayload p) {
 		Minecraft mc = Minecraft.getInstance();
@@ -49,7 +48,7 @@ public final class ClientFx {
 			case FxPayload.SOUND_AT -> {
 				SoundEvent ev = BuiltInRegistries.SOUND_EVENT.getValue(Identifier.parse(p.s()));
 				if (ev != null && mc.level != null) {
-					if (p.b() == 1) {  // a voice in the head: steady pitch, stays with the player
+					if (p.b() == 1) {  // heard in the head: steady pitch, stays with the player
 						mc.getSoundManager().play(SimpleSoundInstance.forUI(ev, 1.0F, p.a()));
 					} else {
 						mc.level.playLocalSound(p.x(), p.y(), p.z(), ev, SoundSource.HOSTILE, p.a(), 0.9F + RNG.nextFloat() * 0.2F, false);
@@ -59,12 +58,6 @@ public final class ClientFx {
 			case FxPayload.TITLE -> {
 				ClientState.titleKey = p.s();
 				ClientState.titleTicks = ClientState.titleTotal = Math.max(1, p.b());
-			}
-			case FxPayload.INCOMING_CALL -> {
-				ClientState.callCase = p.s();
-				ClientState.callCaller = p.b();
-				ClientState.callTicks = 20 * 20;
-				ringCooldown = 0;
 			}
 			case FxPayload.HALLUCINATION -> hallucination(p.s());
 			case FxPayload.SANITY -> ClientState.sanity = p.a();
@@ -204,18 +197,6 @@ public final class ClientFx {
 		}
 
 		updatePostEffect(mc);
-
-		// the phone keeps ringing until it is picked up
-		if (ClientState.callTicks > 0) {
-			ClientState.callTicks--;
-			if (mc.screen instanceof PhoneScreen) {
-				ClientState.callTicks = 0;
-			} else if (--ringCooldown <= 0) {
-				ringCooldown = 60;
-				mc.getSoundManager().play(SimpleSoundInstance.forUI(ModSounds.PHONE_RING, 1.0F, 0.9F));
-				shake(0.25F, 10);
-			}
-		}
 
 		// heartbeat speeds up as sanity drains
 		float s = ClientState.sanityShown;

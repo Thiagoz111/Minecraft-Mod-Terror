@@ -46,10 +46,6 @@ public final class Fx {
 		send(p, FxPayload.TITLE, 1.0F, ticks, 0, 0, 0, key);
 	}
 
-	public static void incomingCall(ServerPlayer p, String caseKey, int caller) {
-		send(p, FxPayload.INCOMING_CALL, 1.0F, caller, 0, 0, 0, caseKey);
-	}
-
 	public static void hallucination(ServerPlayer p, String kind) {
 		send(p, FxPayload.HALLUCINATION, 1.0F, 0, 0, 0, 0, kind);
 	}
@@ -78,7 +74,7 @@ public final class Fx {
 		send(p, FxPayload.CHECKLIST, 1.0F, chapter, 0, 0, 0, sb.toString());
 	}
 
-	/** Subtitle bar: speaker name key + line key (either may be "" ; a leading '#' means literal text). */
+	/** Caption bar (hints, signs): name key + text key (either may be "" ; a leading '#' means literal text). */
 	public static void subtitle(ServerPlayer p, String speakerKey, String lineKey, int ticks) {
 		send(p, FxPayload.SUBTITLE, 1.0F, ticks, 0, 0, 0, speakerKey + "\n" + lineKey);
 	}
@@ -106,12 +102,6 @@ public final class Fx {
 	/** Plays a sound for one player only, at a world position. */
 	public static void soundAt(ServerPlayer p, SoundEvent sound, Vec3 pos, float volume) {
 		send(p, FxPayload.SOUND_AT, volume, 0, pos.x, pos.y, pos.z, BuiltInRegistries.SOUND_EVENT.getKey(sound).toString());
-	}
-
-	/** A voice heard in the head (phone, PA, thoughts): follows the player, no random pitch. */
-	public static void voice(ServerPlayer p, SoundEvent sound, float volume) {
-		Vec3 pos = p.getEyePosition();
-		send(p, FxPayload.SOUND_AT, volume, 1, pos.x, pos.y, pos.z, BuiltInRegistries.SOUND_EVENT.getKey(sound).toString());
 	}
 
 	/**

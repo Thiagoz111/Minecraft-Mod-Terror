@@ -69,7 +69,7 @@ public final class SanityManager {
 	private static void tickPlayer(ServerPlayer p) {
 		ServerLevel level = p.level();
 		HunterData d = ModAttachments.get(p);
-		boolean haunted = CaseType.forLevel(level.dimension()) != null;
+		boolean haunted = CaseType.forLevel(level.dimension()) != null || com.deadline.caseload.OverworldCase.atSite(p);
 		BlockPos pos = p.blockPosition();
 		int light = level.getMaxLocalRawBrightness(pos);
 

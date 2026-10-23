@@ -2,7 +2,6 @@ package com.deadline.client;
 
 import com.deadline.caseload.CaseType;
 import com.deadline.net.PhoneDataPayload;
-import java.util.List;
 
 /** Everything the HUD and the phone need to draw, updated from server packets. */
 public final class ClientState {
@@ -37,11 +36,6 @@ public final class ClientState {
 	public static int titleTicks;
 	public static int titleTotal = 1;
 
-	// incoming call toast
-	public static String callCase = "";
-	public static int callCaller;
-	public static int callTicks;
-
 	// objective panel
 	public static String objCase = "";
 	public static int objStage = -1;
@@ -61,16 +55,17 @@ public final class ClientState {
 	public static long vhsStart;
 
 	// last phone snapshot
-	public static PhoneDataPayload phone = new PhoneDataPayload(false, 0, 0, 100F, 0, List.of(), "", 0, 0, 0);
+	public static PhoneDataPayload phone = new PhoneDataPayload(false, 0, 0, 100F, 0, "", 0, 0);
 
 	public static void reset() {
 		sanity = sanityShown = 100F;
-		shakeTicks = fadeTicks = staticTicks = jumpscareTicks = titleTicks = callTicks = endTicks = figureTicks = objFlash = 0;
+		shakeTicks = fadeTicks = staticTicks = jumpscareTicks = titleTicks = endTicks = figureTicks = objFlash = 0;
 		flash = redFlash = 0F;
 		objCase = "";
 		objStage = -1;
-		phone = new PhoneDataPayload(false, 0, 0, 100F, 0, List.of(), "", 0, 0, 0);
+		phone = new PhoneDataPayload(false, 0, 0, 100F, 0, "", 0, 0);
 		com.deadline.client.hud.StoryHud.reset();
+		com.deadline.client.phone.ClientMessages.reset();
 	}
 
 	/** Lang key of the current objective line for a case stage. */

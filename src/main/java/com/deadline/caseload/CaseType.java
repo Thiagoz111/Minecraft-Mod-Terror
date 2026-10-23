@@ -68,7 +68,7 @@ public enum CaseType {
 		return difficulty;
 	}
 
-	/** Number of distinct caller variants (lang keys deadline.case.KEY.caller.N / msg.N). */
+	/** Number of caller variants of the old call system (kept for CaseRequest.caller; no lang keys any more). */
 	public int callers() {
 		return callers;
 	}
@@ -100,18 +100,6 @@ public enum CaseType {
 	 */
 	public boolean overworld() {
 		return this == CASA_MORALES;
-	}
-
-	/** The caller's voice line heard when the call is answered, then the operator's legal notice (null: none). */
-	public String callLine() {
-		return switch (this) {
-			case COLEGIO -> "colegio.clara.llamada";
-			case CASA_MORALES -> "casa.marta.llamada";
-		};
-	}
-
-	public String noticeLine() {
-		return this == CASA_MORALES ? "operadora.casa_aviso" : "operadora.aviso";
 	}
 
 	public String langKey(String suffix) {

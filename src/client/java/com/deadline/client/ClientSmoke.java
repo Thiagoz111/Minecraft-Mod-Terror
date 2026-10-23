@@ -341,11 +341,9 @@ public final class ClientSmoke {
 			ClientState.sanity = ClientState.sanityShown = 24F;
 			ClientState.objCase = "colegio";
 			ClientState.objStage = 1;
-			ClientState.callCase = "colegio";
-			ClientState.callCaller = 1;
-			ClientState.callTicks = 20 * 20;
+			com.deadline.client.phone.ClientMessages.demo();
 		});
-		shot(30, "hud_call");
+		shot(30, "hud_message");
 		step(1, mc -> {
 			ClientState.vhs = true;
 			ClientState.vhsStart = ClientState.ticks - 20 * 83;
@@ -353,16 +351,15 @@ public final class ClientSmoke {
 		shot(20, "hud_vhs");
 		step(1, mc -> {
 			ClientState.vhs = false;
-			ClientState.callTicks = 0;
-			ClientState.phone = new PhoneDataPayload(false, 1250, 3, 64F, 0b10111,
-					List.of(new PhoneDataPayload.Request("colegio", 1, 95), new PhoneDataPayload.Request("casa", 0, 620)), "", 0, 0, 0);
+			com.deadline.client.phone.ClientMessages.toastTicks = 0;
+			ClientState.phone = new PhoneDataPayload(false, 1250, 3, 64F, 0b10111, "", 0, 0);
 			mc.setScreen(PhoneScreen.at("home", 0));
 		});
 		shot(20, "phone_home");
-		step(1, mc -> mc.setScreen(PhoneScreen.at("calls", 0)));
-		shot(10, "phone_calls");
-		step(1, mc -> mc.setScreen(PhoneScreen.at("call", 0)));
-		shot(10, "phone_call");
+		step(1, mc -> mc.setScreen(PhoneScreen.at("messages", 0)));
+		shot(10, "phone_messages");
+		step(1, mc -> mc.setScreen(PhoneScreen.at("thread", 0)));
+		shot(10, "phone_thread");
 		step(1, mc -> mc.setScreen(PhoneScreen.at("shop", 0)));
 		shot(10, "phone_shop");
 		step(1, mc -> mc.setScreen(PhoneScreen.at("bestiary", 0)));
@@ -370,7 +367,7 @@ public final class ClientSmoke {
 		step(1, mc -> mc.setScreen(PhoneScreen.at("beast", 1)));
 		shot(10, "phone_beast");
 		step(1, mc -> {
-			ClientState.phone = new PhoneDataPayload(false, 1250, 3, 18F, 0b10111, List.of(), "colegio", 0, 1, 2);
+			ClientState.phone = new PhoneDataPayload(false, 1250, 3, 18F, 0b10111, "colegio", 1, 2);
 			mc.setScreen(PhoneScreen.at("case", 0));
 		});
 		shot(10, "phone_case");

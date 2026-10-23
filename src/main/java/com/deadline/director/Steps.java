@@ -68,28 +68,19 @@ public final class Steps {
 		return run(e -> e.run.startChapter(n, false));
 	}
 
-	/** Plays a voice line and waits for it to finish. at = marker point name, or null for "in your head". */
+	/** Nobody speaks any more ({@link Run#say} is a no-op): kept so old scripts compile; finishes at once. */
 	public static Step say(String lineId, String at) {
-		return e -> {
-			if (e.t == 0) {
-				e.n = e.run.say(lineId, at == null ? null : e.run.at(at));
-			}
-			return e.t >= e.n;
-		};
+		return e -> true;
 	}
 
-	/** Plays a voice line and continues immediately. */
+	/** Nobody speaks any more: kept so old scripts compile; does nothing. */
 	public static Step sayAsync(String lineId, String at) {
-		return run(e -> e.run.say(lineId, at == null ? null : e.run.at(at)));
+		return e -> true;
 	}
 
-	/** Subtitle without audio (thoughts, signs). */
+	/** Captions of spoken lines went away with the voices: kept so old scripts compile; shows nothing. */
 	public static Step caption(String lineId, int ticks) {
-		return run(e -> {
-			for (ServerPlayer p : e.run.hunters()) {
-				Fx.subtitle(p, "deadline.speaker." + Run.speakerOf(lineId), "deadline.line." + lineId, ticks);
-			}
-		});
+		return e -> true;
 	}
 
 	public static Step sound(SoundEvent s, String at, float volume) {

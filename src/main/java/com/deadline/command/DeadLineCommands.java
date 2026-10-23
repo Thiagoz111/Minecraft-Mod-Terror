@@ -25,14 +25,13 @@ import net.minecraft.server.level.ServerPlayer;
 /**
  * /deadline -- tools for creators filming the mod.
  * <pre>
- * /deadline call &lt;case&gt; [player]      ring the phone with a specific case
+ * /deadline msg &lt;case&gt; [player]       the case's intro text thread now (casa: Marta's act 0 + "Aceptar caso")
  * /deadline start &lt;case&gt; [player]     jump straight into a case
  * /deadline home [player]              leave the current case
  * /deadline sanity &lt;0-100&gt; [player]   set sanity
  * /deadline money &lt;amount&gt; [player]   add money
  * /deadline jumpscare &lt;entity&gt; [player]
  * /deadline kit [player]               full hunter kit
- * /deadline calls &lt;minSeconds&gt; &lt;maxSeconds&gt;  how often the phone rings
  * /deadline chapter &lt;n&gt;              replay a chapter of the scripted case from its checkpoint
  * /deadline beat &lt;id&gt;                 fire a scripted beat now
  * /deadline flag &lt;name&gt;               raise a director flag
@@ -48,10 +47,10 @@ public final class DeadLineCommands {
 	public static void register(CommandDispatcher<CommandSourceStack> dispatcher, CommandBuildContext ctx, Commands.CommandSelection env) {
 		dispatcher.register(Commands.literal("deadline")
 				.requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
-				.then(Commands.literal("call")
+				.then(Commands.literal("msg")
 						.then(Commands.argument("case", StringArgumentType.word()).suggests(DeadLineCommands::cases)
-								.executes(c -> call(c, self(c)))
-								.then(Commands.argument("player", EntityArgument.player()).executes(c -> call(c, EntityArgument.getPlayer(c, "player"))))))
+								.executes(c -> msg(c, self(c)))
+								.then(Commands.argument("player", EntityArgument.player()).executes(c -> msg(c, EntityArgument.getPlayer(c, "player"))))))
 				.then(Commands.literal("start")
 						.then(Commands.argument("case", StringArgumentType.word()).suggests(DeadLineCommands::cases)
 								.executes(c -> start(c, self(c)))
@@ -82,10 +81,7 @@ public final class DeadLineCommands {
 						.then(Commands.argument("name", StringArgumentType.word()).executes(DeadLineCommands::flag)))
 				.then(Commands.literal("voice")
 						.then(Commands.literal("on").executes(c -> voice(c, false)))
-						.then(Commands.literal("off").executes(c -> voice(c, true))))
-				.then(Commands.literal("calls")
-						.then(Commands.argument("min", IntegerArgumentType.integer(5))
-								.then(Commands.argument("max", IntegerArgumentType.integer(5)).executes(DeadLineCommands::calls)))));
+						.then(Commands.literal("off").executes(c -> voice(c, true)))));
 	}
 
 	/** The player running the command; from the console (or a command block) the first player online. */
@@ -106,10 +102,10 @@ public final class DeadLineCommands {
 		return CaseType.byKey(StringArgumentType.getString(c, "case"));
 	}
 
-	private static int call(CommandContext<CommandSourceStack> c, ServerPlayer p) {
+	private static int msg(CommandContext<CommandSourceStack> c, ServerPlayer p) {
 		CaseType t = parseCase(c);
-		CaseManager.ring(p, new CaseRequest(t, p.getRandom().nextInt(t.callers()), p.level().getGameTime()));
-		c.getSource().sendSuccess(() -> Component.literal("Ring ring: " + t.key()), true);
+		CaseManager.sendIntro(p, t);
+		c.getSource().sendSuccess(() -> Component.literal("Intro thread queued: " + t.key()), true);
 		return 1;
 	}
 
@@ -189,15 +185,6 @@ public final class DeadLineCommands {
 
 	private static int kit(ServerPlayer p) {
 		CaseManager.giveKit(p, true);
-		return 1;
-	}
-
-	private static int calls(CommandContext<CommandSourceStack> c) {
-		int min = IntegerArgumentType.getInteger(c, "min");
-		int max = Math.max(min, IntegerArgumentType.getInteger(c, "max"));
-		CaseManager.callMinTicks = min * 20;
-		CaseManager.callMaxTicks = max * 20;
-		c.getSource().sendSuccess(() -> Component.literal("Calls every " + min + "-" + max + "s"), true);
 		return 1;
 	}
 }

@@ -136,7 +136,7 @@ public class PoseidaEntity extends HauntEntity {
 		}
 		if (--voiceCooldown <= 0) {
 			voiceCooldown = 140 + this.random.nextInt(160);
-			level.playSound(null, this.getX(), this.getY(), this.getZ(), ModSounds.POSEIDA_DEMON, SoundSource.HOSTILE, 2.2F, 1.0F);
+			level.playSound(null, this.getX(), this.getY(), this.getZ(), ModSounds.POSEIDA_GIGGLE, SoundSource.HOSTILE, 2.2F, 0.85F);
 			if (!this.isWatchedBy(target, 0.3) && this.random.nextBoolean()) {
 				this.setAction(ACT_HEADSPIN);
 				this.stun(30);
@@ -193,7 +193,7 @@ public class PoseidaEntity extends HauntEntity {
 		lastExorcismTick = this.tickCount;
 		exorcism++;
 		if (exorcism % 40 == 0) {
-			level.playSound(null, this.getX(), this.getY(), this.getZ(), ModSounds.POSEIDA_DEMON, SoundSource.HOSTILE, 2.5F, 0.7F);
+			level.playSound(null, this.getX(), this.getY(), this.getZ(), ModSounds.POSEIDA_SCREAM, SoundSource.HOSTILE, 2.5F, 0.7F);
 			Fx.shake(player, 0.5F + exorcismProgress(), 20);
 		}
 		if (exorcism >= EXORCISM_TICKS) {

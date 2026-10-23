@@ -33,13 +33,11 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.portal.TeleportTransition;
 import net.minecraft.world.phys.Vec3;
 
-/** The hotline: incoming calls, accepting cases, travelling to the haunted site and back. */
+/**
+ * The hotline: the case intros arrive as text threads (com.deadline.phone.PhoneMessages, "Aceptar caso" starts the
+ * case), travelling to the haunted site and back.
+ */
 public final class CaseManager {
-	/** Ticks between calls (randomised in this range). */
-	public static int callMinTicks = 2400;
-	public static int callMaxTicks = 6000;
-	public static final int MAX_PENDING = 3;
-
 	/** Shop: item -> price. Order is the order shown in the phone. */
 	public static final List<ShopEntry> SHOP = new ArrayList<>();
 
@@ -169,7 +167,6 @@ public final class CaseManager {
 		}
 		p.teleport(new TeleportTransition(level, run.at("spawn"), Vec3.ZERO, run.yaw("spawn"), 0.0F, TeleportTransition.DO_NOTHING));
 		run.checkpoint(p);
-		run.say("operadora.muerte", null);
 		return true;
 	}
 
@@ -197,10 +194,9 @@ public final class CaseManager {
 		for (ServerPlayer p : server.getPlayerList().getPlayers()) {
 			HunterData d = ModAttachments.get(p);
 			long now = p.level().getGameTime();
-			tickCalls(p, d);
-			if (d.active == null && !PENDING.containsKey(p.getUUID())) {
-				if (d.requests.size() < MAX_PENDING && now >= d.nextCall && hasPhone(p)) {
-					ring(p, randomRequest(p, now));
+			if (d.active == null) {
+				if (now >= d.nextCall && hasPhone(p)) {
+					storyHook(p, d);
 				}
 			} else if (!d.active.type.scripted() && d.active.stage >= 3) {
 				// legacy cases: stage 3 = solved; scripted cases keep their chapter in stage and end from the script
@@ -221,75 +217,46 @@ public final class CaseManager {
 		return false;
 	}
 
-	private static CaseRequest randomRequest(ServerPlayer p, long now) {
+	// ------------------------------------------------------------------ the case intros (text threads, no calls)
+	/**
+	 * The story reaches the hunter as text messages: when no case is active and the hook time came (a few seconds after
+	 * the first join, or after coming back from a case), the next case's intro thread arrives once. The Colegio is on
+	 * hold, so the first hook is the Casa Morales (act 0); the Colegio intro is sent with /deadline msg colegio.
+	 */
+	private static void storyHook(ServerPlayer p, HunterData d) {
+		int casa = 1 << CaseType.CASA_MORALES.ordinal();
+		if ((d.intros & casa) == 0) {
+			sendIntro(p, CaseType.CASA_MORALES);
+		}
+	}
+
+	/**
+	 * Sends a case's intro thread (marks it as sent). Casa Morales: act 0 of docs/design/casa_terror.md 2 (Marta's
+	 * messages, the photo of the hallway, the location with "Aceptar caso"). Colegio: Sister Clara's messages.
+	 */
+	public static void sendIntro(ServerPlayer p, CaseType type) {
 		HunterData d = ModAttachments.get(p);
-		// story order for the videos: the school first, then the Morales house; after that, any of them
-		CaseType t = d.solved == 0 ? CaseType.COLEGIO : d.solved == 1 ? CaseType.CASA_MORALES
-				: CaseType.values()[p.getRandom().nextInt(CaseType.values().length)];
-		return new CaseRequest(t, p.getRandom().nextInt(t.callers()), now);
-	}
-
-	// ------------------------------------------------------------------ answering a call
-	/** Calls being listened to: the case starts when the caller and then the operator have finished talking. */
-	private record PendingCall(CaseRequest req, long at, boolean noticed) {
-	}
-
-	private static final java.util.Map<java.util.UUID, PendingCall> PENDING = new java.util.HashMap<>();
-
-	/** Plays a voice line in the hunter's head with its subtitle; returns its length in ticks. */
-	public static int playLine(ServerPlayer p, String id) {
-		int ticks = com.deadline.director.LineBook.ticks(p.level().getServer(), id);
-		net.minecraft.sounds.SoundEvent s = ModSounds.line(id);
-		if (s != null) {
-			Fx.voice(p, s, 1.0F);
+		d.intros |= 1 << type.ordinal();
+		switch (type) {
+			case CASA_MORALES -> {
+				String m = com.deadline.phone.PhoneMessages.MARTA;
+				com.deadline.phone.PhoneMessages.textLater(p, m, "deadline.sms.marta.numero", 20);
+				com.deadline.phone.PhoneMessages.textLater(p, m, "deadline.sms.marta.suegra", 20 * 6);
+				com.deadline.phone.PhoneMessages.textLater(p, m, "deadline.sms.marta.no_llame", 20 * 12);
+				com.deadline.phone.PhoneMessages.photoLater(p, m, "pasillo_nona", 20 * 19);
+				com.deadline.phone.PhoneMessages.textLater(p, m, "deadline.sms.marta.ubicacion", 20 * 25);
+				com.deadline.phone.PhoneMessages.offerCaseLater(p, m, CaseType.CASA_MORALES, 20 * 28);
+			}
+			case COLEGIO -> {
+				String c = com.deadline.phone.PhoneMessages.CLARA;
+				com.deadline.phone.PhoneMessages.textLater(p, c, "deadline.sms.clara.hora", 20);
+				com.deadline.phone.PhoneMessages.textLater(p, c, "deadline.sms.clara.colegio", 20 * 5);
+				com.deadline.phone.PhoneMessages.textLater(p, c, "deadline.sms.clara.coro", 20 * 10);
+				com.deadline.phone.PhoneMessages.textLater(p, c, "deadline.sms.clara.luz", 20 * 15);
+				com.deadline.phone.PhoneMessages.textLater(p, c, "deadline.sms.clara.no_corra", 20 * 20);
+				com.deadline.phone.PhoneMessages.offerCaseLater(p, c, CaseType.COLEGIO, 20 * 23);
+			}
 		}
-		Fx.subtitle(p, "deadline.speaker." + com.deadline.director.Run.speakerOf(id), "deadline.line." + id, ticks + 30);
-		return ticks;
-	}
-
-	private static void answer(ServerPlayer p, CaseRequest req) {
-		String call = req.type().callLine();
-		int t = call != null ? playLine(p, call) + 10 : 0;
-		PENDING.put(p.getUUID(), new PendingCall(req, p.level().getGameTime() + t + 10, false));
-	}
-
-	/** Every second: a call that finished plays the operator's notice, then the case starts. */
-	private static void tickCalls(ServerPlayer p, HunterData d) {
-		PendingCall pc = PENDING.get(p.getUUID());
-		long now = p.level().getGameTime();
-		if (pc == null || now < pc.at()) {
-			return;
-		}
-		if (!pc.noticed()) {
-			int t = playLine(p, pc.req().type().noticeLine());
-			PENDING.put(p.getUUID(), new PendingCall(pc.req(), now + t + 10, true));
-			return;
-		}
-		PENDING.remove(p.getUUID());
-		if (d.active != null) {
-			return;
-		}
-		if (!pc.req().type().scripted()) {
-			// a case that is not open yet (video 1 ends on the Morales call)
-			p.level().playSound(null, p.getX(), p.getY(), p.getZ(), ModSounds.PHONE_HANGUP, SoundSource.PLAYERS, 0.6F, 1.0F);
-			p.displayClientMessage(Component.translatable("deadline.msg.continuara"), false);
-			return;
-		}
-		startCase(p, pc.req());
-	}
-
-	/** Adds a request and makes the phone ring. */
-	public static void ring(ServerPlayer p, CaseRequest req) {
-		HunterData d = ModAttachments.get(p);
-		d.requests.add(req);
-		while (d.requests.size() > MAX_PENDING) {
-			d.requests.remove(0);
-		}
-		long now = p.level().getGameTime();
-		d.nextCall = now + callMinTicks + p.getRandom().nextInt(Math.max(1, callMaxTicks - callMinTicks));
-		Fx.incomingCall(p, req.type().key(), req.caller());
-		p.level().playSound(null, p.getX(), p.getY(), p.getZ(), ModSounds.PHONE_VIBRATE, SoundSource.PLAYERS, 0.6F, 1.0F);
-		syncPhone(p, false);
 	}
 
 	// ------------------------------------------------------------------ phone actions
@@ -297,19 +264,6 @@ public final class CaseManager {
 		initShop();
 		HunterData d = ModAttachments.get(p);
 		switch (a.action()) {
-			case PhoneActionPayload.ACCEPT -> {
-				if (d.active == null && !PENDING.containsKey(p.getUUID()) && a.arg() >= 0 && a.arg() < d.requests.size()) {
-					CaseRequest req = d.requests.remove(a.arg());
-					p.level().playSound(null, p.getX(), p.getY(), p.getZ(), ModSounds.PHONE_ACCEPT, SoundSource.PLAYERS, 0.6F, 1.0F);
-					answer(p, req);
-				}
-			}
-			case PhoneActionPayload.DECLINE -> {
-				if (a.arg() >= 0 && a.arg() < d.requests.size()) {
-					d.requests.remove(a.arg());
-					p.level().playSound(null, p.getX(), p.getY(), p.getZ(), ModSounds.PHONE_HANGUP, SoundSource.PLAYERS, 0.6F, 1.0F);
-				}
-			}
 			case PhoneActionPayload.RETURN_HOME -> {
 				if (d.active != null) {
 					returnHome(p, !d.active.type.scripted() && d.active.stage >= 3);
@@ -343,14 +297,9 @@ public final class CaseManager {
 			return;
 		}
 		HunterData d = ModAttachments.get(p);
-		long now = p.level().getGameTime();
-		List<PhoneDataPayload.Request> reqs = new ArrayList<>();
-		for (CaseRequest r : d.requests) {
-			reqs.add(new PhoneDataPayload.Request(r.type().key(), r.caller(), (int) Math.max(0, (now - r.createdAt()) / 20)));
-		}
 		ActiveCase ac = d.active;
-		ServerPlayNetworking.send(p, new PhoneDataPayload(open, d.money, d.solved, d.sanity, d.bestiary, reqs,
-				ac == null ? "" : ac.type.key(), ac == null ? 0 : ac.caller, ac == null ? 0 : ac.stage, ac == null ? 0 : ac.evidence));
+		ServerPlayNetworking.send(p, new PhoneDataPayload(open, d.money, d.solved, d.sanity, d.bestiary,
+				ac == null ? "" : ac.type.key(), ac == null ? 0 : ac.stage, ac == null ? 0 : ac.evidence));
 	}
 
 	// ------------------------------------------------------------------ cases
@@ -418,6 +367,9 @@ public final class CaseManager {
 			p.sendSystemMessage(Component.translatable("deadline.msg.no_dimension"));
 			return false;
 		}
+		if (type.overworld()) {
+			return OverworldCase.start(p, req, level, def);  // the real overworld: no teleport, the hunter drives there
+		}
 		HunterData d = ModAttachments.get(p);
 		int site = sites.allocate(type);
 		BlockPos origin = CaseSites.origin(site);
@@ -479,9 +431,13 @@ public final class CaseManager {
 		} else {
 			Fx.caseEnd(p, false, 0);
 		}
-		Fx.fade(p, 50);
-		BlockPos rp = ac.returnPos;
-		p.teleport(new TeleportTransition(home, Vec3.atBottomCenterOf(rp), Vec3.ZERO, p.getYRot(), 0.0F, TeleportTransition.DO_NOTHING));
+		if (ac.type.overworld()) {
+			OverworldCase.ended(p);  // nobody is teleported: the hunter stays where they are and the house stays in the world
+		} else {
+			Fx.fade(p, 50);
+			BlockPos rp = ac.returnPos;
+			p.teleport(new TeleportTransition(home, Vec3.atBottomCenterOf(rp), Vec3.ZERO, p.getYRot(), 0.0F, TeleportTransition.DO_NOTHING));
+		}
 		SanityManager.add(p, 25.0F);
 		syncPhone(p, false);
 	}
@@ -491,8 +447,12 @@ public final class CaseManager {
 		if (level == null) {
 			return;
 		}
-		BlockPos o = CaseSites.origin(ac.site);
-		var box = new net.minecraft.world.phys.AABB(o).inflate(200, 128, 200);
+		// an overworld case only cleans its own house (and not while other hunters are still in it)
+		var box = ac.type.overworld() ? OverworldCase.cleanupBox(server, ac)
+				: new net.minecraft.world.phys.AABB(CaseSites.origin(ac.site)).inflate(200, 128, 200);
+		if (box == null) {
+			return;
+		}
 		for (Entity e : level.getEntities((Entity) null, box, e -> e instanceof HauntEntity || e instanceof AnchorEntity)) {
 			e.discard();
 		}
@@ -548,7 +508,8 @@ public final class CaseManager {
 		if (!(boss.level() instanceof ServerLevel level) || boss.siteIndex() < 0) {
 			return;
 		}
-		if (boss.getType() != CaseType.forLevel(level.dimension()).boss()) {
+		CaseType here = CaseType.forLevel(level.dimension());  // null in the overworld (overworld cases are scripted)
+		if (here == null || boss.getType() != here.boss()) {
 			return;
 		}
 		for (ServerPlayer p : huntersOf(level, boss.siteIndex())) {

@@ -30,6 +30,8 @@ public class DeadLineClient implements ClientModInitializer {
 
 		ClientPlayNetworking.registerGlobalReceiver(FxPayload.TYPE, (payload, ctx) -> ClientFx.onFx(payload));
 		ClientPlayNetworking.registerGlobalReceiver(PhoneDataPayload.TYPE, (payload, ctx) -> ClientFx.onPhoneData(payload));
+		ClientPlayNetworking.registerGlobalReceiver(com.deadline.phone.PhoneMessagesPayload.TYPE,
+				(payload, ctx) -> com.deadline.client.phone.ClientMessages.onPayload(payload));
 		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
 			ClientState.reset();
 			ClientAmbience.reset();
@@ -37,6 +39,7 @@ public class DeadLineClient implements ClientModInitializer {
 		ClientTickEvents.END_CLIENT_TICK.register(mc -> {
 			DeadLineKeys.tick(mc);
 			ClientFx.tick(mc);
+			com.deadline.client.phone.ClientMessages.tick(mc);
 			ClientAmbience.tick(mc);
 		});
 
