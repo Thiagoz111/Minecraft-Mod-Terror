@@ -499,8 +499,9 @@ def roof(s, hs):
         for z in range(-1, 16):
             y = yroof(z)
             end = x in (-11, 11)
+            brick = '_ladrillo' if x == 11 else ''      # the gable over the driveway is in face brick, like the front
             if z == 7:
-                k = ('hastial_cumbrera_der' if x == -11 else 'hastial_cumbrera_izq') if end else 'techo_cumbrera'
+                k = ('hastial_cumbrera_der' if x == -11 else f'hastial{brick}_cumbrera_izq') if end else 'techo_cumbrera'
                 K(s, x, y, z, k, 'north')
                 continue
             front = z < 7
@@ -508,7 +509,7 @@ def roof(s, hs):
             eave = z in (-1, 15)
             if end:
                 side = ('der' if x == -11 else 'izq') if front else ('izq' if x == -11 else 'der')
-                k = f'hastial_alero_{side}' if eave else f'hastial_{side}'
+                k = f'hastial{brick}_alero_{side}' if eave else f'hastial{brick}_{side}'
             else:
                 mossy = H(x, z, 'r') < (380 if not front else 160)
                 k = ('techo_alero_musgo' if mossy else 'techo_alero') if eave else ('techo_musgo' if mossy else 'techo')
@@ -518,7 +519,10 @@ def roof(s, hs):
         if x in (-11, 11):
             for z in range(0, 15):
                 for y in range(9, yroof(z)):
-                    hs.wall(x, y, z, x, y, z, 'revoque_chorreado' if y == 9 and H(x, z) < 400 else 'revoque_blanco')
+                    if x == 11:
+                        hs.wall(x, y, z, x, y, z, 'ladrillo_salitre' if H(x, y, z) < 90 else 'ladrillo_visto')
+                    else:
+                        hs.wall(x, y, z, x, y, z, 'revoque_chorreado' if y == 9 and H(x, z) < 400 else 'revoque_blanco')
     # chimney stack of the old living fireplace, through the front slope and past the ridge, with its rain cap
     for y in range(yroof(4), 18):
         K(s, 4, y, 4, 'ladrillo_salitre' if y == yroof(4) else 'ladrillo_visto', replace=True)
@@ -784,7 +788,7 @@ def furnish_1p(s):
     K(s, 2, 5, 3, 'tapado_sillon', 'east')
     K(s, 3, 5, 1, 'cajas_apiladas', 'south')
     K(s, 6, 5, 1, 'caja_abierta', 'south')
-    K(s, 7, 5, 1, 'cajas_apiladas', 'west')
+    K(s, 7, 5, 1, 'ropa_tirada', 'west')
     K(s, 4, 5, 2, 'tapado_mesa', 'north')
     K(s, 4, 5, 3, 'silla_comedor', 'north')
     K(s, 7, 5, 3, 'sillas_apiladas', 'west')
@@ -839,6 +843,7 @@ def furnish_1p(s):
             K(s, 1, y, z, FIN['toti'][0] if y == 5 else 'pared_toti')
     for (x, y, z, k, f) in ((-1, 6, 11, 'poster_toti_1', 'east'), (-1, 7, 12, 'poster_toti_3', 'east'),
                             (-1, 7, 10, 'poster_toti_4', 'south'), (0, 7, 10, 'poster_banda', 'south'),
+                            (3, 7, 11, 'poster_toti_2', 'west'),
                             (0, 6, 12, 'poster_juego', 'west')):
         K(s, x, y, z, k, f)
     K(s, 0, 5, 12, 'zapatillas', 'north')
@@ -1055,7 +1060,7 @@ def patio(s):
     s.door('galpon', 13, 0, 31, 'east', mat='casa_puerta_lavadero', hinge='left')
     tall(s, 15, 0, 32, 'estante_herramientas', 'west', 'tope_fondo')
     K(s, 15, 0, 31, 'bolsa_carbon', 'west')
-    K(s, 14, 0, 32, 'cajas_apiladas', 'north')
+    K(s, 14, 0, 32, 'cajon_cerveza', 'north')
     # ---------------------------------------------------------------- clutter by the west party wall (beside the pool)
     K(s, -14, 0, 31, 'ladrillo_visto')
     K(s, -14, 1, 31, 'ladrillo_salitre')
@@ -1073,8 +1078,11 @@ def patio(s):
     lamp(s, 2, 2, 16, 'aplique_patio', ('patio_luces', 'cucha_luz'), lit=True, facing='south')
     lamp(s, 3, 2, 18, 'aplique_patio', ('patio_luces', 'cucha_luz'), lit=True, facing='south')   # on the gallery pier
     lamp(s, -6, 2, 16, 'aplique_patio', 'patio_luces', facing='south')
-    for (x, z) in ((-17, 20), (-17, 30), (-10, 33), (9, 33), (17, 33), (-3, 27), (8, 24)):
-        s.light(x, 2, z, 9, 'patio_luna')
+    # moonlight and the neighbours' spill: dim pools of light over the pool, the path, the table, the grill and the
+    # side lawns (block light 4-7 on the ground), all in one group the cumbia cut / blackout can kill
+    for (x, y, z, lv) in ((-8, 3, 28, 11), (1, 3, 27, 10), (9, 3, 29, 9), (0, 3, 32, 8), (-13, 3, 22, 9), (14, 3, 19, 9),
+                          (7, 3, 22, 9), (12, 3, 33, 8), (-14, 3, 31, 8), (-15, 3, 6, 8), (14, 3, 6, 8)):
+        s.light(x, y, z, lv, 'patio_luna')
 
 
 def street(s):
@@ -1131,11 +1139,11 @@ def street(s):
         K(s, x, 0, -26, 'pilar' if p else 'murito', 'south')
         K(s, x, 1, -26, 'pilar_remate' if p else 'reja', 'south')
     # the concrete lamp post with flyers and the flickering sodium lamp at the verge; more lamps down the street
-    K(s, 3, 0, -11, 'poste_pie', 'north')
-    K(s, 3, 1, -11, 'poste_afiches', 'north')
-    K(s, 3, 2, -11, 'poste', 'north')
-    K(s, 3, 3, -11, 'poste', 'north')
-    lamp(s, 3, 4, -11, 'farol', 'farol', lit=True, facing='north')
+    K(s, 2, 0, -10, 'poste_pie', 'south')      # its arm over the sidewalk: from the spawn it hangs top left of the gate
+    K(s, 2, 1, -10, 'poste_afiches', 'south')
+    K(s, 2, 2, -10, 'poste', 'south')
+    K(s, 2, 3, -10, 'poste', 'south')
+    lamp(s, 2, 4, -10, 'farol', 'farol', lit=True, facing='south')
     for (x, z, f) in ((-24, -11, 'north'), (27, -11, 'north'), (-12, -21, 'south'), (16, -21, 'south')):
         K(s, x, 0, z, 'poste_pie', f)
         for y in (1, 2, 3):
@@ -1251,7 +1259,7 @@ def markers(s):
     P = s.point
     cx, cz = CUCHA
     # ---------------------------------------------------------------- arrival (chapter 1)
-    P('spawn', 8, 0, -12, 'south')                # on the sidewalk's verge by the curb: the facade, the farol and the gate
+    P('spawn', 8, 0, -12, 25)                     # on the sidewalk's verge by the curb: facade, gate and farol in one frame
     P('vereda', 6, 0, -7, 'south')                # checkpoint 1
     P('marta_puerta', 8, 0, -1, 'north')          # Marta in curlers in the doorway recess
     P('porton', 14, 0, -3, 'south')               # the car gate (the script opens porton and porton_2 together)
@@ -1368,6 +1376,17 @@ def markers(s):
     s.prop('lata_abierta', -7, 1, 5, 'casa_lata_galletitas_abierta', facing='north')
     s.prop('desayuno_mesa', 0, 1, 11, 'casa_desayuno', facing='north')
     s.prop('botiquin_rajado', 6, 6, 11, 'casa_botiquin_rajado', facing='east')
+    for n, (x, y, z, f) in enumerate(((-2, 2, 13, 'north'), (1, 2, 13, 'north'), (-3, 2, 12, 'east'))):   # beat 4
+        s.prop(f'alacena_abierta_{n}', x, y, z, 'casa_alacena_abierta', facing=f)
+    for n, x in enumerate((0, 4, 9)):           # beat 12: the corridor bulbs burst one by one
+        s.prop(f'plafon_roto_{n}', x, 7, 7, 'casa_plafon_roto')
+    for n, z in enumerate((10, 11, 12)):        # beat 13: the dolls leave the shelf
+        s.prop(f'estante_vacio_{n}', -4, 5, z, 'casa_estante_munecas_vacio', facing='west')
+    for n, (x, y, z, f) in enumerate(((-4, 1, 34, 'north'), (3, 1, 34, 'north'), (3, 1, 18, 'south'))):   # beat 11
+        s.prop(f'cuchillo_clavado_{n}', x, y, z, 'casa_cuchillo_clavado', facing=f)
+    s.prop('chancleta', -5, 5, 10, 'casa_chancleta', facing='west')                   # beat 14, where it lands
+    s.prop('silla_volcada', 9, 0, 9, 'casa_silla_comedor_volcada', facing='west')      # beat 4, after the tower
+    s.prop('cartel_nona', 5, 1, -5, 'casa_reja_cartel_perro_nona', facing='north')    # P2: '...y con la nona'
 
     # ---------------------------------------------------------------- the cracked wall and what replaces it (beat 14)
     after = {(-6, -5): 'boquete_izq_abajo', (-6, -4): 'boquete_izq_arriba', (-5, -3): 'boquete_dintel_izq',

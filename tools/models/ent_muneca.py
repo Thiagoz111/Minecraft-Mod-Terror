@@ -1,6 +1,13 @@
-"""Muneca Maldita -- cursed antique porcelain doll (DEAD LINE).
+"""Ofelia -- the cursed antique porcelain doll, anchor of CASO 2 'Casa Morales' (DEAD LINE).
 
 Authored at 2x texel density (model.scale = 0.5).  +Y down, ground y = 24, faces -Z, right_* on -X.
+
+Story beat she carries: in 1961 Padre Anselmo shut the demon AZAMEL inside her by sewing her mouth with blessed red
+thread.  Lucia (8) cut those stitches, so she arrives with the mouth CUT ('cortado', the default look): the old thread
+is dried, faded red; stubs stay in the needle holes and two loose ends hang from her lips and sway (bones
+thread_right / thread_left, two segments each).  In the finale the Nona sews it shut again with FRESH red thread:
+look 'cosida' = three bright cross-stitches standing proud of the face (toggle bones stitch_1..3 under 'stitches',
+shown one by one in the stitch minigame) over lips pressed into a seam; the hanging ends are hidden.
 
 Design
 ------
@@ -21,15 +28,20 @@ Face (the jumpscare portrait), front of a 2-texel porcelain mask so every break 
   2-px ember deep inside; a glossy black tear runs from it over clean porcelain and drips off the jaw;
 * the top corner of her left temple is broken away (a real notch through mask, wig and crown, dark
   inside) and one hairline crack runs from it through the socket to the corner of the mouth;
-* a small rosebud mouth sewn shut with three stitches (thread ticks above, needle holes below); the
-  left corner curls up in two diagonal steps, the crack runs into the right corner;
+* a small rosebud mouth whose three 1961 stitches were cut: needle holes above and below the lips, short
+  frayed stubs left in some of them, one hole torn empty where the crack from the socket ends; her right
+  corner curls up.  The long loose ends are geometry (thread_right from the upper hole, thread_left from
+  the lower hole on the chin) hanging plumb in front of chin and collar;
 * the chin is a marionette jaw in two slots: it drops straight down (and hinges a little) to show a
-  black throat with uneven bisque teeth top and bottom, one missing; the stitches tear.
+  black throat with uneven bisque teeth top and bottom, one missing.
 A dusty red bow is pinned on the top-left of her hairline, its notched tails hanging over the ringlets.
 """
 import math
+import os
 
-from mcmodel import Model, hash3, face_light, pick
+import numpy as np
+
+from mcmodel import Model, hash3, face_light, pick, rot_matrix
 from rig import Rig
 from paint import hx, mix
 
@@ -65,6 +77,17 @@ SHOE = pal('#040305', '#0b0a0f', '#15131b', '#221f2a', '#3a3646', '#6c6880', '#a
 SOLE = pal('#2a2420', '#43392f', '#5e5144', '#7a6b5a')
 BRASS = pal('#3b2a10', '#6e5220', '#a8853a', '#dcc070')
 CORD = pal('#1a120c', '#33251a', '#4e3a28', '#6d553d')
+# the 1961 blessed thread: sixty years buried in a biscuit tin -- dried, brown-shifted, faded red
+OLDT = pal('#1e0508', '#3e0d12', '#64181b', '#862823', '#a8442f', '#c4683f')
+# the new thread the Nona sews with: vivid scarlet with a hot highlight (reads on white porcelain and in the dark)
+NEWT = pal('#3a0206', '#7a050c', '#b80d14', '#e3241f', '#ff5a3c', '#ffa07a')
+HOLE = hx('#2b0b12')
+
+# ------------------------------------------------------------------ looks
+# VARIANT_MATS index 0 'cortado' (default, cut thread) / 1 'cosida' (sewn shut again).  The face materials read the
+# look being painted from _LOOK (set by MunecaModel.paint from the material's .look).
+LOOKS = ('cortado', 'cosida')
+_LOOK = ['cortado']
 
 
 def clamp(v, a=0.0, b=1.0):
