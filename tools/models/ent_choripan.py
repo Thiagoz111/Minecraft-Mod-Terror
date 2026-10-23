@@ -172,21 +172,34 @@ def art(rows, cols, ctx, default=None, i=None, j=None):
 VERTICAL_FUR = ('leg', 'paw', 'thigh', 'ear', 'lobe', 'fold', 'neck')
 
 
-def fur_noise(ctx, k=0.09):
-    """Smooth short coat: 1-texel strokes 3 texels long in the direction the hair lies (back along the body and
-    head, down the legs and ears), each stroke a little lighter or darker than its neighbours.  No static.
-    Vertical parts (legs, ears, neck) get half the contrast so they read as fur, not wood grain."""
+def _face_axes(ctx):
+    """(u, v, w) authoring coordinates of a texel: u = the direction the hair lies in on this face, v = across it,
+    w = the face's constant coordinate.  Hair runs back along the body / head (z), down the legs, ears and neck (y)."""
     x, y, z = A(ctx)
-    xi = math.floor(x)
-    if tag(ctx) in VERTICAL_FUR:
-        zi = math.floor(z)
-        off = hash3(xi, zi, 0, 3) * 3
-        a = hash3(xi, math.floor((y + off) / 3.0), zi, 11)
-        return (a - 0.5) * k * 0.5
-    yi = math.floor(y)
-    off = hash3(xi, yi, 0, 3) * 3
-    a = hash3(xi, yi, math.floor((z + off) / 3.0), 11)
-    return (a - 0.5) * k * 1.1
+    f = ctx.face
+    vertical = tag(ctx) in VERTICAL_FUR
+    if f in ('west', 'east'):
+        return (y, z, x) if vertical else (z, y, x)
+    if f in ('top', 'bottom'):
+        return (z, x, y)
+    return (y, x, z)                                    # front / back: hair falls down
+
+
+def fur_noise(ctx, k=0.09):
+    """Short smooth coat: staggered 2-texel TICKS in the direction the hair lies, two tones only (a lighter tick
+    catching the light, a darker one in the gap) on about half the texels; the rest is the clean base tone.  Every
+    other row is offset by one texel so the ticks interlock like a short-haired coat instead of lining up into the
+    long horizontal stripes of wood grain."""
+    u, v, w = _face_axes(ctx)
+    vi = math.floor(v)
+    cell = math.floor((u + (vi % 2)) / 2.0)
+    a = hash3(vi, cell, math.floor(w), 11)
+    amt = k * (0.62 if tag(ctx) in VERTICAL_FUR else 0.8)
+    if a > 0.74:
+        return amt
+    if a < 0.26:
+        return -amt
+    return 0.0
 
 
 def coat_v(ctx, base=0.6):
