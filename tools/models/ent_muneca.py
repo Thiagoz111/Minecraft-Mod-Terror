@@ -206,8 +206,10 @@ def near_chunk(x, y, z, r=0.9):
 # Mask front, 14 x 10 (x -7..7, y -1.5..8.5).  Legend:
 #  o porcelain  O highlight  s soft shade  x crease dirt   h chip (bright break edge)  c crack
 #  . hole (glass eye / socket)  X broken chunk  r socket rim  l/e lash  W lid line
-#  p/P blush  k tear  g tear gloss  M lip line  R/Q lip  S stitch thread
-FACE_A = [
+#  p/P blush  k tear  g tear gloss  M lip line  L/R/Q lip (dark -> light)
+#  u empty needle hole   H needle hole with old thread in it   T/t old thread stub (light/dark)  F frayed fibre
+#  i lips pressed into a seam (cosida)   z porcelain puckered toward a stitch hole (cosida)
+FACE_TOP = [
     # 0123456789ABCD
     "oooooOOOoohXXX",   # r0  forehead (bangs over the left); a chunk broken out of the corner
     "oooooooooochXX",   # r1  the crack leaves the chunk, chipped lip of the break
@@ -217,26 +219,52 @@ FACE_A = [
     "s.....os....so",   # r5
     "o.....oos..soo",   # r6
     "oeoeoeooChhkoo",   # r7  lower lashes | hairline crack + chipped lower lip | the tear leaves the socket
-    "pPpMoSoSoChkpp",   # r8  blush | smile curls up | stitch ends above the lip | crack reaches the mouth | tear
-    "ppooMNRNRNogPp",   # r9  rosebud upper lip pulled in by three stitches (N) | tear gloss
 ]
+# The mouth, per look.  Plate rows r8 (above the lip) and r9 (upper lip) are 14 wide (x -7..7); the chin rows c10
+# (lower lip) and c11 (needle holes) are 6 wide (x -3..3, face columns 4..9); 'tip' is the chin tip (columns 5..8).
+# The three 1961 stitches went through columns 5, 7 and 9.
+MOUTH = {
+    'cortado': {
+        # col 5: thread_right leaves this hole | col 7: a short stub hangs on the lip | col 9: the crack ends in
+        # a hole the thread was torn out of
+        'r8': "pPpMoHoHouhkpp",   # ... | 10 chip | 11 the black tear
+        'r9': "ppooMRQtRMogPp",   # rosebud upper lip, cupid's bow lit, the cut stub of the middle stitch
+        'c10': "sTRQRF",          # lower lip: stub of the first stitch | frayed fibre at the corner
+        'c11': "oHouoH",          # holes: stub in 5 | torn-out 7 | 9 is where thread_left hangs from
+        'tip': "soos",
+    },
+    'cosida': {
+        # three fresh cross-stitches (geometry planes, stitch_1..3) cross the seam at x -3, 0, 3; their corner
+        # holes are columns 2, 5, 8, 11.  Under them the lips are pulled into a tight seam and the porcelain
+        # puckers toward every hole; the old 1961 holes (7, 9) stay as empty punctures.
+        'r8': "pPuzououuuhkpp",
+        'r9': "ppozMLiiLMogPp",
+        'c10': "iLiiLi",
+        'c11': "zuouuu",
+        'tip': "soos",
+    },
+}
 # Lower face 12 x 2 (x -6..6, y 8.5..10.5); the chin slot (x -3..3) is open.
-FACE_B = [
-    "pps......skp",
-    "sos......oks",
-]
-# Chin 6 x 2 (x -3..3, y 8.5..10.5) + chin tip 4 x 1
-CHIN = [
-    "oNQNQN",
-    "odododo"[:6],
-]
-CHIN_TIP = ["soos"]
+FACE_B = {
+    'cortado': ["pps......skp", "sos......oks"],
+    'cosida': ["pzs......skp", "suz......zks"],
+}
 FACE_COLS = {
     'h': CHIP, 'c': CRACK_D, 'r': hx('#2a2026'), 'l': LASH[0], 'e': LASH[1], 'W': LASH[0],
-    'k': TEAR[0], 'g': TEAR[3], 'M': LIP[0], 'R': LIP[2], 'Q': LIP[3], 'S': THREAD, 'N': hx('#43070f'),
+    'k': TEAR[0], 'g': TEAR[3], 'M': LIP[0], 'R': LIP[2], 'Q': LIP[3],
     'C': CRACK,
     'L': LIP[1],
+    'H': OLDT[0], 'T': OLDT[3], 't': OLDT[2], 'F': OLDT[5], 'i': hx('#3a0711'),
 }
+
+
+def mouth():
+    return MOUTH[_LOOK[0]]
+
+
+def face_row(j):
+    """Plate front row j (0..9) for the look being painted."""
+    return FACE_TOP[j] if j < 8 else mouth()['r%d' % j]
 # ember deep in the socket, in skull-front texels (i = face column, j = face row - 1)
 EMBER_PX = {(9, 4): EMBER[2], (10, 4): EMBER[3]}
 NOSE_FRONT = [None, None]   # filled after PORC (see nose_mat)
@@ -265,6 +293,10 @@ def face_px(ch, fx, fy):
         return mix(pick(PORC, base - 0.1), GRIME, 0.45)
     if ch == 'd':
         return mix(pick(PORC, base - 0.1), LIP[0], 0.35)   # needle puncture
+    if ch == 'u':
+        return mix(pick(PORC, base - 0.2), HOLE, 0.8)      # empty needle hole
+    if ch == 'z':
+        return mix(pick(PORC, base - 0.13), ROUGE[0], 0.22)  # porcelain dimpled toward a hole (blush shows in it)
     if ch == 'p':
         return mix(pick(PORC, base), ROUGE[2], 0.75)
     if ch == 'P':
@@ -291,9 +323,9 @@ def plate_mat(ctx):
         return c
     if f == 'front':
         if part == 'plate':
-            ch, fx, fy = FACE_A[ctx.j][ctx.i], ctx.i, ctx.j
+            ch, fx, fy = face_row(ctx.j)[ctx.i], ctx.i, ctx.j
         else:
-            ch, fx, fy = FACE_B[ctx.j][ctx.i], ctx.i + 1, ctx.j + 10
+            ch, fx, fy = FACE_B[_LOOK[0]][ctx.j][ctx.i], ctx.i + 1, ctx.j + 10
         if ch in '.X':
             return None
         return face_px(ch, fx, fy)
@@ -380,7 +412,8 @@ def chin_mat(ctx):
     lx, ly, lz = local(ctx)
     t = tag(ctx)
     if f == 'front':
-        rows = CHIN if t == 'chin' else CHIN_TIP
+        mo = mouth()
+        rows = (mo['c10'], mo['c11']) if t == 'chin' else (mo['tip'],)
         ch = rows[ctx.j][ctx.i]
         fx = ctx.i + (4 if t == 'chin' else 5)
         fy = ctx.j + (10 if t == 'chin' else 12)
@@ -746,9 +779,152 @@ def cord_mat(ctx):
     return pick(CORD, 0.45 + face_light(ctx) + (0.25 if int(ly * 2) % 2 == 0 else 0))
 
 
+def thread_mat(ctx):
+    """Loose end of the 1961 thread: a two-ply twist (light / dark texels stepping round the strand), darker down
+    the strand, the very end split into pale frayed fibres (front/back texel gone, the side plies left)."""
+    f = ctx.face
+    lx, ly, lz = local(ctx)
+    h = ctx.cube.size[1]
+    tip = tag(ctx) == 'thread_tip'
+    if f == 'top':
+        return OLDT[1]
+    if f == 'bottom':
+        return None if tip else OLDT[1]
+    k = {'front': 0, 'east': 1, 'back': 2, 'west': 3}[f]
+    last = tip and ctx.j == ctx.h - 1
+    if last and f in ('front', 'back'):
+        return None                                     # the plies split apart at the cut
+    v = 0.56 + face_light(ctx) * 0.9 + (0.14 if (ctx.j + k) % 2 == 0 else -0.1)
+    v -= (ly / max(1, h)) * (0.14 if tip else 0.05)
+    if last:
+        v = 0.86                                        # pale, frayed fibres
+    return pick(OLDT, v)
+
+
+# fresh cross-stitch, 4 x 4: the top thread (R, lit) runs from her upper right hole to the lower left one, the under
+# thread (r) crosses it; both darken (d) where they dive into the needle holes
+XSTITCH = [
+    "d..d",
+    ".Rr.",
+    ".rR.",
+    "d..d",
+]
+
+
+def stitch_mat(ctx):
+    if ctx.face != 'front':
+        return None                                     # one face only (planes are drawn double-sided)
+    ch = XSTITCH[ctx.j][ctx.i]
+    if ch == '.':
+        return None
+    if ch == 'd':
+        return NEWT[1]
+    if ch == 'r':
+        return NEWT[2]
+    return NEWT[4] if ctx.j == 1 else NEWT[3]           # sheen on the upper half of the top thread
+
+
 # ------------------------------------------------------------------ module contract
-DEFAULT_MAT = dress_mat
+def make_mat(lk):
+    """Fallback material of look `lk`; MunecaModel.paint reads .look and every face material follows it."""
+    def mat(ctx):
+        return dress_mat(ctx)
+    mat.look = lk
+    return mat
+
+
+DEFAULT_MAT = make_mat('cortado')
+VARIANT_MATS = {'cortado': DEFAULT_MAT, 'cosida': make_mat('cosida')}
 FOCUS = 'head'
+
+# ------------------------------------------------------------------ toggles (Java: ModelPart.visible)
+# bone -> visible in the default look 'cortado'.  stitch_1..3 live under 'stitches': in the stitch minigame Java shows
+# 'stitches' with all three hidden and reveals one per completed puntada, then switches the texture to 'cosida'.
+TOGGLE_DEFAULT = {'thread_right': True, 'thread_left': True, 'stitches': False,
+                  'stitch_1': True, 'stitch_2': True, 'stitch_3': True}
+VARIANT_TOGGLES = {
+    'cortado': {},
+    'cosida': {'thread_right': False, 'thread_left': False, 'stitches': True},
+}
+
+
+def visible_set(variant=None):
+    vis = dict(TOGGLE_DEFAULT)
+    vis.update(VARIANT_TOGGLES.get(variant or 'cortado', {}))
+    show = os.environ.get('MUNECA_SHOW', '')                          # preview helper: 'all' or 'bone,bone'
+    for k in vis:
+        if show == 'all' or k in show.split(','):
+            vis[k] = True
+    return {k for k, v in vis.items() if v}
+
+
+class MunecaModel(Model):
+    """Exports every bone to Java; the preview / gallery JSON hides the toggle bones the current look hides.
+    paint() tells the face materials which look ('cortado' / 'cosida') is being painted."""
+    visible = None
+
+    def paint(self, default_mat, seed=1, layer='base'):
+        _LOOK[0] = getattr(default_mat, 'look', 'cortado')
+        try:
+            return super().paint(default_mat, seed, layer)
+        finally:
+            _LOOK[0] = 'cortado'
+
+    def to_json(self):
+        d = super().to_json()
+        d['toggles'] = {'default': dict(TOGGLE_DEFAULT),
+                        'variants': {k: dict(v) for k, v in VARIANT_TOGGLES.items()}, 'poses': {}}
+        if self.visible is None:
+            return d
+        hide = set()
+        for b in self.bones():
+            if b.name in TOGGLE_DEFAULT and b.name not in self.visible:
+                for sub in b.walk():
+                    hide.add(sub.name)
+        for bd in d['bones']:
+            if bd['name'] in hide and bd['cubes']:
+                bd['hidden_cubes'] = bd['cubes']                       # a toggle-aware viewer can still show them
+                bd['cubes'] = []
+        return d
+
+
+# ------------------------------------------------------------------ gravity for the loose thread ends
+HEAD_REST = (4, -8, -14)                                                # degrees, see build()
+REST_DEG = {'body': (0, 0, 0), 'neck': (0, 0, 0), 'head': HEAD_REST, 'jaw': (0, 0, 0)}
+THREAD_CHAIN = {'thread_right': ('body', 'neck', 'head'), 'thread_left': ('body', 'neck', 'head', 'jaw')}
+
+
+def _euler(R):
+    """MC ZYX angles (radians) of R = Rz * Ry * Rx."""
+    y = math.asin(max(-1.0, min(1.0, -R[2, 0])))
+    return math.atan2(R[2, 1], R[2, 2]), y, math.atan2(R[1, 0], R[0, 0])
+
+
+def _chain_rot(chain, pose):
+    R = np.eye(3)
+    for b in chain:
+        r = REST_DEG[b]
+        p = pose.get(b, (0, 0, 0, 0, 0, 0))
+        R = R @ rot_matrix(math.radians(r[0]) + p[0], math.radians(r[1]) + p[1], math.radians(r[2]) + p[2])
+    return R
+
+
+def thread_rest_deg(name):
+    """Rest rotation that cancels the rolled head so the thread hangs plumb."""
+    return tuple(math.degrees(a) for a in _euler(_chain_rot(THREAD_CHAIN[name], {}).T))
+
+
+def plumb(pose, sway=None):
+    """Pose entries for the thread roots so they still hang plumb (plus an optional world-space sway, radians
+    (xRot, zRot)) under `pose`.  Java does the same every frame: parent world rotation inverted + swing."""
+    out = {}
+    for name, chain in THREAD_CHAIN.items():
+        sx, sz = (sway or {}).get(name, (0.0, 0.0))
+        loc = _euler(_chain_rot(chain, pose).T @ rot_matrix(sx, 0, sz))
+        rest = [math.radians(a) for a in thread_rest_deg(name)]
+        d = [((loc[i] - rest[i] + math.pi) % (2 * math.pi)) - math.pi for i in range(3)]
+        out[name] = (d[0], d[1], d[2], 0, 0, 0)
+    return out
 
 
 def build():
