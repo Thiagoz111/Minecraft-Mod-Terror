@@ -990,6 +990,7 @@
   "deadline.msg.casa.chorizo_crudo": "§7Not raw. Put it on the grill.",
   "deadline.msg.casa.pan": "§7Put a grilled chorizo in it and it is a choripán.",
   "deadline.msg.case_failed": "§4Case failed:§r %s. The entity is still there.",
+  "deadline.msg.continuara": "§4[DEAD LINE]§r The call dropped... §oTo be continued.",
   "deadline.msg.evidence": "§aEvidence recorded (%s)",
   "deadline.msg.needs_exorcism": "§cIt will not fit in a jar. It needs an exorcism.",
   "deadline.msg.no_battery": "§cBattery dead",

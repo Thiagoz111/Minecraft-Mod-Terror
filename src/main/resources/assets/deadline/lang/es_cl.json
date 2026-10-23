@@ -990,6 +990,7 @@
   "deadline.msg.casa.chorizo_crudo": "§7Crudo no, che. A la parrilla.",
   "deadline.msg.casa.pan": "§7Con un chorizo asado adentro, es un choripán.",
   "deadline.msg.case_failed": "§4Caso fallido:§r %s. La entidad sigue ahí.",
+  "deadline.msg.continuara": "§4[DEAD LINE]§r La llamada se cortó... §oContinuará.",
   "deadline.msg.evidence": "§aEvidencia registrada (%s)",
   "deadline.msg.needs_exorcism": "§cNo cabe en un frasco. Necesita un exorcismo.",
   "deadline.msg.no_battery": "§cSin batería",

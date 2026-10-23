@@ -539,7 +539,7 @@ public final class Run {
 	}
 
 	/** Speaker of a line id like 'colegio.madre.lista' -> 'madre' (the middle part), 'operadora.x' -> 'operadora'. */
-	static String speakerOf(String id) {
+	public static String speakerOf(String id) {
 		String[] p = id.split("\\.");
 		if (p.length >= 3) {
 			String s = p[1];

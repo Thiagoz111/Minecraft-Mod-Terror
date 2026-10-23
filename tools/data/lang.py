@@ -103,6 +103,7 @@ MISC = {
     'deadline.msg.case_failed': ('§4Caso fallido:§r %s. La entidad sigue ahí.', '§4Case failed:§r %s. The entity is still there.'),
     'deadline.msg.no_dimension': ('§cNo se encontró la dimensión del caso.', '§cCase dimension not found.'),
     'deadline.msg.no_money': ('§cNo te alcanza el dinero.', '§cNot enough money.'),
+    'deadline.msg.continuara': ('§4[DEAD LINE]§r La llamada se cortó... §oContinuará.', '§4[DEAD LINE]§r The call dropped... §oTo be continued.'),
     'deadline.msg.anchored': ('§8Algo la protege... encontrá su objeto maldito.', '§8Something protects it... find its cursed object.'),
     'deadline.msg.anchor_hint': ('§7Está maldito. Usá §bAgua Bendita§7.', '§7It is cursed. Use §bHoly Water§7.'),
     'deadline.msg.anchor_purified': ('§b✟ Objeto purificado.§r La entidad ahora es vulnerable.', '§b✟ Object purified.§r The entity is now vulnerable.'),

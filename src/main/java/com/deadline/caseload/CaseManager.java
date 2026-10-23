@@ -197,7 +197,8 @@ public final class CaseManager {
 		for (ServerPlayer p : server.getPlayerList().getPlayers()) {
 			HunterData d = ModAttachments.get(p);
 			long now = p.level().getGameTime();
-			if (d.active == null) {
+			tickCalls(p, d);
+			if (d.active == null && !PENDING.containsKey(p.getUUID())) {
 				if (d.requests.size() < MAX_PENDING && now >= d.nextCall && hasPhone(p)) {
 					ring(p, randomRequest(p, now));
 				}
@@ -221,12 +222,60 @@ public final class CaseManager {
 	}
 
 	private static CaseRequest randomRequest(ServerPlayer p, long now) {
-		CaseType[] all = CaseType.values();
 		HunterData d = ModAttachments.get(p);
-		// Early hunters get the easier cases first.
-		int cap = Math.min(all.length, 2 + d.solved);
-		CaseType t = all[p.getRandom().nextInt(cap)];
+		// story order for the videos: the school first, then the Morales house; after that, any of them
+		CaseType t = d.solved == 0 ? CaseType.COLEGIO : d.solved == 1 ? CaseType.CASA_MORALES
+				: CaseType.values()[p.getRandom().nextInt(CaseType.values().length)];
 		return new CaseRequest(t, p.getRandom().nextInt(t.callers()), now);
+	}
+
+	// ------------------------------------------------------------------ answering a call
+	/** Calls being listened to: the case starts when the caller and then the operator have finished talking. */
+	private record PendingCall(CaseRequest req, long at, boolean noticed) {
+	}
+
+	private static final java.util.Map<java.util.UUID, PendingCall> PENDING = new java.util.HashMap<>();
+
+	/** Plays a voice line in the hunter's head with its subtitle; returns its length in ticks. */
+	public static int playLine(ServerPlayer p, String id) {
+		int ticks = com.deadline.director.LineBook.ticks(p.level().getServer(), id);
+		net.minecraft.sounds.SoundEvent s = ModSounds.line(id);
+		if (s != null) {
+			Fx.voice(p, s, 1.0F);
+		}
+		Fx.subtitle(p, "deadline.speaker." + com.deadline.director.Run.speakerOf(id), "deadline.line." + id, ticks + 30);
+		return ticks;
+	}
+
+	private static void answer(ServerPlayer p, CaseRequest req) {
+		String call = req.type().callLine();
+		int t = call != null ? playLine(p, call) + 10 : 0;
+		PENDING.put(p.getUUID(), new PendingCall(req, p.level().getGameTime() + t + 10, false));
+	}
+
+	/** Every second: a call that finished plays the operator's notice, then the case starts. */
+	private static void tickCalls(ServerPlayer p, HunterData d) {
+		PendingCall pc = PENDING.get(p.getUUID());
+		long now = p.level().getGameTime();
+		if (pc == null || now < pc.at()) {
+			return;
+		}
+		if (!pc.noticed()) {
+			int t = playLine(p, pc.req().type().noticeLine());
+			PENDING.put(p.getUUID(), new PendingCall(pc.req(), now + t + 10, true));
+			return;
+		}
+		PENDING.remove(p.getUUID());
+		if (d.active != null) {
+			return;
+		}
+		if (!pc.req().type().scripted()) {
+			// a case that is not open yet (video 1 ends on the Morales call)
+			p.level().playSound(null, p.getX(), p.getY(), p.getZ(), ModSounds.PHONE_HANGUP, SoundSource.PLAYERS, 0.6F, 1.0F);
+			p.displayClientMessage(Component.translatable("deadline.msg.continuara"), false);
+			return;
+		}
+		startCase(p, pc.req());
 	}
 
 	/** Adds a request and makes the phone ring. */
@@ -249,9 +298,10 @@ public final class CaseManager {
 		HunterData d = ModAttachments.get(p);
 		switch (a.action()) {
 			case PhoneActionPayload.ACCEPT -> {
-				if (d.active == null && a.arg() >= 0 && a.arg() < d.requests.size()) {
+				if (d.active == null && !PENDING.containsKey(p.getUUID()) && a.arg() >= 0 && a.arg() < d.requests.size()) {
 					CaseRequest req = d.requests.remove(a.arg());
-					startCase(p, req);
+					p.level().playSound(null, p.getX(), p.getY(), p.getZ(), ModSounds.PHONE_ACCEPT, SoundSource.PLAYERS, 0.6F, 1.0F);
+					answer(p, req);
 				}
 			}
 			case PhoneActionPayload.DECLINE -> {
@@ -421,6 +471,10 @@ public final class CaseManager {
 			int reward = ac.type.reward() + ac.evidence * 50;
 			d.money += reward;
 			d.solved++;
+			if (ac.type == CaseType.COLEGIO) {
+				// the cliffhanger: back home, and 25 s later the phone rings again (Marta, the Morales house)
+				d.nextCall = p.level().getGameTime() + 20 * 25;
+			}
 			Fx.caseEnd(p, true, reward);
 		} else {
 			Fx.caseEnd(p, false, 0);
