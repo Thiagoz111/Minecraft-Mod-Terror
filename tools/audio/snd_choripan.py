@@ -23,7 +23,8 @@ rendered circularly and heard through a cheap boombox three houses away on a sti
                           dog, and the tail thumps the floorboards far back along the chain.
   choripan.chomp          beat 10 catch: cartoon CHOMP (teeth clack + crust crunch + juicy squish + "bomp"), munch munch, GULP.
   choripan.vomit          beat 10: two retches from too deep, a gush of thick black gurgling liquid, splatter on the tiles, drips.
-  choripan.metro_retract  beat 10: the body winds back like a TAPE MEASURE (zzzzzip faster and faster) + CLACK + "boiiing".
+  choripan.metro_retract  beat 10: the body winds back like a TAPE MEASURE (a rattle-buzz whose pitch climbs with the speed:
+                          "zzzz-iiiip", crescendo) + CLACK + "boiiing" ringing all the way out.
   casa.cumbia_far         STREAM, stereo, 40 s seamless: the neighbour's cumbia (güiro, bouncy bass, musette synth accordion,
                           off-beat chords, congas, timbales) through a driven boombox, band-passed by three houses of air,
                           slap-backs off the house fronts, diffuse night air, slow periodic "breeze" in level and brightness.
@@ -654,14 +655,12 @@ def bark_cute(v):
         add(out, tag_jingle(112, 4, 0.12), 0.02, 0.05)
         add(out, tag_jingle(113, 3, 0.1), 0.24, 0.045)
     else:           # playful "rr-ARF!": a tiny grumble wound up into a high bark
-        n = N(0.2)
         gr = growl_layer(104, 0.2, [(0, 230), (0.2, 290)], [(0, dogv('closed', 1.05))],
                          [(0, 0), (0.03, 0.6), (0.16, 1.0), (0.2, 0.6)], pulse=(34, 0.55), rough=0.6, sub=0.2,
                          noise=0.5, tilt=1.0, fmax=8000)
         add(out, norm(gr) * 0.32, 0.0)
         add(out, bark(105, 760, 0.13, 1.25, 0.72, harsh=0.35, breath=0.25), 0.17)
         add(out, tag_jingle(114, 4, 0.14), 0.16, 0.055)
-        del n
     return room(out, 'living', 0.12)
 
 
@@ -820,7 +819,6 @@ def unspool():
     """5 s: rubber stretched over flesh, never stopping, while link after link comes out of the doghouse."""
     L = 5.0
     n = N(L)
-    t = taxis(n)
     r = dsp.rng(600)
     links, tl = [], 0.22
     while tl < L - 0.25:
@@ -833,19 +831,22 @@ def unspool():
         i0, i1 = N(a) if a > 0 else 0, min(n, N(b))
         u = np.linspace(0, 1, i1 - i0, endpoint=False)
         tension[i0:i1] = (0.25 if a == 0 else 0.0) + u ** 1.4
-    tension = smooth_arr(tension, 0.02)
-    # 1. high rubber squeak (a balloon / latex glove dragged and stretched): tonal stick-slip
-    rate_hi = 300 * (1 + 0.75 * tension) * (1 + 0.07 * snoise(n, 3, 601))
-    e_hi = np.clip(0.6 + 0.5 * snoise(n, 5, 602), 0.25, 1.0)
-    idx, a = stick_slip(n, rate_hi, 603, jitter=0.07, amp_env=e_hi, amp_lo=0.75)
-    kern = modal_ir([(r.uniform(1050, 1250), 70, 1.0), (r.uniform(2100, 2500), 110, 0.55),
-                     (r.uniform(3300, 3900), 160, 0.3), (r.uniform(620, 720), 55, 0.6)], 0.06, 604)
-    squeak = pulse_train(n, idx, a, kern)
+    tension = smooth_arr(tension, 0.035)
+    # 1. high rubber squeal (a balloon / latex glove dragged and stretched): tonal stick-slip whose PITCH follows the
+    #    tension - it climbs while a link is being dragged out and sags when the link pops free. The latex body is a
+    #    set of broad resonances (so the harmonic comb, i.e. the pitch, reads) plus a little narrow ring on top.
+    rate_hi = 260 * (1.85 ** tension) * (1 + 0.035 * snoise(n, 6, 601)) * (1 + 0.012 * np.sin(TWO_PI * 5.5 * taxis(n)))
+    e_hi = np.clip(0.7 + 0.35 * snoise(n, 4, 602), 0.35, 1.0)
+    idx, a = stick_slip(n, rate_hi, 603, jitter=0.05, amp_env=e_hi, amp_lo=0.8)
+    kern = modal_ir([(r.uniform(1050, 1250), 650, 1.0), (r.uniform(2100, 2500), 800, 0.7), (r.uniform(3300, 3900), 1000, 0.4),
+                     (r.uniform(620, 720), 500, 0.6), (r.uniform(4800, 5400), 1400, 0.15)], 0.02, 604)
+    ring = modal_ir([(r.uniform(1050, 1250), 70, 1.0), (r.uniform(2100, 2500), 110, 0.5)], 0.06, 614)
+    squeak = norm(pulse_train(n, idx, a, kern)) + 0.25 * norm(pulse_train(n, idx, a, ring))
     # 2. low creak of stretched skin (leathery, jittery)
     rate_lo = 78 * (1 + 0.6 * tension) * (1 + 0.1 * snoise(n, 4, 605))
     idx, a = stick_slip(n, rate_lo, 606, jitter=0.3, amp_lo=0.4)
-    kern = modal_ir([(r.uniform(280, 340), 45, 1.0), (r.uniform(620, 720), 65, 0.7), (r.uniform(1150, 1350), 95, 0.4),
-                     (r.uniform(2100, 2500), 140, 0.2)], 0.08, 607)
+    kern = modal_ir([(r.uniform(280, 340), 160, 1.0), (r.uniform(620, 720), 210, 0.7), (r.uniform(1150, 1350), 270, 0.4),
+                     (r.uniform(2100, 2500), 350, 0.2)], 0.05, 607)   # damped: each slip is heard, no 300 Hz drone
     creak = pulse_train(n, idx, a, kern)
     # 3. wet flesh sliding over itself: swept resonance, sticky peel, gloopy texture
     slide = tv_filter(pink(n, 608), 'bp', 520 * (1 + 0.45 * snoise(n, 2, 609)) * (1 + 0.4 * tension), 96, 1.1)
@@ -875,7 +876,7 @@ def unspool():
     groan = growl_layer(690, L, [(0, 52), (2.5, 58), (L, 54)], [(0, dogv('growl', 0.5))],
                         [(0, 0), (0.6, 1.0), (L - 0.4, 1.0), (L, 0)], pulse=(18, 0.4), rough=1.0, sub=0.7, noise=0.9,
                         fmax=3000)
-    out = (0.55 * norm(squeak) * (0.6 + 0.6 * tension) + 0.5 * norm(creak) + 0.42 * norm(slide) + 0.18 * norm(peel)
+    out = (0.7 * norm(squeak) * (0.6 + 0.6 * tension) + 0.45 * norm(creak) + 0.42 * norm(slide) + 0.18 * norm(peel)
            + 0.4 * norm(wet) + 0.85 * norm(lk) + 0.16 * norm(wag) + 0.22 * norm(dsp.lowpass(groan, 2500, 2)))
     out *= env_pts(n, [(0, 0), (0.12, 1.0), (L - 0.35, 1.0), (L, 0)])
     return room(out, 'patio', 0.12)
@@ -902,6 +903,16 @@ def rev_scream(seed, dur=1.1, f0=950.0, tail_keep=1.7):
     return y[-N(tail_keep):]
 
 
+def bloom(seed, dur=0.75, f_hi=95.0, f_lo=36.0, amp=1.0):
+    """The body opening up as the little dog becomes the beast: a sub-bass drop (the chest cavity growing) + a wet thud."""
+    n = N(dur)
+    t = taxis(n)
+    f = f_lo + (f_hi - f_lo) * np.exp(-t / 0.12)
+    y = np.sin(TWO_PI * np.cumsum(f) / SR) * np.exp(-t / 0.2) * np.minimum(1, t / 0.006)
+    y = norm(y) + 0.5 * norm(thump(seed, 60, dur, 1.0, slap=0.5))
+    return norm(dsp.lowpass(y, 900, 2), amp)
+
+
 def demon_roar(v):
     L = 3.0
     out = np.zeros(N(L), np.float32)
@@ -909,9 +920,9 @@ def demon_roar(v):
         dur = 2.05
         f0p = [(0, 560), (0.04, 680), (0.12, 600), (0.2, 300), (0.4, 95), (0.6, 70), (1.5, 62), (dur, 50)]
         scp = [(0, 1.0), (0.13, 1.0), (0.45, 0.45), (dur, 0.42)]
-        ap = [(0, 0), (0.005, 0.8), (0.04, 1.0), (0.13, 0.35), (0.22, 0.6), (0.45, 1.0), (1.4, 0.95), (1.85, 0.5),
-              (dur, 0)]
-        t_tear, t_cut, sc_f0 = 0.3, 2.42, 950.0
+        ap = [(0, 0), (0.005, 0.8), (0.04, 1.0), (0.13, 0.35), (0.22, 0.55), (0.34, 1.0), (0.6, 0.88), (1.4, 0.95),
+              (1.85, 0.5), (dur, 0)]
+        t_tear, t_cut, sc_f0, t_on = 0.3, 2.42, 950.0, 0.33
         lead = 0.0
     else:
         lead = 0.17    # an extra "yip" first
@@ -920,9 +931,9 @@ def demon_roar(v):
         f0p = [(0, 620), (0.05, 720), (0.12, 640), (0.24, 280), (0.45, 82), (0.75, 104), (1.1, 76), (1.7, 64),
                (dur, 52)]
         scp = [(0, 1.0), (0.14, 1.0), (0.5, 0.44), (1.0, 0.4), (dur, 0.43)]
-        ap = [(0, 0), (0.005, 0.8), (0.045, 1.0), (0.14, 0.3), (0.25, 0.55), (0.5, 1.0), (0.75, 0.9), (1.2, 1.0),
-              (1.8, 0.6), (dur, 0)]
-        t_tear, t_cut, sc_f0 = 0.38, 2.62, 720.0
+        ap = [(0, 0), (0.005, 0.8), (0.045, 1.0), (0.14, 0.3), (0.25, 0.5), (0.41, 1.0), (0.62, 0.85), (0.75, 0.9),
+              (1.2, 1.0), (1.8, 0.6), (dur, 0)]
+        t_tear, t_cut, sc_f0, t_on = 0.38, 2.62, 720.0, 0.4
     n = N(dur)
     f0 = contour(n, f0p)
     fr = ftrack(n, [(t, dogv('open', s)) for t, s in scp], glide=0.12)
@@ -943,6 +954,8 @@ def demon_roar(v):
     roar = tv_filter(roar, 'lp', contour(n, [(0, 9500), (0.14, 9500), (0.5, 3800), (dur, 3200)]), 96)
     roar = dsp.lowpass(roar, 7000, 2)
     add(out, roar, lead)
+    # ...and the moment the pitch collapses, the body under it blooms: a sub drop you feel more than hear
+    add(out, bloom(760 + v), lead + t_on, 0.75)
     # the mouth opens in four petals: flesh tearing, strings of spit
     add(out, squelch(720 + v, 0.35, 1800, 350, 1.0, 6), lead + t_tear, 0.35)
     tr = N(0.25)
@@ -1133,8 +1146,8 @@ def vomit():
 
 
 # ====================================================================== 11. metro_retract
-def boing(seed, dur=1.05, f0=150.0):
-    """Cartoon jaw-harp spring: swoops up, then wobbles 'boi-oi-oi-oing' while it dies."""
+def boing(seed, dur=1.9, f0=150.0):
+    """Cartoon jaw-harp spring: swoops up, then wobbles 'boi-oi-oi-oing' while it dies (all the way to silence)."""
     n = N(dur)
     t = taxis(n)
     depth = 0.22 * np.exp(-t / 0.33) + 0.015
@@ -1144,43 +1157,47 @@ def boing(seed, dur=1.05, f0=150.0):
     fc = 950 * (1 + 0.55 * np.sin(TWO_PI * rate * t + 0.6) * (depth / 0.235))
     tw = tv_filter(src, 'bp', fc, 192, 0.8)
     y = 0.65 * norm(tw) + 0.5 * norm(dsp.lowpass(src, 1200, 2))
-    y *= np.exp(-t / 0.42) * np.minimum(1, t / 0.003)
+    y *= np.exp(-t / 0.42) * np.minimum(1, t / 0.003) * env_pts(n, [(0, 1), (dur * 0.7, 1), (dur, 0)])
     return norm(y)
 
 
 def metro_retract():
-    L = 2.5
+    L = 3.0
     out = np.zeros(N(L), np.float32)
     r = dsp.rng(900)
     # the lock lets go
     lk = modal_ir([(2300, 180, 1), (3900, 250, .7), (5600, 350, .4)], 0.03, 901)
     lk[:N(0.001)] += burst(0.001, 902, 2.0)
     add(out, norm(lk), 0.0, 0.45)
-    # ZZZZIP: the steel blade whips back in, faster and faster
+    # ZZZZIP: the steel blade whips back in, faster and faster. Its rattle against the throat of the case is a buzz
+    # whose pitch IS the speed (short, broad steel resonances so the rising comb reads: "zzzz-iiiip"), over a fainter
+    # ringing of the blade, the slide hiss and the spool whirring up; a 14 dB crescendo into the clack.
     z0, z1 = 0.04, 1.02
     zd = z1 - z0
     zn = N(zd)
     u = np.linspace(0, 1, zn)
-    ez = env_pts(zn, [(0, 0), (0.03, 0.7), (zd * 0.5, 0.9), (zd * 0.95, 1.0), (zd, 0.8)])
-    idx, a = stick_slip(zn, 260 * (1 + 3.2 * u ** 1.6), 903, jitter=0.22, amp_env=ez, amp_lo=0.5)
-    kern = modal_ir([(r.uniform(2600, 3000), 300, 1.0), (r.uniform(4200, 4700), 380, 0.7), (r.uniform(6300, 7000), 500, 0.5),
-                     (r.uniform(1300, 1500), 220, 0.5)], 0.02, 904)
+    ez = env_pts(zn, [(0, 0), (0.02, 0.62), (zd * 0.5, 0.74), (zd * 0.85, 0.9), (zd * 0.97, 1.0), (zd, 0.9)])
+    idx, a = stick_slip(zn, 85.0 * (1000.0 / 85.0) ** (u ** 1.25), 903, jitter=0.05, amp_env=ez, amp_lo=0.7)
+    kern = modal_ir([(r.uniform(2600, 3000), 900, 1.0), (r.uniform(4200, 4700), 1100, 0.7), (r.uniform(6300, 7000), 1400, 0.45),
+                     (r.uniform(1300, 1500), 700, 0.6), (r.uniform(650, 800), 500, 0.4)], 0.012, 904)
     rattle = pulse_train(zn, idx, a, kern)
+    ring = pulse_train(zn, idx, a, modal_ir([(2800, 260, 1.0), (4450, 330, 0.6)], 0.03, 914))
     hiss = tv_filter(white(zn, 905), 'bp', 2500 * (1 + 1.4 * u), 64, 1.2) * ez
-    rot = np.cumsum(12 + 55 * u ** 1.5) / SR
-    whirr = bp(white(zn, 906), 900, 3500) * (0.6 + 0.4 * np.cos(TWO_PI * rot)) * ez
+    rot = np.cumsum(10 + 60 * u ** 1.5) / SR
+    whirr = bp(white(zn, 906), 900, 3500) * (0.55 + 0.45 * np.cos(TWO_PI * rot)) * ez
     tone = np.sin(TWO_PI * np.cumsum(380 * (1 + 2.0 * u ** 1.5)) / SR) * ez * (1 + 0.3 * snoise(zn, 40, 907))
-    zipx = 0.8 * norm(rattle) + 0.35 * norm(hiss) + 0.3 * norm(whirr) + 0.12 * norm(bp(tone, 300, 5000))
+    zipx = (0.85 * norm(rattle) + 0.2 * norm(ring) + 0.22 * norm(hiss) + 0.25 * norm(whirr)
+            + 0.1 * norm(bp(tone, 300, 5000)))
     add(out, zipx, z0)
-    add(out, squelch(908, 0.8, 1300, 300, 1.0, 4, visc=1.2), z0 + 0.05, 0.18)  # it IS a body going in
+    add(out, squelch(908, 0.8, 1300, 300, 1.0, 4, visc=1.2), z0 + 0.05, 0.14)  # it IS a body going in
     # CLACK: the hook - his head - slams into the case
     tc = z1
     cl = knock(910, [(1100, 90, 1), (1900, 120, .8), (3100, 170, .6), (4500, 240, .4), (700, 60, .5)], 0.25,
                contact=0.0006, click=0.6, click_hp=2500)
-    add(out, cl, tc, 0.9)
-    add(out, thump(911, 110, 0.18, 1.0, slap=0.2), tc, 0.4)
-    # BOING
-    add(out, boing(912, 1.15, 200.0), tc + 0.03, 1.25)
+    add(out, cl, tc, 1.0)
+    add(out, thump(911, 110, 0.18, 1.0, slap=0.3), tc, 0.55)
+    # BOING (rings out to silence: no truncated tail)
+    add(out, boing(912, 1.9, 200.0), tc + 0.03, 1.25)
     return room(out, 'patio', 0.08)
 
 

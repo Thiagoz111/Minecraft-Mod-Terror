@@ -74,6 +74,7 @@ LACE = pal('#3a332b', '#5d5447', '#857a68', '#ab9f88', '#cbc0a6', '#e2d8bf', '#f
 MUD = pal('#120c08', '#22170f', '#352516', '#4a3520')
 SHOE = pal('#040305', '#0b0a0f', '#15131b', '#221f2a', '#3a3646', '#6c6880', '#a9a7bd')
 SOLE = pal('#2a2420', '#43392f', '#5e5144', '#7a6b5a')
+SOLE_L = pal('#120b08', '#22160e', '#332217', '#4b3322', '#6a4a31')   # old leather sole, scuffed
 BRASS = pal('#3b2a10', '#6e5220', '#a8853a', '#dcc070')
 CORD = pal('#1a120c', '#33251a', '#4e3a28', '#6d553d')
 # the 1961 blessed thread: sixty years buried in a biscuit tin -- dried, brown-shifted, faded red
@@ -225,11 +226,12 @@ FACE_TOP = [
 MOUTH_ROWS = {
     'cortado': {
         # Nothing crosses the lips any more: the stitches were snipped at the seam.  What is left sits in the
-        # holes: r8 col 5 = thread_right leaves it, col 7 = a cut stub, col 9 = torn empty (the crack ends in it)
-        'r8': "pPpMoHoHouhkpp",   # ... | 10 chip | 11 the black tear
+        # holes: r8 col 5 = thread_right leaves it, col 7 = a cut stub (T) whose frayed end (F) lies sideways toward
+        # col 9 = torn empty (the crack ends in it)
+        'r8': "pPpMoHoTFuhkpp",   # ... | 10 chip | 11 the black tear
         'r9': "ppooMLRRLMogPp",   # rosebud upper lip (shadowed) with dark corners
         'c10': "sRQQRs",          # fuller lower lip catching the light
-        'c11': "oHouoH",          # holes: cut stub in 5 | torn-out 7 | 9 is where thread_left hangs from
+        'c11': "FTouoH",          # holes: cut stub in 5, frayed end lying out to 4 | torn-out 7 | 9: thread_left
         'tip': "soos",
     },
     'cosida': {
@@ -253,7 +255,7 @@ FACE_COLS = {
     'k': TEAR[0], 'g': TEAR[3], 'M': LIP[0], 'R': LIP[2], 'Q': LIP[3],
     'C': CRACK,
     'L': LIP[1],
-    'H': OLDT[2], 'T': OLDT[3], 't': OLDT[2], 'F': OLDT[5], 'i': hx('#3a0711'),
+    'H': OLDT[2], 'T': OLDT[4], 't': OLDT[2], 'F': OLDT[5], 'i': hx('#3a0711'),
 }
 
 
@@ -791,13 +793,19 @@ def shoe_mat(ctx):
     f = ctx.face
     t = tag(ctx)
     if f == 'bottom':
+        # the leather sole: what faces you when she sits with her legs out (toes up).  Read heel -> toe:
+        # heel block (a tarnished nail), the shadowed breast of the heel, the narrow waist (darker at the sides),
+        # the worn pale ball of the foot, and a rounded toe (black patent wraps its corners)
+        i, j = ctx.i, ctx.j
         if t == 'toe':
-            return pick(SOLE, 0.55 if ctx.i == 1 else 0.3)
-        if lz > d - 1.6:
-            return SOLE[0] if ctx.j == 0 else pick(SOLE, 0.3)      # heel block
-        if ctx.i in (0, ctx.w - 1):
-            return pick(SOLE, 0.3)                                 # welt
-        return pick(SOLE, 0.8 if (ctx.j + ctx.i) % 3 else 0.55)    # worn leather sole
+            return pick(SHOE, 0.28) if i != 1 else SOLE_L[3]
+        if j == 0:
+            return BRASS[1] if i == 1 else SOLE_L[2]
+        if j == 1:
+            return SOLE_L[0]
+        if j == 2:
+            return SOLE_L[1] if i != 1 else SOLE_L[2]
+        return SOLE_L[4] if i == 1 else SOLE_L[3]
     v = 0.3 + face_light(ctx) * 1.2
     if f == 'top':
         if t == 'shoe' and lz > d - 2.5:
@@ -1157,18 +1165,20 @@ _POSES = {
               'right_finger2': (-0.6, 0, 0.05, 0, 0, 0), 'right_finger3': (-0.5, 0, -0.4, 0, 0, 0),
               'left_arm': (0.12, 0, -0.1, 0, 0, 0),
               'thread_right_tip': (0, 0, -0.3, 0, 0, 0), 'thread_left_tip': (0, 0, -0.35, 0, 0, 0)},
-    # lunge: jaw dropped, arms spread wide and high framing the face, fingers splayed
+    # lunge: jaw dropped, both arms flung out and forward at the viewer, the splayed hands wide beside the dropped
+    # jaw and in front of the face plane (solved so no hand or finger enters the oversized head)
     'attack': {'body': (0.3, 0, 0, 0, 0.0, -1.0), 'right_leg': (-0.3, 0, 0, 0, 0, 0), 'left_leg': (-0.3, 0, 0, 0, 0, 0),
                'head': (-0.3, 0.12, 0.12, 0, 0, 0), 'jaw': (0.4, 0, 0, 0, 3.0, 0),
-               'right_arm': (-1.95, 0.85, 0.2, 0, 0, 0), 'left_arm': (-1.95, -0.85, -0.2, 0, 0, 0),
-               'right_forearm': (-0.6, 0, 0, 0, 0, 0), 'left_forearm': (-0.4, 0, 0.45, 0, 0, 0),
+               'right_arm': (-0.91, -0.1, 1.23, 0, 0, 0), 'left_arm': (-2.39, 0.3, 1.01, 0, 0, 0),
+               'right_forearm': (0.28, 0, 0.6, 0, 0, 0), 'left_forearm': (0.38, 0, 0.42, 0, 0, 0),
                'right_finger1': (0, 0, 0.5, 0, 0, 0), 'right_finger3': (0, 0, -0.5, 0, 0, 0),
                'left_finger1': (0.7, 0, 0.4, 0, 0, 0), 'left_finger3': (0.7, 0, -0.4, 0, 0, 0),
                'thread_right_tip': (0.35, 0, 0.25, 0, 0, 0), 'thread_left_tip': (0.4, 0, -0.3, 0, 0, 0)},
-    # head thrown back, jaw fully dropped, arms raised up beside the head with bent forearms
+    # head thrown back, jaw fully dropped; the good arm straight up with the hand clawing beside her temple, the
+    # broken one raised as far as its cord lets it, the hand dangling beside the jaw (no hand enters the head)
     'scream': {'head': (-0.5, 0, -0.22, 0, 0, 0), 'jaw': (0.55, 0, 0, 0, 1.3, 0),
-               'right_arm': (-2.25, 0.3, -0.6, 0, 0, 0), 'left_arm': (-2.2, -0.3, 0.55, 0, 0, 0),
-               'right_forearm': (-0.7, 0, 0, 0, 0, 0), 'left_forearm': (-0.4, 0, 0.3, 0, 0, 0),
+               'right_arm': (-2.88, -0.02, -1.28, 0, 0, 0), 'left_arm': (-3.2, 0.33, 0.6, 0, 0, 0),
+               'right_forearm': (0.23, 0, -0.15, 0, 0, 0), 'left_forearm': (0.54, 0, 0.82, 0, 0, 0),
                'right_finger1': (0, 0, 0.5, 0, 0, 0), 'right_finger3': (0, 0, -0.5, 0, 0, 0),
                'left_finger1': (0.7, 0, 0.4, 0, 0, 0), 'left_finger3': (0.7, 0, -0.4, 0, 0, 0)},
     # "just a doll", put down on a bed / chair seat / lap: bottom on the surface (the entity origin), a slight
@@ -1183,7 +1193,7 @@ _POSES = {
             'skirt_back_left': (-0.35, 0, 0, 0, 0, 0), 'skirt_back': (-0.4, 0, 0, 0, 0, 0),
             'hem_front': (-0.3, 0, 0, 0, 0, 0), 'hem_front_right': (-0.25, 0, 0, 0, 0, 0),
             'hem_front_left': (-0.25, 0, 0, 0, 0, 0),
-            'head': (0.25, 0, -0.3, 0, 0, 0),
+            'head': (0.1, 0.06, -0.32, 0, 0, 0),
             'right_arm': (-0.15, 0, 0.2, 0, 0, 0), 'left_arm': (-0.1, 0, -0.4, 0, 0, 0),
             'right_forearm': (0.1, 0, 0.25, 0, 0, 0), 'right_hand': (0, 0, 0.5, 0, 0, 0)},
 }
@@ -1282,17 +1292,21 @@ them with the live gravity above)
   arm rises toward the viewer with the wrist cocked and fingers splayed, left arm hangs; the loose threads still
   swinging from the snap.  Snap into it from 'sit' or idle in 1-2 ticks while the player is not looking, then freeze.
 * attack: lunge.  Body pitches forward and slides 1 texel forward, legs counter-rotate so the shoes stay planted, head
-  tilts up to show the face, the jaw drops (marionette, dy 3), both arms thrown forward, wide and high so the hands
-  frame the face with splayed fingers (the open mouth stays visible); the jaw snap flings both loose threads forward
-  and apart across the black mouth.  Hold 6 ticks, then clack.
-* scream: head thrown back with extra roll, jaw dropped, both arms raised up beside the head with bent forearms.
+  tilts up to show the face, the jaw drops (marionette, dy 3), both arms flung out and forward at the viewer so the
+  splayed hands sit wide beside the dropped jaw, in front of the face plane (face, glass eye and open mouth stay
+  unobstructed; no hand or finger enters the head -- keep it that way when blending); the jaw snap flings both loose
+  threads forward and apart across the black mouth.  Hold 6 ticks, then clack.
+* scream: head thrown back with extra roll, jaw dropped; the good right arm straight up with the hand clawing beside
+  her temple, the broken left arm raised as far as its cord lets it, its hand dangling beside the jaw.
 * sit: the dormant "just a doll" state and her warning: she sits next to whoever will be possessed next (on the roof of
   the doghouse, on Jorge's chair by the grill, on Lucia's pillow, on the Nona's lap) and on the shelf / bed in
   'cosida'.  Spawn the entity with its origin ON the seat surface (mattress / pillow top, chair seat, doghouse roof,
   top of the Nona's lap = the rocker seat height + lap): the skirt rests exactly on y = 24.  Slight slump (0.07), legs
   STRAIGHT out in a V (xRot -1.6, splay 0.3 / -0.24, thigh sockets slid 3.3 texels forward) so shins, socks and toes-up
   shoes clear the skirt; the skirt fanned over the thighs and spread behind; long limp arms with the hands
-  palm-down on the surface beside her; head lolling onto her right shoulder.  Footprint from the origin: legs reach
+  palm-down on the surface beside her; head lolling onto her right shoulder but pitched only 0.1 forward, so a
+  player standing over the bed / chair still meets the glass eye and the black socket (she is under 1 block tall and
+  almost always seen from above; the soles of her shoes face you).  Footprint from the origin: legs reach
   0.31 block forward, the skirt 0.17 block back, the fingers 0.44 block to each side -> on a chair put the origin
   ~0.15 block behind the seat's front edge, facing out; on a lap face the same way as the Nona.  Only the head
   (look, unseen) and the cloth/threads (frozen while seen) animate in this pose.

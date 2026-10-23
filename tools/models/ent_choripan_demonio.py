@@ -1579,6 +1579,8 @@ def build():
     box('vomit', (-9, vl - 1.0, -9), (18, 1, 18), name='puddle')
     box('vomit', (-6, vl - 6.5, 0.3), (12, 6, 0), name='splash')
     box('vomit', (0.3, vl - 6.5, -6), (0, 6, 12), name='splash')
+    # cubeless locator between the front teeth: Java renders the fetched ItemStack here (fetch_drop) and drops it
+    b.lbone('mouth_item', 'head', MOUTH, rot=(0, 0, 0))
     b.lbone('choripan', 'head', MOUTH, rot=(0, 0, 0), mat=chori_mat)
     box('choripan', (-7, -1.5, -2.5), (14, 4, 5), name='bun', decals=chori_glow())
     box('choripan', (-8.5, -2.6, -1.5), (17, 3, 3), name='sausage')
@@ -2012,7 +2014,50 @@ def make_poses():
     poses['retract'] = make_retract()
     poses['stretch'] = make_stretch()
     poses['coil'] = make_coil()
+    for q in range(4):
+        poses[f'walk_{q + 1}'] = make_walk(q)
     return poses
+
+
+# ------------------------------------------------------------------ walk_1..walk_4: the arms' gait keys (trail mode)
+GAIT_A = ((1, 'right'), (2, 'left'), (3, 'right'))           # tripod gait: these three move together...
+GAIT_STRIDE, GAIT_LIFT = 7.0, 7.0                              # ...the other three half a cycle later
+
+
+def make_walk(q):
+    """Gait key q (0..3) of the six-arm walk, on the REST body (Java places the links on the trail and loops these
+    keys for the arms): phase ph = q * 90 deg for tripod A, ph + 180 for tripod B.  ph 0: hand planted forward
+    (contact), 90: planted under the shoulder (stance), 180: planted back (push-off), 270: in the air swinging forward,
+    fingers dangling.  Planted hands sit exactly on the floor; the two stubby front legs trot in the same rhythm."""
+    k = Kit()
+    for (idx, side), spec in ARMS.items():
+        sx = -1 if side == 'right' else 1
+        ab, fb, jb, hb = arm_names(idx, side)
+        ph = math.radians(q * 90.0 + (0.0 if (idx, side) in GAIT_A else 180.0))
+        W0 = k.wpos(hb)
+        fwd = k.R(spec['seg']) @ np.array([0.0, 0.0, -1.0])
+        fwd[1] = 0.0
+        fwd /= np.linalg.norm(fwd)
+        W = W0 + fwd * (GAIT_STRIDE * math.cos(ph))
+        up = GAIT_LIFT * max(0.0, -math.sin(ph))
+        up = up if up > 0.01 else 0.0
+        yaw = -spec['yaw'] * sx
+        Hw = R_deg(0, yaw, 0) @ R_deg(38.0 * up / GAIT_LIFT, 0, 0)      # a lifted hand hangs limp from the wrist
+        k.plant_arm(idx, side, (W[0], W[2]), (sx * 0.5, -1.0, 0.0), yaw, extra=Hw, lift=up)
+        # a swinging hand clears the floor by ~4 texels even with its long fingers dangling
+        extra_up = 0.0
+        while up > 0.0 and k.lowest([hb]) > 24.0 - 4.0 * up / GAIT_LIFT and extra_up < 12.0:
+            extra_up += 1.0
+            k.plant_arm(idx, side, (W[0], W[2]), (sx * 0.5, -1.0, 0.0), yaw, extra=Hw, lift=up + extra_up)
+    for side, sx in (('right', -1), ('left', 1)):
+        ph = math.radians(q * 90.0 + (180.0 if side == 'right' else 0.0))
+        lift = max(0.0, -math.sin(ph))
+        k.set(f'front_{side}_leg', -12.0 * math.cos(ph) - 34.0 * lift)
+        k.set(f'front_{side}_paw', 12.0 * math.cos(ph) + 30.0 * lift)
+        k.unfloor(f'front_{side}_paw', 0, -4.0, 23.9)
+    k.set('tail', 0, 30.0 * math.cos(math.radians(q * 90.0)), 0)
+    k.set('tail_tip', 0, 22.0 * math.cos(math.radians(q * 90.0 - 40.0)), 0)
+    return k.table()
 
 
 # ------------------------------------------------------------------ lunge (ported)
@@ -2213,22 +2258,23 @@ def make_beg():
     F = {n: (k.R(n), k.wpos(n)) for n in BODY}
     # the neck stands up out of the chest so the head sits ON TOP of the tower, looking down at you with the dog
     # head tilt; nothing of the begging below it (paws, tag, praying hands) hides behind the skull
-    k.neck_head(F, wdir(-86, 0), R_deg(0, 4, 0) @ R_deg(0, 0, 18) @ R_deg(7, 0, 0), slide=2.0)
-    k.flaps(3, 10, 2, 6)
+    k.neck_head(F, wdir(-86, 0), R_deg(0, 4, 0) @ R_deg(0, 0, 18) @ R_deg(1, 0, 0), slide=2.0)
+    k.flaps(2, 6, 2, 4)
     k.brows(15, -0.7)
     k.set('tongue', 10, 34, 0)                                 # lolling out of the side of the mouth
     k.set('tongue_tip', 30, 10, 0)
     # stubby front paws up, bent down at the wrist (under the chin, either side of the name tag)
     for side, sx in (('right', -1), ('left', 1)):
         lb, pb = f'front_{side}_leg', f'front_{side}_paw'
-        k.set_world_rot(lb, R_deg(0, 0, 16 * sx) @ R_deg(-98, 0, 0))
-        k.set_world_rot(pb, R_deg(0, 10 * sx, 0) @ R_deg(72, 0, 0))
+        k.set_world_rot(lb, R_deg(0, -24 * sx, 0) @ R_deg(-86, 0, 0) @ R_deg(0, 0, 10 * sx))
+        k.set_world_rot(pb, R_deg(0, -10 * sx, 0) @ R_deg(70, 0, 0))
     # pair 1: human palms pressed together 'por favor' in front of the belly, under the name tag
-    # (held well out in front of the belly: the forearms are far too long to fold the hands in any closer)
+    # pair 1: the two human hands held out together, palms up and cupped, under the chin: 'una monedita'.  Held well
+    # out in front of the belly (the forearms are far too long to fold any closer); elbows jut out like a mantis
     ch = k.wpos('link_2', (0.0, 9.0, 7.0))
     for side, sx in (('right', -1), ('left', 1)):
-        W = np.array([sx * 1.0, ch[1] - 1.0, ch[2] - 13.0])
-        k.arm(1, side, W, (sx * 1.0, -0.7, 0.1), prayer_rot(sx, -14))     # elbows jut out to the sides: a mantis
+        W = np.array([sx * 3.4, ch[1] + 2.0, ch[2] - 11.0])
+        k.arm(1, side, W, (sx * 1.0, -0.7, 0.1), bowl_rot(sx))
     # pairs 2 and 3: planted round the base, elbows out: it sits on its arms
     base = k.wpos('link_6')
     spots = {(2, 'right'): (-22, -14, 34), (2, 'left'): (22, -12, -150), (3, 'right'): (-24, 10, -20),
@@ -2239,8 +2285,14 @@ def make_beg():
     k.set('tail', -40, 30, 0)
     k.set('tail_tip', 20, 20, 0)
     k.hang_ears(0)
-    k.hang_tag(-10)
+    k.hang_tag(-32)                                          # resting on the bulge of the belly
     return k.table()
+
+
+def bowl_rot(sx, lift=24.0, cup=16.0, yaw=0.0):
+    """World rotation of a begging hand: palm up (rolled 180 about the fingers), fingers forward and tipped up by
+    `lift`, its pinky edge raised by `cup` so the two hands held side by side make a bowl."""
+    return R_deg(0, yaw, 0) @ R_deg(0, 0, cup * sx) @ R_deg(-lift, 0, 0) @ R_deg(0, 0, 180)
 
 
 def prayer_rot(sx, tilt=0.0):
@@ -2319,7 +2371,9 @@ def make_vomit():
     # the column hangs plumb from inside the mouth; its length lands the puddle on the floor
     k.set_world_rot('vomit', R_deg(0, k.face_yaw(), 0))
     top = k.wpos('vomit')
-    VOMIT_LEN = int(round(24.0 - float(top[1])))
+    VOMIT_LEN = int(math.floor(24.0 - float(top[1])))
+    # drop the column (< 1 texel, the gush stays inside the mouth) so the puddle lies exactly on the floor
+    k.set_world_pos('vomit', top + np.array([0.0, 23.95 - (float(top[1]) + VOMIT_LEN), 0.0]))
     k.hang_ears(0)
     k.hang_tag(0)
     return k.table()
