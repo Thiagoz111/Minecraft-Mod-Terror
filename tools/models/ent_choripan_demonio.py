@@ -23,6 +23,14 @@ emissive layer 'eyes') looking slightly inward, and the tan muzzle is TORN OPEN 
 four flaps (jaw_upper_right/left, jaw_lower_right/left): the nose is cut in half down a raw red seam, each flap
 is lined with crooked needle teeth in two offset rows (zero-thickness planes), red gums, a ridged palate, a deep
 red throat and a long black tongue (tongue + tongue_tip).
+
+Export for Java (ChoripanRenderer draws the body as a chain that follows the head's position history): every body
+link is its own TOP-LEVEL bone, link_0 (head + neck) .. link_7 (hips), pivot at the link's front joint; arms, front
+legs, shreds and the tail ride on their link.  Toggles (hidden by default): `vomit` (the black column) and `choripan`
+(the blessed choripan caught in the air); `mouth_item` is a cubeless locator for the fetched ItemStack.  Poses:
+unspool, run, fetch_drop, beg, lunge, catch, vomit, retract, stretch, coil + the gait keys walk_1..walk_4 (the six
+arms' tripod walk, looped in trail mode).  ANIM_NOTES at the end of the file is the animation contract (chain table,
+trail algorithm, every bone, toggle and pose) and is generated from the built model, so its numbers never go stale.
 """
 import math
 import os
@@ -2054,10 +2062,8 @@ def make_walk(q):
         lift = max(0.0, -math.sin(ph))
         k.set(f'front_{side}_leg', -12.0 * math.cos(ph) - 34.0 * lift)
         k.set(f'front_{side}_paw', 12.0 * math.cos(ph) + 30.0 * lift)
-        k.unfloor(f'front_{side}_paw', 0, -4.0, 23.9)
-    k.set('tail', 0, 30.0 * math.cos(math.radians(q * 90.0)), 0)
-    k.set('tail_tip', 0, 22.0 * math.cos(math.radians(q * 90.0 - 40.0)), 0)
-    return k.table()
+        k.unfloor(f'front_{side}_paw', 0, -4.0, 24.05)
+    return k.table()                                           # (the tail wag is procedural: ANIM_NOTES)
 
 
 # ------------------------------------------------------------------ lunge (ported)
@@ -2496,3 +2502,316 @@ def make_unspool():
 
 
 POSES = make_poses()
+
+
+# ------------------------------------------------------------------ ANIM_NOTES (the Java contract; numbers computed)
+def _posed_model(name=None):
+    m = build().pack()
+    if name:
+        for bn in m.bones():
+            p = POSES[name].get(bn.name)
+            if p:
+                bn.rot = tuple(bn.rot[k] + math.degrees(p[k]) for k in range(3))
+                bn.pivot = tuple(bn.pivot[k] + p[3 + k] for k in range(3))
+    return m
+
+
+def _wp(m, name, lp=(0.0, 0.0, 0.0)):
+    bn = next(b for b in m.bones() if b.name == name)
+    return (m.world_matrix(bn) @ np.array([*lp, 1.0]))[:3]
+
+
+def _f(v, n=1):
+    return ('%.*f' % (n, v)).replace('-0.0', '0.0') if abs(v) >= 0.05 or n > 1 else '0'
+
+
+def _chain_table():
+    m = _posed_model()
+    B = {b.name: b for b in m.bones()}
+    rows, prev, arc = [], None, 0.0
+    what = {'link_0': 'head + stretched neck (pivot = head joint under the back of the skull)',
+            'link_1': 'chest in the sweater remnant + the two stubby dachshund front legs',
+            'link_2': 'fur link 1 (skin band in front of it, sweater shred_1)',
+            'link_3': 'fur link 2 + arm pair 1 (broken rib spike on its band)',
+            'link_4': 'fur link 3 (crest of the hunch)',
+            'link_5': 'fur link 4 + arm pair 2 (rib spike)',
+            'link_6': 'fur link 5',
+            'link_7': 'hips / rump + arm pair 3 + the wagging tail'}
+    for n in CHAIN:
+        P = m.world_matrix(B[n])[:3, 3]
+        d = 0.0 if prev is None else math.hypot(P[0] - prev[0], P[2] - prev[2])
+        arc += d
+        r = B[n].rot
+        ln = NECK_LEN if n == 'link_0' else LINK_LEN[n]
+        rows.append(f'  {n:7s} pivot ({_f(P[0])}, {_f(P[1])}, {_f(P[2])})   java offset ({_f(P[0])}F, {_f(P[1] - 24)}F, '
+                    f'{_f(P[2])}F)   rest rot deg ({_f(r[0])}, {_f(r[1])}, {_f(r[2])})\n'
+                    f'          length {ln:g}, spacing {_f(d)}, arc {_f(arc)} -- {what[n]}')
+        prev = P
+    return '\n'.join(rows)
+
+
+def _landmarks():
+    out = {}
+    for name in ('unspool', 'coil', 'catch', 'beg', 'fetch_drop', 'vomit', 'retract', 'stretch', 'lunge'):
+        m = _posed_model(name)
+        zs = [float(_wp(m, b.name, (c.origin[0] + c.size[0] * i, c.origin[1] + c.size[1] * j,
+                                     c.origin[2] + c.size[2] * q))[2])
+              for b in m.bones() if b.name not in TOGGLE_DEFAULT for c in b.cubes
+              for i in (0, 1) for j in (0, 1) for q in (0, 1)]
+        out[name] = {'head': _wp(m, 'head'), 'mouth': _wp(m, 'mouth_item'), 'link_7': _wp(m, 'link_7'),
+                     'center': np.mean([_wp(m, n) for n in BODY], axis=0), 'zmin': min(zs), 'zmax': max(zs)}
+    return out
+
+
+def _v(p):
+    return '(%s, %s, %s)' % (_f(p[0]), _f(p[1]), _f(p[2]))
+
+
+def _anim_notes():
+    m = _posed_model()
+    nb = sum(1 for _ in m.bones())
+    nc = sum(len(b.cubes) for b in m.bones())
+    L = _landmarks()
+    flower = POSES['lunge']
+    ur, lr = flower['jaw_upper_right'], flower['jaw_lower_right']
+    fl = (f'upper flaps xRot {ur[0]:.2f}, yRot +-{abs(ur[1]):.2f} (right +), zRot -+{abs(ur[2]):.2f} (right -); '
+          f'lower flaps xRot {lr[0]:.2f}, yRot +-{abs(lr[1]):.2f} (right +), zRot +-{abs(lr[2]):.2f} (right +)')
+    beg_top = (24.0 - float(min(_wp(_posed_model('beg'), 'head', (0.0, -17.0, 0.0))[1], 24.0))) / 32.0
+    return f"""Choripan, version completa (ChoripanEntity, form BEAST) -- animation contract.
+{nb} bones, {nc} cubes, texture {m.tex_w}x{m.tex_h} (choripan_demonio.png), scale 0.5, RenderTypes::entityCutoutNoCull.
+Units: radians for POSES and for every value quoted 'rad'; 'deg' values are degrees; offsets (dx, dy, dz) in model \
+texels at 2x density (inside scale_root: 2 texels = 1 vanilla pixel, 32 texels = 1 block), in the PARENT bone's space \
+(top-level bones: model space, +Y down, ground y = 24, the creature faces -Z, its right side is -X).  Every POSES value \
+is ADDED to the rest pose.  t = ageInTicks.  One look only (no VARIANT_MATS): the DOG form is the separate model \
+`choripan`.  Emissive layer 'eyes' (choripan_demonio_eyes.png): the two milk-white eyes with the red pinpoint pupils, \
+the red embers inside the vomit column and the holy-water sparkles on the blessed choripan; a hidden toggle bone must \
+not draw its glow either (render the eyes pass through the same model with the same visibility).
+Its rule: "Sigue siendo un perro" -- every scare ends in a dog behaviour (wag, fetch, beg, catch).  The TAIL NEVER \
+STOPS WAGGING, in every pose and state, even while the rest of the body is frozen or still inside the doghouse.
+
+======================================================================================================== THE CHAIN
+The body is a chain of top-level bones link_0 (head) .. link_7 (hips) (rest values in Java: part.getInitialPose()).  Each has its own pivot at its FRONT joint \
+and its own rest rotation; its body runs from the pivot toward +Z (the tail) for `length` texels, where the next link's \
+pivot sits at rest (link_0: the neck runs back from the head joint to the chest socket, see neck).  Skin bands overlap \
+3 texels into the link in front, so neighbours may bend up to ~35 deg (yaw) / ~25 deg (pitch) against each other \
+without opening a gap.  Rest layout (authored model space; 'java offset' = the PartPose offset under scale_root, \
+y - 24; 'spacing' = horizontal distance from the previous pivot; 'arc' = running sum from the head joint):
+{_chain_table()}
+
+TRAIL MODE (BEAST chasing, walking, fetching; the server hitbox 0.8 x 0.8 is the HEAD only):
+ 1. Client, per entity: a ring buffer of the head's interpolated world positions, one sample every 1/8 block moved
+    (plus one per tick while standing), at least 6 blocks of history; prepend the current lerped position each frame.
+ 2. link_0 sits on the entity: pivot (0, rest y, +10) -- 10 texels behind the origin, so skull + muzzle are centred on
+    the hitbox -- yRot 0 (the renderer's body yaw = the head's heading; netHeadYaw / headPitch go to `head`).
+ 3. link_k (k = 1..7): walk back along the history from the current position by s_k = 10 + arc_k texels (/32 ->
+    blocks) to the point Q_k.  Convert to model space with the entity's yaw b: d = Q_k - E (blocks), forward
+    f = (-sin b, 0, cos b), right r = (-cos b, 0, -sin b); x = -32 * (d . r), z = -32 * (d . f),
+    y = rest_y_k - 32 * d.y.  Set link_k.x/y/z (java: y - 24).
+ 4. Heading: v = (pivot of link_k+1) - (pivot of link_k) in model space (for link_7 use link_6 -> link_7);
+    link_k.yRot = atan2(v.x, v.z); link_k.xRot = atan2(-v.y, hypot(v.x, v.z)) (this reproduces the rest hunch on a
+    straight flat trail); link_k.zRot = rest zRot (only link_1 has one: the chest leans 5 deg onto its right shoulder).
+    Clamp each link's yaw to +-35 deg of the link in front (sharp corners are cut, never folded).
+ 5. neck (child of link_0): aim it at the chest socket = link_1 pivot + R(link_1) * (0, -2, 0): with v that vector in
+    link_0 space, neck.yRot = atan2(v.x, v.z), neck.xRot = atan2(-v.y, hypot(v.x, v.z)), zRot rest.  The neck tube is
+    16 texels long (2 in front of the head joint, socket at 11): never let |v| exceed 13 or a gap shows.
+ 6. Not enough history yet (just spawned, or coming out of the doghouse): seed / continue the path in a straight
+    line back to the trailAnchor (the doghouse door) and on INTO the doghouse; a link whose s_k lies past the door is
+    inside: compress the rest of the chain there, 3 texels per link (the 'retract' spacing) along the door axis, so
+    it fits in the 1-block cucha behind its walls.  The body never finishes coming out while the head is already
+    chasing you, and the tail (link_7, at the 'cucha_cola' marker) keeps wagging inside.  Every 0.4 block the head
+    gains, the next link pops out of the door (choripan.crack).
+ 7. Arms and front legs are children of their links: in trail mode loop the gait keys walk_1 -> walk_2 -> walk_3 ->
+    walk_4 -> walk_1 (they only hold arm and front-leg entries), p = walkAnimation.position * 0.55 (one key per
+    0.5 block at full speed), key = floor(p) mod 4, smoothstep(fract(p)) between consecutive keys.  Head, neck,
+    flaps, ears, tongue and brows take the 'run' values (weight 1 while chasing, 0.4 while walking).
+ 8. Culling: setNoCulling-style -- extend the render bounding box to cover the whole history used (s_7 + 1 block)
+    plus 1.2 blocks sideways for the arms, or the chain pops out of view at corners.
+ 9. Poses and trail mix: when a pose plays (beg, catch, vomit, retract, fetch_drop, lunge, coil, stretch) lerp every
+    link from its trail transform to rest + pose over 6 ticks (8 for retract); when it ends, lerp back to the trail.
+
+======================================================================================================== BONES
+link_0 .. link_7 -- the chain above.  Breathing on the fur links: scale nothing; dy = sin(t * 0.12 + k * 0.7) * 0.4
+  on link_2..link_7 (a slow peristaltic ripple running toward the tail).  Footfalls: link_3 / link_5 / link_7 dip
+  +0.6 dy when their arm pair plants.
+neck (child of link_0, pivot = head joint): the stretched see-through neck with two trachea rings, the celeste collar
+  around it.  Rest rot (-35, 0, -2) deg relative to link_0: it climbs back down to the chest socket.  Trail rule 5.
+  Idle: xRot += sin(t * 0.08) * 0.03.
+tag (child of neck, pivot = the collar ring): the big brass 'CHORIPAN' name tag (engraved, the accent over the A);
+  it must stay readable.  Physics: it hangs plumb, facing where the face faces -- every frame give it the world
+  rotation yRot(face heading) only (tag local rotation = inverse(neck world rotation) * that; hang_tag() in this file
+  is the reference), then add a damped pendulum xRot / zRot kicked by the neck's angular velocity (k 0.6, damping
+  0.9 per tick, clamp +-0.6).  Poses carry the frozen value of that plumb hang plus the swing each pose names.
+head (child of link_0, pivot = head joint): FOCUS bone.  Skull with the cute dachshund face kept: tan brows and muzzle,
+  milk-white almond eyes with the 2x2 glint and tiny red pupils (emissive) looking slightly inward, the big black nose
+  cut in half.  Rest: level with a dog head tilt (zRot 8 deg).  Look at the player: yaw clamp +-0.7, pitch -0.5..0.6,
+  fast (0.15 rad/tick) -- it locks on.  The DOG tilt: every 3-6 s while idle / watching, zRot +-0.35 in 4 ticks, hold
+  20 ticks, back (the curious-dog head tilt is the creepiest thing it does).
+right_brow / left_brow (children of head): chunky tan brows, inner ends raised at rest (puppy eyes).  zRot (right +,
+  left -) up to +0.3 = sad / pleading (beg, fetch_drop, catch), down to -0.4 = furious (lunge, run, coil); dy -0.7 lifts
+  them.  Snap in 3 ticks.
+jaw_upper_right / jaw_upper_left / jaw_lower_right / jaw_lower_left (children of head): THE FLOWER.  The tan muzzle
+  torn open from the nose to the throat into four flaps, each lined with two offset rows of needle teeth (planes), red
+  gums, the raw cut faces; the nose is split between the two upper flaps.  Hinges: upper flaps at the brow line
+  (pivot head-local (+-0.5, -1, -13)), lower flaps at the jaw corner ((+-0.5, 0, -6)).  Opening = xRot (upper -,
+  lower +) + yRot spread (peel sideways: right +, left -) + zRot twist.  Closed at rest (only the black tongue and the
+  teeth tips show).  "Se abre en flor": open from closed to the 'lunge' values (rad: {fl}) in 5 ticks with an
+  overshoot of 15 % and a 2-tick settle, the four flaps 1 tick apart (upper right, lower left, upper left, lower right) -- never all
+  together.  Idle in BEAST: they breathe open 0.05..0.15 rad (sin(t * 0.2)) and quiver (+-0.03 random each tick).
+  Chomp (catch -> chewing): close fully and reopen to 50 % 3 times, 5 ticks each.
+tongue / tongue_tip (tongue child of head, pivot inside the mouth; tongue_tip at its end): the long black tongue.
+  Rest: lolling out of the front, the tip curling down.  Chase: flapping, tongue.yRot = sin(t * 0.7) * 0.3,
+  tongue_tip.xRot += sin(t * 0.7 - 1) * 0.4.  Retract: tongue dz +12 (sucked back in).
+right_ear / left_ear + right_ear_tip / left_ear_tip (children of head): long limp ears, almost to the ground.  They
+  hang plumb: every frame give each ear the world rotation yRot(face heading) * EAR_WORLD (EAR_WORLD = (4, -+22,
+  -+6) deg, right / left: the leather turned to the front), i.e. cancel the head's pitch and tilt (hang_ears() in
+  this file is the reference), plus a pendulum with 3-4 ticks of lag and 1.5x amplitude on the tip.  Running: swing back 0.9 rad (streaming).  Never let
+  them pass through the floor: when the head is low (fetch_drop, vomit) fold the tip forward along the ground (the pose
+  values do that).
+vomit (child of head; TOGGLE, hidden by default): the black bile column, {VOMIT_LEN} texels from the throat to the
+  floor -- a gush inside the mouth, the stream (falling streaks, a wet highlight, red embers on the 'eyes' layer) and a splashing puddle with a crown of
+  drops.  Its length is solved for the 'vomit' pose (the puddle lies exactly on the floor there); only show it in
+  that pose.  Pulse: xScale = zScale = 1 + sin(t * 1.3) * 0.08 on the stream; the puddle grows from scale 0.3 to 1
+  over the first 10 ticks.
+mouth_item (child of head, no cubes): locator between the front teeth.  Render the fetched ItemStack there
+  (ItemDisplayContext.GROUND, scaled x2 to undo the model's 0.5, rotated 90 deg about Y so it lies across the jaws);
+  at the end of 'fetch_drop' spawn / release the ItemEntity at this point's world position (it falls 0.3 block onto
+  the player's feet).
+choripan (child of head; TOGGLE, hidden by default): the blessed choripan caught in the air -- pan de campo split
+  open, the grilled chorizo poking out of both ends, chimichurri, holy-water sparkles (emissive).  Shown only from the
+  catch frame until the 3rd chomp.
+front_right_leg / front_left_leg + front_right_paw / front_left_paw (children of link_1): the two short, bowed, normal
+  dachshund front legs and their cute paws -- the only dog legs left.  Rest: planted, paws turned out.  They trot in
+  the gait keys; in 'beg' they are held up under the chin; in 'catch' they dangle (it jumped).
+shred_1 .. shred_4 (children of link_2..link_5, pivot on the spine): strips of the Nona's red sweater hanging off the
+  back (a band + two strips, loose yarn ends).  Secondary only: zRot = sin(t * 0.15 + k) * 0.06; chase: +0.25 xRot
+  (blown back); never driven by poses.
+tail / tail_tip (children of link_7): the big dachshund tail carried high, tan tip.  ALWAYS WAGGING, added on top of
+  every pose, trail and freeze: tail.yRot += sin(t * 1.1) * 0.55, tail_tip.yRot += sin(t * 1.1 - 0.9) * 0.45; faster
+  and wider when it 'is a good dog' (fetch_drop, beg, catch: t * 1.6, amplitude 0.75); slower while unspooling
+  inside the doghouse (t * 0.7) -- that is the gag of the reveal.
+arm_1_right / arm_1_left (on link_3), arm_2_right / arm_2_left (on link_5), arm_3_right / arm_3_left (on link_7):
+  three pairs of far-too-long, NOT symmetric human upper arms bursting out of the flanks (torn fur collar, raw base),
+  spider elbows above the spine.  forearm_k_side: the forearms (knobbly elbow, ulna ridge, knobbly wrist).
+  joint_2_left: the extra joint of the broken arm 2-left (a second elbow; its wrist is broken backwards).
+  hand_k_side: dirty hands, cracked black nails -- hand_1_right flat, hand_1_left on its knuckles (fist), hand_2_right
+  clawing on its fingertips, hand_2_left twisted backwards, hand_3_right flat, hand_3_left claw.  Animated only by
+  POSES (all arm values are IK-solved so planted hands sit exactly on the floor): gait keys in trail mode, the pose
+  tables otherwise.  Idle: finger twitch = one random hand xRot -0.15 for 3 ticks every 1-3 s.
+
+======================================================================================================== TOGGLES
+ModelPart.visible.  Default (TOGGLE_DEFAULT): vomit = false, choripan = false.  Hiding a bone hides its children and \
+its glow.
+* vomit -- visible only during the 'vomit' pose (casa.parrilla, after the catch).  Show it on the first frame the
+  pose reaches weight 1; hide it when the wisp (DemonWisp) leaves the mouth, before 'retract'.
+* choripan -- visible only in 'catch': show it on the frame the thrown ChoripanBenditoEntity reaches the mouth
+  (discard that entity the same tick), keep it through the 3 chomps, hide it on the last one (swallowed).
+* mouth_item is not a toggle: it has no cubes; Java draws the fetched ItemStack there only while it carries one.
+
+======================================================================================================== POSES
+(all tables are IK-solved snapshots on the rest skeleton; the arms' planted hands touch y = 24 exactly)
+* unspool -- casa.cucha, the reveal.  Coming out of the cucha: the chest has crawled out flat on its belly (stubby
+  paws stretched forward), the neck rises and the head looks up at you with the flower starting to open; everything
+  behind the chest is still wound up in a tall upright coil standing in the doghouse door (the links bent backwards
+  round the hub, a horrible back-bend), the six arms sticking out of both sides of the coil and planted like the legs
+  of a spider, the rump curled at the hub with the tail poking out sideways, wagging.  The coil spans z
+  {_f(L['unspool']['zmin'])}..{_f(L['unspool']['zmax'])} (hub {_v(L['unspool']['center'])}, head joint {_v(L['unspool']['head'])}): spawn
+  the BEAST {_f(L['unspool']['zmax'] / 32 + 0.1, 2)} block in front of the doghouse door, facing away from it, so the
+  coil spills out of the doorway with its back against the cucha.  Hold 20 ticks (choripan.crack x6, one per link,
+  3 ticks apart: kick each link_k +0.15 xRot for 2 ticks), open the flower (5 ticks), then start the chase: blend
+  (8 ticks) into trail mode with the anchor = the door; the links not yet out sit inside the cucha (rule 6).
+* run -- the chase body attitude: the chain low and long, snaking in an S behind the head, the neck thrust forward,
+  ears streaming back, the tongue flapping out of the side, flaps half open, furious brows, the six arms caught
+  mid-stride in a centipede wave (two hands in the air), one stubby front paw tucked up.  In trail mode use only its
+  head / neck / flaps / brows / tongue / ears / tag values (the chain comes from the trail, the arms from walk_*);
+  use the whole table when chasing without a trail (debug, or a cut where the body must stay in frame).
+* walk_1 .. walk_4 -- the gait keys (arms + front legs only, on the rest chain): a tripod gait, tripod A =
+  hand_1_right, hand_2_left, hand_3_right, tripod B = the other three, half a cycle apart.  walk_1: A planted
+  forward / B planted back; walk_2: A under the shoulders / B in the air swinging forward, fingers dangling; walk_3: A
+  back / B forward; walk_4: A in the air / B under the shoulders.  Loop 1-2-3-4-1 (trail rule 7); the front legs trot
+  in the same rhythm.
+* fetch_drop -- casa.trae, 'te lo trae y te lo deja en los pies': a play bow.  The chest drops low on its forelegs,
+  the rump stays up with the tail high and swept to one side (WAGGING FAST), the neck reaches forward and down, the
+  head hangs a hand above the floor, tilted, looking up at you from under sad puppy brows, the lower flaps just parted;
+  mouth_item at {_v(L['fetch_drop']['mouth'])} = 0.33 block above the floor, 2 blocks in front of the origin: stop
+  the entity so that point is over the player's feet.  Play: blend in 8 ticks carrying the item, release it on tick
+  10, then hold 60 ticks of silence (only the tail and the eye glow move; no breathing), then LUNGE.  Also the base
+  for SaltBlockedGoal (whining against the salt line: hold it with the mouth closed (flaps 0), the head pushing
+  forward 2 texels and back every 10 ticks, brows sad).
+* beg -- casa.parrilla, 'pide sentado sobre los seis brazos' (BegGoal: the player holds a chorizo / choripan).  The
+  rump sits on the floor, the tail out behind it wagging, the whole sausage body stands straight up out of it like a
+  meerkat -- a {beg_top:.1f}-block begging tower -- the chest on top with the stubby paws held up under the chin on either side of the readable name
+  tag, the head on top tilted at you with sad puppy brows and the tongue lolling out of the side; arm pair 1 holds
+  out two human hands together, palms up and cupped ('una monedita'), elbows jutting out like a mantis; pairs 2 and
+  3 are planted round the base like the legs of a stool.  The tower stands over the origin (head joint
+  {_v(L['beg']['head'])}).  Blend in over 14 ticks (it unfolds upward), then idle: the tower sways
+  zRot sin(t * 0.1) * 0.03 on link_1..link_4, the cupped hands bob dy sin(t * 0.3) * 0.6, the head tilts.
+* lunge -- LungeGoal / the attack: the chain bunches and the head shoots forward low with the flower fully open
+  (these are the flower values), the tongue whipping out, furious brows, the ears flung, every hand gripping the floor.
+  Blend in 3 ticks, hold 4, hit: Fx.jumpscare(p, "choripan_demonio") (4 damage, -10 sanity) -- the open flower fills
+  the camera until the crucifix is raised.
+* catch -- casa.parrilla, CatchBlessedGoal: it catches the blessed choripan in the air.  The chest rears up off its
+  stubby forelegs (paws dangling: it jumped), the neck goes straight up and the head points at the sky with the four
+  flaps peeled wide open like a flower (JAWS POINTING UP), the choripan toggle dropping in between the needle teeth at
+  mouth_item {_v(L['catch']['mouth'])}, the tongue lolling over the lower flaps, every hand braced, tail wagging.
+  Blend in 4 ticks timed so weight 1 lands on the frame the thrown item reaches the mouth (FOV punch), hold 6, then
+  3 chomps (flaps), then freeze 30 ticks (it realises: brows snap to sad, eyes keep glowing), then 'vomit'.
+* vomit -- the bile: the back arches up into a hump like a sick cat, every arm locks out stiff and wide, the neck juts
+  forward, the head hangs nose-down with the four flaps peeled open toward the floor and the tongue out, and the
+  black column (toggle vomit) pours straight down out of the mouth into the puddle.  Blend in 8 ticks (retch: link_2 ..
+  link_5 xRot pulses +0.12 at 6-tick intervals, 3 times), show the toggle, 40 ticks of pouring while the DemonWisp
+  rises out of the column, hide it, then 'retract'.
+* retract -- 'se enrolla como un metro': the tape measure snapping home.  Every link telescopes back into the one
+  behind it toward the rump (~3 texels of fur per link still show), the compressed body sits low around the hips at
+  {_v(L['retract']['link_7'])}, the head yanked back onto the chest (neck telescoped), ears flung forward by the
+  whiplash, flaps snapped shut, brows shot up, tongue sucked in, arms folded tight against the flanks with the
+  elbows jutting above the back, tail straight up -- 'boing'.  Play it FAST: 8 ticks with an ease-in (the links reach
+  their slots one after another from the head back, 1 tick apart), a 4-tick overshoot on the tail; then swap to the
+  DOG model at the rump's position (ActorSwap / form REVERTING) with the sneeze.
+* stretch -- the transformation (form TRANSFORMING, DOG -> BEAST in view): w = 1 is this pose, the body compressed
+  like a sitting dachshund (each link telescoped into the one in front, the rump on the floor, the neck in, the arms
+  folded tight along the flanks); animate the weight 1 -> 0 over 40 ticks so the chain stretches out link by link
+  (stagger: link_k starts 4 * k ticks late, choripan.crack on each), the arms unfolding last.
+* coil -- the grab: the chain wrapped round a victim standing at {_v(L['coil']['center'])} (model space, the ring's
+  centre), the head swung round to face it at mouth height, flaps open, the inner (left) arms reaching in at chest
+  height, the outer arms bracing on the floor.  Used for the jumpscare close-up / a caught player; position the
+  entity so that point is on the player.
+
+Beat order (casa): unspool (cucha) -> trail chase (walk_* + run head) / lunge -> fetch_drop (casa.trae) -> lunge -> \
+beg (parrilla, while the choripan cooks; it circles the salt ring in trail mode between begs) -> catch -> chomps -> \
+vomit -> retract -> DOG.
+Jumpscare portrait: FOCUS 'head', pose 'lunge' (the open flower, milk eyes, needle teeth, black tongue).
+"""
+
+
+def _reflow(raw, width=118):
+    """Re-wrap the notes: a line starting at column 0 (or ' N. ') opens a paragraph, an indented line continues it;
+    table rows ('  link_...' and their description lines) and '=' rules are kept as they are."""
+    import textwrap
+    out, para = [], None
+
+    def flush():
+        if para:
+            first, sub, words = para
+            out.extend(textwrap.wrap(' '.join(words), width, initial_indent=first, subsequent_indent=sub,
+                                     break_on_hyphens=False, break_long_words=False))
+    for line in raw.splitlines():
+        verbatim = (not line.strip() or line.startswith('=') or line.startswith('  link_')
+                    or line.startswith('          '))
+        if verbatim:
+            flush()
+            para = None
+            out.append(line)
+            continue
+        numbered = line[:1] == ' ' and line[1:2].isdigit()
+        if para is not None and line.startswith('  ') and not numbered:
+            para[2].append(line.strip())
+            continue
+        flush()
+        lead = line[:len(line) - len(line.lstrip())]
+        sub = '    ' if numbered else '  '
+        para = (lead, sub, [line.strip()])
+    flush()
+    return '\n'.join(out) + '\n'
+
+
+ANIM_NOTES = _reflow(_anim_notes())

@@ -77,8 +77,10 @@ SOLE = pal('#2a2420', '#43392f', '#5e5144', '#7a6b5a')
 SOLE_L = pal('#120b08', '#22160e', '#332217', '#4b3322', '#6a4a31')   # old leather sole, scuffed
 BRASS = pal('#3b2a10', '#6e5220', '#a8853a', '#dcc070')
 CORD = pal('#1a120c', '#33251a', '#4e3a28', '#6d553d')
-# the 1961 blessed thread: sixty years buried in a biscuit tin -- dried, brown-shifted, faded red
-OLDT = pal('#1c0507', '#3c0c12', '#621519', '#882224', '#a63834', '#c25c55')
+# the 1961 blessed thread: sixty years in a biscuit tin, but still the brightest thing on her -- an orange-shifted
+# brick red that separates from the burgundy dress in value AND hue (mid #c23a30, top #e8604a, pale ply #f39a7a)
+OLDT = pal('#2a0708', '#5e1512', '#8f261f', '#c23a30', '#e8604a', '#f39a7a')
+FRAY = pal('#e07a62', '#f39a7a')                      # the cut end splits into pale fibres
 # the new thread the Nona sews with: vivid scarlet with a hot highlight (reads on white porcelain and in the dark)
 NEWT = pal('#3a0206', '#7a050c', '#b80d14', '#e3241f', '#ff5a3c', '#ffa07a')
 HOLE = hx('#2b0b12')
@@ -212,46 +214,48 @@ def near_chunk(x, y, z, r=0.9):
 FACE_TOP = [
     # 0123456789ABCD
     "oooooOOOoohXXX",   # r0  forehead (bangs over the left); a chunk broken out of the corner
-    "oooooooooochXX",   # r1  the crack leaves the chunk, chipped lip of the break
-    "lololoooocsohh",   # r2  single spiky lashes | crack runs into the socket
-    "eWWWWWoos..soo",   # r3  lid line over the glass eye | round socket
+    "eoeooooooochXX",   # r1  lash tips | the crack leaves the chunk, chipped lip of the break
+    "ololooooocoohh",   # r2  two slanted lash strokes at the outer corner | crack runs to the socket | chipped edge
+    "oWWWWWoos..soo",   # r3  lid line over the glass eye | round socket
     "s.....os....so",   # r4  glass eye (eyeball behind) | socket (ember deep inside)
     "s.....os....so",   # r5
     "o.....oos..soo",   # r6
-    "oeoeoeooChhkoo",   # r7  lower lashes | hairline crack + chipped lower lip | the tear leaves the socket
+    "oeoeooooCookoo",   # r7  two lower lashes | the crack leaves the socket (mid grey) | the tear leaves it
 ]
 # The mouth, per look.  Plate rows r8 (above the lip) and r9 (upper lip) are 14 wide (x -7..7); the chin rows c10
 # (lower lip) and c11 (needle holes) are 6 wide (x -3..3, face columns 4..9); 'tip' is the chin tip (columns 5..8).
-# The three 1961 stitches went through columns 5, 7 and 9.
+# Both looks share ONE row of needle holes: the 1961 cross-stitches and the Nona's new ones go through the same
+# punctures, at x -4.5, -1.5, 1.5, 4.5 (columns 2, 5, 8, 11) above the lip (y 7) and below it (y 10), three X's
+# centred on the lip seam at x -3, 0, 3.  So 'cortado' and 'cosida' rhyme: the same X rhythm, snipped / sewn.
 MOUTH_ROWS = {
     'cortado': {
-        # Nothing crosses the lips any more: the stitches were snipped at the seam.  What is left sits in the
-        # holes: r8 col 5 = thread_right leaves it, col 7 = a cut stub (T) whose frayed end (F) lies sideways toward
-        # col 9 = torn empty (the crack ends in it)
-        'r8': "pPpMoHoTFuhkpp",   # ... | 10 chip | 11 the black tear
+        # Lucia snipped every stitch at the lip seam.  r8: col 2 = cut stub (geometry, thread_stubs) | col 5 =
+        # thread_right leaves this hole | 6-7 shadow under the nose | col 8 = torn empty (the crack ends in it) |
+        # col 11 = the black tear runs over the last hole
+        'r8': "pPuooHssuookpp",
         'r9': "ppooMLRRLMogPp",   # rosebud upper lip (shadowed) with dark corners
         'c10': "sRQQRs",          # fuller lower lip catching the light
-        'c11': "FTouoH",          # holes: cut stub in 5, frayed end lying out to 4 | torn-out 7 | 9: thread_left
+        'c11': "oTooHo",          # holes: a short cut stub left in col 5 | col 8: thread_left leaves this hole
         'tip': "soos",
     },
     'cosida': {
-        # three fresh cross-stitches (geometry planes, stitch_1..3) cross the seam at x -3, 0, 3; their corner
-        # holes are columns 2, 5, 8, 11.  Under them the lips are pulled into a tight seam and the porcelain
-        # puckers toward every hole; the old 1961 holes (7, 9) stay as empty punctures.
-        'r8': "pPuzouoouuhkpp",
+        # three fresh cross-stitches (geometry, stitch_1..3) cross the seam at x -3, 0, 3 through the same holes.
+        # Under them the lips are pulled into a tight seam and the porcelain puckers toward the holes.
+        'r8': "pPuzoussuzokpp",
         'r9': "ppozMLRRLMogPp",
         'c10': "ziiiiz",
         'c11': "zuoouz",
         'tip': "soos",
     },
 }
-# Lower face 12 x 2 (x -6..6, y 8.5..10.5); the chin slot (x -3..3) is open.
+# Lower face 12 x 2 (x -6..6, y 8.5..10.5); the chin slot (x -3..3) is open.  Column 1 of the lower row is the
+# hole at x -4.5 (a cut stub in 'cortado'), column 10 the tear.
 FACE_B = {
-    'cortado': ["pps......skp", "sos......oks"],
+    'cortado': ["pps......skp", "sus......oks"],
     'cosida': ["pzs......skp", "suz......zks"],
 }
 FACE_COLS = {
-    'h': CHIP, 'c': CRACK_D, 'r': hx('#2a2026'), 'l': LASH[0], 'e': LASH[1], 'W': LASH[0],
+    'h': CHIP, 'c': CRACK_D, 'l': LASH[0], 'e': LASH[1], 'W': LASH[0],
     'k': TEAR[0], 'g': TEAR[3], 'M': LIP[0], 'R': LIP[2], 'Q': LIP[3],
     'C': CRACK,
     'L': LIP[1],
@@ -394,20 +398,19 @@ def eyeball_mat(ctx):
     return EYE_COL[EYEBALL[ctx.j][ctx.i]]
 
 
-NOSE_FRONT = [PORC[7], PORC[6]]
-
-
 def nose_mat(ctx):
+    """A tiny button nose: a warm blush on the tip so it separates from the white mask, a soft rose underside (no
+    grey grime: under horror lighting that read as a lavender bar).  The plate paints its cast shadow below it."""
     f = ctx.face
     if f == 'back':
         return None
     if f == 'bottom':
-        return mix(pick(PORC, 0.55), GRIME, 0.35)
+        return mix(PORC[4], ROUGE[0], 0.35)
     if f == 'top':
         return PORC[7]
     if f == 'front':
-        return NOSE_FRONT[ctx.i]
-    return PORC[5]
+        return mix(PORC[6], ROUGE[1], 0.45 if ctx.i == 1 else 0.3)
+    return mix(PORC[5], ROUGE[1], 0.2)
 
 
 def chin_mat(ctx):
@@ -461,9 +464,8 @@ def throat_mat(ctx):
         if ly < 1.0:
             return pick(GUM, 0.3)
         return pick(MOUTH, 0.3 - ly * 0.1)
-    if f in ('bottom', 'west', 'east'):
-        return pick(PORC, 0.52)
-    return MOUTH[0]
+    # the throat's underside and walls show inside the dropped jaw: part of the same black void as the gullet
+    return MOUTH[1] if f in ('bottom', 'west', 'east') else MOUTH[0]
 
 
 # ------------------------------------------------------------------ hair
@@ -832,50 +834,71 @@ def cord_mat(ctx):
 
 
 def thread_mat(ctx):
-    """Loose end of the 1961 thread: a two-ply twist (light / dark texels stepping round the strand), darker down
-    the strand, the very end split into pale frayed fibres (front/back texel gone, the side plies left)."""
+    """The 1961 thread, a full texel thick: a two-ply twist (light / mid texels stepping round the strand) with a
+    pale ply highlight now and then, a little darker down the strand; the cut end of each tip is pale and frayed
+    and splits into fibres (the 'fray' planes).  Stubs (thread_stubs) are the same twist, the end in the hole dark."""
     f = ctx.face
     lx, ly, lz = local(ctx)
-    h = ctx.cube.size[1]
-    tip = tag(ctx) == 'thread_tip'
+    w, h, d = ctx.cube.size
+    t = tag(ctx)
+    if t == 'fray':
+        if f != 'front':
+            return None                                 # one face only (planes are drawn double-sided)
+        ch = FRAY_ROWS[ctx.j][ctx.i]
+        return None if ch == '.' else FRAY[0] if ch == 'f' else FRAY[1]
+    if t == 'stub':
+        if f == 'back':
+            return None
+        L = max(w, h)
+        u = (lx / w) if w > h else (ly / h)             # 0 = the end in the needle hole
+        if f == 'front':
+            if ctx.cube.flip:
+                u = 1 - u
+            return OLDT[1] if u < 0.5 else OLDT[5]      # dark where it dives into the hole, pale cut end
+        return OLDT[3] if f in ('top', 'west') else OLDT[2]
+    tip = t == 'thread_tip'
     if f == 'top':
-        return OLDT[1]
+        return OLDT[2]
     if f == 'bottom':
-        return None if tip else OLDT[1]
+        return FRAY[0] if tip else OLDT[2]
     k = {'front': 0, 'east': 1, 'back': 2, 'west': 3}[f]
     last = tip and ctx.j == ctx.h - 1
-    if last and f in ('front', 'back'):
-        return None                                     # the plies split apart at the cut
-    v = 0.6 + face_light(ctx) * 0.9 + (0.08 if (ctx.j + k) % 2 == 0 else -0.06)
-    v -= (ly / max(1, h)) * (0.14 if tip else 0.05)
     if last:
-        v = 0.86                                        # pale, frayed fibres
-    return pick(OLDT, v)
+        return FRAY[1] if f in ('front', 'west') else FRAY[0]   # the pale frayed end
+    if f in ('front', 'west'):
+        c = OLDT[4] if (ctx.j + k) % 2 == 0 else OLDT[3]     # the lit plies
+        if (ctx.j + k + cseed(ctx)) % 5 == 0:
+            c = OLDT[5]                                      # 1-px pale ply highlight
+    else:
+        c = OLDT[3] if (ctx.j + k) % 2 == 0 else OLDT[2]
+    return c
 
 
-# fresh cross-stitch: a '+' painted on a 5 x 5 plane that the stitch bone turns 45 degrees, so both threads are
-# clean 1-texel diagonals (a pixel-drawn 4 x 4 X closes into a blob).  V = the top thread (lit, drawn over the
-# crossing), h = the under thread, d = the ends diving into the needle holes.
-XSTITCH = [
-    "..d..",
-    "..V..",
-    "dhVhd",
-    "..V..",
-    "..d..",
+FRAY_ROWS = [
+    # 3 x 1 under the cut end: the two plies split apart into pale fibres
+    "f.f",
 ]
 
 
+# fresh cross-stitch (look 'cosida'): each stitch is a '+' of two thin solid strands that its bone turns 45 degrees
+# into an X, so both threads are clean straight lines at any distance (painted diagonals on a rotated plane read as a
+# chain of diamonds in close-ups).  The 'over' strand ('/', lit, a hot highlight on the crossing) lies in front of the
+# 'under' strand ('\'); both ends darken where they dive into the shared needle holes.
 def stitch_mat(ctx):
-    if ctx.face != 'front':
-        return None                                     # one face only (planes are drawn double-sided)
-    ch = XSTITCH[ctx.j][ctx.i]
-    if ch == '.':
+    f = ctx.face
+    if f == 'back':
         return None
-    if ch == 'd':
-        return NEWT[1]
-    if ch == 'h':
-        return NEWT[2]
-    return NEWT[4] if ctx.j < 2 else (NEWT[5] if ctx.j == 2 else NEWT[3])   # sheen peaks on the crossing
+    lx, ly, lz = local(ctx)
+    w, h, d = ctx.cube.size
+    u = (lx / w) if w > h else (ly / h)
+    end = u < 0.2 or u > 0.8
+    if tag(ctx) == 'over':
+        if f == 'front':
+            return NEWT[2] if end else (NEWT[5] if 0.4 < u < 0.6 else NEWT[4])
+        return NEWT[2] if end else NEWT[3]
+    if f == 'front':
+        return NEWT[1] if end else NEWT[3]
+    return NEWT[1] if end else NEWT[2]
 
 
 # ------------------------------------------------------------------ module contract
@@ -894,12 +917,16 @@ FOCUS = 'head'
 # ------------------------------------------------------------------ toggles (Java: ModelPart.visible)
 # bone -> visible in the default look 'cortado'.  stitch_1..3 live under 'stitches': in the stitch minigame Java shows
 # 'stitches' with all three hidden and reveals one per completed puntada, then switches the texture to 'cosida'.
-TOGGLE_DEFAULT = {'thread_right': True, 'thread_left': True, 'stitches': False,
+TOGGLE_DEFAULT = {'thread_right': True, 'thread_left': True, 'thread_stubs': True, 'stitches': False,
                   'stitch_1': True, 'stitch_2': True, 'stitch_3': True}
 VARIANT_TOGGLES = {
     'cortado': {},
-    'cosida': {'thread_right': False, 'thread_left': False, 'stitches': True},
+    'cosida': {'thread_right': False, 'thread_left': False, 'thread_stubs': False, 'stitches': True},
 }
+# her mouth is sewn in these looks: Java must never move the jaw there (idle clacks and the jaw values of every pose
+# are dropped), because the cross-stitches are children of head and an open jaw would leave them floating
+JAW_LOCKED_VARIANTS = ('cosida',)
+VARIANT_POSE_MASK = {'cosida': ('jaw',)}             # bones whose pose values Java skips in that look
 
 
 def visible_set(variant=None):
@@ -949,6 +976,7 @@ class MunecaModel(Model):
 HEAD_REST = (4, -8, -14)                                                # degrees, see build()
 REST_DEG = {'body': (0, 0, 0), 'neck': (0, 0, 0), 'head': HEAD_REST, 'jaw': (0, 0, 0)}
 THREAD_CHAIN = {'thread_right': ('body', 'neck', 'head'), 'thread_left': ('body', 'neck', 'head', 'jaw')}
+TIP_REST = {'thread_right_tip': (-6, 0, 10), 'thread_left_tip': (6, 0, -12)}      # degrees: a slight curl
 
 
 def _euler(R):
@@ -1047,7 +1075,7 @@ def build(variant=None):
         broken = sx > 0
         drop = 0.6 if broken else 0.0                   # her left shoulder sags
         ax, ay = 4.6 * sx, 12.6 + drop
-        bone(ab, (ax, ay, 0), parent='body', rot=((3, 0, -13) if broken else (-4, 0, 15)), mat=limb_mat)
+        bone(ab, (ax, ay, 0), parent='body', rot=((3, 0, -18) if broken else (-4, 0, 19)), mat=limb_mat)
         cx = ax + 1.0 * sx
         box(ab, (cx - 2, ay - 0.8, -2), (4, 3, 4), mat=dress_mat, name='puff', inflate=0.35)
         box(ab, (cx - 2, ay + 2.0, -2), (4, 1, 4), mat=lace_mat, name='cuff', inflate=0.15)
@@ -1127,27 +1155,59 @@ def build(variant=None):
         tw = max(1, wd - 1)
         box(name, (px - tw / 2, py - 1 + ln, pz - tw / 2), (tw, 2, tw), name='tip')
 
-    # ---------------- the 1961 thread, cut: two loose ends hanging from the lips (look 'cortado').  Each is a root
-    # strand + a lagging tip (double pendulum).  Rest rotations cancel the rolled head so they hang plumb.
-    # thread_right leaves the upper needle hole at her right (child of head: it stays when the chin drops and hangs
-    # across the open mouth); thread_left leaves the lower hole at her left (child of jaw: it drops with the chin).
-    bone('thread_right', (-1.5, 7.0, -6.2), parent='head', rot=thread_rest_deg('thread_right'), mat=thread_mat)
-    box('thread_right', (-2, 7.0, -6.7), (1, 5, 1), inflate=-0.22, name='thread')
-    bone('thread_right_tip', (-1.5, 11.75, -6.2), parent='thread_right', rot=(-6, 0, 14), mat=thread_mat)
-    box('thread_right_tip', (-2, 11.6, -6.7), (1, 4, 1), inflate=-0.26, name='thread_tip')
-    bone('thread_left', (2.5, 10.0, -6.2), parent='jaw', rot=thread_rest_deg('thread_left'), mat=thread_mat)
-    box('thread_left', (2, 10.0, -6.7), (1, 3, 1), inflate=-0.22, name='thread')
-    bone('thread_left_tip', (2.5, 12.75, -6.2), parent='thread_left', rot=(8, 0, -18), mat=thread_mat)
-    box('thread_left_tip', (2, 12.6, -6.7), (1, 3, 1), inflate=-0.26, name='thread_tip')
+    # ---------------- needle holes and stitches: ONE layout for both looks.  Three X's centred on the lip seam
+    # (y 8.5) at x -3, 0, 3; each arm reaches 1.7 along both axes, so the corner holes sit at x -4.5/-1.5/1.5/4.5,
+    # y ~6.8 (above the upper lip) and ~10.2 (on the chin), shared by neighbours like a real row of cross-stitch.
+    seam = 8.5
+    rz = rot_matrix(0, 0, math.radians(45))
 
-    # ---------------- fresh cross-stitches (look 'cosida'): one bone per stitch, its '+' plane turned 45 degrees
-    # into an X centred on the lip seam at x -3, 0, 3; neighbours share their needle holes like a real row of
-    # cross-stitch, the middle one a hair in front so the shared tips never z-fight
-    bone('stitches', (0, 8.5, -6.2), parent='head', mat=stitch_mat)
-    for k, (cx, z) in enumerate(((-3.0, -6.14), (0.0, -6.26), (3.0, -6.14))):
+    def diag_box(bn, pivot, centre, size, z0, mat, name, inflate):
+        """A cube of a bone turned +45 deg about Z, placed so its centre lands on `centre` (head space)."""
+        lc = rz.T @ np.array([centre[0] - pivot[0], centre[1] - pivot[1], 0.0])
+        c = box(bn, (pivot[0] + lc[0] - size[0] / 2, pivot[1] + lc[1] - size[1] / 2, z0), size, mat=mat,
+                inflate=inflate, name=name)
+        return c
+
+    # ---------------- the 1961 thread, cut (look 'cortado').  Lucia snipped the three X's at the seam: two loose
+    # ends hang from shared holes and sway, short stubs stay in three others.  Each end is a full-texel strand: a root
+    # + a lagging tip (double pendulum) ending in a pale frayed tuft over the light lace collar / jabot.  Rest
+    # rotations cancel the rolled head so they hang plumb.  thread_right leaves the upper hole at x -1.5 (child of
+    # head: it stays when the chin drops and hangs across the open mouth); thread_left leaves the lower hole at x 1.5
+    # on the chin (child of jaw: it drops with the chin).
+    tz = -6.55                                          # strand centre: its back face just clears the porcelain
+    bone('thread_right', (-1.5, 6.9, tz), parent='head', rot=thread_rest_deg('thread_right'), mat=thread_mat)
+    box('thread_right', (-2, 6.9, tz - 0.5), (1, 3, 1), inflate=-0.03, name='thread')
+    bone('thread_right_tip', (-1.5, 9.85, tz), parent='thread_right', rot=TIP_REST['thread_right_tip'], mat=thread_mat)
+    box('thread_right_tip', (-2, 9.8, tz - 0.5), (1, 2, 1), inflate=-0.03, name='thread_tip')
+    box('thread_right_tip', (-2.5, 11.75, tz), (3, 1, 0), name='fray')
+    bone('thread_left', (1.5, 10.2, tz), parent='jaw', rot=thread_rest_deg('thread_left'), mat=thread_mat)
+    box('thread_left', (1, 10.2, tz - 0.5), (1, 2, 1), inflate=-0.03, name='thread')
+    bone('thread_left_tip', (1.5, 12.15, tz), parent='thread_left', rot=TIP_REST['thread_left_tip'], mat=thread_mat)
+    box('thread_left_tip', (1, 12.1, tz - 0.5), (1, 1, 1), inflate=-0.03, name='thread_tip')
+    box('thread_left_tip', (0.5, 13.05, tz), (3, 1, 0), name='fray')
+    # cut stubs (child of head, turned 45 deg like the X arms): 1.6 long, 0.7 proud of the porcelain, each pointing
+    # from its hole toward the centre of the X it belonged to -- the snipped halves of X 1 make a '>' at her right lip
+    # corner, the last one hangs over the black tear at her left
+    bone('thread_stubs', (0, seam, tz), parent='head', rot=(0, 0, 45), mat=thread_mat)
+    for hole, xc, axis in (((-4.5, 6.85), -3.0, 'x'), ((-4.5, 10.15), -3.0, 'y'), ((4.5, 6.85), 3.0, 'y')):
+        d = np.array([xc - hole[0], seam - hole[1]])
+        d /= np.linalg.norm(d)
+        centre = (hole[0] + d[0] * 0.6, hole[1] + d[1] * 0.6)
+        c = diag_box('thread_stubs', (0, seam, tz), centre, (2, 1, 2) if axis == 'x' else (1, 2, 2), -6.5,
+                     thread_mat, 'stub', -0.2)
+        # 'flip' when the hole end is the far end of the strand's local axis (front face texel order)
+        loc_dir = rz.T @ np.array([d[0], d[1], 0.0])
+        c.flip = (loc_dir[0] if axis == 'x' else loc_dir[1]) < 0
+
+    # ---------------- fresh cross-stitches (look 'cosida'): one bone per stitch, turned 45 deg; its '+' of two
+    # solid strands becomes the X.  'over' ('/', lit) in front of 'under' ('\'), both sunk into the porcelain at
+    # the holes; neighbours share their holes.
+    bone('stitches', (0, seam, -6.2), parent='head', mat=stitch_mat)
+    for k, cx in enumerate((-3.0, 0.0, 3.0)):
         bn = f'stitch_{k + 1}'
-        bone(bn, (cx, 8.5, z), parent='stitches', rot=(0, 0, 45 if k != 1 else -45), mat=stitch_mat)
-        box(bn, (cx - 2.5, 6.0, z), (5, 5, 0), name='xstitch')
+        bone(bn, (cx, seam, -6.2), parent='stitches', rot=(0, 0, 45), mat=stitch_mat)
+        box(bn, (cx - 0.5, seam - 2.5, -6.8), (1, 5, 1), inflate=-0.1, name='over')
+        box(bn, (cx - 2.5, seam - 0.5, -6.5), (5, 1, 1), inflate=-0.1, name='under')
 
     m = MunecaModel('muneca', 128, 128, r.roots)
     m.scale = 0.5
@@ -1181,21 +1241,24 @@ _POSES = {
                'right_forearm': (0.23, 0, -0.15, 0, 0, 0), 'left_forearm': (0.54, 0, 0.82, 0, 0, 0),
                'right_finger1': (0, 0, 0.5, 0, 0, 0), 'right_finger3': (0, 0, -0.5, 0, 0, 0),
                'left_finger1': (0.7, 0, 0.4, 0, 0, 0), 'left_finger3': (0.7, 0, -0.4, 0, 0, 0)},
-    # "just a doll", put down on a bed / chair seat / lap: bottom on the surface (the entity origin), a slight
-    # slump, legs STRAIGHT out in a V (thigh sockets slid forward so shins and shoes clear the skirt, toes up), the
-    # skirt fanned over the thighs and spread behind, the long arms limp with the hands palm-down on the surface,
-    # the head lolling onto her right shoulder
-    'sit': {'body': (0.07, 0, 0, 0, 3.6, 0),
-            'right_leg': (-1.6, 0.3, 0, -0.3, 0.6, -3.3), 'left_leg': (-1.6, -0.24, 0, 0.3, 0.6, -3.3),
-            'skirt_front': (-0.55, 0, 0, 0, 0, 0), 'skirt_front_right': (-0.45, 0, 0, 0, 0, 0),
-            'skirt_front_left': (-0.45, 0, 0, 0, 0, 0), 'skirt_right': (-0.3, 0, 0, 0, 0, 0),
-            'skirt_left': (-0.3, 0, 0, 0, 0, 0), 'skirt_back_right': (-0.35, 0, 0, 0, 0, 0),
-            'skirt_back_left': (-0.35, 0, 0, 0, 0, 0), 'skirt_back': (-0.4, 0, 0, 0, 0, 0),
-            'hem_front': (-0.3, 0, 0, 0, 0, 0), 'hem_front_right': (-0.25, 0, 0, 0, 0, 0),
-            'hem_front_left': (-0.25, 0, 0, 0, 0, 0),
-            'head': (0.1, 0.06, -0.32, 0, 0, 0),
-            'right_arm': (-0.15, 0, 0.2, 0, 0, 0), 'left_arm': (-0.1, 0, -0.4, 0, 0, 0),
-            'right_forearm': (0.1, 0, 0.25, 0, 0, 0), 'right_hand': (0, 0, 0.5, 0, 0, 0)},
+    # "just a doll", propped up on a bed / chair seat / lap: bottom on the surface (the entity origin), the torso
+    # leaning BACK a little (so the face tips up toward a player standing over her), legs STRAIGHT out in a V along
+    # the surface (thigh sockets slid 5.8 forward, under the skirt's front edge), heels down, toes up and out; the
+    # skirt fanned round her; the long arms down at her sides, hands resting palm-down on the surface beside the
+    # thighs (the broken forearm folded in on its cord); the head keeps its rest loll onto her right shoulder
+    'sit': {'body': (-0.2, 0, 0, 0, 3.0, 0),
+            'right_leg': (-1.37, 0.25, 0, -0.3, 2.9, -5.8), 'left_leg': (-1.37, -0.2, 0, 0.3, 2.9, -5.8),
+            'skirt_front': (-0.3, 0, 0, 0, 0, 0), 'skirt_front_right': (-0.05, 0, 0, 0, 0, 0),
+            'skirt_front_left': (-0.05, 0, 0, 0, 0, 0), 'skirt_right': (-0.2, 0, 0, 0, 0, 0),
+            'skirt_left': (-0.2, 0, 0, 0, 0, 0), 'skirt_back_right': (-0.4, 0, 0, 0, 0, 0),
+            'skirt_back_left': (-0.4, 0, 0, 0, 0, 0), 'skirt_back': (-0.45, 0, 0, 0, 0, 0),
+            'hem_front': (-0.1, 0, 0, 0, 0, 0), 'hem_front_right': (0.15, 0, 0, 0, 0, 0),
+            'hem_front_left': (0.15, 0, 0, 0, 0, 0),
+            'head': (0.15, 0.06, 0.0, 0, 0, 0),
+            'right_arm': (-0.49, -0.07, 0.25, -0.6, 0.3, 0), 'right_forearm': (0.2, 0, -0.27, 0, 0, 0),
+            'right_hand': (-0.24, 0, -0.46, 0, 0, 0),
+            'left_arm': (-0.31, 0.08, -0.37, 0, 0, 0), 'left_forearm': (-0.12, 0, 1.08, 0, 0, 0),
+            'left_hand': (-0.13, 0, -0.26, 0, 0, 0)},
 }
 # world-space swing of the two loose thread ends per pose (xRot, zRot; -x = lower end toward the viewer): the jaw
 # snap of the attack flings them forward and apart across the black mouth; they are still swinging from the head

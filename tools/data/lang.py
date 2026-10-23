@@ -333,3 +333,12 @@ SCRIPT.update({
     'deadline.spiritbox.casa.temperley': ('...SOY DE... TEMPERLEY.', "...I'M... A TEMPERLEY FAN."),
 })
 # --- end casa:P5
+
+# --- casa:P1 (the family: Marta, Jorge, the Nona, Toti) ---
+ENTITIES.update({
+    'marta': ('Marta', 'Marta'),
+    'jorge': ('Jorge', 'Jorge'),
+    'nona': ('La Nona', 'Grandma'),
+    'toti': ('Toti', 'Toti'),
+})
+# --- end casa:P1
