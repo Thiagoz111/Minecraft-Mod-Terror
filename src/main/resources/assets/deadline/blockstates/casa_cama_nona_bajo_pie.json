@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "deadline:block/casa_cama_nona_bajo_pie"
+  },
+  "facing=east": {
+   "model": "deadline:block/casa_cama_nona_bajo_pie",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "deadline:block/casa_cama_nona_bajo_pie",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "deadline:block/casa_cama_nona_bajo_pie",
+   "y": 270
+  }
+ }
+}

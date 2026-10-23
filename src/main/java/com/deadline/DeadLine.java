@@ -43,6 +43,11 @@ public class DeadLine implements ModInitializer {
 		// case 2: the Morales house
 		com.deadline.casa.CasaSetEntities.init();
 		com.deadline.casa.FamilyEntities.init();
+		// B3: Choripán (the dog, the long dog) and the apparitions of the catalogue (events 33-45 + their small entities)
+		com.deadline.horror.casa.dog.DogEntities.init();
+		com.deadline.horror.casa.ApparitionEvents.register();
+		// B2: the hunt of Act 5 (the broken Nona, hiding places, holding the breath); before Director.register()
+		com.deadline.horror.casa.hunt.HuntEntities.init();
 		// the car, its keys and the GPS; overworld cases (the house in the real world, the frozen night)
 		com.deadline.car.Cars.init();
 		com.deadline.caseload.OverworldCase.register();

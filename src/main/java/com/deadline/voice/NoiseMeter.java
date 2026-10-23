@@ -26,7 +26,8 @@ public final class NoiseMeter {
 	}
 
 	public static void add(ServerPlayer p, float amount) {
-		float k = p.isShiftKeyDown() ? 0.5F : 1F;
+		// sneaking halves it; inside a hiding place it is halved too (B2 hunt: com.deadline.horror.casa.hunt.HideSpots)
+		float k = (p.isShiftKeyDown() ? 0.5F : 1F) * com.deadline.horror.casa.hunt.HideSpots.noiseFactor(p);
 		LEVEL.merge(p.getUUID(), amount * k, (a, b) -> Math.min(100F, a + b));
 	}
 
@@ -43,7 +44,9 @@ public final class NoiseMeter {
 				continue;
 			}
 			UUID id = p.getUUID();
-			float n = Math.max(0F, LEVEL.getOrDefault(id, 0F) - 0.4F);
+			// holding the breath (B2 hunt: com.deadline.horror.casa.hunt.Breath) lets the noise die down faster
+			boolean holding = com.deadline.horror.casa.hunt.Breath.holding(p);
+			float n = Math.max(0F, LEVEL.getOrDefault(id, 0F) - (holding ? 1.2F : 0.4F));
 			if (p.isSprinting() && p.onGround()) {
 				n = Math.min(100F, n + 0.9F);
 			}
@@ -52,9 +55,10 @@ public final class NoiseMeter {
 				n = Math.min(100F, n + 8F);
 			}
 			AIRBORNE.put(id, air);
-			if (Voice.enabled(p) && Voice.speaking(p, now)) {
+			if (Voice.enabled(p) && Voice.speaking(p, now) && !holding) {
 				float rel = Voice.relative(p);
-				n = Math.min(100F, n + Math.max(0.6F, 1.2F + rel * 0.25F) * (p.isShiftKeyDown() ? 0.5F : 1F));
+				n = Math.min(100F, n + Math.max(0.6F, 1.2F + rel * 0.25F) * (p.isShiftKeyDown() ? 0.5F : 1F)
+						* com.deadline.horror.casa.hunt.HideSpots.noiseFactor(p));
 			}
 			LEVEL.put(id, n);
 			int heard = HEARD.getOrDefault(id, 0);

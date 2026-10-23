@@ -267,30 +267,31 @@ FACE_P = [
 ]
 assert all(len(r) == 16 for r in FACE_P), [len(r) for r in FACE_P]
 
-# ---- B2 'rota' look (the hunt, Act 5): the glasses are gone and the face is bare.  Milky cataract eyes (W w, a ghost
-# of the iris g) in raw red lids (R) sunk in near-black sockets (D d); blood wells under the lower lids and runs down
-# both cheeks (B b, fresh r), streams from both nostrils over the lip and out of the gaping mouth (M) down the chin;
-# dark veins climb the forehead (V).  '.' = the normal char re-lit with the corpse ramp SKIN_R.
+# ---- B2 'rota' look (the hunt, Act 5): the glasses are gone and the face is bare and wrong.  Two small milky
+# cataracts (W w, the drowned ghost of an iris g) sunk deep in black sockets (D) under a heavy brow (d), raw red lower
+# lids (R); the face is no longer level (her left eye sits a row lower).  Blood wells from the eyes and the nostrils
+# and runs down the cheeks (B b); the mouth is a black hole torn at the corners (X) that keeps going down the jaw into
+# the unhinged jaw_long; dark veins climb the temples (V).  '.' = the normal char re-lit with the corpse ramp SKIN_R.
 FACE_R = [
     # 0123456789012345
     "................",   # r0
-    "...V........V...",   # r1
-    "....V......V....",   # r2
-    "V.ddd......ddd.V",   # r3   the brow ridge overhangs black sockets; veins at the temples
-    ".dDDDDd...dddd..",   # r4   (her right eye sits higher: the face is no longer level)
-    "DDwWwDD..dDDDDd.",   # r5   milky cataracts, no pupil
-    "DwWWWgD..DDwWwDD",   # r6   the drowned ghosts of the irises look two different ways (g)
-    "DgWWWwD..DwWWWgD",   # r7
-    "DDwwwDD..DgWWWwD",   # r8
-    ".dRddd...DDwwwDD",   # r9   blood wells under the eyes ...
-    "..B.......dRddd.",   # r10  ... and runs down the cheeks in thin lines
-    "..B........B....",   # r11
-    "..b....BB..B....",   # r12  the nostrils bleed over the lip
-    "..b..MMMMMMb....",   # r13  the mouth hangs open, black
-    ".....bMMMMb.....",   # r14  (jaw) the lower lip, black inside, blood at the corners
-    "......B...B.....",   # r15
-    "......b...B.....",   # r16
-    "..........b.....",   # r17
+    "..V..........V..",   # r1
+    "...V........VV..",   # r2
+    "VddDdd....ddDdd.",   # r3   the brow ridge overhangs the sockets
+    ".dDDDDd...dDDDDd",   # r4
+    ".DDwWDd...dDDDDd",   # r5   her right eye: the lid droops over half of it
+    ".DgWWwD...DdwWgD",   # r6   her left eye a row lower: the face has slipped
+    ".RDwwRd...DgWWwD",   # r7
+    "..RRRd....RDwwRd",   # r8   raw lower lids, blood welling
+    "..B.......dRRR..",   # r9
+    "..B.........B...",   # r10
+    "..b...B..B..B...",   # r11  the nostrils bleed
+    "..b..XMMMMX.b...",   # r12  the corners of the mouth torn
+    "....XMMMMMMX....",   # r13  the mouth gapes
+    ".....MMMMMM.....",   # r14  (jaw) black inside, and it keeps going down
+    "......MMMM......",   # r15
+    "......MbbM......",   # r16
+    ".......bb.......",   # r17
 ]
 assert all(len(r) == 16 for r in FACE_R), [len(r) for r in FACE_R]
 SKIN_R = pal('#14181e', '#1d232b', '#28303a', '#343e4a', '#424d59', '#525e69', '#646f79', '#78828a', '#8c959b',
@@ -299,7 +300,7 @@ GOWN = pal('#26221e', '#38332d', '#4c463e', '#625a50', '#797064', '#90867a', '#a
 GRIME = hx('#3a3326')
 BLOOD = pal('#1e0204', '#3a0508', '#5a090d', '#7c0e13', '#a1161b', '#c42a2a')
 BLOOD_DRY = pal('#2a1410', '#3e1d16', '#54281d')
-CATARACT = {'W': hx('#dfe2dc'), 'w': hx('#b9bfba'), 'g': hx('#8b9799')}
+CATARACT = {'W': hx('#c9cbc1'), 'w': hx('#9fa49c'), 'g': hx('#6c7576')}
 VEIN_R = hx('#241c36')
 ROT_TEETH = pal('#4a3f2a', '#6e6142', '#958763', '#b6a983', '#cfc4a0')
 
@@ -1662,8 +1663,8 @@ def rota_skin(ctx):
         if ch and ch != '.':
             if ch in CATARACT:
                 return A(CATARACT[ch])
-            return A({'D': hx('#07080b'), 'd': SKIN_R[1], 'R': BLOOD[3], 'B': BLOOD[2], 'b': BLOOD[3],
-                      'r': BLOOD[4], 'V': VEIN_R, 'M': hx('#060203')}[ch])
+            return A({'D': hx('#050608'), 'd': SKIN_R[1], 'R': BLOOD[3], 'B': BLOOD[2], 'b': BLOOD[3],
+                      'r': BLOOD[4], 'V': VEIN_R, 'M': hx('#040102'), 'X': BLOOD[4]}[ch])
         base_ch = face_char(x, y, FACE)
         if base_ch and base_ch.isdigit():
             return A(SKIN_R[max(0, int(base_ch) - 1)])
@@ -1734,6 +1735,24 @@ def rota_paint(ctx):
         src = MATS[k](ctx, True)
         if src is None:
             return None
+        n = nm(ctx)
+        x, y, z = bpos(ctx)
+        if n == 'strand':
+            # lank, greasy, thinned out: gaps between the locks, yellowed, dark at the roots
+            if h2(ctx.i, ctx.j // 3, 61 + int(ctx.cube.seed * 10)) < 0.3:
+                return None
+            return A(scale(mix(src, hx('#6f6650'), 0.45), 0.85))
+        if n in ('hair', 'hair_top', 'fringe', 'wave'):
+            g = fbm(x * 0.33 + 7, y * 0.33 + 3, z * 0.33 + 11, 3, 66)
+            if g < 0.47:
+                # the scalp shows through: blotched grey skin, scabs
+                c = SKIN_R[3] if g > 0.36 else SKIN_R[2]
+                if fbm(x * 0.6, y * 0.6, z * 0.6, 2, 67) > 0.72:
+                    c = BLOOD_DRY[1]
+                return A(c)
+            streak = (fl(x * 1.7 + y * 0.4 + z * 1.3) % 3) == 0
+            c = mix(src, hx('#5e5644'), 0.5 if streak else 0.32)
+            return A(scale(c, 0.8 if streak else 0.92))
         return A(mix(src, hx('#7d7462'), 0.28))                         # greasy, yellowed white
     if k in ('felt', 'sole', 'pearl', 'gold', 'tennis', 'foam', 'bag', 'knitting', 'wool', 'oak', 'gourd', 'metal',
              'aid', 'tissue', 'lens', 'frame'):
@@ -1772,23 +1791,33 @@ def fang_paint(ctx, P):
 
 
 def jawlong_paint(ctx, P):
-    """The unhinged lower jaw hanging to the chest: stretched grey skin split by tendon lines, blood sheeting down."""
+    """The unhinged lower jaw hanging to the chest: its front is the open throat (black, a grey-red tongue, wet
+    glints) between two strips of cheek skin stretched to tendons; the chin knob under the lower teeth, bloody."""
     f = ctx.face
     lx, ly, lz = local(ctx)
     w, h, d = ctx.cube.size
+    chin = nm(ctx) == 'jawchin'
     if f == 'top':
         return A(MOUTH[1] if lz > 1.0 else BLOOD[2])                    # inside: the black gullet
     v = 0.42 + face_light(ctx) - ly * 0.012
     c = pick(SKIN_R, v)
     if f == 'front':
         col = fl(lx)
-        chin = nm(ctx) == 'jawchin'
-        if (not chin and col == 2) or (chin and col == 1 and ly < 2):
-            return A(BLOOD[3] if fl(ly) % 4 else BLOOD[2])             # blood off the corner of the lip
-        if not chin and col in (0, w - 1) and fl(ly) % 2 == 0:
-            return A(SKIN_R[2])                                         # tendons straining
-        if chin and ly > h - 1.5:
+        if not chin:
+            if col in (0, w - 1):
+                return A(SKIN_R[2] if fl(ly) % 2 == 0 else SKIN_R[4])  # cheek skin stretched to cords
+            if col in (1, w - 2):
+                return A(BLOOD[2] if h2(col, fl(ly), 5) > 0.45 else SKIN_R[1])
+            if 3 <= col <= w - 4 and ly > h * 0.45:
+                return A(TONGUE[0] if (col + fl(ly)) % 3 else TONGUE[1])  # the tongue lolls in the throat
+            if h2(col, fl(ly), 9) > 0.93:
+                return A(hx('#3a1218'))                                 # a wet glint
+            return A(MOUTH[0] if ly < h * 0.5 else MOUTH[1])
+        if col in (1, w - 2) and ly < 2:
+            return A(BLOOD[3] if fl(ly) % 2 else BLOOD[2])             # blood off the lower lip
+        if ly > h - 1.5:
             return A(SKIN_R[5])                                         # the chin knob at the bottom
+        return A(SKIN_R[3])
     if f in ('west', 'east') and fl(ly) % 3 == 0:
         return A(SKIN_R[2])
     return A(c)
@@ -2186,7 +2215,7 @@ def build(variant=None, pose=None):
     bone('jaw_long', 'jaw', (0, 0, 0))
     box('jaw_long', (-4, 2.5, -7.2), (8, 6, 4), 'jawlong', 'jawlong')
     box('jaw_long', (-3, 8.5, -6.8), (6, 3, 3), 'jawlong', 'jawchin')
-    box('jaw_long', (-4.5, -2.2, -7.9), (9, 2, 0), 'fang', 'fang_lo', up=True)
+    box('jaw_long', (-4.5, 6.6, -7.3), (9, 2, 0), 'fang', 'fang_lo', up=True)
 
     # possessed: the bun undone into long white locks drifting as if under water (toggles).  Radial: one up from
     # the crown, two out to the sides and down past the shoulders, two drooping down the back -- none reaches

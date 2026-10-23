@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "deadline:block/casa_cama_matrimonial_bajo_cabecera_der"
+  },
+  "facing=east": {
+   "model": "deadline:block/casa_cama_matrimonial_bajo_cabecera_der",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "deadline:block/casa_cama_matrimonial_bajo_cabecera_der",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "deadline:block/casa_cama_matrimonial_bajo_cabecera_der",
+   "y": 270
+  }
+ }
+}

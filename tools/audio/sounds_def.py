@@ -164,6 +164,53 @@ SOUNDS.update({
 })
 # --- end car / overworld
 
+# --- B3 apparitions (Casa Morales events 33-45, the dog that watches, the long dog; tools/audio/snd_apariciones.py)
+SOUNDS.update({
+    'aparicion.sombra_paso': (2, 'Pasos pesados', 'Heavy footsteps', False),
+    'aparicion.nona_respira': (2, 'Respiración de vieja', 'Old woman breathing', False),
+    'aparicion.vidrio_unas': (1, 'Uñas contra el vidrio', 'Nails on the glass', False),
+    'aparicion.perro_respira': (2, 'Algo respira como una persona', 'Something breathes like a person', False),
+    'aparicion.espejo': (1, 'El espejo zumba', 'The mirror hums', False),
+    'aparicion.aliento': (1, 'Un aliento en la nuca', 'Breath on your neck', False),
+    'aparicion.mano_rasguno': (2, 'Uñas rascan el piso', 'Nails scrape the floor', False),
+    'aparicion.mano_retira': (1, 'Algo se arrastra bajo la cama', 'Something drags under the bed', False),
+    'aparicion.cuello': (2, 'Un cuello cruje', 'A neck creaks', False),
+    'aparicion.copia': (1, 'Dientes que rechinan', 'Grinding teeth', False),
+    'aparicion.techo_corre': (1, 'Algo corre por el techo', 'Something runs across the ceiling', False),
+    'aparicion.ofelia': (1, 'Porcelana', 'Porcelain', False),
+    'aparicion.sabana': (1, 'Una sábana flamea', 'A sheet flaps', False),
+    'aparicion.visitante': (1, 'Una presencia', 'A presence', False),
+    'perro_largo.reptar': (1, 'Manos que corren', 'Running hands', False),
+    'perro_largo.retrae': (1, 'Algo se recoge', 'Something pulls back', False),
+    'perro_largo.respira': (1, 'Jadeo enorme', 'Huge panting', False),
+})
+# --- end B3 apparitions
+
+
+# --- B2 hunt (Act 5 "Ella escucha todo": the broken Nona, hiding, holding the breath, 3D jumpscares; tools/audio/snd_hunt.py)
+SOUNDS.update({
+    'hunt.stinger_nona': (1, 'Un alarido', 'A shriek', False),
+    'hunt.stinger_lucia': (1, 'Un grito de nena', 'A girl screams', False),
+    'hunt.stinger_copia': (1, 'Dientes y estática', 'Teeth and static', False),
+    'hunt.stinger_perro': (1, 'Un rugido húmedo', 'A wet roar', False),
+    'hunt.stinger_cara': (1, 'Un chillido demoníaco', 'A demonic screech', False),
+    'hunt.bone_crack': (4, 'Huesos que crujen', 'Bones crack', False),
+    'hunt.neck_twist': (1, 'Un cuello que gira', 'A neck twists', False),
+    'hunt.crawl_tap': (4, 'Manos y pies contra el piso', 'Hands and feet patter', False),
+    'hunt.sniff': (3, 'Algo olfatea', 'Something sniffs', False),
+    'hunt.hiss': (2, 'Siseo', 'Hiss', False),
+    'hunt.groan': (3, 'Un gemido gutural', 'A guttural groan', False),
+    'hunt.jaw': (2, 'Chasquido de dentadura', 'Dentures clack', False),
+    'hunt.scream': (1, 'La Nona chilla', 'The Nona shrieks', False),
+    'hunt.rattle': (2, 'Un picaporte se sacude', 'A door handle rattles', False),
+    'hunt.grab': (1, 'Te agarra', 'She grabs you', False),
+    'hunt.gasp': (2, 'Te falta el aire', 'You gasp for air', False),
+    'hunt.breath_in': (1, 'Contenés la respiración', 'You hold your breath', False),
+    'hunt.breath_out': (1, 'Soltás el aire', 'You let your breath out', False),
+    'hunt.heartbeat': (1, 'Tu corazón', 'Your heartbeat', False),
+    'hunt.chase': (1, 'Te persigue', 'She is after you', True),
+})
+# --- end B2 hunt
 
 def java_name(s):
     return s.replace('.', '_').upper()

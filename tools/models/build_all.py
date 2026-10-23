@@ -16,7 +16,7 @@ JAVA = os.path.join(ROOT, 'src/client/java/com/deadline/client/model/gen')
 PREV = os.path.join(ROOT, 'tools/preview/models')
 PREV_TEX = os.path.join(ROOT, 'tools/preview/tex')
 PKG = 'com.deadline.client.model.gen'
-KEYS = ['monja', 'poseida', 'sombra', 'muneca', 'anima', 'alumna', 'madre', 'clara', 'marta', 'jorge', 'nona', 'toti', 'choripan', 'choripan_demonio']
+KEYS = ['monja', 'poseida', 'sombra', 'muneca', 'anima', 'alumna', 'madre', 'clara', 'marta', 'jorge', 'nona', 'toti', 'choripan', 'choripan_demonio', 'mano', 'sabana']
 JAVA_RESERVED = set(keyword.kwlist) | {'default', 'new', 'public', 'private', 'static', 'final', 'class', 'int', 'float', 'root'}
 
 

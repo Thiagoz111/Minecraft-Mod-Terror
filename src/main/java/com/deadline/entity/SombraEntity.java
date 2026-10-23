@@ -24,6 +24,8 @@ import net.minecraft.world.phys.Vec3;
  * look away and it is closer every time.
  */
 public class SombraEntity extends HauntEntity {
+	/** Look 1 (the Casa: the tall shadow at the end of the hall, the visitor in the dark corner): drawn ~2.6 blocks tall. */
+	public static final int VARIANT_VISITANTE = 1;
 	private int life = 1400;
 	private int watched;
 	private int stepCooldown = 40;
@@ -47,8 +49,8 @@ public class SombraEntity extends HauntEntity {
 	@Override
 	public void tick() {
 		super.tick();
-		if (HauntEntity.SHOWCASE) {
-			return;
+		if (HauntEntity.SHOWCASE || this.scripted) {
+			return;  // a director actor: the event that staged it moves it and takes it away
 		}
 		if (!(this.level() instanceof ServerLevel level)) {
 			return;

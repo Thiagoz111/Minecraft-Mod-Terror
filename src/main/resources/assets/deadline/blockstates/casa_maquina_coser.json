@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "deadline:block/casa_maquina_coser"
+  },
+  "facing=east": {
+   "model": "deadline:block/casa_maquina_coser",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "deadline:block/casa_maquina_coser",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "deadline:block/casa_maquina_coser",
+   "y": 270
+  }
+ }
+}

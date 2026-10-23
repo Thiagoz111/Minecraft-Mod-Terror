@@ -7,8 +7,13 @@ import net.minecraft.util.Mth;
 
 /** The Hat Man: almost still. A slow sway, fingers that never stop moving, a hand that reaches for you. */
 public class SombraModel extends SombraModelBase {
+	/** Look 1 (SombraEntity.VARIANT_VISITANTE, the Casa's tall figure): ~2.6 blocks instead of 3.4, so it fits a room. */
+	private static final float VISITANTE_SCALE = 0.77F;
+	private final ModelPart scaleRoot;
+
 	public SombraModel(ModelPart root) {
 		super(root);
+		this.scaleRoot = root.getChild("scale_root");
 	}
 
 	@Override
@@ -27,5 +32,11 @@ public class SombraModel extends SombraModelBase {
 		ripple("right_finger", t, 0.21F, 1.4F, 0.1F, 0F, 0.03F);
 		ripple("left_finger", t, 0.19F, 1.2F, 0.1F, 0F, 0.03F);
 		apply(pose("reach"), Math.max(atk, near * 0.6F));
+		if (s.variant == com.deadline.entity.SombraEntity.VARIANT_VISITANTE) {
+			// scaled round its feet (scale_root's pivot is on the ground)
+			this.scaleRoot.xScale *= VISITANTE_SCALE;
+			this.scaleRoot.yScale *= VISITANTE_SCALE;
+			this.scaleRoot.zScale *= VISITANTE_SCALE;
+		}
 	}
 }

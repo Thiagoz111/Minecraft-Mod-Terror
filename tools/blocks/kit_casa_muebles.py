@@ -4476,7 +4476,7 @@ def cama_toti_parts(piece):
     else:
         P += [box((1.6, 8.0, 1.4), (14.4, 9.4, 12.0), mD), box((4.0, 9.4, 3.0), (13.0, 10.6, 9.0), mD),
               box((15.4, 0.0, 2.0), (16.0, 9.4, 14.0), mD, faces=('west', 'east', 'north', 'south')),
-              box((16.0, 0.0, 2.0), (19.6, 0.8, 13.0), mD), box((14.4, 8.0, 2.0), (15.4, 9.4, 14.0), mD)]
+              box((14.4, 8.0, 2.0), (15.4, 9.4, 14.0), mD)]
     return P
 
 
@@ -6996,6 +6996,198 @@ def tope_parts(kind):
 
 for _k, (_f, _t, _es, _en, _for) in TOPES.items():
     F(_k, _es, _en, tope_parts(_k), env=(), sound='wood')
+
+
+# ============================================================================================ raised beds (hiding places)
+# The hiding beds of the casona stand one block up (a free block under them, where the player hides). These pieces fill
+# that lower block under each bed piece, same facing and same '_cabecera' / '_pie' / '_izq' / '_der' split as the bed:
+# the bed's own posts carried down to the floor (with turned rings and bun feet), the lower half of the headboard, and
+# a bedspread drop (faldon) hanging from under the blanket to a hand's width above the floor, so the dark gap under
+# the bed stays visible. No collision: the player (and the hand of event 39) fits under them.
+def faldon_tone(p=LINEN, base=6, seed=0, lace=CROCHET, pleat=4, ruffle=False):
+    """Bedspread drop (cutout): soft box pleats (or tight gathers when ruffle), grime rising from the floor, a crocheted
+    picot edge at the bottom."""
+    def t(ctx):
+        i, j, w, h = ctx.i, ctx.j, ctx.w, ctx.h
+        jb = h - 1 - j                                                             # px from the bottom edge
+        sc = abs(((i / 4.0) % 1.0) - 0.5)
+        if jb < 3:                                                                 # picot lace edge
+            if jb < (0.5 - sc) * 4 - 1.0:
+                return None
+            if (i + jb) % 2 == 0 and jb > 0:
+                return None
+            return (lace, 5 if jb else 4)
+        per = 2 if ruffle else pleat
+        ph = i % per
+        k = base + (1 if ph == 0 else (-1 if ph == per - 1 else 0))
+        if ruffle and (i // 2) % 3 == 0:
+            k -= 1
+        if jb < 7 and hh(i, j, seed) < 0.35 + (7 - jb) * 0.06:
+            k -= 1                                                                 # grime from the floor
+        if hh(i // 3, j // 5, seed + 1) < 0.05:
+            k -= 1                                                                 # old stain
+        if j < 1:
+            k -= 2                                                                 # shadow under the blanket
+        return (p, k)
+    return t
+
+
+def bajo_cama_parts(style, piece, side=None):
+    """The block UNDER a raised bed piece (see above). style: 'nona' (lustred single bed: Nona's and the guest room),
+    'matrimonial' (2x2, side izq/der), 'dosel' (Lucia's white canopy bed), 'toti' (black metal bed, no drop: a ladder
+    at the foot and the navy duvet sliding to the floor)."""
+    head = piece == 'cabecera'
+    P = []
+    if style == 'toti':
+        mF = fin(iron(GRAPH, base=3, seed=821, rust=0.1), dust=0.4)
+        zp = (14.6, 15.6) if head else (0.4, 1.4)
+        for x0 in (0.6, 14.4):
+            P.append(box((x0, 0.0, zp[0]), (x0 + 1.0, 16.0, zp[1]), mF))
+            P.append(box((x0 - 0.2, 0.0, zp[0] - 0.2), (x0 + 1.2, 0.6, zp[1] + 0.2), fin(flat(BLACKP, 3), ao=0.3)))   # rubber feet
+        if head:
+            P.append(box((1.6, 9.0, zp[0] + 0.2), (14.4, 10.0, zp[1] - 0.2), mF))
+            P.append(box((0.8, 12.0, 1.0), (1.4, 12.8, 14.6), mF))                                  # side stretchers
+            P.append(box((14.6, 12.0, 1.0), (15.2, 12.8, 14.6), mF))
+        else:
+            for y in (2.5, 6.5, 10.5, 14.5):                                                         # the loft ladder
+                P.append(box((1.6, y, zp[0] + 0.2), (14.4, y + 0.8, zp[1] - 0.2), mF))
+            P.append(box((0.8, 12.0, 1.4), (1.4, 12.8, 16.0), mF))
+            P.append(box((14.6, 12.0, 1.4), (15.2, 12.8, 16.0), mF))
+            mD = fin(cloth(NAVY, base=4, seed=823, folds=0.8, fold_px=4.0, stains=0.1), ao=0.6, dust=0.1)
+            P += [box((15.4, 0.8, 2.0), (16.0, 16.0, 14.0), mD, faces=('west', 'east', 'north', 'south')),   # duvet slid off
+                  box((16.0, 0.0, 2.0), (19.6, 0.8, 13.0), mD), box((15.2, 0.0, 1.6), (16.6, 1.6, 14.4), mD)]
+        return P
+    if style == 'dosel':
+        mP = fin(outline(smooth(LACA, base=6, seed=751, grime=0.3)), dust=0.5)
+        mBoard = fin(panels(smooth(LACA, base=6, seed=756, grime=0.3), rects=((2, 2, -2, -2),), faces=('north', 'south')))
+        mDrop = fin(faldon_tone(PINK, base=5, seed=759, lace=LACA, ruffle=True), ao=0, dust=0)
+        zp = 14.4 if head else 0.2
+        posts = [(0.4, zp), (14.2, zp)]
+        xs = (0.25, 15.75)
+        drop_z = (0.0, 14.4) if head else (1.6, 16.0)
+    elif style == 'matrimonial':
+        izq = side == 'izq'
+        off = (16 if izq else 0, 0, 0 if head else -16)
+        wd = lambda sd, **kw: lustre(CAOBA, seed=861 + sd, off=off, worn_pal=RAW, **kw)
+        mP = fin(outline(wd(0, base=3, axis=1)))
+        mBoard = fin(panels(wd(2, base=4, axis=0), rects=((2, 2, -2, -2),), faces=('north', 'south')))
+        mDrop = fin(faldon_tone(QUILT, base=5, seed=868 + izq), ao=0, dust=0)
+        zp = 14.4 if head else 0.0
+        posts = [(14.6 if izq else 0.0, zp)]
+        xs = (15.75,) if izq else (0.25,)
+        drop_z = (0.0, 14.4) if head else (1.6, 16.0)
+    else:   # 'nona'
+        wd = lambda sd, **kw: lustre(CAOBA, seed=601 + sd, worn_pal=RAW, **kw)
+        mP = fin(outline(wd(1, base=3, axis=1)))
+        mBoard = fin(panels(wd(3, base=4, axis=0), rects=((2, 2, -2, -2),), faces=('north', 'south')))
+        mDrop = fin(faldon_tone(LINEN, base=6, seed=612), ao=0, dust=0)
+        zp = 14.4 if head else 0.0
+        posts = [(0.4, zp), (14.2, zp)]
+        xs = (0.25, 15.75)
+        drop_z = (0.0, 14.4) if head else (1.6, 16.0)
+    w = 1.4
+    for (x0, z0) in posts:
+        P += turned_leg(x0, z0, 1.0, 16.0, mP, w=w, rings=(0.18, 0.7))
+        P.append(box((x0 - 0.3, 0.0, z0 - 0.3), (x0 + w + 0.3, 1.0, z0 + w + 0.3), mP))              # bun foot
+    if style == 'matrimonial':
+        bx0, bx1 = (0.0, 14.6) if side == 'izq' else (1.4, 16.0)
+    else:
+        bx0, bx1 = 1.8, 14.2
+    if head:
+        P.append(box((bx0, 5.0, 14.7), (bx1, 16.0, 15.7), mBoard))                                    # lower headboard
+        P.append(box((bx0, 4.2, 14.5), (bx1, 5.0, 15.9), mP))
+    for x in xs:                                                                                      # side drops
+        P.append(plane((x, 6.0, drop_z[0]), (x, 20.2, drop_z[1]), mDrop))
+    if not head:                                                                                      # foot drop
+        P.append(plane((bx0, 6.0, 0.25), (bx1, 20.2, 0.25), mDrop))
+    return P
+
+
+for _p in ('cabecera', 'pie'):
+    _pe, _pen = ('cabecera', 'head') if _p == 'cabecera' else ('pie', 'foot')
+    F(f'cama_nona_bajo_{_p}', f'Patas y faldón de cama alta lustrada ({_pe})', f'Legs and drop of a high lustred bed ({_pen})',
+      bajo_cama_parts('nona', _p), collision='none', sound='cloth')
+    F(f'cama_dosel_bajo_{_p}', f'Patas y volado de la cama con dosel ({_pe})', f'Legs and ruffle of the canopy bed ({_pen})',
+      bajo_cama_parts('dosel', _p), collision='none', sound='cloth')
+    F(f'cama_toti_bajo_{_p}', f'Patas de la cama alta de Toti ({_pe})', f"Legs of Toti's loft bed ({_pen})",
+      bajo_cama_parts('toti', _p), collision='none', sound='metal')
+    for _s in ('izq', 'der'):
+        F(f'cama_matrimonial_bajo_{_p}_{_s}',
+          f'Patas y faldón de la cama matrimonial ({_pe}, {"izquierda" if _s == "izq" else "derecha"})',
+          f'Legs and drop of the double bed ({_pen}, {"left" if _s == "izq" else "right"})',
+          bajo_cama_parts('matrimonial', _p, _s), collision='none', sound='cloth')
+
+
+# ============================================================================================ the Nona's Singer
+def singer_side_tone(ctx):
+    """Openwork cast-iron treadle frame (cutout): an oval rim, a lattice of curls and the maker's band."""
+    if ctx.face not in ('west', 'east'):
+        return (IRON, 3)
+    s, t = ctx.s, ctx.t
+    if t > 0.93 or t < 0.06 or s < 0.08 or s > 0.92:
+        return (IRON, 3 + (ctx.edge() == 0))
+    if 0.40 < t < 0.50:
+        return (IRON, 4) if not (0.2 < s < 0.8 and ctx.i % 2 == 0) else (GOLD, 4)                     # the band
+    d = math.hypot((s - 0.5) / 0.42, (t - 0.25) / 0.17)
+    d2 = math.hypot((s - 0.5) / 0.42, (t - 0.72) / 0.2)
+    if abs(d - 1) < 0.16 or abs(d2 - 1) < 0.14:
+        return (IRON, 4)
+    if (d < 1 and (ctx.i + ctx.j) % 5 == 0) or (d2 < 1 and abs(ctx.i - ctx.j * 0.6) % 6 < 1):
+        return (IRON, 2)
+    return None
+
+
+def singer_head_tone(ctx):
+    """Black japanned iron with gold decals (sphinx scrolls) and worn bare metal where hands go."""
+    if ctx.face == 'up':
+        return (BLACKP, 3 if hh(ctx.i, ctx.j, 5) > 0.15 else 5)
+    if ctx.face in ('north', 'south') and ctx.h > 3:
+        u, v = ctx.i, ctx.j
+        if 1 <= v <= ctx.h - 2 and ((u * 3 + v * 5) % 11 == 0 or (u + v * 2) % 13 == 1) and hh(u, v, 9) < 0.7:
+            return (GOLD, 5 + (hh(u, v, 3) > 0.6))
+    if ctx.edge() == 0:
+        return (BLACKP, 5)
+    return (BLACKP, 2 + (hh(ctx.i // 2, ctx.j // 2, 7) > 0.85))
+
+
+def singer_parts():
+    """The Nona's black Singer on its treadle table (top at 12/16, the machine head rising to ~22/16): openwork iron
+    sides, the treadle plate, the big flywheel and its leather belt, the oak top with a drawer each side, a red spool,
+    a half-sewn piece of black cloth (a child's mourning dress) under the needle. Front = where she sits (facing)."""
+    mI = fin(iron(IRON, base=3, seed=901, rust=0.25))
+    mTop = fin(lustre(NOGAL, seed=902, base=4, axis=0, worn_pal=RAW), dust=1.2)
+    mDr = fin(panels(lustre(NOGAL, seed=903, base=4, axis=0), rects=((1, 1, -1, -1),), faces=('north',), bevel=0))
+    mH = fin(singer_head_tone, ao=0.4, dust=0.6)
+    mN = fin(brass(NICKEL, base=5, seed=904, tarnish=0.3), dust=0.3)
+    P = []
+    for x0 in (1.0, 14.0):                                                                         # the iron sides
+        P.append(box((x0, 0.0, 2.6), (x0 + 1.0, 11.0, 14.0), fin(singer_side_tone, ao=0.3, dust=0.5)))
+        P.append(box((x0 - 0.3, 0.0, 2.2), (x0 + 1.3, 1.0, 4.0), mI))
+        P.append(box((x0 - 0.3, 0.0, 12.6), (x0 + 1.3, 1.0, 14.4), mI))
+    P += [box((2.0, 3.0, 12.4), (14.0, 3.8, 13.2), mI),                                           # back stretcher
+          box((2.6, 1.6, 4.0), (13.4, 2.2, 11.0), fin(lambda c: (IRON, 3) if (c.i + c.j) % 3 else None, ao=0.3), rot=('x', -22.5, (8.0, 1.9, 7.5))),
+          box((11.8, 3.4, 6.0), (12.4, 10.4, 13.0), fin(lambda c: (IRON, 4) if c.face in ('west', 'east') and
+                                                        (abs(math.hypot(c.s - 0.5, c.t - 0.5) - 0.45) < 0.07 or abs(c.s - 0.5) < 0.05
+                                                         or abs(c.t - 0.5) < 0.05) else ((IRON, 3) if c.face not in ('west', 'east') else None), ao=0.2)),
+          box((12.0, 6.6, 9.2), (12.3, 12.0, 9.6), fin(flat(LEATHER_B, 3), ao=0))]               # flywheel + belt
+    P += [box((0.0, 11.0, 2.0), (16.0, 12.0, 15.0), mTop),                                        # the top
+          box((1.6, 8.6, 2.6), (5.4, 11.0, 14.0), mDr), box((10.6, 8.6, 2.6), (13.8, 11.0, 14.0), mDr),
+          box((3.0, 9.6, 2.3), (4.0, 10.0, 2.6), mN), box((11.7, 9.6, 2.3), (12.7, 10.0, 2.6), mN)]
+    P += [box((3.0, 12.0, 5.0), (13.0, 13.0, 11.0), mH),                                          # bed of the machine
+          box((10.4, 13.0, 6.4), (13.0, 19.4, 10.0), mH),                                         # pillar
+          box((3.4, 17.6, 6.8), (12.8, 20.2, 9.8), mH),                                           # arm
+          box((2.8, 14.2, 6.6), (5.2, 20.6, 10.0), mH),                                           # head
+          box((3.8, 13.0, 7.8), (4.2, 14.2, 8.2), mN),                                            # needle bar
+          box((13.0, 14.6, 6.2), (13.8, 19.8, 10.4), fin(lambda c: (NICKEL, 5) if c.face in ('west', 'east') and
+                                                          math.hypot(c.s - 0.5, c.t - 0.5) < 0.3 else (BLACKP, 3), ao=0.2)),   # hand wheel
+          box((8.0, 20.2, 7.8), (8.6, 21.0, 8.4), mN),
+          box((7.6, 21.0, 7.4), (9.0, 22.4, 8.8), fin(lambda c: (WOOL_R, 4 + (c.j % 2)) if c.face != 'up' else (PINO, 5), ao=0.2)),   # spool
+          box((1.2, 12.0, 3.0), (8.0, 12.4, 10.0), fin(cloth(BLACKP, base=4, seed=905, folds=0.7, stains=0.0), ao=0.5), rot=('y', 22.5, (4.6, 12.0, 6.5))),
+          box((9.0, 12.0, 3.2), (11.0, 12.6, 4.6), fin(lambda c: (BRASS, 5) if c.face != 'up' else (BRASS, 7), ao=0.2))]   # thimble tin
+    return P
+
+
+F('maquina_coser', 'Máquina de coser Singer a pedal', 'Singer treadle sewing machine', singer_parts(), sound='metal')
 
 
 # ============================================================================================ z-fighting check

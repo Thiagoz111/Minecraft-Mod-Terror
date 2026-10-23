@@ -116,6 +116,12 @@ public class FamilyEntity extends HauntEntity {
 
 	// ------------------------------------------------------------------ looks
 	public static final int LOOK_NORMAL = 0, LOOK_POSSESSED = 1;
+	/** B3 (Act 5, event copia_sonrie): the copy of Marta / Jorge / Toti -- the same face, a smile far too wide, grey. */
+	public static final int LOOK_COPIA = 2;
+	/** B3 (event toti_rincon): standing in a corner facing the wall, arms hanging, perfectly still (Toti's model). */
+	public static final int POSE_CORNER = 40;
+	/** B3: {@link #POSE_CORNER}, and the head turns all the way round to look at you while the body does not move. */
+	public static final int POSE_CORNER_TURN = 41;
 
 	// ------------------------------------------------------------------ tuning
 	/** Horizontal distance that counts as "arrived". */

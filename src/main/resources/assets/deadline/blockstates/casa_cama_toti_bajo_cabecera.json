@@ -1,0 +1,19 @@
+{
+ "variants": {
+  "facing=north": {
+   "model": "deadline:block/casa_cama_toti_bajo_cabecera"
+  },
+  "facing=east": {
+   "model": "deadline:block/casa_cama_toti_bajo_cabecera",
+   "y": 90
+  },
+  "facing=south": {
+   "model": "deadline:block/casa_cama_toti_bajo_cabecera",
+   "y": 180
+  },
+  "facing=west": {
+   "model": "deadline:block/casa_cama_toti_bajo_cabecera",
+   "y": 270
+  }
+ }
+}

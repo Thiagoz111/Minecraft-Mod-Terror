@@ -51,7 +51,9 @@ public final class ModRenderers {
 		EntityModelLayerRegistry.registerModelLayer(CLARA, ClaraModelBase::createBodyLayer);
 
 		EntityRendererRegistry.register(ModEntities.MONJA, ctx -> new HauntRenderer<>(ctx, new MonjaModel(ctx.bakeLayer(MONJA)), 0.5F, "monja", true));
-		EntityRendererRegistry.register(ModEntities.POSEIDA, ctx -> new HauntRenderer<>(ctx, new PoseidaModel(ctx.bakeLayer(POSEIDA)), 0.4F, "poseida", false));
+		// Lucía: look 0 the girl (poseida.png, nothing glows), look 1 the host (poseida_poseida.png + its glowing eyes)
+		EntityRendererRegistry.register(ModEntities.POSEIDA, ctx -> new com.deadline.client.casa.FamilyRenderer<>(ctx,
+				new PoseidaModel(ctx.bakeLayer(POSEIDA)), 0.4F, "poseida", new String[] {"", "poseida"}, new boolean[] {false, true}));
 		EntityRendererRegistry.register(ModEntities.SOMBRA, ctx -> new HauntRenderer<>(ctx, new SombraModel(ctx.bakeLayer(SOMBRA)), 0.0F, "sombra", true));
 		EntityRendererRegistry.register(ModEntities.MUNECA, ctx -> new HauntRenderer<>(ctx, new MunecaModel(ctx.bakeLayer(MUNECA)), 0.3F, "muneca", true));
 		EntityRendererRegistry.register(ModEntities.ANIMA, ctx -> new HauntRenderer<>(ctx, new AnimaModel(ctx.bakeLayer(ANIMA)), 0.0F, "anima", true));

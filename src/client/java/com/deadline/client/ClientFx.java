@@ -39,6 +39,10 @@ public final class ClientFx {
 			}
 			case FxPayload.FADE -> ClientState.fadeTicks = ClientState.fadeTotal = Math.max(1, p.b());
 			case FxPayload.JUMPSCARE -> {
+				// B2: the creatures of the Casa get a 3D face in the camera (client/hunt/Jumpscare3D); the rest the picture
+				if (com.deadline.client.hunt.Jumpscare3D.start(p.s())) {
+					return;
+				}
 				ClientState.jumpscareKey = p.s();
 				ClientState.jumpscareTicks = ClientState.JUMPSCARE_LEN;
 				shake(2.6F, 24);

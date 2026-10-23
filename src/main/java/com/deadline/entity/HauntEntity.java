@@ -194,6 +194,9 @@ public abstract class HauntEntity extends Monster {
 	// ------------------------------------------------------------------ damage
 	@Override
 	public boolean hurtServer(ServerLevel level, DamageSource source, float amount) {
+		if (this.scripted && this.isInvulnerable()) {
+			return false;  // a director actor (an apparition): never weakened, never killed
+		}
 		Entity attacker = source.getEntity();
 		boolean holy = source.getDirectEntity() instanceof HolyWaterEntity;
 		if (attacker instanceof LivingEntity living && living.getMainHandItem().is(ModItems.SILVER_DAGGER)) {

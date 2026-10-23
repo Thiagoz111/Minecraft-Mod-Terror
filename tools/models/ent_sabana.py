@@ -86,30 +86,38 @@ def cloth(ctx, base=0.66, ragged=False):
 
 
 def head_mat(ctx):
-    """The head under the sheet.  Front: the cloth sinks into two eye hollows and an open mouth (no eyes in them)."""
+    """The head under the sheet: no holes -- the cloth is PRESSED into a face from behind.  Soft relief only: two deep
+    eye sockets (darkest in the middle, the cloth sloping into them), the brow and the cheekbones pushing it out (lit),
+    a thin nose ridge, and a mouth dragged open far too long, the cotton stretched into creases round it."""
     c = cloth(ctx, 0.7)
     if ctx.face != 'front' or c is None:
         return c
     i, j, w, h = ctx.i, ctx.j, ctx.w, ctx.h
     cx = (w - 1) / 2.0
-    # eye hollows: soft ovals, darkest in the middle
-    for ex in (cx - 3.0, cx + 3.0):
-        dx, dy = (i - ex) / 1.6, (j - 6.0) / 1.3
+    v = cloth_v(ctx, 0.7)
+    # relief height field: + pushes the cloth toward the light, - sinks it into shadow
+    rel = 0.0
+    for ex in (cx - 3.2, cx + 3.0):                       # eye sockets (the right one a little lower: wrong)
+        ey = 5.6 if ex < cx else 6.1
+        dx, dy = (i - ex) / 2.3, (j - ey) / 2.0
         r = dx * dx + dy * dy
-        if r < 1.0:
-            return HOLLOW[0] if r < 0.35 else HOLLOW[1] if r < 0.7 else HOLLOW[3]
-        if r < 1.8:
-            c = mix(c, CLOTH[3], 0.6)                      # the cloth's slope into the hollow
-    # the mouth: a long open O, a little crooked
-    dx, dy = (i - cx - 0.4) / 1.4, (j - 10.5) / 2.0
-    r = dx * dx + dy * dy
-    if r < 1.0:
-        return HOLLOW[0] if r < 0.4 else HOLLOW[2]
-    if r < 1.7:
-        c = mix(c, CLOTH[3], 0.55)
-    # the nose: a faint ridge
-    if abs(i - cx) < 0.6 and 7 <= j <= 9:
-        c = pick(CLOTH, cloth_v(ctx, 0.76))
+        rel -= max(0.0, 1.0 - r) * 0.72
+    rel += max(0.0, 1.0 - ((j - 3.4) / 1.2) ** 2) * 0.14 * (1.0 if abs(i - cx) < 5.5 else 0.0)   # brow ridge
+    for kx in (cx - 4.2, cx + 4.2):                       # cheekbones
+        dx, dy = (i - kx) / 1.6, (j - 8.6) / 1.2
+        rel += max(0.0, 1.0 - dx * dx - dy * dy) * 0.16
+    if abs(i - cx) < 0.7 and 6 <= j <= 9:
+        rel += 0.12                                       # the nose ridge
+    # the mouth: a long slot dragged open (taller than wide), a little crooked
+    mx = cx + 0.5 + (j - 11.0) * 0.12
+    dx, dy = (i - mx) / 1.4, (j - 11.8) / 3.0
+    rm = dx * dx + dy * dy
+    rel -= max(0.0, 1.0 - rm) * 0.75
+    if 1.0 <= rm < 2.4 and abs(i - mx) < 3.2:
+        rel += 0.08 * (1 if (i + j) % 2 else -1)          # the cotton stretched into creases round it
+    c = pick(CLOTH, v + rel)
+    if rel < -0.45:
+        c = pick(HOLLOW, 1.0 + (rel + 0.45) * 4.0)        # the deepest pits fall into real shadow
     return c
 
 

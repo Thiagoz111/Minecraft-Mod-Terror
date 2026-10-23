@@ -45,12 +45,15 @@ public class JorgeModel extends JorgeModelBase {
 		int seed = s.seed;
 		boolean fresh = t < 4F;
 		boolean possessed = s.variant == FamilyEntity.LOOK_POSSESSED;
+		// B3: the copy (look 2, FamilyEntity.LOOK_COPIA): Jorge's body, perfectly still -- no pats, no clacks, no sway
+		boolean copy = s.variant == FamilyEntity.LOOK_COPIA;
 		boolean limp = a == LIMP;
 		boolean known = a == POINT || a == GRILL || a == KNIFE || limp || a == BAG;
 
 		// ---- pose weights
 		float rate = fresh ? 1F : RATE;
 		float idle = blend(s, 0, known ? 0F : 1F, rate);
+		float fidget = copy ? 0F : idle;
 		float point = blend(s, 1, a == POINT ? 1F : 0F, rate);
 		float grill = blend(s, 2, a == GRILL ? 1F : 0F, rate);
 		float knife = blend(s, 3, a == KNIFE ? 1F : 0F, rate);
@@ -81,18 +84,18 @@ public class JorgeModel extends JorgeModelBase {
 		smileJaw.visible = possessed;
 		demonEyes.visible = possessed;
 		bag.visible = a == BAG;
-		tongs.visible = a != BAG && a != GRILL && !limp;
+		tongs.visible = a != BAG && a != GRILL && !limp && !copy;
 
 		// ---- idle on every pose: breathing (chest + belly), a slow sway of the weight from foot to foot
 		float upright = 1F - fall;
 		float breath = Mth.sin(t * 0.09F + Math.floorMod(seed, 29));
 		lean(-0.01F * breath * upright);
 		offset("belly", 0F, 0F, -0.2F * (1F + breath));
-		rot("chest", 0F, 0.02F * Mth.sin(t * 0.03F + 1F) * idle, 0.03F * Mth.sin(t * 0.045F) * idle);
-		rot("neck", 0F, 0F, -0.015F * Mth.sin(t * 0.045F) * idle);
+		rot("chest", 0F, 0.02F * Mth.sin(t * 0.03F + 1F) * fidget, 0.03F * Mth.sin(t * 0.045F) * fidget);
+		rot("neck", 0F, 0F, -0.015F * Mth.sin(t * 0.045F) * fidget);
 		// a belly pat every 4-8 s (two taps)
 		float pat = FamilyRenderer.pulse(t, seed, 120F, 0F, 6F, 0F);
-		rot("left_hand", 0.15F * Math.abs(Mth.sin(t * 1.05F)) * pat * idle, 0F, 0F);
+		rot("left_hand", 0.15F * Math.abs(Mth.sin(t * 1.05F)) * pat * fidget, 0F, 0F);
 		// the tongs clack every 5-9 s: closed 2 ticks, open over 2, twice
 		float clackW = tongs.visible ? 1F - grill : 0F;
 		float clack = clack(FamilyRenderer.pulse(t, seed + 3, 140F, 0F, 8F, 0F) > 0F, t, seed);
@@ -164,6 +167,12 @@ public class JorgeModel extends JorgeModelBase {
 		float pitch = Mth.clamp(s.xRot, -45F, 45F) * Mth.DEG_TO_RAD * lookW;
 		rot("neck", pitch * 0.3F, yaw * 0.3F, 0F);
 		rot("head", pitch * 0.7F, yaw * 0.7F, 0F);
+		if (copy) {
+			// the copy: brows level over the wide-open eyes, the painted grin keeps the jaw shut
+			rightBrow.zRot = 0F;
+			leftBrow.zRot = 0F;
+			jaw.xRot = 0F;
+		}
 	}
 
 	/** A chest lean with the apron rule: the skirt keeps hanging plumb. */

@@ -943,6 +943,250 @@
    "deadline:car/lights"
   ]
  },
+ "aparicion.sombra_paso": {
+  "subtitle": "subtitles.deadline.aparicion.sombra_paso",
+  "sounds": [
+   "deadline:aparicion/sombra_paso_1",
+   "deadline:aparicion/sombra_paso_2"
+  ]
+ },
+ "aparicion.nona_respira": {
+  "subtitle": "subtitles.deadline.aparicion.nona_respira",
+  "sounds": [
+   "deadline:aparicion/nona_respira_1",
+   "deadline:aparicion/nona_respira_2"
+  ]
+ },
+ "aparicion.vidrio_unas": {
+  "subtitle": "subtitles.deadline.aparicion.vidrio_unas",
+  "sounds": [
+   "deadline:aparicion/vidrio_unas"
+  ]
+ },
+ "aparicion.perro_respira": {
+  "subtitle": "subtitles.deadline.aparicion.perro_respira",
+  "sounds": [
+   "deadline:aparicion/perro_respira_1",
+   "deadline:aparicion/perro_respira_2"
+  ]
+ },
+ "aparicion.espejo": {
+  "subtitle": "subtitles.deadline.aparicion.espejo",
+  "sounds": [
+   "deadline:aparicion/espejo"
+  ]
+ },
+ "aparicion.aliento": {
+  "subtitle": "subtitles.deadline.aparicion.aliento",
+  "sounds": [
+   "deadline:aparicion/aliento"
+  ]
+ },
+ "aparicion.mano_rasguno": {
+  "subtitle": "subtitles.deadline.aparicion.mano_rasguno",
+  "sounds": [
+   "deadline:aparicion/mano_rasguno_1",
+   "deadline:aparicion/mano_rasguno_2"
+  ]
+ },
+ "aparicion.mano_retira": {
+  "subtitle": "subtitles.deadline.aparicion.mano_retira",
+  "sounds": [
+   "deadline:aparicion/mano_retira"
+  ]
+ },
+ "aparicion.cuello": {
+  "subtitle": "subtitles.deadline.aparicion.cuello",
+  "sounds": [
+   "deadline:aparicion/cuello_1",
+   "deadline:aparicion/cuello_2"
+  ]
+ },
+ "aparicion.copia": {
+  "subtitle": "subtitles.deadline.aparicion.copia",
+  "sounds": [
+   "deadline:aparicion/copia"
+  ]
+ },
+ "aparicion.techo_corre": {
+  "subtitle": "subtitles.deadline.aparicion.techo_corre",
+  "sounds": [
+   "deadline:aparicion/techo_corre"
+  ]
+ },
+ "aparicion.ofelia": {
+  "subtitle": "subtitles.deadline.aparicion.ofelia",
+  "sounds": [
+   "deadline:aparicion/ofelia"
+  ]
+ },
+ "aparicion.sabana": {
+  "subtitle": "subtitles.deadline.aparicion.sabana",
+  "sounds": [
+   "deadline:aparicion/sabana"
+  ]
+ },
+ "aparicion.visitante": {
+  "subtitle": "subtitles.deadline.aparicion.visitante",
+  "sounds": [
+   "deadline:aparicion/visitante"
+  ]
+ },
+ "perro_largo.reptar": {
+  "subtitle": "subtitles.deadline.perro_largo.reptar",
+  "sounds": [
+   "deadline:perro_largo/reptar"
+  ]
+ },
+ "perro_largo.retrae": {
+  "subtitle": "subtitles.deadline.perro_largo.retrae",
+  "sounds": [
+   "deadline:perro_largo/retrae"
+  ]
+ },
+ "perro_largo.respira": {
+  "subtitle": "subtitles.deadline.perro_largo.respira",
+  "sounds": [
+   "deadline:perro_largo/respira"
+  ]
+ },
+ "hunt.stinger_nona": {
+  "subtitle": "subtitles.deadline.hunt.stinger_nona",
+  "sounds": [
+   "deadline:hunt/stinger_nona"
+  ]
+ },
+ "hunt.stinger_lucia": {
+  "subtitle": "subtitles.deadline.hunt.stinger_lucia",
+  "sounds": [
+   "deadline:hunt/stinger_lucia"
+  ]
+ },
+ "hunt.stinger_copia": {
+  "subtitle": "subtitles.deadline.hunt.stinger_copia",
+  "sounds": [
+   "deadline:hunt/stinger_copia"
+  ]
+ },
+ "hunt.stinger_perro": {
+  "subtitle": "subtitles.deadline.hunt.stinger_perro",
+  "sounds": [
+   "deadline:hunt/stinger_perro"
+  ]
+ },
+ "hunt.stinger_cara": {
+  "subtitle": "subtitles.deadline.hunt.stinger_cara",
+  "sounds": [
+   "deadline:hunt/stinger_cara"
+  ]
+ },
+ "hunt.bone_crack": {
+  "subtitle": "subtitles.deadline.hunt.bone_crack",
+  "sounds": [
+   "deadline:hunt/bone_crack_1",
+   "deadline:hunt/bone_crack_2",
+   "deadline:hunt/bone_crack_3",
+   "deadline:hunt/bone_crack_4"
+  ]
+ },
+ "hunt.neck_twist": {
+  "subtitle": "subtitles.deadline.hunt.neck_twist",
+  "sounds": [
+   "deadline:hunt/neck_twist"
+  ]
+ },
+ "hunt.crawl_tap": {
+  "subtitle": "subtitles.deadline.hunt.crawl_tap",
+  "sounds": [
+   "deadline:hunt/crawl_tap_1",
+   "deadline:hunt/crawl_tap_2",
+   "deadline:hunt/crawl_tap_3",
+   "deadline:hunt/crawl_tap_4"
+  ]
+ },
+ "hunt.sniff": {
+  "subtitle": "subtitles.deadline.hunt.sniff",
+  "sounds": [
+   "deadline:hunt/sniff_1",
+   "deadline:hunt/sniff_2",
+   "deadline:hunt/sniff_3"
+  ]
+ },
+ "hunt.hiss": {
+  "subtitle": "subtitles.deadline.hunt.hiss",
+  "sounds": [
+   "deadline:hunt/hiss_1",
+   "deadline:hunt/hiss_2"
+  ]
+ },
+ "hunt.groan": {
+  "subtitle": "subtitles.deadline.hunt.groan",
+  "sounds": [
+   "deadline:hunt/groan_1",
+   "deadline:hunt/groan_2",
+   "deadline:hunt/groan_3"
+  ]
+ },
+ "hunt.jaw": {
+  "subtitle": "subtitles.deadline.hunt.jaw",
+  "sounds": [
+   "deadline:hunt/jaw_1",
+   "deadline:hunt/jaw_2"
+  ]
+ },
+ "hunt.scream": {
+  "subtitle": "subtitles.deadline.hunt.scream",
+  "sounds": [
+   "deadline:hunt/scream"
+  ]
+ },
+ "hunt.rattle": {
+  "subtitle": "subtitles.deadline.hunt.rattle",
+  "sounds": [
+   "deadline:hunt/rattle_1",
+   "deadline:hunt/rattle_2"
+  ]
+ },
+ "hunt.grab": {
+  "subtitle": "subtitles.deadline.hunt.grab",
+  "sounds": [
+   "deadline:hunt/grab"
+  ]
+ },
+ "hunt.gasp": {
+  "subtitle": "subtitles.deadline.hunt.gasp",
+  "sounds": [
+   "deadline:hunt/gasp_1",
+   "deadline:hunt/gasp_2"
+  ]
+ },
+ "hunt.breath_in": {
+  "subtitle": "subtitles.deadline.hunt.breath_in",
+  "sounds": [
+   "deadline:hunt/breath_in"
+  ]
+ },
+ "hunt.breath_out": {
+  "subtitle": "subtitles.deadline.hunt.breath_out",
+  "sounds": [
+   "deadline:hunt/breath_out"
+  ]
+ },
+ "hunt.heartbeat": {
+  "subtitle": "subtitles.deadline.hunt.heartbeat",
+  "sounds": [
+   "deadline:hunt/heartbeat"
+  ]
+ },
+ "hunt.chase": {
+  "subtitle": "subtitles.deadline.hunt.chase",
+  "sounds": [
+   {
+    "name": "deadline:hunt/chase",
+    "stream": true
+   }
+  ]
+ },
  "spirit_box.voice_1": {
   "subtitle": "subtitles.deadline.spirit_box.voice",
   "sounds": [

@@ -58,6 +58,8 @@ public class MartaModel extends MartaModelBase {
 		boolean phoneUp = a == PHONE || a == PHONE_SCARED;
 		boolean known = a == POINT || a == SCARED || phoneUp || throwing || a == SHOUT || a == HAND_OVER;
 		boolean fresh = t < 4F;  // just appeared: already in her pose
+		// B3: the copy (look 2, FamilyEntity.LOOK_COPIA) never fidgets: no wringing, no glances, no brows shooting up
+		float alive = s.variant == FamilyEntity.LOOK_COPIA ? 0F : 1F;
 
 		// ---- pose weights (cross-fade). One rate for every pose channel on a tick: the incoming pose's (the scared jolt
 		// fast), or the release's while a throw is still fading out, so the outgoing and incoming weights sum to 1.
@@ -100,11 +102,11 @@ public class MartaModel extends MartaModelBase {
 		float breath = Mth.sin(t * 0.09F + Math.floorMod(seed, 31));
 		rot("body", 0.02F * breath, 0F, 0F);
 		// the wring: hands twisting round the phone at her belly
-		rot("right_hand", 0F, 0F, 0.25F * Mth.sin(t * 0.25F) * idle);
-		rot("left_hand", 0F, 0.12F * Mth.sin(t * 0.25F + 1.4F) * idle, 0F);
-		rot("right_fingers", 0F, 0F, -0.08F * (0.5F + 0.5F * Mth.sin(t * 0.25F + 0.6F)) * idle);
+		rot("right_hand", 0F, 0F, 0.25F * Mth.sin(t * 0.25F) * idle * alive);
+		rot("left_hand", 0F, 0.12F * Mth.sin(t * 0.25F + 1.4F) * idle * alive, 0F);
+		rot("right_fingers", 0F, 0F, -0.08F * (0.5F + 0.5F * Mth.sin(t * 0.25F + 0.6F)) * idle * alive);
 		// nervous head: a slow tilt plus a quick glance aside every 3-5 s
-		float calm = 1F - Math.max(throwW, scared);
+		float calm = (1F - Math.max(throwW, scared)) * alive;
 		rot("head", 0F, 0F, 0.05F * Mth.sin(t * 0.07F) * calm);
 		float glance = FamilyRenderer.pulse(t, seed, 80F, 2F, 6F, 2F) * FamilyRenderer.side(t, seed, 80F);
 		rot("head", 0F, 0.15F * glance * calm * Math.max(0F, 1F - point - handOver), 0F);
@@ -152,6 +154,12 @@ public class MartaModel extends MartaModelBase {
 		float follow = Mth.clamp((Mth.wrapDegrees(s.yRot) - yawLag) * Mth.DEG_TO_RAD * 0.5F, -0.04F, 0.04F);
 		rot("curler_right", 0F, 0F, follow);
 		rot("curler_left", 0F, 0F, follow);
+		if (alive == 0F) {
+			// the copy: the brows lie flat over the wide-open eyes (no worry in that face), the painted grin keeps the jaw shut
+			rightBrow.zRot = 0F;
+			leftBrow.zRot = 0F;
+			jaw.xRot = 0F;
+		}
 	}
 
 	/** Adds only some bones of a pose table, scaled by w. */

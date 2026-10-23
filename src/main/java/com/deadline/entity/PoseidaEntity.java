@@ -42,6 +42,15 @@ import net.minecraft.world.phys.Vec3;
  */
 public class PoseidaEntity extends HauntEntity {
 	public static final int ACT_IDLE = 0, ACT_CRAWL = 1, ACT_EXORCISM = 2, ACT_HEADSPIN = 3;
+	/**
+	 * B3, scripted only: upside down on the ceiling, limbs bent the wrong way, the face turned down to the floor
+	 * (box top against the ceiling: y = ceiling - 1.5, no gravity); {@link #ACT_CEILING_RUN} = the same, scuttling fast.
+	 */
+	public static final int ACT_CEILING = 4, ACT_CEILING_RUN = 5;
+	/** B3, scripted only: sitting on a chair at dinner (look {@link #LOOK_NORMAL}), hands in her lap, head bowed. */
+	public static final int ACT_SIT = 6;
+	/** Looks (tools/models/ent_poseida.py VARIANT_MATS): 0 the girl (poseida.png), 1 the host (poseida_poseida.png). */
+	public static final int LOOK_NORMAL = 0, LOOK_POSSESSED = 1;
 	public static final int EXORCISM_TICKS = 260;
 	private static final EntityDataAccessor<Boolean> CLIMBING = SynchedEntityData.defineId(PoseidaEntity.class, EntityDataSerializers.BOOLEAN);
 	private int voiceCooldown = 100;
@@ -53,6 +62,7 @@ public class PoseidaEntity extends HauntEntity {
 	public PoseidaEntity(EntityType<? extends Monster> type, Level level) {
 		super(type, level);
 		this.exorcismBar.setVisible(false);
+		this.setVariant(LOOK_POSSESSED);  // the haunt; the act script sets LOOK_NORMAL for the girl at dinner
 	}
 
 	public static AttributeSupplier.Builder createAttributes() {
@@ -107,8 +117,8 @@ public class PoseidaEntity extends HauntEntity {
 	@Override
 	public void tick() {
 		super.tick();
-		if (HauntEntity.SHOWCASE) {
-			return;
+		if (HauntEntity.SHOWCASE || this.scripted) {
+			return;  // a director actor: pose and position come from the script
 		}
 		if (!(this.level() instanceof ServerLevel level)) {
 			return;
@@ -262,7 +272,7 @@ public class PoseidaEntity extends HauntEntity {
 
 	@Override
 	protected SoundEvent getAmbientSound() {
-		return ModSounds.POSEIDA_GIGGLE;
+		return this.variant() == LOOK_NORMAL ? null : ModSounds.POSEIDA_GIGGLE;  // the girl at the table makes no sound
 	}
 
 	@Override

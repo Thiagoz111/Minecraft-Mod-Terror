@@ -20,6 +20,9 @@ public final class DeadLineKeys {
 			new KeyMapping("key.deadline.phone", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_G, CATEGORY));
 	public static final KeyMapping VHS = KeyBindingHelper.registerKeyBinding(
 			new KeyMapping("key.deadline.vhs", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_H, CATEGORY));
+	/** B2 hunt: hold to hold your breath (client/hunt/HuntClient sends the held state to the server). */
+	public static final KeyMapping BREATH = KeyBindingHelper.registerKeyBinding(
+			new KeyMapping("key.deadline.breath", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_B, CATEGORY));
 
 	public static void init() {
 	}

@@ -1081,7 +1081,10 @@ def make_mat(look):
 # cold glint), the gums are raw and bloody, blood has dried down the chin, the throat and the sweater, and the coat is
 # matted into wet dark clumps with mud on the paws.  Same geometry and poses; only the texture changes.
 DEAD_BLACK = pal('#020102', '#070407', '#0e080c', '#1a1016')
-DEAD_GLINT = hx('#b9b4bc')
+DEAD_GLINT = hx('#7f7b86')        # the single glint: dull, cold, one texel
+DEAD_GLINT_AT = (1, 1)
+DEAD_WET = hx('#2c2832')          # the wet line along the bottom of the eyeball
+DEAD_SHINE = hx('#b7d2bf')        # eyeshine (emissive): two pale cold points at the back of the dark patio
 GORE = pal('#140103', '#2a0306', '#46070b', '#650d12', '#86171b', '#a52824')
 MUD = pal('#1a120c', '#2b1e14', '#3d2b1c')
 FUR_PARTS = ('core', 'tall', 'keel', 'prow', 'rump', 'leg', 'paw', 'thigh', 'base', 'tip', 'neck', 'skull', 'dome',
@@ -1116,13 +1119,16 @@ def muerto_px(ctx, col):
     # the eyes: fully black and wet; one cold glint, a raw red rim on the lower lid
     if name == 'eye':
         if f == 'front':
-            if (ctx.i, ctx.j) in ((1, 1), (2, 1)):
-                return DEAD_GLINT if ctx.i == 1 else mix(DEAD_GLINT, DEAD_BLACK[2], 0.55)
-            if ctx.j == ctx.h - 1:
-                return GORE[2] if ctx.i % 2 else GORE[1]
-            if ctx.j == 0:
-                return DEAD_BLACK[3]
-            return DEAD_BLACK[0] if (ctx.i + ctx.j) % 3 else DEAD_BLACK[1]
+            i, j = ctx.i, ctx.j
+            if (i, j) == DEAD_GLINT_AT:
+                return DEAD_GLINT                               # one small dull glint: wet, not cute
+            if j == ctx.h - 1:
+                return GORE[2] if i % 2 else GORE[1]            # the raw red lower lid
+            if j == 0:
+                return mix(_dead_tone(col, 0.5, 0.4), DEAD_BLACK[3], 0.5)   # the matted lid over the eye
+            if j == ctx.h - 2 and 1 <= i <= ctx.w - 2:
+                return DEAD_WET if (i + (1 if ctx.cube.side == 'l' else 0)) % 2 else DEAD_BLACK[1]   # wet sheen
+            return DEAD_BLACK[0] if (i * 7 + j * 3) % 5 else DEAD_BLACK[1]
         if outward(ctx):
             return DEAD_BLACK[1] if ctx.j < ctx.h - 1 else GORE[1]
         return _dead_tone(col)
@@ -1163,6 +1169,13 @@ def muerto_px(ctx, col):
         clump = vnoise(x * 0.9, y * 0.45, z * 0.9, 41)
         strand = hash3(math.floor(x * 1.3), math.floor(y * 0.5), math.floor(z * 1.3), 43)
         base = _dead_tone(col, 0.44 + 0.3 * clump + 0.12 * strand, 0.3)
+        if _lum(col) > 0.55:
+            # the pale belly / chest / jowls: no pink left -- grey-brown, filthy, bruised, a few dark wet streaks
+            base = mix(base, MUD[2], 0.4)
+            if fbm(x * 0.4, y * 0.25, z * 0.4, 3, 53) > 0.6:
+                base = mix(base, GORE[1], 0.5)
+            if hash3(math.floor(x * 1.5), 0, math.floor(z * 1.5), 57) > 0.8:
+                base = mix(base, DEAD_BLACK[3], 0.45)
         if hash3(x * 2, y * 2, z * 2, 77) > 0.93:
             base = mix(base, hx('#8a7a6c'), 0.25)              # dried, stiff tips
         if name in ('paw',) or (name == 'leg' and y > 20.5):
@@ -1252,6 +1265,18 @@ class ChoriModel(Model):
         seen at a grazing angle never samples a neighbouring cube's colours."""
         img = super().paint(default_mat, seed=seed, layer=layer)
         if layer != 'base':
+            if layer == 'eyes' and getattr(default_mat, 'look', None) == 'muerto':
+                # the dead eyes do not sparkle: the warm glints go, one pale cold eyeshine texel per eye remains
+                px = img.load()
+                for b in self.bones():
+                    for c in b.cubes:
+                        if getattr(c, 'name', '') != 'eye' or c.uv is None:
+                            continue
+                        u0, v0, w, h = self.face_rect(c, 'front')
+                        for j in range(h):
+                            for i in range(w):
+                                px[u0 + i, v0 + j] = (0, 0, 0, 0)
+                        px[u0 + DEAD_GLINT_AT[0], v0 + DEAD_GLINT_AT[1]] = DEAD_SHINE
             return img
         W, H = img.size
         own = np.zeros((H, W), bool)
@@ -1609,9 +1634,9 @@ _POSES = {
     'stand': {'body': (-1.5, 0, 0, 0, -1.5, -10.8),
               'right_back_leg': (1.5, 0, 0.06, 0, 0, 0), 'left_back_leg': (1.5, 0, -0.06, 0, 0, 0),
               'right_back_paw': (0.0, 0.12, 0, 0, 0, 0), 'left_back_paw': (0.0, -0.12, 0, 0, 0, 0),
-              'right_front_leg': (1.32, -0.46, 0, 0, 0, 0), 'left_front_leg': (1.32, 0.46, 0, 0, 0, 0),
-              'right_front_paw': (0.65, 0, 0, 0, 0, 0), 'left_front_paw': (0.65, 0, 0, 0, 0, 0),
-              'neck': (1.3, 0, 0, 0, 0, 0), 'head': (0.12, 0, 0.3, 0, 0, 0),
+              'right_front_leg': (1.42, 0, 0.1, -3.6, 0, -0.6), 'left_front_leg': (1.42, 0, -0.07, 3.6, 0, -0.6),
+              'right_front_paw': (1.05, 0, 0.1, 0, 0, 0), 'left_front_paw': (0.95, 0, -0.08, 0, 0, 0),
+              'neck': (1.3, 0, 0, 0, 0, 0), 'head': (0.26, 0, 0.44, 0, 0, 0),
               'lips': (-0.03, 0, 0, 0, -0.3, 0),
               'right_ear': (0.15, 0, 0.1, 0, 0, 0), 'left_ear': (0.1, 0, -0.05, 0, 0, 0),
               'right_brow': (0, 0, -0.25, 0, 0.5, 0), 'left_brow': (0, 0, 0.25, 0, 0.5, 0),

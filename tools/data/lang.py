@@ -274,3 +274,12 @@ MISC.update({
 })
 # --- end car / overworld
 
+# --- B2 hunt (the broken Nona, hiding places, holding the breath)
+ENTITIES.update({
+    'nona_rota': ('La Nona', 'Grandma'),
+    'hide_seat': ('Escondite', 'Hiding place'),
+})
+MISC.update({
+    'key.deadline.breath': ('Contener la respiración', 'Hold your breath'),
+})
+# --- end B2 hunt

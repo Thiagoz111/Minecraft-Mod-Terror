@@ -17,6 +17,8 @@ import net.minecraft.util.Mth;
  */
 public class TotiModel extends TotiModelBase {
 	private static final int CROUCH = FamilyEntity.POSE_CROUCH_CLOSET, SLAM = FamilyEntity.POSE_SLAM, STAND = FamilyEntity.POSE_STAND;
+	/** B3 (toti_rincon): in the corner, facing the wall; the turn = the head goes all the way round, the body does not. */
+	private static final int CORNER = FamilyEntity.POSE_CORNER, CORNER_TURN = FamilyEntity.POSE_CORNER_TURN;
 	/** Blend rates: poses ~5 ticks; the slam SNAPS in (3 ticks) and eases back (8). */
 	private static final float RATE = 0.35F, SLAM_IN = 0.6F, SLAM_OUT = 0.25F, TALK_RATE = 0.4F;
 	/** The concentration tongue (crouch_closet's 'tongue' row): pulled back in whenever he talks. */
@@ -54,7 +56,12 @@ public class TotiModel extends TotiModelBase {
 		float hitFast = blend(s, 5, a == SLAM ? 1F : 0F, fresh ? 1F : 0.8F);
 		float hitSlow = blend(s, 6, a == SLAM ? 1F : 0F, fresh ? 1F : 0.3F);
 		float impact = Mth.clamp((hitFast - hitSlow) * 2.5F, 0F, 1F);
-		float play = blend(s, 8, a == STAND ? 0F : 1F, fresh ? 1F : RATE);
+		// B3: arms hanging, no gamepad, not playing: in the corner, and always for the copy (look 2)
+		boolean copy = s.variant == FamilyEntity.LOOK_COPIA;
+		boolean corner = a == CORNER || a == CORNER_TURN;
+		float hang = blend(s, 9, corner || copy ? 1F : 0F, fresh ? 1F : RATE);
+		float twist = blend(s, 10, a == CORNER_TURN ? 1F : 0F, fresh ? 1F : 0.05F);
+		float play = blend(s, 8, a == STAND ? 0F : 1F, fresh ? 1F : RATE) * (1F - hang);
 
 		apply(POSE_CROUCH_CLOSET, crouch);
 		apply(SLAM_OVER_CROUCH, slam);
@@ -79,9 +86,17 @@ public class TotiModel extends TotiModelBase {
 		float rage = FamilyRenderer.pulse(t, seed + 5, 90F, 1F, 1F, 1F) * play;
 		rot("right_brow", 0F, 0F, 0.15F * rage);
 		rot("left_brow", 0F, 0F, -0.15F * rage);
-		// breathing and chewing gum
-		offset("body", 0F, 0.125F * (1F + Mth.sin(t * 0.105F)), 0F);
+		// breathing and chewing gum (in the corner he does not breathe)
+		offset("body", 0F, 0.125F * (1F + Mth.sin(t * 0.105F)) * (corner ? 0F : 1F), 0F);
 		rot("jaw", 0.03F * (1F + Mth.sin(t * 0.785F)) * play * (1F - talk), 0F, 0F);
+		// arms down at his sides (the rest pose holds the pad): undo the rest rotations of arm, forearm and hand
+		rot("right_arm", 0.2443F * hang, 0.1396F * hang, -0.1396F * hang);
+		rot("right_forearm", 0.9774F * hang, 0.3142F * hang, 0F);
+		rot("right_hand", -0.5258F * hang, -0.3499F * hang, -0.3548F * hang);
+		rot("left_arm", 0.2443F * hang, -0.1396F * hang, 0.1396F * hang);
+		rot("left_forearm", 0.9774F * hang, -0.3142F * hang, 0F);
+		rot("left_hand", -0.5258F * hang, 0.3499F * hang, 0.3548F * hang);
+		hide("gamepad", hang > 0.5F);
 
 		// ---- talking: looks up (full face in the wardrobe light), jaw per syllable, the tongue goes back in
 		float syl = FamilyRenderer.syllable(t, seed) * talk;
@@ -119,10 +134,30 @@ public class TotiModel extends TotiModelBase {
 		// ---- head look (neck 35 %, head 65 %): absorbed in the game unless he talks; never in the slam; free at breakfast
 		float absorbed = 0.35F * (1F - crouch) + up * (1F - 0.35F * (1F - crouch));
 		float lookW = (stand + (1F - stand) * absorbed) * (1F - slam);
+		if (corner) {
+			lookW = 0F;  // facing the wall: the head only moves in the turn
+		} else if (copy) {
+			lookW = 1F;  // the copy follows you with its eyes
+		}
 		float yaw = Mth.clamp(Mth.wrapDegrees(s.yRot), -75F, 75F) * Mth.DEG_TO_RAD * lookW;
 		float pitch = Mth.clamp(s.xRot, -45F, 45F) * Mth.DEG_TO_RAD * lookW;
 		rot("neck", pitch * 0.35F, yaw * 0.35F, 0F);
 		rot("head", pitch * 0.65F, yaw * 0.65F, 0F);
+
+		// ---- B3: the turn -- the head comes all the way round (neck 35 %, head 65 %) with two small hitches, the body
+		// does not move; it ends tipped a little onto one shoulder
+		if (twist > 0.001F) {
+			float e = twist * twist * (3F - 2F * twist);
+			float hitch = Mth.sin(t * 9F) * 0.035F * Mth.clamp(twist * (1F - twist) * 4F, 0F, 1F);
+			rot("neck", 0F, Mth.PI * 0.35F * e + hitch, 0F);
+			rot("head", 0.1F * e, Mth.PI * 0.65F * e + hitch, 0.22F * e);
+		}
+		if (copy) {
+			// the copy: brows level over the wide-open eyes, the painted grin keeps the jaw shut
+			rightBrow.zRot = 0F;
+			leftBrow.zRot = 0F;
+			jaw.xRot = 0F;
+		}
 	}
 
 	/** to - from, row by row (rows missing on one side count as zero); all-zero rows are dropped. */

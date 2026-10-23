@@ -17,6 +17,8 @@ import net.minecraft.client.model.geom.ModelLayerLocation;
 /**
  * Casa Morales P1 (client): model layers and renderers of the family. Looks by variant: Jorge 0 jorge.png /
  * 1 jorge_poseido.png, the Nona 0 nona.png / 1 nona_poseida.png (each with its _eyes layer); Marta and Toti have one.
+ * B3: look 2 (FamilyEntity.LOOK_COPIA) of Marta, Jorge and Toti is the copy (marta_copia.png, jorge_copia.png,
+ * toti_copia.png + _eyes); Marta's and Toti's look 1 is their normal texture.
  * Call {@link #init()} once from the client initializer.
  */
 public final class FamilyRenderers {
@@ -45,12 +47,12 @@ public final class FamilyRenderers {
 		EntityModelLayerRegistry.registerModelLayer(TOTI, TotiModelBase::createBodyLayer);
 
 		EntityRendererRegistry.register(FamilyEntities.MARTA,
-				ctx -> new FamilyRenderer<>(ctx, new MartaModel(ctx.bakeLayer(MARTA)), 0.45F, "marta", true));
+				ctx -> new FamilyRenderer<>(ctx, new MartaModel(ctx.bakeLayer(MARTA)), 0.45F, "marta", true, "", "", "copia"));
 		EntityRendererRegistry.register(FamilyEntities.JORGE,
-				ctx -> new FamilyRenderer<>(ctx, new JorgeModel(ctx.bakeLayer(JORGE)), 0.55F, "jorge", true, "", "poseido"));
+				ctx -> new FamilyRenderer<>(ctx, new JorgeModel(ctx.bakeLayer(JORGE)), 0.55F, "jorge", true, "", "poseido", "copia"));
 		EntityRendererRegistry.register(FamilyEntities.NONA,
 				ctx -> new FamilyRenderer<>(ctx, new NonaModel(ctx.bakeLayer(NONA)), 0.45F, "nona", true, "", "poseida"));
 		EntityRendererRegistry.register(FamilyEntities.TOTI,
-				ctx -> new FamilyRenderer<>(ctx, new TotiModel(ctx.bakeLayer(TOTI)), 0.4F, "toti", true));
+				ctx -> new FamilyRenderer<>(ctx, new TotiModel(ctx.bakeLayer(TOTI)), 0.4F, "toti", true, "", "", "copia"));
 	}
 }
