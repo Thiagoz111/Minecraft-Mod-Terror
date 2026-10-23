@@ -710,7 +710,9 @@ def breaker_trip():
     fw = np.where(t < t0, 15625.0, 15625.0 * np.exp(-np.maximum(0, t - t0) / 0.09))   # flyback collapses
     crt = np.sin(TWO_PI * np.cumsum(fw) / SR) * np.where(t < t0, 1.0, np.exp(-np.maximum(0, t - t0) / 0.12))
     crt *= (fw > 800)
-    y = 0.13 * motor + 0.035 * mains + 0.1 * tube + 0.008 * crt * np.minimum(1, t / 0.2)
+    # QA: the bed sat at -31 dBFS (short-term), too low for 'every hum dying' to read once the event is attenuated in
+    # game; +5 dB so the drop to dead silence after the CLONK is the effect.
+    y = 0.23 * motor + 0.06 * mains + 0.17 * tube + 0.013 * crt * np.minimum(1, t / 0.2)
     out = np.zeros(n + N(0.4), np.float32)
     out[:n] = y
     # latch lets go (tick) -> arc across the opening contacts -> lever slams down: CLONK in the tin box
@@ -1029,18 +1031,24 @@ def fire_blue_whoosh():
     add(out, norm(crackle(ncr, 3000 * np.exp(-taxis(ncr) / 0.12), 603, 1500, 10000)), ti + 0.01, 0.35)
     # the blue gas jet: a smooth, pressured hiss with a faint whistle - premixed flame, not wood
     tj = np.maximum(0, t - ti)
-    jet_env = smoothstep(tj / 0.12) * env_pts(n, [(0, 1), (ti + 1.2, 1), (ti + 2.4, 0.2), (total, 0)])
+    jet_env = smoothstep(tj / 0.12) * env_pts(n, [(0, 1), (ti + 0.8, 1), (ti + 1.9, 0.12), (total, 0)])
     jet = bp(white(n, 604), 1800, 9000) + 0.15 * np.sin(TWO_PI * 3150 * t) * (1 + 0.3 * snoise(n, 4, 605))
     out[:n] += 0.16 * norm(jet) * jet_env
-    # ... and then it goes wrong: the roar slows like a tape running down, resonances gliding into a low groan
-    src_n = N(4.0)
-    roar = dsp.lowpass(colored(src_n, 'pink', 606), 1400, 2) * (1 + 0.55 * snoise(src_n, 9, 607))
-    rate = 1.0 - 0.72 * smoothstep(taxis(src_n) / 2.6)
-    slow = varispeed(roar, rate, src_n)
-    groan_f = 260 * np.exp(-1.3 * smoothstep(taxis(src_n) / 2.4)) + 40
-    groan = tv_filter(slow, 'bp', groan_f, bw_oct=0.35) + 0.6 * tv_filter(slow, 'bp', groan_f * 1.5, bw_oct=0.35)
-    genv = env_pts(src_n, [(0, 0), (0.25, 0.4), (0.9, 1.0), (2.6, 0.9), (4.0, 0)])
-    add(out, norm(0.6 * slow + groan) * genv, ti + 0.15, 0.55)
+    # ... and then it goes wrong: the flame itself slows down like a tape running out. QA: the old version slowed a
+    # featureless low-passed noise, which only got darker under the jet hiss (no audible 'turn'). The source is now a
+    # real flame - turbulent roar fluttering ~20 Hz plus crackle - so the slowdown is heard: the flutter sinks to a
+    # 5 Hz throb, the pops stretch into low thuds, and two resonances ride down with it into a throaty groan.
+    src_n = N(4.3)
+    ts_ = taxis(src_n)
+    flut = 0.3 + 0.7 * np.abs(snoise(src_n, 20, 607)) ** 1.5
+    flame = norm(dsp.lowpass(colored(src_n, 'pink', 606), 4000, 2) * flut) + 0.55 * norm(crackle(src_n, 220, 6061, 600, 7000))
+    rate = 1.0 - 0.75 * smoothstep((ts_ - 0.45) / 2.0)          # 1x -> 0.25x
+    slow = varispeed(flame, rate, src_n)
+    groan_f = 520 * rate
+    groan = tv_filter(slow, 'bp', groan_f, bw_oct=0.3) + 0.7 * tv_filter(slow, 'bp', groan_f * 1.6, bw_oct=0.3)
+    slow_lp = tv_filter(slow, 'lp', 900 + 7000 * rate ** 2)
+    genv = env_pts(src_n, [(0, 0), (0.2, 0.5), (0.8, 1.0), (2.8, 0.95), (4.3, 0)])
+    add(out, (0.55 * norm(slow_lp) + 0.6 * norm(groan)) * genv, ti + 0.12, 0.6)
     # the demon breathes through the flames: huge-throat 'oh' turbulence and a rough sub voice under it
     nb = N(3.2)
     fr = ftrack(nb, [(0, vowel('o', 0.62)), (1.6, vowel('u', 0.6)), (3.2, vowel('o', 0.6))])
@@ -1175,7 +1183,7 @@ def salt_hit_scream():
     idx = np.clip((times * SR).astype(int), 0, n - 1)
     amps = np.minimum(4.0, r.pareto(2.4, len(idx)) + 0.1).astype(np.float32)
     grains = pulse_train(n, idx, amps, burst(0.0004, 801, 1.5))
-    out[:n] += 0.5 * norm(dsp.lowpass(dsp.highpass(grains, 2500, 2), 11000, 2))
+    out[:n] += 1.0 * norm(dsp.lowpass(dsp.highpass(grains, 2500, 2), 11000, 2))
     # the burn: acid hiss with crackle and a puff of steam
     nh = N(1.5)
     th = taxis(nh)
@@ -1183,8 +1191,8 @@ def salt_hit_scream():
     hiss = bp(white(nh, 802), 2500, 10000) * grain(nh, 300, 803, 2.0) * henv
     crk = crackle(nh, 700 * np.exp(-th / 0.35), 804, 1800, 9000)
     steam = dsp.lowpass(bp(white(nh, 805), 600, 9000), 4500, 2) * np.minimum(1, th / 0.08) * np.exp(-th / 0.5)
-    add(out, norm(hiss), 0.02, 0.3)
-    add(out, norm(crk), 0.02, 0.22)
+    add(out, norm(hiss), 0.02, 0.6)
+    add(out, norm(crk), 0.02, 0.45)
     add(out, norm(steam), 0.05, 0.15)
     # the yelp: Jorge's own throat with the demon an octave and a fifth under it, both torn
     nv = N(1.1)
@@ -1199,7 +1207,9 @@ def salt_hit_scream():
     demon = vsynth(f_h * 0.335, ftrack(nv, keys_d), amp_d, tilt=0.8, rough=1.0, rough_hz=45, sub=0.7, breath=0.3,
                    fmax=4500, seed=811)
     voice = dsp.drive(norm(human) + 0.5 * norm(demon), 1.6)
-    add(out, voice, 0.07, 0.8)
+    # QA: the yelp used to start 70 ms in, on top of the grains, so the salt never registered. A ~170 ms reaction
+    # delay lets the 'KSSHH' land first: salt - hiss - ¡AAGH!
+    add(out, voice, 0.19, 0.8)
     return verb(out, 'patio', wet=0.18)
 
 
@@ -1630,13 +1640,16 @@ def door_slam_cascade():
     n = N(total)
     dry = np.zeros(n, np.float32)
     send = np.zeros(n, np.float32)
-    # five doors down the 12 m hallway, accelerating towards you: far ones dark and drowned in the hall
+    # five doors down the 12 m hallway, accelerating towards you: far ones dark and drowned in the hall.
+    # QA: a constant send made the 10 m door nearly as loud as the 1.1 m one (5.6 dB apart), so "closer each time"
+    # did not read. In a long 2 m-wide corridor the reverberant energy reaching you also falls off along the hall,
+    # so the send now drops with distance too (gentler than the direct 1/r): ~12 dB from the first to the last door.
     for k, (tk, d) in enumerate([(0.0, 10.0), (0.62, 7.4), (1.1, 5.0), (1.44, 2.9), (1.68, 1.1)]):
         s = interior_slam(2400 + 17 * k, swing=0.12 + 0.03 * k)
-        g = (1.1 / d) ** 0.8
+        g = (1.1 / d) ** 1.0
         s = dsp.lowpass(s, 2600 + 12000 * (1.1 / d), 2)
         add(dry, s, tk, g)
-        add(send, s, tk, 0.32)
+        add(send, s, tk, 0.32 * (1.1 / d) ** 0.4)
     # the last one is right next to you: the air of the hallway thumps your ears, the picture frames rattle
     tl = 1.68 + 0.24
     tb = taxis(N(0.9))
@@ -1770,14 +1783,15 @@ def doll_giggle_chorus():
         for j in range(nsyl):
             fs = base * (1 - 0.045 * j) * r.uniform(0.98, 1.02)
             syls.append((0.03 + j / rate, 0.55 / rate, fs, fs * 0.84, (1 - 0.1 * j) * r.uniform(0.8, 1.0)))
-        g = giggle(3001 + k, syls, 0.1 + nsyl / rate + 0.1, scale=r.uniform(1.5, 1.72))
+        # QA: breath 0.3 / aspiration 0.6 left the syllables as noisy huffs with weak harmonics; voiced 'hi-hi-hi'
+        g = giggle(3001 + k, syls, 0.1 + nsyl / rate + 0.1, scale=r.uniform(1.5, 1.72), breath=0.16, asp=0.38)
         g = hollow(g, 3020 + k)
         dist = 0.0 if front else r.uniform(0.35, 1)   # ... the rest further along the 2 m shelf, duller, quieter
         g = dsp.lowpass(g, 9000 - 4500 * dist, 2)
         add(out, g, start, (r.uniform(0.85, 1.0) if front else r.uniform(0.35, 0.6)) * (1 - 0.35 * dist))
     # and one stays behind, slower and lower, after the others stop
     syls = [(0.03, 0.12, 560, 500, 1.0), (0.31, 0.12, 520, 460, 0.85), (0.62, 0.16, 470, 400, 0.7)]
-    g = hollow(giggle(3050, syls, 1.0, scale=1.55, breath=0.4), 3051)
+    g = hollow(giggle(3050, syls, 1.0, scale=1.55, breath=0.22, asp=0.4), 3051)
     add(out, dsp.lowpass(g, 6500, 2), 2.45, 0.6)
     return verb(out, 'pieza', wet=0.3)
 
@@ -1861,14 +1875,21 @@ def chancleta_hit():
     total = 1.3
     out = np.zeros(N(total), np.float32)
     ti = 0.01
-    # ¡PLAF! the flat rubber sole meets skin: a short, very wide crack ...
-    add(out, norm(dsp.peak(bp(burst(0.0035, 3301, 1.2), 900, 14000), 2600, 6, 1.0)), ti, 1.0)
-    add(out, norm(dsp.highpass(burst(0.0008, 3302, 2.0), 3000, 2)), ti, 0.45)
+    # ¡PLAF! QA: the old hit was one 3 ms spike over a thin knock (its 50 ms level sat 10 dB under its own peak), so
+    # after mastering it read small. Now: the crack, a 20 ms broadband smack with the air pocket between sole and
+    # skin ringing at ~1.7 kHz, a meaty flesh thwack and a longer cartoon bass drop, summed and soft-saturated so
+    # the body (not a single sample) sets the peak.
+    hit = np.zeros(N(0.3), np.float32)
+    add(hit, norm(dsp.peak(bp(burst(0.0035, 3301, 1.2), 900, 14000), 2600, 6, 1.0)), 0.0, 1.0)
+    add(hit, norm(dsp.highpass(burst(0.0008, 3302, 2.0), 3000, 2)), 0.0, 0.4)
+    smack = dsp.peak(dsp.peak(bp(burst(0.022, 3309, 1.6), 350, 9000), 1700, 9, 2.0), 650, 4, 1.5)
+    add(hit, norm(smack), 0.0006, 0.95)
     # ... the thwack of flesh and EVA rubber (a dull knock that dies at once) and a bass punch for the cartoon
-    add(out, knock(3303, FLESH, 0.12, contact=0.0025, click=0.0), ti, 0.85)
-    tb = taxis(N(0.15))
-    add(out, np.sin(TWO_PI * np.cumsum(92 + 130 * np.exp(-tb / 0.006)) / SR) * np.exp(-tb * 48) * np.minimum(1, tb / 0.001), ti, 0.6)
-    add(out, dsp.lowpass(bp(burst(0.012, 3304, 1.5), 400, 3500), 3000, 2), ti + 0.004, 0.3)   # trapped air 'pff'
+    add(hit, knock(3303, FLESH, 0.14, contact=0.0022, click=0.0), 0.0, 1.0)
+    tb = taxis(N(0.2))
+    add(hit, np.sin(TWO_PI * np.cumsum(92 + 150 * np.exp(-tb / 0.008)) / SR) * np.exp(-tb * 38) * np.minimum(1, tb / 0.001), 0.0, 0.42)
+    add(hit, dsp.lowpass(bp(burst(0.016, 3304, 1.5), 400, 3500), 3000, 2), 0.004, 0.35)   # trapped air 'pff'
+    add(out, dsp.drive(norm(hit) * 1.9, 1.9), ti, 1.0)
     # the toe of the sole flaps on a beat later: p-TAP
     add(out, norm(bp(burst(0.0025, 3305, 1.2), 1200, 12000)), ti + 0.042, 0.32)
     add(out, knock(3306, FLESH, 0.08, contact=0.0018, click=0.0), ti + 0.042, 0.25)
@@ -1975,11 +1996,14 @@ def stitch_once(seed, pulls, squeak_amt=0.5):
     r = dsp.rng(seed)
     total = 0.12 + sum(d + gap for d, gap in pulls) + 0.4
     out = np.zeros(N(total), np.float32)
+    # QA: the puncture pops used to peak ~25 dB over the pull, so after mastering the thread (the actual ASMR event)
+    # sat at -25..-31 dBFS short-term. The pops are now small 'tk-tk' fibre breaks, the 'thup' a soft cloth push.
     for k in range(int(r.integers(3, 7))):
-        add(out, dsp.highpass(burst(r.uniform(0.0003, 0.0008), seed + k, 2.0), 1500, 2), r.uniform(0, 0.016), r.uniform(0.1, 0.3))
-    add(out, dsp.lowpass(burst(0.012, seed + 10, 1.5), 400, 2), 0.0, 0.35)
+        add(out, dsp.highpass(burst(r.uniform(0.0003, 0.0008), seed + k, 2.0), 1500, 2), r.uniform(0, 0.016), r.uniform(0.025, 0.07))
+    add(out, dsp.lowpass(burst(0.012, seed + 10, 1.5), 400, 2), 0.0, 0.12)
     ne = N(0.06)
-    add(out, bp(white(ne, seed + 11), 1500, 8000) * grain(ne, 400, seed + 12, 2.0) * env_pts(ne, [(0, 0), (0.01, 1), (0.06, 0)]), 0.02, 0.3)
+    eye = bp(white(ne, seed + 11), 1500, 8000) * grain(ne, 400, seed + 12, 2.0) * env_pts(ne, [(0, 0), (0.01, 1), (0.06, 0)])
+    add(out, norm(dsp.drive(norm(eye) * 2.0, 2.0)), 0.02, 0.3)   # QA: un-normalised grain spikes set the old peak
     t = 0.1
     for j, (d, gap) in enumerate(pulls):
         nP = N(d)
@@ -1989,7 +2013,7 @@ def stitch_once(seed, pulls, squeak_amt=0.5):
         # rung through the (heavily damped) cloth and thread, over a softer fibre hiss
         idx, a = stick_slip(nP, 120 + 520 * v, seed + 20 + j, 0.35, v, 0.4)
         zipk = excite(pulse_train(nP, idx, a, half_sine(0.00025)),
-                      [(1300, 300, 1.0), (2600, 380, 0.7), (4200, 500, 0.4), (650, 250, 0.4)], 0.02)[:nP]
+                      [(1300, 650, 1.0), (2600, 760, 0.7), (4200, 900, 0.4), (650, 520, 0.4)], 0.02)[:nP]   # QA: wider, no steady hum
         hiss = bp(white(nP, seed + 40 + j), 2000, 7500) * (0.5 + 0.5 * grain(nP, 120, seed + 41 + j, 1.5)) * v
         add(out, 0.85 * norm(zipk) + 0.3 * norm(hiss), t, 1.0)
         t += d + gap
@@ -1999,8 +2023,8 @@ def stitch_once(seed, pulls, squeak_amt=0.5):
     fq = contour(nq, [(0, 1350 + 300 * r.random()), (0.07, 1800 + 200 * r.random())])
     sq = np.sin(TWO_PI * np.cumsum(fq) / SR) * (1 + 0.5 * snoise(nq, 120, seed + 50)) * env_pts(nq, [(0, 0), (0.01, 1), (0.07, 0)])
     add(out, sq, tq, 0.25 * squeak_amt)
-    add(out, dsp.lowpass(bp(white(N(0.045), seed + 51), 400, 6000), 3000, 2) * np.linspace(1, 0, N(0.045)), tq + 0.01, 0.3)
-    add(out, dsp.lowpass(burst(0.01, seed + 52, 1.5), 500, 2), tq + 0.005, 0.3)
+    add(out, dsp.lowpass(bp(white(N(0.045), seed + 51), 400, 6000), 3000, 2) * np.linspace(1, 0, N(0.045)), tq + 0.01, 0.12)
+    add(out, dsp.lowpass(burst(0.01, seed + 52, 1.5), 500, 2), tq + 0.005, 0.12)
     y = dsp.peak(out, 140, 4, 0.8)    # proximity effect: the mic is at the doll's mouth
     return y
 
@@ -2087,10 +2111,10 @@ def candles_out():
     hit = np.ones(nb, np.float32)
     for tc, fl in cands:
         hit *= 1 - 0.35 * np.exp(-0.5 * ((tb_ - tc - fl) / 0.02) ** 2)
-    add(out, (0.7 * norm(breath) + 0.45 * norm(lips) + 0.06 * norm(growl)) * hit, 0.0, 0.32)
+    add(out, (0.7 * norm(breath) + 0.45 * norm(lips) + 0.06 * norm(growl)) * hit, 0.0, 0.27)
     # the flames, swept by the breath one after the other; the seventh hangs on, then goes
     for k, (tc, fl) in enumerate(cands):
-        add(out, flame_out(3910 + k, fl, 1.0 if k < 6 else 1.25), tc, 0.6)
+        add(out, flame_out(3910 + k, fl, 1.0 if k < 6 else 1.25), tc, 0.85)   # QA: +3 dB, each 'fup' over the breath
     return verb(out, 'pieza', wet=0.22)
 
 

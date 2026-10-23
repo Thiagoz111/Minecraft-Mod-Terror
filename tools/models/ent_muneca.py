@@ -2,12 +2,15 @@
 
 Authored at 2x texel density (model.scale = 0.5).  +Y down, ground y = 24, faces -Z, right_* on -X.
 
-Story beat she carries: in 1961 Padre Anselmo shut the demon AZAMEL inside her by sewing her mouth with blessed red
-thread.  Lucia (8) cut those stitches, so she arrives with the mouth CUT ('cortado', the default look): the old thread
-is dried, faded red; stubs stay in the needle holes and two loose ends hang from her lips and sway (bones
-thread_right / thread_left, two segments each).  In the finale the Nona sews it shut again with FRESH red thread:
-look 'cosida' = three bright cross-stitches standing proud of the face (toggle bones stitch_1..3 under 'stitches',
-shown one by one in the stitch minigame) over lips pressed into a seam; the hanging ends are hidden.
+Story beat she carries: in 1961 Padre Anselmo shut the demon AZAMEL inside her by sewing her mouth shut with
+blessed red thread: three cross-stitches over the lip seam.  Lucia (8) snipped them, so she arrives with the mouth
+CUT ('cortado', the default look): two loose ends of the old brick-red thread hang from her lips and sway (bones
+thread_right / thread_left, two segments each, a pale frayed tuft at each cut end) and three short snipped stubs
+stand in the needle holes (bone thread_stubs).  In the finale the Nona sews it shut again with FRESH scarlet thread
+through the SAME holes: look 'cosida' = three solid cross-stitches standing proud of the face (toggle bones
+stitch_1..3 under 'stitches', shown one by one in the stitch minigame) over lips pressed into a seam; the loose ends
+and the stubs are hidden.  Both looks share one hole layout, so 'cortado' reads as 'sewn, then snipped' and 'cosida'
+as the same X rhythm closed again.
 
 Design
 ------
@@ -21,20 +24,21 @@ three-fingered porcelain hands.  The rest pose is wrong on purpose: the head is 
 her right shoulder and turned a little, the left shoulder is dropped and the left forearm hangs loose
 below the elbow, held on only by the stringing cord (a visible gap with the cord in it).
 
-Face (the jumpscare portrait), front of a 2-texel porcelain mask so every break has real depth:
+Face (the jumpscare portrait), front of a 2-texel porcelain mask so every break has real depth.  Few, grouped
+darks: the glass eye, the socket and the tear are the only big ones.
 * her right eye (viewer's left) is a glossy blue glass eye recessed behind the mask, dilated pupil,
-  one glint, a painted lid line and single spiky lashes;
-* her left eye is gone: a round black socket with a shaded rim, a bright chipped lower lip and a dying
-  2-px ember deep inside; a glossy black tear runs from it over clean porcelain and drips off the jaw;
+  one glint, a painted lid line, two slanted lash strokes at the outer corner and two below;
+* her left eye is gone: a round black socket with a soft rim and a dying 2-px ember deep inside; a glossy
+  black tear runs from it over clean porcelain and drips off the jaw;
 * the top corner of her left temple is broken away (a real notch through mask, wig and crown, dark
-  inside) and one hairline crack runs from it through the socket to the corner of the mouth;
-* a small rosebud mouth whose three 1961 stitches were cut: needle holes above and below the lips, short
-  frayed stubs left in some of them, one hole torn empty where the crack from the socket ends; her right
-  corner curls up.  The long loose ends are geometry (thread_right from the upper hole, thread_left from
-  the lower hole on the chin) hanging plumb in front of chin and collar;
+  inside) and one hairline crack runs from it into the socket and on (fading to grey) to a torn needle hole;
+* a small rosebud mouth under a blush-tipped button nose (its shadow painted under it); the needle holes of
+  the three X's sit above (y 7) and below (y 10) the lips at x -4.5 / -1.5 / 1.5 / 4.5;
 * the chin is a marionette jaw in two slots: it drops straight down (and hinges a little) to show a
-  black throat with uneven bisque teeth top and bottom, one missing.
-A dusty red bow is pinned on the top-left of her hairline, its notched tails hanging over the ringlets.
+  black throat (one clean void) with uneven bisque teeth top and bottom, one missing.
+A dusty red bow (loops with real depth) is pinned on the top-left of her hairline, its notched tails hanging over the
+ringlets.  The wig top, what players see most, is clean: a 1-px side parting, strands combed off it in a chevron,
+one bright satin ring round the crown.
 """
 import math
 import os
@@ -57,7 +61,7 @@ CRACK = hx('#5a5260')
 CRACK_D = hx('#17121b')
 GRIME = hx('#8a7d74')
 ROUGE = pal('#c9737d', '#dc8f96', '#eab0b3')
-LIP = pal('#4a0812', '#7a121e', '#a8202c', '#cf4446')
+LIP = pal('#4e1426', '#7e2440', '#a83a58', '#c95a74')   # faded rose doll paint: the orange-red thread pops off it
 TEAR = pal('#020203', '#0a090d', '#1f1d27', '#9aa3c0')
 VOID = pal('#000000', '#030204', '#07050a', '#0d0a10')
 GLASS = pal('#06102a', '#0e2152', '#173c88', '#2462bd', '#468ce2', '#86c0f6', '#e8f8ff')
@@ -508,11 +512,11 @@ def hair_top_v(x, z, ctx):
     r = math.sqrt((x / 1.4) ** 2 + (z - 1.0) ** 2)    # elliptical ring round the crown (centred on the head)
     if 3.4 <= r < 4.4:
         v = 0.78                                      # the satin ring: one bright continuous arc...
-    elif 4.4 <= r < 5.4 or 2.6 <= r < 3.4:
-        v = 0.64 if not gap else 0.55                 # ...with a softer tone on both edges
-    if edge(ctx) == 0:
-        v -= 0.08                                     # rounds over at the rim
-    return v
+    elif 4.4 <= r < 5.4:
+        v = 0.64 if not gap else 0.55                 # ...with a softer tone on its outer edge
+    if edge(ctx) == 0 and tag(ctx) == 'wig':
+        v -= 0.08                                     # rounds over at the outer rim (the stepped layers above it
+    return v                                          # keep clean edges: an outline there reads as a box)
 
 
 def wig_top_px(x, z, ctx):
@@ -951,7 +955,9 @@ class MunecaModel(Model):
     def to_json(self):
         d = super().to_json()
         d['toggles'] = {'default': dict(TOGGLE_DEFAULT),
-                        'variants': {k: dict(v) for k, v in VARIANT_TOGGLES.items()}, 'poses': {}}
+                        'variants': {k: dict(v) for k, v in VARIANT_TOGGLES.items()}, 'poses': {},
+                        'jaw_locked': list(JAW_LOCKED_VARIANTS),
+                        'pose_mask': {k: list(v) for k, v in VARIANT_POSE_MASK.items()}}
         if self.visible is None:
             return d
         hide = set()
@@ -970,7 +976,7 @@ class MunecaModel(Model):
 HEAD_REST = (4, -8, -14)                                                # degrees, see build()
 REST_DEG = {'body': (0, 0, 0), 'neck': (0, 0, 0), 'head': HEAD_REST, 'jaw': (0, 0, 0)}
 THREAD_CHAIN = {'thread_right': ('body', 'neck', 'head'), 'thread_left': ('body', 'neck', 'head', 'jaw')}
-TIP_REST = {'thread_right_tip': (-6, 0, 10), 'thread_left_tip': (6, 0, -12)}      # degrees: a slight curl
+TIP_REST = {'thread_right_tip': (-6, 0, 10), 'thread_left_tip': (6, 0, 12)}      # degrees: a slight curl
 
 
 def _euler(R):
@@ -1179,16 +1185,18 @@ def build(variant=None):
     bone('thread_left_tip', (1.5, 12.15, tz), parent='thread_left', rot=TIP_REST['thread_left_tip'], mat=thread_mat)
     box('thread_left_tip', (1, 12.1, tz - 0.5), (1, 1, 1), inflate=-0.03, name='thread_tip')
     box('thread_left_tip', (0.5, 13.05, tz), (3, 1, 0), name='fray')
-    # cut stubs (child of head, turned 45 deg like the X arms): 1.6 long, 0.7 proud of the porcelain, each pointing
-    # from its hole toward the centre of the X it belonged to -- the snipped halves of X 1 make a '>' at her right lip
-    # corner, the last one hangs over the black tear at her left
+    # cut stubs (child of head, turned 45 deg like the X arms): the outer halves of the first and last X survive as
+    # short snipped strands, 1.8 long and as thick as the new stitches, each from its hole toward the X's centre:
+    # a '>' at her right lip corner and a '<' at her left one bracket the mouth; the middle of the row was cut out and
+    # hangs (thread_right, thread_left) or tore (the hole the crack ends in)
     bone('thread_stubs', (0, seam, tz), parent='head', rot=(0, 0, 45), mat=thread_mat)
-    for hole, xc, axis in (((-4.5, 6.85), -3.0, 'x'), ((-4.5, 10.15), -3.0, 'y'), ((4.5, 6.85), 3.0, 'y')):
+    for hole, xc in (((-4.5, 6.85), -3.0), ((-4.5, 10.15), -3.0), ((4.5, 6.85), 3.0), ((4.5, 10.15), 3.0)):
         d = np.array([xc - hole[0], seam - hole[1]])
         d /= np.linalg.norm(d)
-        centre = (hole[0] + d[0] * 0.6, hole[1] + d[1] * 0.6)
+        axis = 'x' if d[0] * d[1] > 0 else 'y'          # local x = the '\' diagonal, local y = the '/' one
+        centre = (hole[0] + d[0] * 0.8, hole[1] + d[1] * 0.8)
         c = diag_box('thread_stubs', (0, seam, tz), centre, (2, 1, 2) if axis == 'x' else (1, 2, 2), -6.5,
-                     thread_mat, 'stub', -0.2)
+                     thread_mat, 'stub', -0.12)
         # 'flip' when the hole end is the far end of the strand's local axis (front face texel order)
         loc_dir = rz.T @ np.array([d[0], d[1], 0.0])
         c.flip = (loc_dir[0] if axis == 'x' else loc_dir[1]) < 0
@@ -1225,7 +1233,7 @@ _POSES = {
     # jaw and in front of the face plane (solved so no hand or finger enters the oversized head)
     'attack': {'body': (0.3, 0, 0, 0, 0.0, -1.0), 'right_leg': (-0.3, 0, 0, 0, 0, 0), 'left_leg': (-0.3, 0, 0, 0, 0, 0),
                'head': (-0.3, 0.12, 0.12, 0, 0, 0), 'jaw': (0.4, 0, 0, 0, 3.0, 0),
-               'right_arm': (-0.91, -0.1, 1.23, 0, 0, 0), 'left_arm': (-2.39, 0.3, 1.01, 0, 0, 0),
+               'right_arm': (-0.91, -0.1, 1.23, -0.8, 0.3, 0), 'left_arm': (-2.39, 0.3, 1.01, 0, 0, 0),
                'right_forearm': (0.28, 0, 0.6, 0, 0, 0), 'left_forearm': (0.38, 0, 0.42, 0, 0, 0),
                'right_finger1': (0, 0, 0.5, 0, 0, 0), 'right_finger3': (0, 0, -0.5, 0, 0, 0),
                'left_finger1': (0.7, 0, 0.4, 0, 0, 0), 'left_finger3': (0.7, 0, -0.4, 0, 0, 0),
@@ -1272,34 +1280,42 @@ THREAD_SWAY = {
 POSES = {k: dict(v, **plumb(v, THREAD_SWAY.get(k))) for k, v in _POSES.items()}
 
 ANIM_NOTES = """Ofelia (MunecaEntity, CURSED_DOLL) -- animation notes.  Units: radians, offsets in model texels
-(2x density inside scale_root, so 2 texels = 1 vanilla pixel).  t = ageInTicks, s = walk speed 0..1; every pose is
-ADDED to the rest pose.
+(2x density inside scale_root, so 2 texels = 1 vanilla pixel, 32 texels = 1 block).  t = ageInTicks, s = walk speed
+0..1; every pose is ADDED to the rest pose.
 Her rule: she moves ONLY while nobody looks at her (weeping angel; scripted relocations via UnseenSwap).  She is
 porcelain: no breathing, no squash.  Head, jaw and arms move in stop-motion (quantise time to 2-3 tick steps,
 tq = floor(t / 2) * 2); only hair, ribbons, cloth and the two loose threads move smoothly.  While a player looks straight
 at her, freeze EVERY bone (cloth and threads included) on the current frame; resume when nobody looks.
 
 Looks (VARIANT_MATS; Java picks the texture by the entity's variant index)
-* 0 'cortado' -> muneca.png (+ muneca_eyes.png).  The whole case: the 1961 stitches Lucia cut.  Old faded red thread:
-  a cut stub in two needle holes, one hole torn empty (the hairline crack from the socket ends in it), clean rosebud
-  lips, and two loose ends hanging from the mouth (thread_right / thread_left visible, stitches hidden).
+* 0 'cortado' -> muneca.png (+ muneca_eyes.png).  The whole case: the 1961 stitches Lucia snipped.  Brick-red old
+  thread, a full texel thick, brighter and more orange than the burgundy dress: two loose ends hang from the lips
+  (thread_right, thread_left) ending in pale frayed tufts over the lace collar / jabot, three snipped stubs stand in
+  the needle holes (thread_stubs: two make a '>' at her right lip corner, one hangs over the black tear), one hole is
+  torn empty where the crack from the socket ends, clean rosebud lips.  Visible: thread_right, thread_left,
+  thread_stubs.  Hidden: stitches.
 * 1 'cosida' -> muneca_cosida.png (+ muneca_cosida_eyes.png, same glow).  From the seal on (end of casa.puntadas, the
   shelf in transition 2, the bed in the post-credits): lips pressed into a dark seam, the porcelain dimpled toward the
-  needle holes, three fresh scarlet cross-stitches standing proud of the face (stitches visible, both loose ends
-  hidden).  Her mouth is SEWN in this look: never move the jaw (skip the idle clacks and the jaw values of
-  'attack' / 'scream' / 'creep'); the stitches are children of head, not jaw, so an open jaw would leave them behind.
+  needle holes, three fresh scarlet cross-stitches through the same holes, standing proud of the face.  Visible:
+  stitches (+ stitch_1..3).  Hidden: thread_right, thread_left, thread_stubs.
+* JAW LOCK (data: JAW_LOCKED_VARIANTS = ('cosida',), VARIANT_POSE_MASK = {'cosida': ('jaw',)}): her mouth is SEWN
+  in 'cosida'.  Never move the jaw there: skip the idle clacks and drop the 'jaw' entry of EVERY pose ('attack',
+  'scream', 'creep'), because the stitches are children of head, not jaw, and an open jaw would leave them floating
+  in front of a black mouth.
 
 Toggles (ModelPart.visible).  Every frame: start from TOGGLE_DEFAULT, apply VARIANT_TOGGLES[look], then the minigame
 state on top.  Hiding a parent hides its children.
 * thread_right (child of head) + thread_right_tip   visible in 'cortado', hidden in 'cosida'.
 * thread_left  (child of jaw)  + thread_left_tip    visible in 'cortado', hidden in 'cosida'.
+* thread_stubs (child of head; the three snipped stubs)   visible in 'cortado', hidden in 'cosida'.
 * stitches (child of head)   hidden in 'cortado', visible in 'cosida'.  Holder of the three cross-stitches.
 * stitch_1, stitch_2, stitch_3 (children of stitches; her right / centre / her left = viewer's left -> right)   visible
   by default, so 'cosida' shows all three.  Stitch minigame (casa.puntadas, Ofelia on the Nona's lap, texture still
-  'cortado'): set stitches visible with stitch_1..3 hidden; when puntada k completes show stitch_k with a pop
-  (xScale = yScale 1.35 -> 1 over 3 ticks).  After stitch_2 hide thread_left, after stitch_3 hide thread_right (the old
-  ends are pulled through).  A failed puntada ("se suelta"): hide that stitch_k again on the same frame and jolt the
-  head (zRot +0.25 for 2 ticks).  "Se cose sola": swap to 'cosida' (all three visible, loose ends hidden).
+  'cortado', jaw already locked): set stitches visible with stitch_1..3 hidden; when puntada k completes show stitch_k
+  with a pop (xScale = yScale 1.35 -> 1 over 3 ticks).  After stitch_1 hide thread_stubs (the Nona pulls the old
+  stubs out of the holes she reuses), after stitch_2 hide thread_left, after stitch_3 hide thread_right.  A failed
+  puntada ("se suelta"): hide that stitch_k again on the same frame and jolt the head (zRot +0.25 for 2 ticks).
+  "Se cose sola": swap to 'cosida' (all three visible, loose ends and stubs hidden).
 
 Bones
 * body (root, pivot at the waist): whole doll.  Idle: perfectly still, a single 0.02 zRot "settle" jolt every 4-8 s.
@@ -1308,25 +1324,36 @@ Bones
 * neck (ball joint on the collar): takes 30% of the head-look yaw/pitch (look(state, 0.3)).
 * head: 70% of the head-look.  Rest pose is rolled 14 deg onto her right shoulder and turned 8 deg; keep it.  Idle: slow
   drift of +-0.05 then a SNAP of zRot +-0.3 in 2 ticks, hold 10-30 ticks, drift back.  Chase: head locked on the player
-  (overshoot 0.1 and settle).  Pose 'creep' flops it 40 deg to the OTHER side - make that change in 2 ticks.
+  (overshoot 0.1 and settle).  Pose 'creep' flops it ~33 deg to the OTHER side - make that change in 2 ticks.
 * jaw: marionette chin in two slots ('cortado' only).  Opens by sliding DOWN (dy) plus a small hinge (xRot) around the
   back of the skull.  Idle: closed; every 6-12 s a single dummy clack (dy 0.8 for 2 ticks).  Attack: pose value (0.4,
   dy 3) reached in 2 ticks, then 3 fast clacks.  Scream: hold (0.55, dy 1.3).  Never ease it - stepped only.  Locked
-  closed in 'cosida'.
-* thread_right (root strand, 5 long, from the upper needle hole at her right; child of head, so when the chin drops it
-  hangs across the black mouth) and thread_left (4 long, from the lower hole at her left on the chin; child of jaw, so
-  it drops with the chin): the cut loose ends of the 1961 thread.  GRAVITY every frame: set the root's rotation to the
-  inverse of its parent's world rotation (the rest values (-2.0, 8.7, 13.6) deg already cancel the rest head roll;
-  plumb() in this file is the reference maths) and ADD a swing: a damped pendulum (xRot, zRot) kicked by the parent's
-  angular velocity and by body hops (impulse -k * dAngle, k ~ 0.8, damping 0.88 per tick, clamp +-0.7), plus an idle
-  drift sin(t * 0.07 + phase) * 0.04.  The swing keeps going 2-3 s after a head snap or a jaw clack.
-* thread_right_tip, thread_left_tip: the lower segments (4 and 3 long; the frayed ends).  Follow their root's swing
-  with 2-3 ticks of lag and 1.5x the amplitude (double pendulum); rest curl (-6, 0, 14) / (8, 0, -18) deg.
-* stitches, stitch_1..3: no motion (sewn into porcelain); only the toggle pops above.
+  closed in 'cosida' (see JAW LOCK).
+* thread_right (root strand, 3 long, from the upper needle hole at x -1.5; child of head, so when the chin drops it
+  hangs across the black mouth) and thread_left (root strand, 2 long, from the lower hole at x 1.5 on the chin; child
+  of jaw, so it drops with the chin): the cut loose ends of the 1961 thread, a full texel thick.  GRAVITY every frame:
+  set the root's rotation to the inverse of its parent's world rotation (the rest values (-2.0, 8.7, 13.6) deg already
+  cancel the rest head roll; plumb() in this file is the reference maths) and ADD a swing: a damped pendulum (xRot,
+  zRot, world space; -xRot = lower end toward her front) kicked by the parent's angular velocity and by body hops
+  (impulse -k * dAngle, k ~ 0.8, damping 0.88 per tick, clamp +-0.7), plus an idle drift sin(t * 0.07 + phase) * 0.04.
+  The swing keeps going 2-3 s after a head snap or a jaw clack.
+  COLLISION CLAMP (no live collision in MC): the strands must never pass into the face, chin, legs or skirt.  After
+  adding the swing, clamp the world xRot of each root to at most  fwd = -max(0, -headPitchWorld) * 1.1  (i.e. when the
+  head is thrown back by p rad, the strand is kicked forward by at least 1.1 * p so it drapes over the chin; scream
+  needs -0.55 for thread_right), and in 'creep' (head flopped onto the skirt side) keep thread_left at <= -0.6.  The
+  frozen THREAD_SWAY values per pose below are verified clean (point-in-cube check against head, jaw, legs, skirt,
+  body and arms in rest, sit, creep, attack and scream).
+* thread_right_tip, thread_left_tip: the lower segments (2 and 1 long, each ending in a 3x1 frayed 'fray' plane: the
+  pale cut end).  Follow their root's swing with 2-3 ticks of lag and 1.5x the amplitude (double pendulum); rest curl
+  (-6, 0, 10) / (6, 0, 12) deg.  At rest the tufts end over the lace collar / jabot (y ~13.7 / ~14.3).
+* thread_stubs (child of head, rest zRot 45 deg so its three 1.6-long stubs lie along the diagonals of the old X's):
+  no motion; toggle only.
+* stitches, stitch_1..3 (each stitch bone turned 45 deg holds a '+' of two solid strands = the X; 'over' in front):
+  no motion (sewn into porcelain); only the toggle pops above.
 * bow (hair bow on the top-left of the wig): secondary, spring-lagged zRot following head snaps (+-0.12), tiny flutter.
 * curl_r1, curl_r2, curl_r3 (ringlets on her right), curl_l0, curl_l1, curl_l2 (on the broken left; curl_l0 is the short
-  one hanging past the broken temple), curl_b1, curl_b2, curl_b3, curl_b4 (down the back): pendulums.  Each follows the head with 3-5
-  tick lag: xRot/zRot += spring(head motion), amplitude 0.08-0.15, a different phase per curl
+  one hanging past the broken temple), curl_b1, curl_b2, curl_b3, curl_b4 (down the back): pendulums.  Each follows the
+  head with 3-5 tick lag: xRot/zRot += spring(head motion), amplitude 0.08-0.15, a different phase per curl
   (ripple("curl_", t, 0.12, 0.9, 0.06, 0.05, 0)).  Chase: +0.15 xRot bounce on footfall.
 * skirt (core + torn petticoat): counter-yaw to the body in chase (yRot = -sin(walk) * 0.05).
 * skirt_front, skirt_front_right, skirt_right, skirt_back_right, skirt_back, skirt_back_left, skirt_left,
@@ -1336,13 +1363,14 @@ Bones
   per upper tier): the flared, torn lower tiers.  Lag the upper tier by ~3 ticks and swing twice as far
   (ripple("hem_", t, 0.09, 0.8, 0.05, 0.03, -0.04 * s)); flare out on the attack lunge (xRot -0.2) and on landing a hop.
 * right_leg, left_leg: stiff doll legs (no knee bend).  Chase: xRot = +-sin(walk) * 0.45 * s, alternating; the right
-  foot stays turned in (rest yaw).  Idle: still.  'sit': straight out (see Poses).
-* right_arm (intact) / left_arm (shoulder dropped 0.6 texel): idle hang, no natural swing.  Chase: arms stay stiff,
-  jerk xRot -0.2 on each footfall; when closing in raise the right arm toward the player (blend into 'creep').
+  foot stays turned in (rest yaw).  Idle: still.  'sit': straight out along the surface (see Poses).
+* right_arm (intact) / left_arm (shoulder dropped 0.6 texel): idle hang, splayed just clear of the bell skirt, no
+  natural swing.  Chase: arms stay stiff, jerk xRot -0.2 on each footfall; when closing in, pop the right hand up into
+  the 'creep' wave.
 * right_forearm: elbow of the good arm, follows the pose values.
 * left_forearm: the BROKEN forearm hanging off its stringing cord (visible gap + cord at the elbow).  Never driven
-  directly: pendulum with lag and overshoot from the body/arm motion, amplitude up to 0.4 in chase, keeps swinging 2-3 s
-  after she stops.  In 'attack' it flails outward.
+  directly outside the poses: pendulum with lag and overshoot from the body/arm motion, amplitude up to 0.4 in chase,
+  keeps swinging 2-3 s after she stops.  In 'attack' it flails outward.
 * right_hand, left_hand: wrists.  Right: tiny tremor while idle (zRot 0.03).  Left: limp, swings with the forearm.
 * right_finger1, right_finger2, right_finger3: spidery fingers of the good hand; idle twitch (one random finger xRot
   -0.3 for 3 ticks every 2-5 s); splay in 'creep' / 'attack' / 'scream' (pose values).
@@ -1350,30 +1378,38 @@ Bones
 * Emissive layer 'eyes' (muneca_eyes.png, same for both looks): dim iris + full-bright glint on the glass eye, a 2-px
   ember deep in the empty socket and the gloss on the black tear.  Optional: flicker the ember alpha in the renderer.
 
-Poses (POSES; the thread_* entries are the plumb + swing of a frozen frame, computed by plumb(); Java may replace
-them with the live gravity above)
-* creep: the scare beat.  Head flops 40 deg to her left (net, opposite to her rest roll), jaw ajar (dy 0.8), the right
-  arm rises toward the viewer with the wrist cocked and fingers splayed, left arm hangs; the loose threads still
-  swinging from the snap.  Snap into it from 'sit' or idle in 1-2 ticks while the player is not looking, then freeze.
+Poses (POSES; the thread_* entries are the plumb + swing of a frozen frame, computed by plumb() from THREAD_SWAY; Java
+may replace them with the live gravity above, respecting the clamp).  Arms, hands and fingers of every pose were
+solved against head, ringlets, skirt and body: none enters them -- keep it that way when blending.
+* creep: the scare beat, played for the laugh.  Her head flops ~33 deg onto her LEFT shoulder (opposite to her rest
+  roll; it rests on the dropped left puff sleeve, the shoulder sags 1 texel out and down), jaw ajar (dy 0.8), and the
+  good right hand pops up beside the empty side of her head in a stiff little WAVE: palm to the camera, fingers
+  splayed, wrist cocked, shoulder hitched up (it is a wave, not a reach -- "hola"); the loose threads still swinging
+  forward from the snap.  Snap into it from 'sit' or idle in 1-2 ticks while the player is not looking, then freeze.
 * attack: lunge.  Body pitches forward and slides 1 texel forward, legs counter-rotate so the shoes stay planted, head
   tilts up to show the face, the jaw drops (marionette, dy 3), both arms flung out and forward at the viewer so the
   splayed hands sit wide beside the dropped jaw, in front of the face plane (face, glass eye and open mouth stay
-  unobstructed; no hand or finger enters the head -- keep it that way when blending); the jaw snap flings both loose
-  threads forward and apart across the black mouth.  Hold 6 ticks, then clack.
-* scream: head thrown back with extra roll, jaw dropped; the good right arm straight up with the hand clawing beside
-  her temple, the broken left arm raised as far as its cord lets it, its hand dangling beside the jaw.
+  unobstructed); the jaw snap flings both loose threads forward and apart across the black mouth.  Hold 6 ticks,
+  then clack.
+* scream: head thrown back (-0.5) and rolled AWAY from the good arm, jaw dropped; both hands flung up beside her face:
+  the good right arm raised high and wide (shoulder hitched up and out 1 texel), the splayed claw beside her cheek and
+  temple, outside the wig and ringlets (fingertips to x -13); the broken left arm yanked up on its cord, the dead hand
+  dangling beside the jaw.  thread_right is kicked forward so it drapes over the chin instead of through it.
 * sit: the dormant "just a doll" state and her warning: she sits next to whoever will be possessed next (on the roof of
   the doghouse, on Jorge's chair by the grill, on Lucia's pillow, on the Nona's lap) and on the shelf / bed in
   'cosida'.  Spawn the entity with its origin ON the seat surface (mattress / pillow top, chair seat, doghouse roof,
-  top of the Nona's lap = the rocker seat height + lap): the skirt rests exactly on y = 24.  Slight slump (0.07), legs
-  STRAIGHT out in a V (xRot -1.6, splay 0.3 / -0.24, thigh sockets slid 3.3 texels forward) so shins, socks and toes-up
-  shoes clear the skirt; the skirt fanned over the thighs and spread behind; long limp arms with the hands
-  palm-down on the surface beside her; head lolling onto her right shoulder but pitched only 0.1 forward, so a
-  player standing over the bed / chair still meets the glass eye and the black socket (she is under 1 block tall and
-  almost always seen from above; the soles of her shoes face you).  Footprint from the origin: legs reach
-  0.31 block forward, the skirt 0.17 block back, the fingers 0.44 block to each side -> on a chair put the origin
-  ~0.15 block behind the seat's front edge, facing out; on a lap face the same way as the Nona.  Only the head
-  (look, unseen) and the cloth/threads (frozen while seen) animate in this pose.
+  top of the Nona's lap = the rocker seat height + lap): petticoat, heels and fingertips rest exactly on y = 24.  A
+  propped-up doll: torso leaning BACK 0.2 (the face tips up toward a player standing over her: from 35-60 deg above
+  you meet the glass eye and the socket), legs STRAIGHT out along the surface in a V (world angle ~90 deg, thigh
+  sockets slid 5.8 texels forward under the skirt's front edge), heels down, soles facing forward and toes up and out
+  -- the shoes clear the face plate by ~6.8 texels in side view; the skirt fanned round her; the long arms hang at her
+  sides with the hands resting palm-down on the surface beside the thighs (the broken forearm folded in on its cord);
+  the head keeps its rest loll onto her right shoulder.  Footprint from the origin: shoes 13.4 texels (0.42 block)
+  forward, hair / skirt 11.7 (0.37 block) back, hands 9.9 texels (0.31 block) to each side (the bow on her head reaches
+  x -13.5 but floats 0.5 block up) -> on a chair put the origin ~0.15 block behind the seat's front edge, facing out;
+  on the Nona's lap face the same way as the Nona, origin on top of her thighs, the hands land beside her own thighs
+  (inside the Nona's lap, clear of the Nona's arms).  Only the head (look, unseen) and the cloth/threads (frozen while
+  seen) animate in this pose.
 
 Jumpscare portrait ("el ultimo giro hasta la cara"): FOCUS 'head', look 'cortado', pose 'attack' -- glass eye, ember
 socket, black tear, the dropped jaw and the cut threads flung across the open mouth full frame.
