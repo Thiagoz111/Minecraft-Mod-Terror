@@ -74,6 +74,33 @@ Archivos: `casa/ChoripanEntity.java`, `casa/ChoripanDemonEntity.java`, `casa/Cho
     (`SNEEZE`). Postea `run.post("choripan:calmado")`.
 - Modelos: `ent_choripan.py`, `ent_choripan_demonio.py`. **Animadores dependen de los modelos terminados.**
 
+### P2 · API fija (CasaScript la usa tal cual)
+
+```java
+// com.deadline.casa.ChoripanEntities: EntityType<ChoripanEntity> CHORIPAN (0.5x0.6), EntityType<ChoripanDemonEntity> CHORIPAN_DEMONIO (0.8x0.8); static init()
+// com.deadline.client.casa.ChoripanRenderers: static init() (dog model, chain renderer for the demon)
+public class ChoripanEntity extends HauntEntity {               // scripted by default like the family (no own AI unless follow())
+  public static final int POSE_IDLE=0, POSE_SIT=1, POSE_BEG=2, POSE_BELLY_UP=3, POSE_TILT=4, POSE_GROWL=5,
+                          POSE_BIPEDAL_180=6, POSE_SNEEZE=7, POSE_SLEEP=8, POSE_RUN=9;
+  public static final int LOOK_SWEATER=0, LOOK_SCARF=1;           // variant
+  public void follow(Entity who);                                  // AI on: trot after who (null = stop, scripted again)
+  public boolean runTo(Vec3 target, double speed);                 // scripted run (doors must be open), true when a path exists
+  public boolean hasArrived();
+  public void growlAt(Vec3 point, int ticks);                      // turns, GROWL pose, growl_low
+  public static void warn(ServerLevel level, Vec3 hallucination);  // nearest dog <=24 blocks growls at it (SanityManager hook, 40-tick delay)
+}
+public class ChoripanDemonEntity extends HauntEntity implements ChoripanBenditoEntity.Catcher {
+  public static final int ACT_HUNT=0, ACT_UNSPOOL=1, ACT_FETCH_DROP=2, ACT_BEG=3, ACT_LUNGE=4, ACT_CATCH=5, ACT_VOMIT=6, ACT_RETRACT=7;
+  public void unspool(Vec3 anchor, int ticks);   // links come out of the doghouse door at anchor; tail wags inside until fully out
+  public void hunt(ServerPlayer target);         // AI chase, speed 0.36; salt lines stop it (whines); distracted 3 s by ItemEntity <8 blocks
+  public void fetch(ItemEntity item, ServerPlayer to); // scripted: brings it, FETCH_DROP at the feet, 3 s still, then lunges
+  public boolean catchChoripan(ChoripanBenditoEntity c); // CATCH -> chomp 2 s -> VOMIT (spawns DemonWisp, posts "choripan:vomito") -> RETRACT -> replaced by a ChoripanEntity SNEEZE, posts "choripan:calmado"
+  public ChoripanEntity calmed();                 // the dog that replaced it (after "choripan:calmado"), or null
+}
+```
+Events posted to the Run: `choripan:atrapo`, `choripan:vomito`, `choripan:calmado`, `choripan:mordio` (lunge hit a hunter).
+Actor names CasaScript uses: `"chori"` (dog) and `"chori_demonio"`.
+
 ## P3 · Ítems: cadena del choripán, lata, chancleta
 
 Archivos: `casa/CasaItems.java`, `casa/ChoripanBenditoEntity.java`, `casa/ChancletaEntity.java`,
