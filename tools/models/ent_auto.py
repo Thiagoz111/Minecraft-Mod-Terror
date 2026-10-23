@@ -154,6 +154,8 @@ def paint_mat(ctx):
     """The body: chalky grey paint, panel gaps, dents, scratches, rust and mud."""
     x, y, z = ctx.pos
     cube = ctx.cube
+    if ctx.face == 'bottom' and y > BELT + 1:
+        return under_mat(ctx)                                     # undersides: the arches, the sills
     v = 0.43 + face_light(ctx) * 0.85
     v += (fbm(x * 0.18, y * 0.18, z * 0.18, 3, 2) - 0.5) * 0.14    # faded, uneven paint
     if ctx.n[1] < -0.5:
@@ -216,19 +218,19 @@ def chassis_mat(ctx):
 
 def chrome_mat(ctx):
     x, y, z = ctx.pos
-    v = 0.55 + face_light(ctx) * 1.2
+    v = 0.42 + face_light(ctx) * 1.1                              # old chrome: dull, milky, pitted
     if ctx.n[1] < -0.5:
-        v += 0.18
+        v += 0.12
     # a bright reflection band and dark sky line, like old bumpers
     t = ctx.t if ctx.h > 1 else 0.5
     v += 0.25 if t < 0.35 else (-0.2 if t > 0.75 else 0)
     v += (h2(ctx.i, ctx.j, 7) - 0.5) * 0.12
     col = lum(v, CHROME)
     pit = fbm(x * 0.9, y * 0.9, z * 0.9, 2, 51)
-    if pit > 0.62:
-        col = lum(0.25 + (pit - 0.62) * 2, RUST)               # pitted, rust bleeding through
-    elif pit > 0.56:
-        col = mix(col, lum(0.4, RUST), 0.5)
+    if pit > 0.64:
+        col = lum(0.25 + (pit - 0.64) * 2, RUST)               # pitted, rust bleeding through
+    elif pit > 0.58:
+        col = mix(col, lum(0.4, RUST), 0.4)
     if ctx.edge() == 0:
         col = scale(col, 0.75)
     return col
@@ -326,15 +328,14 @@ def lens_mat(ramp, kind):
         if e == 0:
             return lum(0.6 + face_light(ctx), CHROME)             # chrome bezel
         if kind == 'head':
-            # square lens with a reflector bowl: rings + a dimpled pattern; one lens yellowed and cracked
+            # square lens over a reflector bowl: rings + a dimpled pattern; the passenger-side lens has yellowed
             cx, cy = (ctx.w - 1) / 2.0, (ctx.h - 1) / 2.0
             d = math.sqrt((ctx.i - cx) ** 2 + ((ctx.j - cy) * 1.4) ** 2)
-            v = 0.75 - d * 0.1 + (0.12 if (ctx.i + ctx.j) % 2 == 0 else 0)
+            v = 0.72 - d * 0.09 + (0.1 if (ctx.i + ctx.j) % 2 == 0 else 0)
+            col = lum(v, ramp)
             if ctx.pos[0] < 0:
-                v -= 0.15
-                if abs(ctx.i - ctx.j * 1.2 - 1) < 0.6:
-                    return A(GRIME[0])
-            return lum(v, ramp)
+                col = mix(col, hx('#b49a52'), 0.35)
+            return col
         if kind == 'tail':
             v = 0.55 + (0.2 if ctx.j % 2 == 0 else 0) - (0.25 if ctx.j == ctx.h // 2 else 0)
             if 0 < ctx.j < 2:
@@ -539,7 +540,7 @@ def rosary_mat(ctx):
 
 
 def cross_mat(ctx):
-    return lum(0.55 + face_light(ctx) + (0.2 if ctx.edge() == 0 else 0), SILVER)
+    return lum(0.3 + face_light(ctx) + (0.15 if ctx.edge() == 0 else 0), SILVER)
 
 
 def door_mat(side):
@@ -685,7 +686,7 @@ def build():
         box('body', (x0, W_TOP, 20), (4, 18 - W_TOP, RA0 - 20), 'paint', 'quarter_nose')
         box('body', (x0, W_TOP, RA1), (4, 17 - W_TOP, 40 - RA1), 'paint', 'quarter_tail')
         # B pillar between the door windows, drip rail along the roof edge
-        box('body', (16 if s > 0 else -18, ROOF_BOT, 0), (2, BELT - ROOF_BOT, 2), 'paint', 'b_pillar', gaps=False)
+        box('body', (16 if s > 0 else -18, ROOF_BOT, 0), (2, BELT - ROOF_BOT, 2), 'bakelite', 'b_pillar')
         box('body', (17 if s > 0 else -18, ROOF_TOP + 1, -9), (1, 1, 23), 'chrome', 'drip')
     # valance + chassis between the wheels, front and rear (painted faces, dark underside)
     box('body', (-14, W_TOP, -40), (28, 18 - W_TOP, 21), 'chassis', 'front_chassis')

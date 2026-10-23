@@ -149,6 +149,21 @@ SOUNDS = {
 # No character speaks (docs/design/casa_terror.md 0.3): there are no spoken-line events any more. Only non-verbal
 # sounds live here; the hunter's own voice imitation goes through Simple Voice Chat (com.deadline.voice).
 
+# --- car / overworld (the hunter's car, tools/audio/snd_car.py; loops are played and pitched by client CarSounds)
+SOUNDS.update({
+    'car.engine_start': (1, 'Arranca el motor', 'Engine starts', False),
+    'car.idle': (1, 'Motor en marcha', 'Engine idles', False),
+    'car.rev': (1, 'Motor acelerando', 'Engine revs', False),
+    'car.door_open': (1, 'Se abre la puerta del auto', 'Car door opens', False),
+    'car.door_close': (1, 'Se cierra la puerta del auto', 'Car door closes', False),
+    'car.horn': (1, 'Bocina', 'Car horn', False),
+    'car.radio_static': (1, 'Estática de radio', 'Radio static', False),
+    'car.gravel': (1, 'Ruedas sobre el ripio', 'Tyres on gravel', False),
+    'car.bump': (1, 'El auto choca', 'Car bumps', False),
+    'car.lights': (1, 'Clic de las luces', 'Light switch clicks', False),
+})
+# --- end car / overworld
+
 
 def java_name(s):
     return s.replace('.', '_').upper()

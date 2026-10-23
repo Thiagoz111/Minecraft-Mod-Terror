@@ -267,6 +267,42 @@ FACE_P = [
 ]
 assert all(len(r) == 16 for r in FACE_P), [len(r) for r in FACE_P]
 
+# ---- B2 'rota' look (the hunt, Act 5): the glasses are gone and the face is bare.  Milky cataract eyes (W w, a ghost
+# of the iris g) in raw red lids (R) sunk in near-black sockets (D d); blood wells under the lower lids and runs down
+# both cheeks (B b, fresh r), streams from both nostrils over the lip and out of the gaping mouth (M) down the chin;
+# dark veins climb the forehead (V).  '.' = the normal char re-lit with the corpse ramp SKIN_R.
+FACE_R = [
+    # 0123456789012345
+    "................",   # r0
+    "...V........V...",   # r1
+    "....V......V....",   # r2
+    "..ddd......ddd..",   # r3   the brow ridge overhangs dark sockets
+    ".dRRRRd..dRRRRd.",   # r4   raw upper lids
+    "DwWWWwD..DwWWWwD",   # r5   milky cataracts, 5 wide
+    "DWWgWWD..DWWgWWD",   # r6   the drowned ghost of the iris
+    "DwWgWwD..DwWgWwD",   # r7
+    "dRwwwRd..dRwwwRd",   # r8   raw lower lids
+    ".dBrRBd..dBRrBd.",   # r9   blood wells under the eyes
+    "..B..B....B..B..",   # r10  ... and runs down the cheeks
+    "..B..b....b..B..",   # r11
+    "..b...rBBr...b..",   # r12  both nostrils bleed over the lip
+    "..B..MMMMMM..B..",   # r13  the mouth hangs open, black
+    "..B.BbrBBrbB.B..",   # r14  (jaw) blood pours over the lower lip
+    "..b..BrBBrB..b..",   # r15
+    ".....BbBBbB.....",   # r16
+    "......B..B......",   # r17
+]
+assert all(len(r) == 16 for r in FACE_R), [len(r) for r in FACE_R]
+SKIN_R = pal('#14181e', '#1d232b', '#28303a', '#343e4a', '#424d59', '#525e69', '#646f79', '#78828a', '#8c959b',
+             '#a2a9ad')
+GOWN = pal('#26221e', '#38332d', '#4c463e', '#625a50', '#797064', '#90867a', '#a69c8e', '#bab1a2', '#cbc3b5')
+GRIME = hx('#3a3326')
+BLOOD = pal('#1e0204', '#3a0508', '#5a090d', '#7c0e13', '#a1161b', '#c42a2a')
+BLOOD_DRY = pal('#2a1410', '#3e1d16', '#54281d')
+CATARACT = {'W': hx('#dfe2dc'), 'w': hx('#b9bfba'), 'g': hx('#8b9799')}
+VEIN_R = hx('#241c36')
+ROT_TEETH = pal('#4a3f2a', '#6e6142', '#958763', '#b6a983', '#cfc4a0')
+
 
 def face_char(x, y, grid):
     c = fl(x - GX0)
@@ -1192,7 +1228,15 @@ EMBER_RIM = (110, 22, 14, 255)
 
 def socket_glow(img, u0, v0, w, h):
     """Emissive decal on the skull front: in the possessed look the 2x2 ember deep in the black hole of her left eye
-    and the faint glowing rim round the hole (rhymes with Ofelia's broken eye).  Nothing in the normal look."""
+    and the faint glowing rim round the hole (rhymes with Ofelia's broken eye).  Nothing in the normal look.
+    'rota': the two milky cataracts glow dimly (a drowned grey-white), so she shows two pale eyes in the dark."""
+    if _PAINT['variant'] == 'rota':
+        px = img.load()
+        for j, row in enumerate(FACE_R):
+            for i, ch in enumerate(row):
+                if ch in 'Wwg' and i < w and j < h:
+                    px[u0 + i, v0 + j] = {'W': (178, 186, 180, 255), 'w': (120, 128, 124, 255), 'g': (70, 78, 80, 255)}[ch]
+        return
     if _PAINT['variant'] != 'poseida':
         return
     px = img.load()
@@ -1595,11 +1639,191 @@ MATS = {
 }
 
 
+# ---------------- B2: the 'rota' look (Act 5, the hunt) and its extra bones
+def _lum(c):
+    return (0.3 * c[0] + 0.59 * c[1] + 0.11 * c[2]) / 255.0
+
+
+def _veins(x, y, z, seed=0, width=0.022):
+    """Thin branching dark veins under the skin (ridged noise in bone-local texels)."""
+    return abs(fbm(x * 0.42 + 11, y * 0.42 + 7, z * 0.42 + 3, 2, 90 + seed) - 0.5) < width
+
+
+def rota_skin(ctx):
+    """Corpse skin: the possessed colour remapped onto a cold grey-blue ramp, dark veins, the face of FACE_R."""
+    n = nm(ctx)
+    f = ctx.face
+    x, y, z = bpos(ctx)
+    base = skin_paint(ctx, True)
+    if base is None:
+        return None
+    if n in ('skull', 'jaw', 'cheek', 'jowl', 'chin') and f == 'front':
+        ch = face_char(x, y, FACE_R)
+        if ch and ch != '.':
+            if ch in CATARACT:
+                return A(CATARACT[ch])
+            return A({'D': SKIN_R[0], 'd': SKIN_R[2], 'R': mix(BLOOD[3], SKIN_R[5], 0.3), 'B': BLOOD[2], 'b': BLOOD[3],
+                      'r': BLOOD[4], 'V': VEIN_R, 'M': hx('#060203')}[ch])
+        base_ch = face_char(x, y, FACE)
+        if base_ch and base_ch.isdigit():
+            return A(SKIN_R[max(0, int(base_ch) - 1)])
+    if n == 'cheek' and f == 'front':
+        return A(SKIN_R[3])                                             # sunken, no rouge
+    if n == 'nose_tip' and f == 'bottom':
+        return A(BLOOD[1])                                              # the nostrils bleed
+    if n == 'neck' and f == 'front':
+        lx, ly, lz = local(ctx)
+        if abs(lx - 2.5) < 1.2 or (fl(lx) == 4 and ly < 3.5):
+            return A(BLOOD[2] if fl(ly + lx) % 3 else BLOOD[3])         # the blood keeps running down the neck
+    v = _lum(base)
+    idx = max(0, min(9, int(v * 12.0) - 1))
+    c = SKIN_R[idx]
+    if n not in ('skull',) or f != 'front':
+        if _veins(x, y, z, sum(map(ord, n)) % 7):
+            return A(mix(c, VEIN_R, 0.75))
+    return A(c)
+
+
+def rota_gown(ctx, src):
+    """The cardigan and the floral dress become one filthy old cotton nightgown (camison): the print survives only as
+    a faded ghost, grime in the folds, and the front is soaked with the blood that pours out of her mouth."""
+    f = ctx.face
+    n = nm(ctx)
+    x, y, z = bpos(ctx)
+    lx, ly, lz = local(ctx)
+    v = _lum(src) * 0.55 + 0.42 + face_light(ctx) * 0.6
+    g = fbm(x * 0.21 + 50, y * 0.21 + 9, z * 0.21, 3, 41)
+    c = pick(GOWN, v - (0.18 if g > 0.62 else 0.0))
+    if g > 0.58:
+        c = mix(c, GRIME, (g - 0.58) * 2.2)
+    if f == 'front' and n in ('torso', 'cpanel', 'hips', 'cpanel_lo', 'skirt_f', 'hem') and abs(x) < 5.0:
+        # the bib: soaked under the collar, drip columns running down the front, dried brown below
+        col = fl(x + 20)
+        drip = -9.0 + 7.0 * h2(col, 3, 17) + (8.0 if n in ('hips', 'cpanel_lo') else 0.0)
+        if n == 'torso' and y < -4.5 + 1.5 * h2(col, 1, 9):
+            return A(BLOOD[2] if (fl(x) + fl(y)) % 4 else BLOOD[1])
+        if n == 'torso' and h2(col, 5, 3) > 0.45 and y < drip + 6.0:
+            return A(BLOOD[3] if h2(col, fl(y), 2) > 0.3 else BLOOD[2])
+        if n in ('hips', 'cpanel_lo', 'skirt_f', 'hem') and h2(col, 7, 5) > 0.7 and ly < 4.0:
+            return A(BLOOD_DRY[1])
+    if fbm(x * 0.33 + 3, y * 0.33 + 70, z * 0.33, 2, 77) > 0.72:
+        return A(mix(c, BLOOD_DRY[1], 0.7))                             # old dried stains
+    if f in SIDE and n in ('skirt_f', 'skirt_b', 'hem') and ly > ctx.cube.size[1] - 2.0:
+        return A(mix(c, GRIME, 0.55))                                   # the hem dragged over floors
+    return A(c)
+
+
+def rota_paint(ctx):
+    k = kind(ctx)
+    if k == 'skin':
+        return rota_skin(ctx)
+    if k in ('card', 'dress'):
+        src = MATS[k](ctx, True)
+        return None if src is None else rota_gown(ctx, src)
+    if k == 'stock':
+        # bare legs: corpse skin with varicose veins (the stockings are gone)
+        src = stock_paint(ctx, True)
+        x, y, z = bpos(ctx)
+        c = SKIN_R[max(0, min(9, int(_lum(src) * 11.0)))]
+        if _veins(x, y, z, 5, 0.03):
+            return A(mix(c, VEIN_R, 0.8))
+        return A(c)
+    if k in ('hair', 'brow'):
+        src = MATS[k](ctx, True)
+        if src is None:
+            return None
+        return A(mix(src, hx('#7d7462'), 0.28))                         # greasy, yellowed white
+    if k in ('felt', 'sole', 'pearl', 'gold', 'tennis', 'foam', 'bag', 'knitting', 'wool', 'oak', 'gourd', 'metal',
+             'aid', 'tissue', 'lens', 'frame'):
+        src = MATS[k](ctx, True)
+        if src is None:
+            return None
+        return A(mix(src, GRIME, 0.45))
+    if k == 'teeth':
+        src = dentures_paint(ctx, True)
+        return A(mix(src, ROT_TEETH[2], 0.4))
+    if k == 'maw':
+        src = maw_paint(ctx, True)
+        if src is None:
+            return None
+        return A(mix(src, BLOOD[1], 0.35))
+    fn = MATS.get(k)
+    return fn(ctx, True) if fn else A(hx('#ff00ff'))
+
+
+def fang_paint(ctx, P):
+    """Rows of rotten teeth (zero-depth planes): long, uneven, yellow-brown with dark roots and gaps between them."""
+    lx, ly, lz = local(ctx)
+    w, h = ctx.cube.size[0], ctx.cube.size[1]
+    i, j = fl(lx), fl(ly)
+    up = getattr(ctx.cube, 'up', False)              # teeth pointing up (lower row): the root is at the bottom
+    if h2(i, 0, 31 + ctx.cube.seed) < 0.22:
+        return None                                  # a missing tooth
+    length = 1 + fl(h2(i, 1, 33 + ctx.cube.seed) * h)
+    k = (h - 1 - j) if up else j                     # distance from the root
+    if k >= length:
+        return None
+    if k == 0:
+        return A(BLOOD[2] if h2(i, 2, 35) > 0.5 else GUM[1])
+    return A(ROT_TEETH[min(4, 2 + (1 if i % 2 else 0) + (1 if k == length - 1 else 0))] if h2(i, k, 37) > 0.15
+             else BLOOD[3])
+
+
+def jawlong_paint(ctx, P):
+    """The unhinged lower jaw hanging to the chest: stretched grey skin split by tendon lines, blood sheeting down."""
+    f = ctx.face
+    lx, ly, lz = local(ctx)
+    w, h, d = ctx.cube.size
+    if f == 'top':
+        return A(MOUTH[1] if lz > 1.0 else BLOOD[2])                    # inside: the black gullet
+    v = 0.42 + face_light(ctx) - ly * 0.012
+    c = pick(SKIN_R, v)
+    if f == 'front':
+        col = fl(lx)
+        if col in (3, 6) or (col in (2, 7) and ly < 4):
+            return A(BLOOD[3] if fl(ly) % 4 else BLOOD[2])             # sheets of blood off the lip
+        if col in (1, 8) and fl(ly) % 2 == 0:
+            return A(SKIN_R[2])                                         # tendons straining
+        if ly > h - 1.5:
+            return A(SKIN_R[5])                                         # the chin knob at the bottom
+    if f in ('west', 'east') and fl(ly) % 3 == 0:
+        return A(SKIN_R[2])
+    return A(c)
+
+
+def talon_paint(ctx, P):
+    """Long jointed fingers (rota): grey-blue, dark knuckle rings every 3 texels, black split nails."""
+    lx, ly, lz = local(ctx)
+    if nm(ctx) == 'nail':
+        return A((hx('#4a4552'), hx('#211d27'), hx('#0b090e'))[min(2, fl(ly))])
+    if fl(ly) % 3 == 2:
+        return A(SKIN_R[2])
+    return A(pick(SKIN_R, 0.45 + face_light(ctx)))
+
+
+def vertebra_paint(ctx, P):
+    """Vertebrae and shoulder blades pushing up through the torn gown: yellow-grey bone, bloody torn edges."""
+    f = ctx.face
+    n = nm(ctx)
+    if n == 'tear':
+        lx, ly, lz = local(ctx)
+        if ctx.i in (0, ctx.w - 1) or ctx.j in (0, ctx.h - 1):
+            return A(BLOOD[2])
+        return A(MOUTH[2])
+    v = 0.55 + face_light(ctx)
+    return A(pick(ROT_TEETH, v) if f != 'bottom' else BLOOD[1])
+
+
+MATS.update({'fang': fang_paint, 'jawlong': jawlong_paint, 'talon': talon_paint, 'vertebra': vertebra_paint})
+
+
 def make_mat(variant):
     P = variant == 'poseida'
 
     def mat(ctx):
         _PAINT['variant'] = variant
+        if variant == 'rota':
+            return rota_paint(ctx)
         fn = MATS.get(kind(ctx))
         if fn is None:
             return A(hx('#ff00ff'))
@@ -1751,14 +1975,18 @@ def arm_ik(Wc, sh, target, hint=None, w_hint=0.02, guess=(-40, 0, 0, -30), fa_y=
 # ------------------------------------------------------------------ toggles (Java: ModelPart.visible)
 LOOSE = tuple(f'hair_loose_{k}' for k in range(5))
 # bone -> visible in the default look ('normal') at rest ('stand_walker')
+# B2 'rota' bones (glasses become a toggle too: she loses them in the hunt)
+ROTA_BONES = ('jaw_long', 'teeth_upper', 'right_talons', 'left_talons', 'spine')
 TOGGLE_DEFAULT = dict({
-    'walker': True, 'bun': True, 'right_slipper': True,
+    'walker': True, 'bun': True, 'right_slipper': True, 'glasses': True,
     'rocker': False, 'needle_right': False, 'needle_left': False, 'mate': False, 'chancleta': False,
     'yarn_right': False, 'yarn_left': False, 'dentures': False,
-}, **{h: False for h in LOOSE})
+}, **{h: False for h in LOOSE}, **{b: False for b in ROTA_BONES})
 VARIANT_TOGGLES = {
     'normal': {},
     'poseida': dict({'bun': False}, **{h: True for h in LOOSE}),
+    'rota': dict({'bun': False, 'glasses': False, 'walker': False}, **{h: True for h in LOOSE},
+                 **{b: True for b in ROTA_BONES}),
 }
 SEATED = {'walker': False, 'rocker': True}
 POSE_TOGGLES = {
@@ -1771,6 +1999,13 @@ POSE_TOGGLES = {
     'scream_dentures': dict(SEATED, dentures=True),
     'sew_calm': dict(SEATED),
     'offer_mate': {'mate': True},
+    # B2 hunt poses (shown with the 'rota' look; no walker, no rocker)
+    'crawl_spider': {'walker': False},
+    'stand_tall': {'walker': False},
+    'neck_twist': {'walker': False},
+    'listen': {'walker': False},
+    'ceiling_hang': {'walker': False},
+    'jumpscare': {'walker': False},
 }
 
 
@@ -1866,6 +2101,13 @@ def build(variant=None, pose=None):
     box('chest', (-7, -9, -5.5), (5, 9, 1), 'card', 'cpanel', sx=-1)
     box('chest', (2, -9, -5.5), (5, 9, 1), 'card', 'cpanel', sx=1)
     box('chest', (-4, -8.6, -5.65), (8, 7, 0), 'pearl', 'pearls')
+    # B2 'rota' (toggle): the spine and the shoulder blades push up through a tear in the back of the gown
+    bone('spine', 'chest', (0, -6, 6.5))
+    box('spine', (-2.5, -5, 0.05), (5, 10, 0), 'vertebra', 'tear')
+    for k in range(5):
+        box('spine', (-1, -4.5 + 2.2 * k, -0.6), (2, 2, 2), 'vertebra', 'vertebra')
+    box('spine', (-6.0, -4.0, -0.3), (3, 5, 1), 'vertebra', 'blade')
+    box('spine', (3.0, -4.0, -0.3), (3, 5, 1), 'vertebra', 'blade')
 
     # ---------------- neck + head (the head juts forward and looks up at you)
     bone('neck', 'chest', (0, -8.5, -1), rot=(NECK_TILT, 0, 0))
@@ -1932,6 +2174,14 @@ def build(variant=None, pose=None):
     bone('dentures_lower', 'dentures', (0, -1, 1.5), rot=(36, 0, 0))
     box('dentures_lower', (-3.5, 0, -3), (7, 2, 3), 'teeth', 'denture_lo')
 
+    # B2 'rota' (toggles): a row of rotten upper teeth behind the lip (hidden inside the closed jaw) and the unhinged
+    # lower jaw: a long slab of stretched skin hanging off the jaw down to the chest, its own row of teeth on top
+    bone('teeth_upper', H, (0, 0, 0))
+    box('teeth_upper', (-4.5, -0.2, -8.7), (9, 2, 0), 'fang', 'fang_up')
+    bone('jaw_long', 'jaw', (0, 0, 0))
+    box('jaw_long', (-5, 2.5, -7.6), (10, 10, 6), 'jawlong', 'jawlong')
+    box('jaw_long', (-4.5, -2.2, -7.9), (9, 2, 0), 'fang', 'fang_lo', up=True)
+
     # possessed: the bun undone into long white locks drifting as if under water (toggles).  Radial: one up from
     # the crown, two out to the sides and down past the shoulders, two drooping down the back -- none reaches
     # back into the rocker.  Each bone holds two crossed planes of two S-curved locks; Java ripples 'hair_loose_'.
@@ -1961,6 +2211,11 @@ def build(variant=None, pose=None):
             box(hand, (fx0, 3, -1.2), (1, 3, 2), 'skin', 'finger', sx=sx, ring=(sx > 0 and fi == 0))
         box(hand, ((-2.6 if sx < 0 else 1.6), 0.5, -2.2), (1, 3, 1), 'skin', 'thumb', sx=sx)
         box(hand, (-2, 5, -0.2), (4, 3, 0), 'skin', 'claws', sx=sx)       # long nails: possessed texture only
+        # B2 'rota' (toggle): the fingers keep growing -- three long jointed talons with split black nails
+        tal = bone(f'{side}_talons', hand, (0, 0, 0))
+        for fx0 in (-2.0, -0.5, 1.0):
+            box(tal, (fx0, 5.5, -1.0), (1, 9, 1), 'talon', 'talon', sx=sx)
+            box(tal, (fx0, 14.5, -1.0), (1, 3, 0), 'talon', 'nail', sx=sx)
         if sx > 0:
             box(fa, (-1.2, 4.3, -2.2), (3, 3, 0), 'tissue', 'tissue')     # tissue tucked into the cuff
 
@@ -2035,7 +2290,7 @@ def build(variant=None, pose=None):
     box('rocker_back', (-8.5, -33, 0), (17, 29, 0), 'oak', 'spindles')
     box('rocker_back', (-6, -36, -1.7), (12, 8, 0), 'oak', 'doily')
 
-    m = NonaModel('nona', 256, 144, B.r.roots)
+    m = NonaModel('nona', 256, 160, B.r.roots)   # 160: room for the B2 'rota' bones
     m.scale = 0.5
     if pose is None and os.path.basename(sys.argv[0]) == 'preview.py':
         pose = _argv('--pose')
@@ -2047,7 +2302,7 @@ def build(variant=None, pose=None):
 
 
 DEFAULT_MAT = make_mat('normal')
-VARIANT_MATS = {'normal': DEFAULT_MAT, 'poseida': make_mat('poseida')}
+VARIANT_MATS = {'normal': DEFAULT_MAT, 'poseida': make_mat('poseida'), 'rota': make_mat('rota')}
 FOCUS = 'head'
 
 
@@ -2156,6 +2411,50 @@ POSE_TARGETS = {
         ik=[('right', ('body', SCREAM_WRIST[0]), (0.45, 0.0, -1.0), (0.3, -1.0, -0.35), ('body', SCREAM_ELBOW[0])),
             ('left', ('body', SCREAM_WRIST[1]), (-0.45, 0.0, -1.0), (-0.3, -1.0, -0.35), ('body', SCREAM_ELBOW[1]))],
         float_=True),
+    # ---- B2 hunt poses (the 'rota' look, Act 5).  Java (NonaRotaModel) adds the stretch scales and the gait cycles.
+    # listen: frozen mid-step, head cocked hard to one side, chin up, sniffing; the talons hang in front of her
+    'listen': {
+        'add': {'chest': (-10, 8, 0), 'neck': (-14, 22, 0), 'head': (18, 28, 34), 'jaw': (16, 0, 0),
+                'right_brow': (0, 0, -10), 'left_brow': (0, 0, 10)},
+        'ik': [('right', ('body', (-8.0, -3.0, -11.0)), (0.2, 1.0, -0.2), (-0.2, 0.7, -0.7), ('body', (-12, -8, -4))),
+               ('left', ('body', (9.0, -6.0, -10.0)), (-0.2, 1.0, -0.3), (0.3, 0.5, -0.8), ('body', (13, -10, -4)))],
+    },
+    # stand_tall: the hunch straightened out, the head level, the arms hanging straight to the knees (Java scales
+    # legs / spine / neck / arms up to ~2.4 blocks on top of this)
+    'stand_tall': {
+        'add': {'chest': (-24, 0, 0), 'neck': (-30, 0, 0), 'head': (60, 0, 0), 'jaw': (10, 0, 0)},
+        'ik': [('right', ('chest', (-8.5, 3.5, 1.0)), (1, 0, 0), (0, 1, 0), ('chest', (-9, -2, 3))),
+               ('left', ('chest', (8.5, 3.5, 1.0)), (-1, 0, 0), (0, 1, 0), ('chest', (9, -2, 3)))],
+    },
+    # neck_twist: ONLY the twist (add it on top of any body pose): the head turned 180 deg round over the shoulder
+    'neck_twist': {'add': {'neck': (0, 70, 0), 'head': (0, 110, 12), 'jaw': (12, 0, 0)}},
+    # crawl_spider: the Exorcist bridge -- belly up, hands and feet on the floor, the head upside down at the front
+    # facing where she goes, hips the highest point (~0.45 blocks)
+    'crawl_spider': {
+        'add': {'base': (-90, 180, 0), 'chest': (-25, 0, 0), 'neck': (-40, 0, 0), 'head': (-10, 0, 8), 'jaw': (26, 0, 0),
+                'right_leg': (55, 0, 28), 'left_leg': (55, 0, -28), 'right_shin': (38, 0, 0), 'left_shin': (38, 0, 0),
+                'skirt_front': (-30, 0, 0), 'skirt_back': (40, 0, 0)},
+        'off': {'base': (0, -15, 21), 'jaw': (0, 3.0, 0)},
+        'ik': [('right', (14.0, 19.0, -14.0), (0, 1, 0), (0.3, 0.35, -0.9), (12.0, 6.0, -6.0)),
+               ('left', (-14.0, 19.0, -14.0), (0, 1, 0), (-0.3, 0.35, -0.9), (-12.0, 6.0, -6.0))],
+    },
+    # ceiling_hang: upside down from the ceiling like a spider, the feet on it, the head hanging, looking down at you,
+    # the talons reaching down (the model hangs inside her box: base raised 46 = the ceiling 1.44 blocks over her)
+    'ceiling_hang': {
+        'add': {'base': (0, 0, 180), 'head': (-55, 0, 14), 'neck': (-10, 0, 0), 'jaw': (30, 0, 0),
+                'right_leg': (0, 0, -22), 'left_leg': (0, 0, 22)},
+        'off': {'base': (0, -46, 0), 'jaw': (0, 4.0, 0)},
+        'ik': [('right', (13.0, 16.5, -9.0), (0, 0.2, -1), (0.3, 1.0, -0.3), (15.0, 10.0, -2.0)),
+               ('left', (-13.0, 16.5, -9.0), (0, 0.2, -1), (-0.3, 1.0, -0.3), (-15.0, 10.0, -2.0))],
+    },
+    # jumpscare: lunging at you, the jaw unhinged to the chest, the talons framing the face
+    'jumpscare': {
+        'add': {'chest': (6, 0, 0), 'neck': (8, 0, 0), 'head': (-22, 0, -6), 'jaw': (38, 0, 0),
+                'right_brow': (0, 0, 24), 'left_brow': (0, 0, -24)},
+        'off': {'jaw': (0, 8.0, -1.0)},
+        'ik': [('right', ('body', (-12.0, -21.0, -15.0)), (0.3, 0.0, -1.0), (0.3, -1.0, -0.3), ('body', (-17.0, -13.0, -6.0))),
+               ('left', ('body', (12.0, -21.0, -15.0)), (-0.3, 0.0, -1.0), (-0.3, -1.0, -0.3), ('body', (17.0, -13.0, -6.0)))],
+    },
 }
 # prop -> (pose that shows it, local axis a, world direction a, local axis b, world direction b)
 PROP_AIM = {
@@ -2167,7 +2466,8 @@ PROP_AIM = {
     'yarn_left': ('yarn_cast', (0, 1, 0), (0.86, -0.32, -0.4), (0, 0, -1), (0, -1, 0)),
 }
 POSE_ORDER = ['stand_walker', 'knit_sit', 'stand_no_walker', 'throw_chancleta', 'float_rock', 'yarn_cast',
-              'scream_dentures', 'sew_calm', 'offer_mate']
+              'scream_dentures', 'sew_calm', 'offer_mate',
+              'listen', 'stand_tall', 'neck_twist', 'crawl_spider', 'ceiling_hang', 'jumpscare']
 
 
 def _wrap_near(a, ref):
@@ -2664,6 +2964,84 @@ POSES = {
         'right_arm': (-0.6119, 0.113, 0.0415, 0, 0, 0),
         'right_forearm': (0.521, -0.0061, 0, 0, 0, 0),
         'right_hand': (-1.2668, -0.1021, -0.0578, 0, 0, 0),
+    },
+    'listen': {
+        'chest': (-0.1745, 0.1396, 0, 0, 0, 0),
+        'neck': (-0.2443, 0.384, 0, 0, 0, 0),
+        'head': (0.3142, 0.4887, 0.5934, 0, 0, 0),
+        'right_brow': (0, 0, -0.1745, 0, 0, 0),
+        'left_brow': (0, 0, 0.1745, 0, 0, 0),
+        'jaw': (0.2793, 0, 0, 0, 0, 0),
+        'right_arm': (-1.2287, -0.2912, 1.4421, 0, 0, 0),
+        'right_forearm': (0.6506, -0.3602, 0, 0, 0, 0),
+        'right_hand': (0.1778, -0.9395, -0.1045, 0, 0, 0),
+        'left_arm': (-0.5237, 0.4997, -0.7781, 0, 0, 0),
+        'left_forearm': (0.5123, 0.2852, 0, 0, 0, 0),
+        'left_hand': (0.2722, 1.3833, 0.003, 0, 0, 0),
+    },
+    'stand_tall': {
+        'chest': (-0.4189, 0, 0, 0, 0, 0),
+        'neck': (-0.5236, 0, 0, 0, 0, 0),
+        'head': (1.0472, 0, 0, 0, 0, 0),
+        'jaw': (0.1745, 0, 0, 0, 0, 0),
+        'right_arm': (0.0222, -1.4943, 0.0647, 0, 0, 0),
+        'right_forearm': (0.4645, -0.1038, 0, 0, 0, 0),
+        'right_hand': (-0.7932, -0.748, 0.0534, 0, 0, 0),
+        'left_arm': (0.0222, 1.4943, -0.0647, 0, 0, 0),
+        'left_forearm': (0.4645, 0.1038, 0, 0, 0, 0),
+        'left_hand': (-0.7932, 0.748, -0.0534, 0, 0, 0),
+    },
+    'neck_twist': {
+        'neck': (0, 1.2217, 0, 0, 0, 0),
+        'head': (0, 1.9199, 0.2094, 0, 0, 0),
+        'jaw': (0.2094, 0, 0, 0, 0, 0),
+    },
+    'crawl_spider': {
+        'base': (-1.5708, 3.1416, 0, 0, -15, 21),
+        'skirt_front': (-0.5236, 0, 0, 0, 0, 0),
+        'skirt_back': (0.6981, 0, 0, 0, 0, 0),
+        'right_leg': (0.9599, 0, 0.4887, 0, 0, 0),
+        'right_shin': (0.6632, 0, 0, 0, 0, 0),
+        'left_leg': (0.9599, 0, -0.4887, 0, 0, 0),
+        'left_shin': (0.6632, 0, 0, 0, 0, 0),
+        'chest': (-0.4363, 0, 0, 0, 0, 0),
+        'neck': (-0.6981, 0, 0, 0, 0, 0),
+        'head': (-0.1745, 0, 0.1396, 0, 0, 0),
+        'jaw': (0.4538, 0, 0, 0, 3, 0),
+        'right_arm': (1.6531, 0.5683, 1.833, 0, 0, 0),
+        'right_forearm': (0.547, 0.6438, 0, 0, 0, 0),
+        'right_hand': (0.3902, 1.4377, 0.5266, 0, 0, 0),
+        'left_arm': (1.6531, -0.5683, -1.833, 0, 0, 0),
+        'left_forearm': (0.547, -0.6438, 0, 0, 0, 0),
+        'left_hand': (0.3902, -1.4377, -0.5266, 0, 0, 0),
+    },
+    'ceiling_hang': {
+        'base': (0, 0, 3.1416, 0, -46, 0),
+        'right_leg': (0, 0, -0.384, 0, 0, 0),
+        'left_leg': (0, 0, 0.384, 0, 0, 0),
+        'neck': (-0.1745, 0, 0, 0, 0, 0),
+        'head': (-0.9599, 0, 0.2443, 0, 0, 0),
+        'jaw': (0.5236, 0, 0, 0, 4, 0),
+        'right_arm': (0.5456, 0.0328, 1.8334, 0, 0, 0),
+        'right_forearm': (0.6497, -0.1491, 0, 0, 0, 0),
+        'right_hand': (0.049, -0.5205, 0.2697, 0, 0, 0),
+        'left_arm': (0.5456, -0.0328, -1.8334, 0, 0, 0),
+        'left_forearm': (0.6497, 0.1491, 0, 0, 0, 0),
+        'left_hand': (0.049, 0.5205, -0.2697, 0, 0, 0),
+    },
+    'jumpscare': {
+        'chest': (0.1047, 0, 0, 0, 0, 0),
+        'neck': (0.1396, 0, 0, 0, 0, 0),
+        'head': (-0.384, 0, -0.1047, 0, 0, 0),
+        'right_brow': (0, 0, 0.4189, 0, 0, 0),
+        'left_brow': (0, 0, -0.4189, 0, 0, 0),
+        'jaw': (0.6632, 0, 0, 0, 8, -1),
+        'right_arm': (0.2642, 0.2373, 1.8332, 0, 0, 0),
+        'right_forearm': (0.6622, -0.2598, 0, 0, 0, 0),
+        'right_hand': (0.2108, -0.9485, 0.7, 0, 0, 0),
+        'left_arm': (0.2642, -0.2373, -1.8332, 0, 0, 0),
+        'left_forearm': (0.6622, 0.2598, 0, 0, 0, 0),
+        'left_hand': (0.2108, 0.9485, -0.7, 0, 0, 0),
     },
 }
 # <<< POSES

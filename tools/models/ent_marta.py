@@ -15,6 +15,7 @@ import numpy as np
 from mcmodel import Model, hash3, face_light, pick, rot_matrix
 from rig import Rig
 from paint import hx, mix
+import ent_copia_look as copia
 
 
 def H(*cs):
@@ -695,6 +696,10 @@ assert all(len(r) == 16 for r in CREAM_MAP)
 
 
 def face_rgba(ch):
+    if _FACE_ACTIVE[0] is not FACE:
+        cc = copia.char_rgba(ch)
+        if cc is not None:
+            return cc
     if ch.isdigit():
         return SKIN[int(ch)]
     return {
@@ -730,10 +735,10 @@ def skin_mat(ctx):
     if n == 'dollop':
         return dollop_paint(ctx)
     if n in ('skull', 'jaw', 'jowl') and f == 'front':
-        cc = cream_rgba(grid_char(CREAM_MAP, x, y) or '.')
+        cc = cream_rgba(grid_char(CREAM_MAP, x, y) or '.') if _FACE_ACTIVE[0] is FACE else None
         if cc is not None:
             return A(cc)
-        ch = grid_char(FACE, x, y)
+        ch = grid_char(_FACE_ACTIVE[0], x, y)
         if ch and ch not in '.x ':
             return A(face_rgba(ch))
     if n == 'jowl':
@@ -1066,6 +1071,45 @@ def phone_led(img, u0, v0, w, h):
 
 
 DEFAULT_MAT = marta_mat
+
+# ------------------------------------------------------------------ B3: look 'copia' (casa_terror.md 2 Act 5, event 41)
+# The thing upstairs with Marta's face: the same face with the eyes one texel further apart and wide open (white all
+# round a pinpoint, never blinking), a grin from cheek to cheek showing every tooth, no night cream (a copy is never
+# smeared), and grey skin on every skin texel.  Index 2 in Java (FamilyEntity.LOOK_COPIA): marta_copia.png.
+COPIA_FACE = copia.check([
+    "HHHHHHHHHHHHHHHH",   # r0
+    "5678888888887765",   # r1
+    "5678888888w88765",   # r2  (brows)
+    "5678888888888765",   # r3  (brows)
+    "5677777777777765",   # r4  no lids: nothing shades the eyes
+    "5LLLL677776LLLL5",   # r5  a thin lash line, the eyes moved one texel out
+    "5EEEE677776EEEE5",   # r6  white ABOVE the pupil
+    "5EEOE677776EOEE5",   # r7  the pinpoints, turned in: she looks straight at you
+    "5eEEE677776EEEe5",   # r8  white BELOW the pupil: wide open
+    "N5666666nn66665N",   # r9  the grin's corners pulled up into the cheeks
+    "4NZZZZZZZZZZZZN4",   # r10 the upper lip line, edge to edge
+    "4" + copia.teeth_row(14) + "4",   # r11 upper teeth
+    "xZ" + copia.teeth_row(12, 'Y') + "Zx",   # r12 lower teeth (jaw + jowls)
+    "x4GZZZZZZZZZZG4x",   # r13 gum line
+    "x345667ww766543x",   # r14 chin
+    "xxxx45666654xxxx",   # r15
+], 16)
+_FACE_ACTIVE = [FACE]
+
+
+def copia_mat(ctx):
+    _FACE_ACTIVE[0] = COPIA_FACE
+    try:
+        col = marta_mat(ctx)
+    finally:
+        _FACE_ACTIVE[0] = FACE
+    if col is not None and ctx.cube.kind == 'skin':
+        return copia.grey(col)
+    return col
+
+
+copia_mat.look = 'copia'
+VARIANT_MATS = {'normal': DEFAULT_MAT, 'copia': copia_mat}
 FOCUS = 'head'
 
 # ------------------------------------------------------------------ toggles (Java: ModelPart.visible)

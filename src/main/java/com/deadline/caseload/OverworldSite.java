@@ -77,7 +77,7 @@ public final class OverworldSite {
 			BlockPos c = new BlockPos(from.getX() + (int) (Math.cos(a) * 275), sea, from.getZ() + (int) (Math.sin(a) * 275));
 			Pair<BlockPos, Holder<Biome>> hit;
 			try {
-				hit = level.findClosestBiome3d(OverworldSite::preferred, c, 128, 16, 64);
+				hit = level.findClosestBiome3d(OverworldSite::preferred, c, 128, 16, 400);  // only around sea level
 			} catch (RuntimeException ex) {
 				DeadLine.LOGGER.warn("Biome search failed around {}", c, ex);
 				hit = null;
@@ -124,7 +124,7 @@ public final class OverworldSite {
 			bestY = sea + 1;
 		}
 		// y = the first air layer above the ground; never so low that the basement would cut through the world floor
-		int y = Math.max(bestY + 1, level.getMinY() - def.min.getY() + 2);
+		int y = Math.max(bestY + 1, level.dimensionType().minY() - def.min.getY() + 2);
 		BlockPos origin = new BlockPos(best.getX() - centreX(def), y, best.getZ() - centreZ(def));
 		DeadLine.LOGGER.info("Overworld site {}: origin {} (score {}, {} biome candidates)", def.key, origin, (int) bestScore, candidates.size());
 		return origin;
@@ -238,7 +238,7 @@ public final class OverworldSite {
 		}
 
 		/** Levels up to `budget` columns; true when every column is done. */
-		boolean level(int budget) {
+		boolean levelColumns(int budget) {
 			BlockPos.MutableBlockPos m = new BlockPos.MutableBlockPos();
 			int total = columns();
 			while (cursor < total && budget-- > 0) {
@@ -328,7 +328,7 @@ public final class OverworldSite {
 	public static int prepareNow(ServerLevel level, CaseType type, BlockPos origin, SiteDef def) {
 		Job j = new Job(level, type, origin, def, null);
 		j.clearEntities();
-		j.level(Integer.MAX_VALUE);
+		j.levelColumns(Integer.MAX_VALUE);
 		return SitePlacer.placeNow(level, origin, def);
 	}
 
@@ -344,7 +344,7 @@ public final class OverworldSite {
 					}
 				}
 				case 1 -> {
-					if (j.level(COLUMNS_PER_TICK)) {
+					if (j.levelColumns(COLUMNS_PER_TICK)) {
 						j.phase = 2;
 						SitePlacer.place(j.level, j.origin, j.def, () -> j.phase = 3);
 					}

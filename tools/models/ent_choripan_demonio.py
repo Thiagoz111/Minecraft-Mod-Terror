@@ -20,7 +20,7 @@ dachshund tail (now big enough to read) still sticks up and wags.
 Face (the clip close-up and the jumpscare portrait): it must still be Choripan.  The dog's identity markers are
 kept -- tan muzzle and jowls, chunky tan brows (inner ends raised: puppy eyes), big almond eyes RECESSED in sockets
 under brown lids with a warm wet lower lid, and THE big glossy black nose with its wet highlight -- but the eyes are
-milk-white with tiny red pin pupils (emissive layer 'eyes') looking slightly inward, and the muzzle is TORN into four
+dirty, bloodshot and wet with black pinprick pupils in a red rim (only the rims glow) looking slightly inward, and the muzzle is TORN into four
 flaps (jaw_upper_right/left, jaw_lower_right/left) that peel back radially, like a flower, from the corners of a
 square MAW cut into the face: gum walls darkening to a black throat, two rings of needle teeth inside it.  The nose is
 split down a raw red seam, each half rides its upper flap; every flap is lined with uneven needle teeth (2-3 long fangs
@@ -654,48 +654,62 @@ EYE_Y = -15                  # top edge of the eyes (7 x 8, front at z = -13: on
 EYE_W, EYE_H = 7, 8
 HOLE = (-5.0, 5.0, -6.0, 3.0)
 THROAT_Z = -6.0
-# eye: 7 x 8, the dog's almond eye (brown upper lid over the top two rows, brown ring, warm wet lower lid), but the
-# eyeball is milk white with a tiny red pin pupil.  The pupil is added per side (both turned slightly inward: derp).
+# eye: 7 x 8, the dog's almond eye (brown upper lid over the top two rows, brown ring, a raw wet lower lid).  B3 pass:
+# no more milk-white googly eyes -- a dirty, yellowed, wet eyeball choked with burst veins, a pinprick pupil (ONE black
+# texel) inside a thin rim of dark blood-red iris, turned slightly inward; the lower rim raw and red.  Only the
+# pinprick's rim and one wet glint glow (emissive), so at night it is two tiny red points, not two headlights.
 EYE_ART = [
     "cLLLLLc",
     "LlllllL",
-    "lHHaaal",
-    "rHabbbr",
-    "bbbbbbb",
-    "rbbbbbr",
-    "rrcccrr",
+    "lssabsl",
+    "rabbbar",
+    "abbbbba",
+    "rabbbar",
+    "rRRRRRr",
     "cwwwwwc",
 ]
 LID = pal('#1e0c06', '#3a1a0c', '#5a2c14', '#7a4220')
-WET = pal('#8a5040', '#b87862', '#d49a80')
-EYE_COLS = {'c': FUR[1], 'L': LID[2], 'l': LID[0], 'r': LID[1], 'H': MILK[6], 'a': MILK[3], 'b': MILK[4],
-            'w': WET[1]}
-PUPIL_ROWS = (3, 4)
+WET = pal('#5a2a24', '#8a4a3e', '#b0705c')
+SCL = pal('#2e2422', '#5e5046', '#8e806c', '#b0a48c', '#cfc6b0')      # dirty, yellowed sclera (dark -> light)
+VEIN_R = (hx('#5e0c0e'), hx('#8a1a18'), hx('#a8342c'))
+IRIS_R = (hx('#2a0606'), hx('#4a0c0a'), hx('#6a1612'))
+PIN = hx('#030102')
+EYE_COLS = {'c': FUR[1], 'L': LID[2], 'l': LID[0], 'r': LID[1], 's': SCL[1], 'a': SCL[2], 'b': SCL[3],
+            'R': VEIN_R[0], 'w': WET[1]}
+PUPIL_ROW = 4
+# burst veins, (i, j) per side, crawling in from both corners toward the pupil ('r' = the right eye, on -X)
+VEINS = {'r': {(0, 4): 1, (1, 4): 2, (1, 5): 0, (2, 3): 2, (6, 4): 2},
+         'l': {(6, 4): 1, (5, 4): 2, (5, 5): 0, (4, 3): 2, (0, 4): 2}}
+
+
+def _pin(side):
+    return (4, PUPIL_ROW) if side == 'r' else (2, PUPIL_ROW)       # turned slightly inward
 
 
 def eye_px(i, j, side):
     ch = EYE_ART[j][i]
-    pi = 3 if side == 'r' else 2                     # pupil columns pi, pi+1 (turned inward)
-    if j in PUPIL_ROWS and i in (pi, pi + 1):
-        hot = (i == (pi if side == 'r' else pi + 1)) and j == PUPIL_ROWS[0]
-        return PUPIL if hot else PUPIL_D
+    pi, pj = _pin(side)
+    if (i, j) == (pi, pj):
+        return PIN
+    if j == pj and abs(i - pi) == 1:
+        return IRIS_R[1]                                             # the thin blood-red iris rim
+    if i == pi and j == pj - 1:
+        return IRIS_R[0]
     c = EYE_COLS[ch]
+    if ch in 'sab':
+        v = VEINS[side].get((i, j))
+        if v is not None:
+            return VEIN_R[v]
     if ch == 'L' and i in (2, 3):
         c = LID[3]                                   # a soft sheen on the lid
     if ch == 'w' and i in (1, 5):
         c = WET[0]
     if ch == 'w' and i == 3:
         c = WET[2]                                   # the wet line catches the light
-    if ch in 'ab' and ((j in PUPIL_ROWS and i in (pi - 1, pi + 2)) or
-                       (j in (PUPIL_ROWS[0] - 1, PUPIL_ROWS[1] + 1) and i in (pi, pi + 1))):
-        c = mix(c, BLOODSHOT, 0.2)                  # faint pink ring round the pinpoint
-    # bloodshot threads creeping in from the outer corner
-    if side == 'r' and (i, j) in ((0, 4), (1, 4), (1, 5)):
-        c = mix(c, BLOODSHOT, 0.55)
-    if side == 'l' and (i, j) in ((6, 4), (5, 4), (5, 5)):
-        c = mix(c, BLOODSHOT, 0.55)
-    if ch == 'c' and j == 6:
-        c = MILK[5]
+    if ch == 'R' and i in (2, 4):
+        c = VEIN_R[1]
+    if (i, j) == ((1, 2) if side == 'r' else (5, 2)):
+        c = SCL[4]                                   # one wet glint under the lid
     return c
 
 
@@ -707,19 +721,11 @@ def eye_mat(ctx):
 
 
 def eye_glow(side):
-    pts = []
-    for j in range(EYE_H):
-        for i in range(EYE_W):
-            ch = EYE_ART[j][i]
-            if ch not in 'Habc' or (ch == 'c' and j != 6):
-                continue
-            c = eye_px(i, j, side)
-            if c == PUPIL:
-                pts.append((i, j, hx('#ff4a2a')))
-            elif c == PUPIL_D:
-                pts.append((i, j, hx('#d01818')))
-            else:
-                pts.append((i, j, (int(c[0] * 0.82), int(c[1] * 0.86), int(c[2] * 0.9), 255)))
+    """Emissive: only the pinprick's red rim (dim) and the single wet glint -- two small red points in the dark."""
+    pi, pj = _pin(side)
+    pts = [(pi - 1, pj, hx('#8a1210')), (pi + 1, pj, hx('#8a1210')), (pi, pj - 1, hx('#5e0a0a'))]
+    g = (1, 2) if side == 'r' else (5, 2)
+    pts.append((g[0], g[1], hx('#8c8478')))
     return at(pts)
 
 
@@ -2898,7 +2904,7 @@ Units: radians for POSES and for every value quoted 'rad'; 'deg' values are degr
 texels at 2x density (inside scale_root: 2 texels = 1 vanilla pixel, 32 texels = 1 block), in the PARENT bone's space \
 (top-level bones: model space, +Y down, ground y = 24, the creature faces -Z, its right side is -X).  Every POSES value \
 is ADDED to the rest pose.  t = ageInTicks.  One look only (no VARIANT_MATS): the DOG form is the separate model \
-`choripan`.  Emissive layer 'eyes' (choripan_demonio_eyes.png): the two milk-white eyes with the red pinpoint pupils, \
+`choripan`.  Emissive layer 'eyes' (choripan_demonio_eyes.png): the red rims of the two black pinprick pupils (+ one wet glint each), \
 the ember clusters, the deep red core and the dim crown rim of the vomit column and the holy-water sparkles on the \
 blessed choripan; a hidden toggle bone must not draw its glow either (render the eyes pass through the same model with \
 the same visibility).
@@ -2977,7 +2983,7 @@ tag (child of neck, pivot = the collar ring): the brass 'CHORIPAN' name tag ({TA
   rotation = inverse(neck world rotation) * that; hang_tag() in this file is the reference), then add a damped
   pendulum xRot / zRot kicked by the neck's angular velocity (k 0.6, damping 0.9 per tick, clamp +-0.6).  Poses carry
   the frozen value of that plumb hang plus the swing each pose names.
-head (child of link_0, pivot = head joint): FOCUS bone.  The dachshund face kept: the milk-white almond eyes RECESSED
+head (child of link_0, pivot = head joint): FOCUS bone.  The dachshund face kept: the bloodshot, yellowed almond eyes (black pinprick pupils in a red rim) RECESSED
   one texel deep in sockets (brow ridge, blaze, temples, cheek band), brown upper lids over the top two rows, a warm
   wet lower lid, tiny red pin pupils (emissive) looking slightly inward; tan jowls; THE dog nose (8 x 3 + a 6 x 1
   leather bulb with the 2-texel wet highlight) split down a red seam across the two upper flaps; under the eyes the
@@ -3148,7 +3154,7 @@ by POSE_ANCHOR before blending, trail rule 9)
 Beat order (casa): unspool (cucha) -> trail chase (walk_* + run head) / lunge -> fetch_drop (casa.trae) -> lunge -> \
 beg (parrilla, while the choripan cooks; it circles the salt ring in trail mode between begs) -> catch -> chomps -> \
 vomit -> retract -> DOG.
-Jumpscare portrait: FOCUS 'head', pose 'lunge' (the open flower round the black maw, milk eyes, needle teeth).
+Jumpscare portrait: FOCUS 'head', pose 'lunge' (the open flower round the black maw, bloodshot pinprick eyes, needle teeth).
 """
 
 

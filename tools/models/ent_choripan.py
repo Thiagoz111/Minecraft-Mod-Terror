@@ -1134,18 +1134,21 @@ def muerto_px(ctx, col):
         if name == 'tongue':
             return mix(_dead_tone(col, 0.7, 0.6), hx('#4a3a46'), 0.35)
         if name in ('teeth', 'canine'):
-            if col is None or col[3] == 0:
+            if col[3] == 0:
                 return col
             if lum > 0.6:                                   # enamel: yellowed, a red line at the gum
                 stain = mix(col, hx('#a08a5c'), 0.4)
                 return mix(stain, GORE[3], 0.5) if (ctx.j == 0 or hash3(x * 3, y * 3, z * 3, 5) > 0.7) else stain
             return GORE[3]                                  # the gum rows between the teeth
-        if col[0] > col[2] + 30 and col[0] > 120 and col[1] < col[0] * 0.8:
-            return pick(GORE, 0.35 + 0.5 * lum)            # pink gums / palate -> raw red
-        base = _dead_tone(col)
-        # dried blood running from the lips down the chin
-        if f in ('front', 'west', 'east') and hash3(math.floor(x * 2), 0, math.floor(z * 2), 31) > 0.55:
-            return GORE[1] if hash3(x * 4, y * 4, z * 4, 2) > 0.4 else GORE[2]
+        pinkish = col[0] > 110 and col[2] >= col[1] - 6     # PINK gums / palate (tan fur has blue well under green)
+        if pinkish or name == 'mouth':
+            return pick(GORE, 0.25 + 0.6 * lum)            # -> raw red
+        base = _dead_tone(col, 0.78, 0.25)
+        # dried blood running from the lips down the chin: a few drips of different lengths
+        if f in ('front', 'west', 'east'):
+            k = hash3(ctx.i * 3 + (7 if f == 'front' else 0), 0, 1, 31 + len(name))
+            if k > 0.62 and ctx.j <= int(hash3(ctx.i, 2, 3, 17) * ctx.h * 1.2):
+                return GORE[1] if ctx.j > 0 else GORE[2]
         return base
     if getattr(c, 'knit', False) or name in ('bib', 'collar', 'wrap', 'knot'):
         # the sweater: soaked dark, blood dried down the front
@@ -1158,20 +1161,21 @@ def muerto_px(ctx, col):
     if name in FUR_PARTS:
         # matted coat: dark wet clumps along the hair direction, a few lighter dried tips, mud on the paws
         clump = vnoise(x * 0.9, y * 0.45, z * 0.9, 41)
-        base = _dead_tone(col, 0.6 + 0.22 * clump, 0.4)
+        strand = hash3(math.floor(x * 1.3), math.floor(y * 0.5), math.floor(z * 1.3), 43)
+        base = _dead_tone(col, 0.44 + 0.3 * clump + 0.12 * strand, 0.3)
         if hash3(x * 2, y * 2, z * 2, 77) > 0.93:
             base = mix(base, hx('#8a7a6c'), 0.25)              # dried, stiff tips
         if name in ('paw',) or (name == 'leg' and y > 20.5):
             return mix(base, MUD[1], 0.55)
         # blood: down the chin and the throat, crusted round the muzzle
-        if name in ('muzzle', 'bridge', 'cheek') and y > 11 and _blood_at(x, y, z, 3, 0.47):
-            return mix(base, GORE[1], 0.85)
+        if name in ('muzzle', 'bridge', 'cheek') and y > 13.5 and _blood_at(x, y, z, 3, 0.58):
+            return mix(base, GORE[1], 0.8)
         if name in ('neck', 'prow', 'keel') and z < -5 and y > 13 and _blood_at(x, y, z, 11, 0.5):
             return mix(base, GORE[2], 0.7)
         # black tears from the eyes
         if name in ('skull', 'cheek') and f == 'front':
             for ex in (-4.8, 3.8):
-                if abs(x - ex) < 0.6 and 10.0 < y < 15.5 and hash3(ex * 7, math.floor(y), 0, 9) > 0.2:
+                if abs(x - ex) < 0.6 and 12.0 < y < 16.5 and hash3(ex * 7, math.floor(y), 0, 9) > 0.2:
                     return DEAD_BLACK[2]
         return base
     return _dead_tone(col, 0.8, 0.3)
@@ -1598,6 +1602,20 @@ _POSES = {
                     'right_ear': (0, 0, -0.25, 0, 0, 0), 'left_ear': (0, 0, -0.3, 0, 0, 0),
                     'right_brow': (0, 0, -0.3, 0, 0.6, 0), 'left_brow': (0, 0, 0.3, 0, 0.6, 0),
                     'tail': (1.15, 0.4, 0, 0, 0, 0), 'tail_tip': (0.45, 0.3, 0, 0, 0, 0)},
+    # B3 'stand' (perro_mira, the dog that watches the house): upright on the hind legs LIKE A PERSON, facing you (not
+    # turned away like bipedal_180): the spine vertical, the front legs hanging limp at his sides with the paws
+    # dangling, the head brought back level and tilted onto his left shoulder, staring.  No wag, no breathing: Java
+    # keeps it perfectly still.  The tail hangs down between the hind legs.
+    'stand': {'body': (-1.5, 0, 0, 0, -1.5, -10.8),
+              'right_back_leg': (1.5, 0, 0.06, 0, 0, 0), 'left_back_leg': (1.5, 0, -0.06, 0, 0, 0),
+              'right_back_paw': (0.0, 0.12, 0, 0, 0, 0), 'left_back_paw': (0.0, -0.12, 0, 0, 0, 0),
+              'right_front_leg': (1.32, -0.46, 0, 0, 0, 0), 'left_front_leg': (1.32, 0.46, 0, 0, 0, 0),
+              'right_front_paw': (0.65, 0, 0, 0, 0, 0), 'left_front_paw': (0.65, 0, 0, 0, 0, 0),
+              'neck': (1.3, 0, 0, 0, 0, 0), 'head': (0.12, 0, 0.3, 0, 0, 0),
+              'lips': (-0.03, 0, 0, 0, -0.3, 0),
+              'right_ear': (0.15, 0, 0.1, 0, 0, 0), 'left_ear': (0.1, 0, -0.05, 0, 0, 0),
+              'right_brow': (0, 0, -0.25, 0, 0.5, 0), 'left_brow': (0, 0, 0.25, 0, 0.5, 0),
+              'tail': (1.7, 0.25, 0, 0, 0, 0), 'tail_tip': (0.45, 0.2, 0, 0, 0, 0)},
     'sneeze': {'body': (0.04, 0, 0, 0, 0, 0),
                'right_front_leg': (-0.22, 0, 0.06, 0, -0.3, 0), 'left_front_leg': (-0.22, 0, -0.06, 0, -0.3, 0),
                'neck': (0.22, 0, 0, 0, 0, 0), 'head': (0.12, 0, 0, 0, 0, 0),
@@ -1629,7 +1647,7 @@ _POSES = {
              'tail': (-0.5, 0, 0, 0, 0, 0)},
 }
 # the tag and the scarf tails hang plumb in every pose (+ a small swing where the motion would throw them)
-TAG_SWING = {'beg': (-0.3, 0), 'bark': (0.2, 0), 'sneeze': (-0.35, 0), 'belly_up': (0, 0.3),
+TAG_SWING = {'stand': (0.0, 0.0), 'beg': (-0.3, 0), 'bark': (0.2, 0), 'sneeze': (-0.35, 0), 'belly_up': (0, 0.3),
              'bipedal_180': (0.05, 0.08), 'sleep': (0, 0)}
 
 

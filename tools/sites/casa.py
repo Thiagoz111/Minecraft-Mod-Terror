@@ -469,7 +469,7 @@ def ground_floor(s, hs):
         z = 19 - k
         stair(s, -15, k, z, 'escalera_madera', 'north', replace=True)
         for y in range(0, k):
-            if (z, y) in ((16, 0), (15, 0), (15, 1)):
+            if y < {15: 2, 16: 2, 17: 1, 18: 0, 19: 0}[z]:
                 continue                       # headroom of the basement stair below
             hs.fill(-15, y, z, 'pared_cocina')
         if k >= 1:
@@ -564,8 +564,8 @@ def first_floor(s, hs):
         hs.paint(name)
     # the six doors along the corridor, alternating front / back (the cascade, from the fondo towards the stair)
     cascade = []
-    for (name, x, front, key, hinge) in (('matrimonial', -10, True, 'puerta_placa', 'left'),
-                                         ('lucia', -8, False, 'puerta_lucia', 'right'),
+    for (name, x, front, key, hinge) in (('matrimonial', -11, True, 'puerta_placa', 'left'),
+                                         ('lucia', -9, False, 'puerta_lucia', 'right'),
                                          ('cuarto_nono', -3, True, 'puerta_placa', 'right'),
                                          ('toti', 0, False, 'puerta_toti', 'left'),
                                          ('huespedes', 4, True, 'puerta_placa_blanca', 'left'),
@@ -755,7 +755,11 @@ def basement(s, hs):
                 hs.fill(-15, yy, z, 'pared_sotano')
         if k >= 1:
             K(s, -15, y + 1, z, 'pasamanos_izq', 'south', replace=True)
-    for (y, z) in ((-1, 16), (0, 16), (-2, 17), (-1, 17), (-3, 18), (-2, 18), (-4, 19), (-3, 19)):
+    for k in range(5):                         # headroom: going down, the head clears 1.3 above each step's front
+        for y in range(-1 - k, 2 - k):
+            if y >= -4 or k == 4:
+                s.set(-15, y, 16 + k, AIR)
+    for (y, z) in ((-4, 19), (-3, 19), (-2, 19)):
         s.set(-15, y, z, AIR)
     # a moonlight shaft: the ventiluz high on the back wall, a lit pocket behind it
     K(s, -9, -3, 22, 'ventana_sotano', 'south', replace=True)
@@ -771,7 +775,7 @@ def side_wall(s, hs, x, y, z, fin):
     """A wall cell standing inside a room (alcove side, closet side), painted with the room's finish."""
     foot, body, top = FIN[fin]
     for k in range(3):
-        if is_air(s, x, y + k, z):
+        if is_air(s, x, y + k, z) or (key_at(s, x, y + k, z) or '').startswith('contramarco'):
             hs.fill(x, y + k, z, foot if k == 0 else (top if k == 2 else pick(body, x, y + k, z)))
 
 
@@ -805,10 +809,14 @@ def placard(s, hs, hid, cells, facing, fin, door_key='placard_puerta'):
     HIDES[hid] = ((mid[0] + fx, mid[1], mid[2] + fz, front), (mid[0] - fx, mid[1], mid[2] - fz, facing))
 
 
-def raised_bed(s, pieces, y):
-    """A hiding bed: its blocks one level up (y+1) with a block of air under them (the space under the bed)."""
+def raised_bed(s, pieces, y, hollow):
+    """A hiding bed: an old high bed on a wooden base (tarima), its blocks one level up (y+1); under the cells in
+    `hollow` (x, z) the base is open: a block of air under the bed, reached from the room, where the player hides."""
     for (x, z, key, f) in pieces:
-        s.set(x, y, z, AIR)
+        if (x, z) in hollow:
+            s.set(x, y, z, AIR)
+        else:
+            K(s, x, y, z, 'madera_escalera', replace=True)
         K(s, x, y + 1, z, key, f)
 
 
@@ -821,7 +829,7 @@ def furnish_pb(s, hs):
     # ---------------------------------------------------------------- NONA (x -15..-10, z 2..7): the raised lustred bed,
     # the home altar with its candles (lit) and the rocker facing it, wool basket, walker, the big placard (hiding place)
     placard(s, hs, 'ropero_nona', [(-15, 0, 6), (-14, 0, 6)], 'south', 'nona')
-    raised_bed(s, [(-15, 3, 'cama_nona_cabecera', 'east'), (-14, 3, 'cama_nona_pie', 'east')], 0)
+    raised_bed(s, [(-15, 3, 'cama_nona_cabecera', 'east'), (-14, 3, 'cama_nona_pie', 'east')], 0, [(-14, 3)])
     HIDES['cama_nona'] = ((-14, 0, 3, 'east'), (-13, 0, 3, 'west'))
     K(s, -16, 1, 3, 'empapelado_nona_cruz', replace=True)          # the ghost of a crucifix over the bed
     K(s, -15, 0, 2, 'mesa_luz_nona', 'east')
@@ -840,7 +848,7 @@ def furnish_pb(s, hs):
     lamp(s, -12, 2, 4, 'plafon', 'luces_nona_cuarto')
     pair(s, -12, 1, 2, 'south', 'cortina_floreada_izq', 'cortina_floreada_der')
     pair(s, -15, 1, 4, 'east', 'cortina_floreada_izq', 'cortina_floreada_der')
-    K(s, -13, 1, 7, 'llave_luz', 'north')
+    K(s, -10, 1, 7, 'llave_luz', 'north')
     # ---------------------------------------------------------------- BANO PB (x -7..-4, z 2..7)
     K(s, -7, 0, 3, 'inodoro', 'east')
     K(s, -7, 0, 4, 'bidet', 'east')
@@ -850,7 +858,7 @@ def furnish_pb(s, hs):
     lamp(s, -4, 2, 3, 'aplique_bano', 'luces_bano_pb', facing='west')
     K(s, -7, 2, 6, 'ducha', 'east')
     K(s, -7, 0, 6, 'balde_secador', 'east')
-    K(s, -6, 1, 7, 'toallero', 'north')
+    K(s, -7, 1, 5, 'toallero', 'east')
     K(s, -5, 0, 4, 'alfombra_bano', 'north')
     lamp(s, -5, 2, 5, 'plafon', 'luces_bano_pb')
     # ---------------------------------------------------------------- ESCRITORIO del Nono (x -1..2, z 2..7): shut since
@@ -903,11 +911,11 @@ def furnish_pb(s, hs):
     pair(s, 11, 0, 5, 'east', 'comoda_izq', 'comoda_der')
     for z in (5, 6):
         K(s, 11, 1, z, 'tope_fondo', 'east')
-    K(s, 11, 0, 2, 'mesita_auxiliar', 'east')
-    K(s, 11, 1, 2, 'telefono', 'east')
-    K(s, 13, 1, 2, 'perchero_bata', 'south')
+    K(s, 14, 0, 3, 'mesita_auxiliar', 'west')
+    K(s, 14, 1, 3, 'telefono', 'west')
+    K(s, 14, 1, 2, 'perchero_bata', 'south')
     K(s, 13, 0, 2, 'maceta_malvones', 'south')
-    K(s, 14, 1, 2, 'llave_luz', 'south')
+    K(s, 14, 1, 4, 'llave_luz', 'west')
     lamp(s, 12, 2, 4, 'plafon', 'luces_hall')
     lamp(s, 12, 2, 8, 'plafon', 'luces_hall')
     HIDES['ropero_hall'] = ((15, 0, 8, 'west'), (13, 0, 8, 'east'))
@@ -933,22 +941,22 @@ def furnish_pb(s, hs):
     for (x, y, z, f) in ((-11, 2, 20, 'north'), (-10, 2, 20, 'north'), (-13, 2, 19, 'east')):
         K(s, x, y, z, 'alacena', f)
         group(s, 'alacenas', (x, y, z))
-    K(s, -13, 0, 19, 'mesada', 'east')
-    K(s, -13, 1, 19, 'mate_termo', 'east')
     K(s, -13, 0, 18, 'mesada', 'east')
     K(s, -13, 1, 18, 'panera', 'east')
+    K(s, -13, 0, 16, 'mesada', 'east')
     K(s, -13, 0, 17, 'tacho_basura', 'east')
     K(s, -13, 1, 17, 'cuchillos', 'east')
     group(s, 'cuchillos', (-13, 1, 17))
-    K(s, -12, 2, 14, 'reloj_cocina_333', 'south')
-    K(s, -12, 1, 14, 'almanaque', 'south')
+    K(s, -13, 2, 18, 'reloj_cocina_333', 'east')
+    K(s, -8, 1, 19, 'almanaque', 'west')
     for x in (-11, -10):
         K(s, x, 0, 17, 'mesa_cocina', 'north')
     for (x, z, f) in ((-12, 17, 'east'), (-9, 17, 'west'), (-11, 16, 'south'), (-10, 18, 'north')):
         K(s, x, 0, z, 'silla_cocina', f)
     K(s, -11, 1, 17, 'plato', 'north')
+    K(s, -10, 1, 17, 'mate_termo_mesa', 'north')
     lamp(s, -11, 2, 17, 'tubo', 'luces_cocina')
-    K(s, -11, 1, 14, 'llave_luz', 'south')
+    K(s, -12, 1, 14, 'llave_luz', 'south')
     # the despensa: door at z 16 (facing north), the player's space at z 15, the jar shelf at the back (z 14)
     for z in (14, 15, 16):
         side_wall(s, hs, -9, 0, z, 'cocina')
@@ -956,7 +964,7 @@ def furnish_pb(s, hs):
     K(s, -8, 2, 16, 'pared_cocina', replace=True)
     tall(s, -8, 0, 14, 'estante_frascos', 'south', 'tope_fondo')
     K(s, -8, 2, 15, 'machimbre', replace=True)
-    HIDES['despensa'] = ((-8, 0, 15, 'south'), (-8, 0, 17, 'north'))
+    HIDES['despensa'] = ((-8, 0, 15, 'south'), (-8, 0, 18, 'north'))
     # ---------------------------------------------------------------- COMEDOR (x -5..2, z 14..20): the long lustred table
     # with its 8 chairs (the Nona at the east head), the sideboard with the plates, the brass lamp, the Last Supper
     K(s, -3, 0, 17, 'mesa_comedor_extremo', 'north')
@@ -983,7 +991,7 @@ def furnish_pb(s, hs):
     # the meter, the concrete tub, shelves, washing hung indoors
     K(s, 8, 1, 14, 'tablero', 'south')
     group(s, 'tablero', (8, 1, 14))
-    K(s, 7, 1, 14, 'medidor_luz', 'south')
+    K(s, 8, 1, 15, 'medidor_luz', 'west')
     K(s, 8, 0, 20, 'pileta_lavar', 'north')
     K(s, 7, 0, 20, 'balde_secador', 'north')
     tall(s, 5, 0, 16, 'estante_lavadero', 'east', 'tope_fondo')
@@ -1007,7 +1015,7 @@ def furnish_pb(s, hs):
     K(s, 13, 0, 16, 'ropa_tirada', 'north')
     tall(s, 14, 0, 16, 'tapado_espejo', 'west')
     lamp(s, 12, 2, 17, 'plafon', 'luces_costurero')
-    K(s, 11, 1, 14, 'llave_luz', 'south')
+    K(s, 14, 1, 14, 'llave_luz', 'south')
 
 
 def furnish_1p(s, hs):
@@ -1034,7 +1042,8 @@ def furnish_1p(s, hs):
     # bed against the east wall, bedside tables and lamps, the dresser with its mirror (tocador), the 3-door placard
     placard(s, hs, 'ropero_matrimonial', [(-15, 5, 6), (-14, 5, 6), (-13, 5, 6)], 'south', 'matrimonial')
     raised_bed(s, [(-8, 4, 'cama_matrimonial_cabecera_der', 'west'), (-8, 3, 'cama_matrimonial_cabecera_izq', 'west'),
-                   (-9, 4, 'cama_matrimonial_pie_der', 'west'), (-9, 3, 'cama_matrimonial_pie_izq', 'west')], 5)
+                   (-9, 4, 'cama_matrimonial_pie_der', 'west'), (-9, 3, 'cama_matrimonial_pie_izq', 'west')], 5,
+               [(-9, 4), (-9, 3)])
     HIDES['cama_matrimonial'] = ((-9, 5, 4, 'west'), (-10, 5, 4, 'east'))
     for z in (2, 5):
         K(s, -8, 5, z, 'mesa_luz', 'west')
@@ -1049,7 +1058,7 @@ def furnish_1p(s, hs):
     lamp(s, -11, 7, 4, 'plafon', 'luces_matrimonial')
     pair(s, -12, 6, 2, 'south', 'visillo', 'visillo')
     pair(s, -9, 6, 2, 'south', 'visillo', 'visillo')
-    K(s, -11, 6, 7, 'llave_luz', 'north')
+    K(s, -8, 6, 7, 'llave_luz', 'north')
     # ---------------------------------------------------------------- CUARTO DEL NONO (x -5..0, z 2..7): untouched since
     # the funeral: the made bed, his bedside lamp (the one light left on upstairs), the mirrors covered with sheets
     K(s, -5, 5, 4, 'cama_nona_cabecera', 'east')
@@ -1068,23 +1077,23 @@ def furnish_1p(s, hs):
     # ---------------------------------------------------------------- HUESPEDES (x 2..8, z 2..7): the player's room: a
     # raised old single bed, a bedside table, a chair, the crucifix, a placard (hiding place)
     placard(s, hs, 'ropero_huespedes', [(7, 5, 6), (8, 5, 6)], 'south', 'huespedes')
-    raised_bed(s, [(2, 4, 'cama_nona_cabecera', 'east'), (3, 4, 'cama_nona_pie', 'east')], 5)
+    raised_bed(s, [(2, 4, 'cama_nona_cabecera', 'east'), (3, 4, 'cama_nona_pie', 'east')], 5, [(3, 4)])
     HIDES['cama_huespedes'] = ((3, 5, 4, 'east'), (4, 5, 4, 'west'))
     K(s, 2, 5, 3, 'mesa_luz', 'east')
     lamp(s, 2, 6, 3, 'velador', 'luces_huespedes', facing='east')
     K(s, 6, 5, 3, 'silla_comedor', 'west')
-    K(s, 3, 7, 2, 'crucifijo', 'south')
+    K(s, 2, 7, 6, 'crucifijo', 'east')
     K(s, 8, 5, 2, 'mesita_auxiliar', 'west')
     K(s, 8, 6, 2, 'mate_termo_mesa', 'west')
     lamp(s, 5, 7, 4, 'plafon', 'luces_huespedes')
     pair(s, 6, 6, 2, 'south', 'visillo', 'visillo')
-    K(s, 3, 6, 7, 'llave_luz', 'north')
+    K(s, 2, 6, 7, 'llave_luz', 'east')
     # ---------------------------------------------------------------- LUCIA (x -12..-7, z 14..20): the raised canopy bed,
     # the doll shelves on the east wall, the desk with the notebook, the toy chest, the placard (hiding place)
     placard(s, hs, 'ropero_lucia', [(-12, 5, 15), (-11, 5, 15)], 'north', 'lucia')
-    for (x, k) in ((-12, 'cama_dosel_cabecera'), (-11, 'cama_dosel_pie')):
-        s.set(x, 5, 18, AIR)
-        tall(s, x, 6, 18, k, 'east')
+    raised_bed(s, [(-12, 18, 'cama_dosel_cabecera', 'east'), (-11, 18, 'cama_dosel_pie', 'east')], 5, [(-11, 18)])
+    for x in (-12, -11):
+        K(s, x, 7, 18, 'tope', 'east')
     HIDES['cama_lucia'] = ((-11, 5, 18, 'east'), (-10, 5, 18, 'west'))
     K(s, -12, 5, 19, 'mesa_luz', 'east')
     lamp(s, -12, 6, 19, 'lampara_hongo', 'luces_lucia', facing='east')
@@ -1104,11 +1113,10 @@ def furnish_1p(s, hs):
     K(s, -10, 5, 16, 'mochila', 'south')
     lamp(s, -9, 7, 17, 'plafon', 'luces_lucia')
     pair(s, -10, 6, 20, 'north', 'cortina_rosa_izq', 'cortina_rosa_der')
-    K(s, -9, 6, 14, 'llave_luz', 'south')
     # ---------------------------------------------------------------- TOTI (x -4..1, z 14..20): the raised unmade bed, the
     # gaming desk, posters, the toy chest, the louvred placard (hiding place)
     placard(s, hs, 'ropero_toti', [(-4, 5, 15), (-3, 5, 15)], 'north', 'toti')
-    raised_bed(s, [(1, 18, 'cama_toti_cabecera', 'west'), (0, 18, 'cama_toti_pie', 'west')], 5)
+    raised_bed(s, [(1, 18, 'cama_toti_cabecera', 'west'), (0, 18, 'cama_toti_pie', 'west')], 5, [(0, 18)])
     HIDES['cama_toti'] = ((0, 5, 18, 'west'), (-1, 5, 18, 'east'))
     pair(s, -4, 5, 18, 'east', 'escritorio_pc_izq_apagado', 'escritorio_pc_der_apagado')
     group(s, 'luces_toti', (-4, 5, 18), (-4, 5, 19))
@@ -1123,7 +1131,6 @@ def furnish_1p(s, hs):
     K(s, 1, 6, 17, 'cargador', 'west')
     K(s, -1, 5, 20, 'pelota', 'north')
     lamp(s, -1, 7, 17, 'plafon', 'luces_toti')
-    K(s, -1, 6, 14, 'llave_luz', 'south')
     # ---------------------------------------------------------------- BANO 1P (x 4..8, z 14..20): the tub with its
     # curtain (hiding place) against the back wall, toilet, bidet, basin with the mirrored cabinet
     pair(s, 7, 5, 20, 'north', 'banadera_izq', 'banadera_der')
@@ -1140,7 +1147,7 @@ def furnish_1p(s, hs):
     K(s, 8, 6, 18, 'toallero', 'west')
     K(s, 6, 5, 18, 'alfombra_bano', 'north')
     lamp(s, 6, 7, 17, 'plafon', 'luces_bano_1p')
-    K(s, 5, 6, 14, 'llave_luz', 'south')
+    K(s, 8, 6, 15, 'llave_luz', 'west')
     # ---------------------------------------------------------------- TRASTERO (x 11..14, z 14..20): junk around the
     # steep stair to the attic (kept clear from the corridor opening to its foot)
     K(s, 11, 5, 14, 'cajas_apiladas', 'east')
@@ -1246,7 +1253,7 @@ def furnish_basement(s):
     K(s, 1, -6, 20, 'rayones_dibujo', 'north')
     K(s, -1, -6, 20, 'rayones_palitos', 'north')
     K(s, -1, -6, 15, 'manos_hollin', 'east')
-    K(s, 6, -5, 18, 'manos_hollin', 'west')
+    K(s, -1, -4, 15, 'manos_hollin', 'east')
     K(s, -1, -6, 19, 'lata_galletitas_vieja', 'east')
     K(s, -1, -6, 16, 'zapatitos', 'east')
     K(s, 2, -6, 18, 'misal', 'north')
@@ -1258,7 +1265,7 @@ POOL = (-21, -16, 27, 30)        # pelopincho x0, x1, z0, z1
 GALPON = (14, 19, 31, 37)        # shed outer walls x0, x1, z0, z1
 GRILL_X = -9                     # the parrilla's fire block (z 37, against its brick back wall at z 38)
 GATE_X = (2, 5)                  # the car gate (4 leaves) in the front fence; the driveway runs south from it
-TREES = [(-19, -11, 'dead'), (18, -9, 'old'), (-20, 35, 'dead'), (20, 25, 'old'), (-21, 12, 'dead'), (9, -13, 'dead')]
+TREES = [(-19, -11, 'dead'), (18, -9, 'old'), (-20, 35, 'dead'), (19, 25, 'old'), (-20, 12, 'dead'), (9, -13, 'dead')]
 
 
 def tree(s, x, z, kind):
@@ -1339,7 +1346,7 @@ def front(s):
     K(s, 9, 0, -1, 'medidor_gas', 'north')
     K(s, 9, 1, -1, 'medidor_luz', 'north')
     lamp(s, 12, 2, -1, 'aplique_patio', ('luces_porche', 'luces_balcon'), facing='north')
-    for (x, k) in ((-15, 'maceta_malvones'), (-9, 'macetas_grupo'), (-2, 'maceta_lata'), (15, 'maceta_malvones')):
+    for (x, k) in ((-15, 'maceta_malvones'), (-9, 'macetas_grupo'), (-2, 'maceta_lata'), (6, 'maceta_malvones')):
         K(s, x, 0, -1, k, 'north')
 
 
@@ -1511,7 +1518,8 @@ def check_write(s, name):
     for k in range(-half, half + 1):
         for dy in (0, 1):
             cx, cy, cz = x + lx * k, y + dy, z + lz * k
-            if not is_air(s, cx, cy, cz):
+            hang = (key_at(s, cx, cy, cz) or '').startswith(('cornisa', 'plafon', 'foco', 'tubo', 'lampara_comedor'))
+            if not is_air(s, cx, cy, cz) and not hang:
                 bad.append(('front', (cx, cy, cz), key_at(s, cx, cy, cz)))
             if not is_wall(s, cx - fx, cy, cz - fz):
                 bad.append(('back', (cx - fx, cy, cz - fz), key_at(s, cx - fx, cy, cz - fz)))
@@ -1543,7 +1551,7 @@ def markers(s):
     P('perro_mira_1', 2, 0, 37, 'north')          # patio_fondo, looking at the house
     P('perro_mira_2', 8, 0, -2, 'south')          # outside the living window
     P('perro_mira_3', -14, 0, 10, 'east')         # the end of the PB corridor
-    P('perro_mira_4', 4, 5, 4, 'west')            # at the foot of the guest bed
+    P('perro_mira_4', 4, 5, 3, yaw_to(4, 3, 2.5, 4))   # at the foot of the guest bed
     # ---------------------------------------------------------------- ground floor
     P('hall', 13, 0, 4, 'south')
     P('espejo_hall', 12, 0, 6, 'west')            # facing the dresser's big mirror
@@ -1566,7 +1574,7 @@ def markers(s):
     P('tablero', 8, 0, 15, 'north')
     P('bano_pb', -5, 0, 5, 'west')
     P('nona_cuarto', -12, 0, 6, 'north')
-    P('nona_cama', -13, 0, 3, 'west')
+    P('nona_cama', -13, 0, 2, yaw_to(-13, 2, -14, 3))
     P('nona_altar', -11, 0, 4, 'east')
     P('nona_mecedora', -12, 0, 4, 'east')
     P('costurero', 12, 0, 16, 'south')
@@ -1595,7 +1603,7 @@ def markers(s):
     P('matrimonial_cama', -10, 5, 3, 'east')
     P('tocador', -14, 5, 3, 'north')
     P('huespedes', 5, 5, 5, 'west')
-    P('huespedes_cama', 4, 5, 3, 'west')
+    P('huespedes_cama', 3, 5, 5, 'north')
     P('bano_1p', 6, 5, 15, 'south')
     P('banera', 7, 5, 19, 'south')
     P('espejo_bano', 7, 5, 16, 'east')
@@ -1668,7 +1676,7 @@ def markers(s):
                                       (-7, 1, 11, 'north'),  # pasillo PB
                                       (8, 6, 10, 'south'),   # pasillo 1P
                                       (-4, 6, 11, 'north'),  # pasillo 1P
-                                      (2, 6, 6, 'east'),     # huespedes (the player's room)
+                                      (3, 6, 2, 'south'),    # huespedes (the player's room)
                                       (-7, 6, 15, 'west'),   # Lucia
                                       (4, 6, 15, 'east'),    # bano 1P
                                       (-6, -4, 14, 'south'),  # sotano
@@ -1687,7 +1695,6 @@ def markers(s):
     drawers = sorted(p for p, st in s.blocks.items() if st.startswith('deadline:casa_') and
                      st.split('[')[0][len('deadline:casa_'):] in DRAWERS)
     G(s, 'cajones', *drawers)
-    G(s, 'luces_esc_servicio', (-15, 2, 14))
 
     # ---------------------------------------------------------------- swaps the script can make (props)
     pr = s.prop
@@ -1746,7 +1753,7 @@ def build():
     furnish_1p(s, hs)
     furnish_attic(s, hs)
     furnish_basement(s)
-    lamp(s, -15, 2, 14, 'foco', 'luces_esc_servicio')
+    lamp(s, -15, 2, 20, 'foco', 'luces_esc_servicio')
     lamp(s, -15, 7, 13, 'foco', 'luces_esc_servicio')
     front(s)
     patio(s)

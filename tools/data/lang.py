@@ -262,3 +262,14 @@ ENTITIES.update({
 })
 # --- end casa:P1
 
+# --- car / overworld (the hunter's car, its keys, the GPS of an overworld case)
+ITEMS['car_keys'] = ('Llaves del auto', 'Car keys')
+ENTITIES['auto'] = ('Auto', 'Car')
+MISC.update({
+    'key.deadline.car_lights': ('Faros del auto', 'Car headlights'),
+    'key.deadline.car_radio': ('Radio del auto', 'Car radio'),
+    'deadline.car.brought': ('Tu auto está detrás tuyo.', 'Your car is right behind you.'),
+    'deadline.gps.label': ('UBICACIÓN', 'LOCATION'),
+})
+# --- end car / overworld
+
