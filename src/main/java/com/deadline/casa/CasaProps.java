@@ -44,7 +44,7 @@ import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
 /**
- * Casa Morales stagecraft made of vanilla display entities: furniture that floats, plates, the mate and the thermos,
+ * Casa Morales stagecraft made of vanilla display entities: furniture that floats, plates, knives,
  * chairs stacked while nobody looks, door cascades and bulbs that pop. Positions are absolute (world) unless a parameter
  * is a marker name or a site group.
  * <p>
@@ -56,13 +56,11 @@ import org.joml.Vector3f;
  * called from here (one place to touch if a mapping changes).
  */
 public final class CasaProps {
-	public static final String MATE = "casa:mate", TERMO = "casa:termo";
 	/** Pivots in model space: the block's centre, the middle of its floor, the middle of its ceiling, a loose prop. */
 	public static final Vector3f CENTER = new Vector3f(0.5F, 0.5F, 0.5F);
 	public static final Vector3f FLOOR = new Vector3f(0.5F, 0F, 0.5F);
 	public static final Vector3f TOP = new Vector3f(0.5F, 1F, 0.5F);
 	public static final Vector3f ZERO = new Vector3f();
-	private static final Vector3f PROP = new Vector3f(0.5F, 0.1F, 0.5F);
 	private static final Vector3f PLATE = new Vector3f(0.5F, 0.03F, 0.5F);
 	private static final float CHAIR_SCALE = 0.9F;
 	private static final List<Change> CHANGES = new ArrayList<>();
@@ -835,171 +833,6 @@ public final class CasaProps {
 		r.level.sendParticles(new BlockParticleOption(ParticleTypes.BLOCK, state), at.x, at.y, at.z, 18, 0.15, 0.1, 0.15, 0.15);
 		r.sound(ModSounds.PLATE_SHATTER, at, 1.2F, 0.85F + r.level.random.nextFloat() * 0.3F);
 		r.despawn(actor);
-	}
-
-	// ------------------------------------------------------------------ mate and thermos
-	/**
-	 * The loose mate or thermos (kind "mate" / "termo") as a display: lifted from the kit block at the marker (or the
-	 * block under it), splitting the combined mate-and-thermos block in two; spawned at the marker if there is none.
-	 */
-	public static Display.BlockDisplay loose(Run r, String actor, String point, String kind) {
-		if (r.actor(actor) instanceof Display.BlockDisplay have) {
-			return have;
-		}
-		sweep(r);
-		BlockPos pos = r.block(point);
-		for (BlockPos q : new BlockPos[] {pos, pos.below()}) {
-			BlockState s = r.level.getBlockState(q);
-			String path = path(s);
-			if (path.startsWith("casa_mate_termo")) {
-				splitMate(r, q, s, path.endsWith("_mesa"));
-				return r.actor(actor) instanceof Display.BlockDisplay split ? split : null;
-			}
-			if (path.equals("casa_" + kind)) {
-				Display.BlockDisplay d = block(r, actor, Vec3.atLowerCornerOf(q).add(PROP.x, PROP.y, PROP.z), s);
-				if (d != null) {
-					pose(d, new Quaternionf(), 1F, PROP, 0);
-					remember(r, q, s, List.of(actor));
-					r.setBlock(q, Blocks.AIR.defaultBlockState());
-				}
-				return d;
-			}
-		}
-		BlockState s = kit("casa_" + kind);
-		if (s == null) {
-			return null;
-		}
-		Vec3 at = r.at(point);
-		Display.BlockDisplay made = block(r, actor, at.add(PROP.x - 0.5, PROP.y, PROP.z - 0.5), s);
-		pose(made, new Quaternionf(), 1F, PROP, 0);
-		return made;
-	}
-
-	private static void splitMate(Run r, BlockPos q, BlockState s, boolean mesa) {
-		BlockState mate = kit("casa_mate", s);
-		BlockState termo = kit("casa_termo", s);
-		if (mate == null || termo == null) {
-			return;
-		}
-		Direction f = facing(s);
-		Vec3 base = Vec3.atLowerCornerOf(q).add(PROP.x, PROP.y + (mesa ? -2.0 / 16 : 0), PROP.z);
-		// the loose models sit 3 px right (mate) and 2.6 px left, 0.8 px forward (thermos) of where the pair has them
-		Display.BlockDisplay md = block(r, MATE, base.add(turn(f, -3.0 / 16, 0)), mate);
-		Display.BlockDisplay td = block(r, TERMO, base.add(turn(f, 2.6 / 16, 0.8 / 16)), termo);
-		pose(md, new Quaternionf(), 1F, PROP, 0);
-		pose(td, new Quaternionf(), 1F, PROP, 0);
-		remember(r, q, s, List.of(MATE, TERMO));
-		r.setBlock(q, Blocks.AIR.defaultBlockState());
-	}
-
-	/** The Nona's mate slides along the counter to `to` (its height is kept). Posts "mate:fin". */
-	public static Exec mateSlide(Run r, String point, Vec3 to) {
-		Display.BlockDisplay d = loose(r, MATE, point, "mate");
-		if (d == null) {
-			return null;
-		}
-		Vec3 from = d.position();
-		Vec3 dest = new Vec3(to.x, from.y, to.z);
-		r.sound(ModSounds.MATE_SLIDE, from, 1.1F, 1.0F);
-		return r.start("casa:mate", r.star(), List.of(e -> {
-			if (!(r.actor(MATE) instanceof Display m)) {
-				return true;
-			}
-			double u = Math.min(1.0, e.t / 30.0);
-			double k = ease(u) + (u < 1 ? Math.sin(u * 40) * 0.015 : 0);
-			move(m, from.lerp(dest, k));
-			if (e.t % 4 == 0) {
-				pose(m, new Quaternionf().rotationY((float) Math.sin(e.t * 0.5) * 0.1F * (float) (1 - u)), 1F, PROP, 4);
-			}
-			if (u >= 1) {
-				r.post("mate:fin");
-				return true;
-			}
-			return false;
-		}));
-	}
-
-	/** The thermos tips toward the mate and pours it (and something invisible sips). Posts "termo:cebo". */
-	public static Exec termoPour(Run r, String point) {
-		Display.BlockDisplay d = loose(r, TERMO, point, "termo");
-		if (d == null) {
-			return null;
-		}
-		return r.start("casa:cebar", r.star(), List.of(e -> {
-			if (!(r.actor(TERMO) instanceof Display tm)) {
-				return true;
-			}
-			Entity mate = r.actor(MATE);
-			Vec3 tp = tm.position();
-			Vec3 mp = mate != null ? mate.position() : tp.add(0.4, 0, 0);
-			Vec3 dir = new Vec3(mp.x - tp.x, 0, mp.z - tp.z);
-			dir = dir.lengthSqr() < 1e-4 ? new Vec3(1, 0, 0) : dir.normalize();
-			float max = 0.75F;
-			float angle = e.t < 10 ? max * e.t / 10F : e.t < 40 ? max : Math.max(0F, max * (50 - e.t) / 10F);
-			if (e.t == 0 || e.t == 10 || e.t == 40) {
-				float target = e.t == 40 ? 0F : max;
-				pose(tm, new Quaternionf().rotationAxis(target, (float) dir.z, 0F, (float) -dir.x), 1F, PROP, 10);
-			}
-			if (e.t > 10 && e.t < 40 && e.t % 2 == 0) {
-				Vec3 spout = tp.add(dir.scale(0.12 + 0.3 * Math.sin(angle))).add(0, 0.3 * Math.cos(angle), 0);
-				r.level.sendParticles(ParticleTypes.FALLING_WATER, spout.x, spout.y, spout.z, 2, 0.02, 0.02, 0.02, 0.0);
-			}
-			if (e.t == 46) {
-				r.sound(ModSounds.MATE_SORBO, mp, 0.9F, 1.0F);
-				r.post("termo:cebo");
-			}
-			return e.t >= 52;
-		}));
-	}
-
-	/** The thermos flies across the kitchen spinning and lands on its side under `to`. Posts "termo:fin". */
-	public static Exec termoFly(Run r, String point, Vec3 to) {
-		Display.BlockDisplay d = loose(r, TERMO, point, "termo");
-		if (d == null) {
-			return null;
-		}
-		Vec3 from = d.position();
-		Vec3 dest = new Vec3(to.x, floorUnder(r.level, to, 6), to.z);
-		Vec3 flat = new Vec3(dest.x - from.x, 0, dest.z - from.z);
-		Vec3 axisDir = flat.lengthSqr() < 1e-4 ? new Vec3(1, 0, 0) : flat.normalize();
-		float ax = (float) axisDir.z;
-		float az = (float) -axisDir.x;
-		double dist = from.distanceTo(dest);
-		Vec3 ctrl = from.lerp(dest, 0.5).add(0, 1.2 + dist * 0.15, 0);
-		int n = (int) Math.max(12, Math.min(30, dist / 0.5));
-		r.sound(ModSounds.TERMO_FLY, from, 1.3F, 1.0F);
-		Vec3[] pos = {from};
-		return r.start("casa:termo", r.star(), List.of(e -> {
-			if (!(r.actor(TERMO) instanceof Display tm)) {
-				return true;
-			}
-			double u = Math.min(1.0, (e.t + 1) / (double) n);
-			double v = 1 - u;
-			Vec3 next = from.scale(v * v).add(ctrl.scale(2 * v * u)).add(dest.scale(u * u));
-			boolean landed = u >= 1;
-			if (!landed && e.t > 2) {
-				BlockHitResult hit = r.level.clip(new ClipContext(pos[0], next, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, tm));
-				if (hit.getType() != HitResult.Type.MISS) {
-					Vec3 h = hit.getLocation().subtract(next.subtract(pos[0]).normalize().scale(0.25));
-					next = new Vec3(h.x, floorUnder(r.level, h, 6), h.z);
-					landed = true;
-				}
-			}
-			if (landed) {
-				move(tm, next.add(0, 0.1, 0));
-				pose(tm, new Quaternionf().rotationAxis((float) (Math.PI / 2), ax, 0F, az), 1F, FLOOR, 2);
-				r.sound(ModSounds.KNIFE_IMPACT, next, 1.3F, 0.55F);
-				r.sound(ModSounds.ALACENA_GOLPE, next, 0.7F, 1.4F);
-				r.post("termo:fin");
-				return true;
-			}
-			pos[0] = next;
-			move(tm, next);
-			if (e.t % 2 == 0) {
-				pose(tm, new Quaternionf().rotationAxis(0.7F * e.t, ax, 0F, az), 1F, PROP, 2);
-			}
-			return false;
-		}));
 	}
 
 	// ------------------------------------------------------------------ the unseen and the house

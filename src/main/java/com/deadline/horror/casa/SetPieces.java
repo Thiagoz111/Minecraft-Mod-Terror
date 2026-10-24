@@ -105,7 +105,6 @@ public final class SetPieces {
 	/** Forgets what the set pieces kept for a run (call it when the case ends: CasaScript.onLeave). */
 	public static void forget(Run run) {
 		Stage.forget(run);
-		Stage.forgetMemory(run);
 		for (var p : run.hunters()) {
 			KNOCKS.remove(p.getUUID());
 		}

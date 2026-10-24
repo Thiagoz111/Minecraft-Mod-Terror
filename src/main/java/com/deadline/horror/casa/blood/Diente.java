@@ -5,6 +5,7 @@ import com.deadline.horror.Ctx;
 import com.deadline.horror.HorrorEvent;
 import com.deadline.horror.HouseQuery;
 import com.deadline.horror.casa.Apparitions;
+import com.deadline.horror.casa.Interactables;
 import com.deadline.registry.ModSounds;
 import com.deadline.sanity.SanityManager;
 import java.util.ArrayList;
@@ -20,9 +21,12 @@ import net.minecraft.world.phys.Vec3;
 
 /**
  * 51 diente (acts 2-6, intensity 2): something small rattles inside a drawer of his room. The next drawer he opens
- * there holds human teeth and the Nona's dentures, bloody ({@link Teeth#spill}). If he opens none in 45 s, nothing.
- * <p>While it waits the event is "armed" for that hunter: BloodEvents' first-look use-block hook gives it the click on
- * a drawer before the interactables do ({@link #opened}).
+ * holds human teeth -- and the Nona's dentures, bloody, thrown out over the top of the furniture, blood running down
+ * its front ({@link Teeth#spill}). If he opens none in 45 s, nothing.
+ * <p>The drawer itself is the interactables' (B1a): the event tells them the next drawer holds teeth
+ * ({@link Interactables#forceNextDrawer}) and they open it and post "cajon:dientes". BloodEvents' first-look use-block
+ * hook only notes WHICH drawer he clicked while the event waits ({@link #clicked}); if no drawer opened a moment
+ * later (a piece the interactables do not handle), the teeth come out anyway.
  */
 public class Diente extends HorrorEvent {
 	/** Kit furniture with drawers (tools/sites/casa.py DRAWERS), in case the site has no `cajones` group. */
@@ -56,14 +60,13 @@ public class Diente extends HorrorEvent {
 		return out;
 	}
 
-	/** A hunter opened a drawer: if this event waits for him, it takes the click (true). */
-	public static boolean opened(ServerPlayer p, Run r, BlockPos pos) {
+	/** A hunter clicked a drawer: if this event waits for him, it remembers which (the click goes on to the drawer). */
+	public static void clicked(ServerPlayer p, Run r, BlockPos pos) {
 		Ctx c = ARMED.get(p.getUUID());
-		if (c == null || c.run != r || c.get("open") != null) {
-			return false;
+		if (c != null && c.run == r && c.get("open") == null) {
+			c.put("open", pos.immutable());
+			c.put("clickAt", c.t);
 		}
-		c.put("open", pos.immutable());
-		return true;
 	}
 
 	public static boolean armed(ServerPlayer p) {
@@ -102,6 +105,7 @@ public class Diente extends HorrorEvent {
 			return;
 		}
 		ARMED.put(c.p.getUUID(), c);
+		Interactables.forceNextDrawer(c.run, Interactables.DIENTES);
 		BlockPos lure = c.get("lure");
 		Apparitions.sound(c, ModSounds.SANGRE_DIENTES, Vec3.atCenterOf(lure), 0.3F, 0.9F);
 	}
@@ -113,13 +117,21 @@ public class Diente extends HorrorEvent {
 			return true;
 		}
 		BlockPos open = c.get("open");
-		if (open != null) {
+		Integer clickAt = c.get("clickAt");
+		boolean drawer = c.run.event("cajon:" + Interactables.DIENTES);
+		if (drawer && open == null) {
+			open = nearestDrawer(c);  // opened some other way: the nearest drawer piece
+			c.put("open", open);
+		}
+		if (open != null && (drawer || clickAt != null && c.t - clickAt >= 3 || c.get("openAt") != null)) {
 			Integer at = c.get("openAt");
 			if (at == null) {
 				c.put("openAt", c.t);
 				Vec3 mid = Vec3.atCenterOf(open);
-				Apparitions.sound(c, ModSounds.SANGRE_CAJON, mid, 0.9F, 0.95F);
-				Teeth.spill(c.run, open, c.p.getEyePosition(), true, c.rnd);
+				if (!drawer) {
+					Apparitions.sound(c, ModSounds.SANGRE_CAJON, mid, 0.9F, 0.95F);  // nobody opened it: it opens itself
+				}
+				Teeth.spill(c.run, open, c.p.getEyePosition(), c.p, true, c.rnd);
 				Apparitions.sound(c, ModSounds.SANGRE_DIENTES, mid.add(0, 0.4, 0), 0.8F, 1.0F);
 				Apparitions.noise(c, mid, 15F);
 				SanityManager.add(c.p, -4F);
@@ -133,10 +145,27 @@ public class Diente extends HorrorEvent {
 		return c.t > 20 * 45;
 	}
 
+	private static BlockPos nearestDrawer(Ctx c) {
+		BlockPos best = c.get("lure");
+		double bd = Double.MAX_VALUE;
+		String room = c.room();
+		for (BlockPos pos : room == null ? List.<BlockPos>of() : drawers(c.run, room)) {
+			double d = Apparitions.dist(c, Vec3.atCenterOf(pos));
+			if (d < bd) {
+				bd = d;
+				best = pos;
+			}
+		}
+		return best;
+	}
+
 	@Override
 	public void stop(Ctx c) {
 		if (ARMED.get(c.p.getUUID()) == c) {
 			ARMED.remove(c.p.getUUID());
+		}
+		if (c.get("lure") != null && c.get("openAt") == null) {
+			Interactables.forceNextDrawer(c.run, null);  // he never opened one: the drawers go back to their usual contents
 		}
 	}
 

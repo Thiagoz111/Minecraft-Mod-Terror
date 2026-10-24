@@ -2085,6 +2085,17 @@ POSES = {
         'left_fingers': (0, 0, 0.4, 0, 0, 0),
         'left_index': (0, 0, 0.5, 0, 0, 0),
     },
+    # C (set pieces): seated on a chair / his armchair (added to 'idle'): hips down 3.5 and 2 back, thighs level, shins
+    # down, the apron laid over the knees
+    'sit_chair': {
+        'body': (0, 0, 0, 0, 3.5, 2.0),
+        'right_leg': (-1.48, 0, 0, 0, 0, 0),
+        'left_leg': (-1.48, 0, 0, 0, 0, 0),
+        'right_shin': (1.48, 0, 0, 0, 0, 0),
+        'left_shin': (1.48, 0, 0, 0, 0, 0),
+        'apron_skirt': (-0.9, 0, 0, 0, 0, 0),
+        'apron_hem': (0.6, 0, 0, 0, 0, 0),
+    },
 }
 
 ANIM_NOTES = """Jorge Morales -- animation notes.  Units: radians for POSES and for the values below (rest rotations quoted in

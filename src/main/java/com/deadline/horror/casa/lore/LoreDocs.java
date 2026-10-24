@@ -16,8 +16,12 @@ import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
@@ -103,6 +107,13 @@ public final class LoreDocs {
 		return true;
 	}
 
+	/** True for a couple of ticks after a document opened for him (the same click must not use his item too). */
+	public static boolean justOpened(ServerPlayer p) {
+		Long last = LAST_OPEN.get(p.getUUID());
+		long now = p.level().getGameTime();
+		return last != null && now >= last && now - last <= 2;
+	}
+
 	/** A spot where a click opens a document (a prop of yours lying there). */
 	public static void addSpot(Run r, Vec3 at, String doc, double radius) {
 		state(r).spots.add(new Spot(at, doc, radius));
@@ -112,7 +123,7 @@ public final class LoreDocs {
 		STATES.remove(r);
 	}
 
-	public static void forget(ServerPlayer p) {
+	public static void forgetPlayer(ServerPlayer p) {
 		LAST_OPEN.remove(p.getUUID());
 	}
 
@@ -122,7 +133,7 @@ public final class LoreDocs {
 
 	// ------------------------------------------------------------------ the props
 	/** Lays out the letters and the rosaries once per run (when a hunter is at the house). Every lookup is guarded. */
-	public static void ensure(Run r) {
+	public static void ensure(Run r, Entity viewer) {
 		State s = state(r);
 		if (s.placed) {
 			return;
@@ -131,7 +142,7 @@ public final class LoreDocs {
 		// Father Anselmo's letters, tied with string, on the stacked boxes of the Nono's study
 		BlockPos boxes = first(r, "escritorio", "casa_cajas_apiladas");
 		if (boxes != null) {
-			Vec3 at = new Vec3(boxes.getX() + 0.5, top(r, boxes), boxes.getZ() + 0.5);
+			Vec3 at = new Vec3(boxes.getX() + 0.5, surface(r, boxes, boxes.getX() + 0.5, boxes.getZ() + 0.5, viewer), boxes.getZ() + 0.5);
 			if (BloodDecals.floor(r, "lore/cartas", at, 160F, 0.46F, 0.46F) != null) {
 				s.spots.add(new Spot(at, LoreBook.CARTAS, 0.6));
 			}
@@ -142,7 +153,10 @@ public final class LoreDocs {
 			BlockState st = r.level.getBlockState(altar);
 			Direction f = st.hasProperty(BlockStateProperties.HORIZONTAL_FACING) ? st.getValue(BlockStateProperties.HORIZONTAL_FACING)
 					: Direction.NORTH;
-			Vec3 at = new Vec3(altar.getX() + 0.5 + f.getStepX() * 0.16, top(r, altar), altar.getZ() + 0.5 + f.getStepZ() * 0.16);
+			// in front of the statue, between the tea lights, on the lace of the table top
+			double x = altar.getX() + 0.5 + f.getStepX() * 0.1;
+			double z = altar.getZ() + 0.5 + f.getStepZ() * 0.1;
+			Vec3 at = new Vec3(x, surface(r, altar, x, z, viewer), z);
 			if (BloodDecals.floor(r, "lore/rosario_roto", at, f.toYRot() + 25F, 0.36F, 0.36F) != null) {
 				s.spots.add(new Spot(at, LoreBook.ROSARIO, 0.55));
 			}
@@ -173,5 +187,21 @@ public final class LoreDocs {
 	public static double top(Run r, BlockPos pos) {
 		VoxelShape sh = r.level.getBlockState(pos).getShape(r.level, pos);
 		return pos.getY() + (sh.isEmpty() ? 1.0 : sh.max(Direction.Axis.Y));
+	}
+
+	/**
+	 * The surface of a piece of furniture under a point (x, z): a ray down through the block's outline, so a table
+	 * top is found under the statue and the candles standing on it. Falls back to {@link #top} when the ray misses.
+	 */
+	public static double surface(Run r, BlockPos pos, double x, double z, Entity viewer) {
+		Vec3 from = new Vec3(x, pos.getY() + 1.2, z);
+		Vec3 to = new Vec3(x, pos.getY() - 0.05, z);
+		if (viewer != null) {
+			BlockHitResult hit = r.level.clip(new ClipContext(from, to, ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, viewer));
+			if (hit.getType() == HitResult.Type.BLOCK && hit.getBlockPos().equals(pos)) {
+				return hit.getLocation().y;
+			}
+		}
+		return top(r, pos);
 	}
 }

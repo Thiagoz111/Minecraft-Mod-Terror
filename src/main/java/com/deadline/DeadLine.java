@@ -48,6 +48,14 @@ public class DeadLine implements ModInitializer {
 		com.deadline.horror.casa.ApparitionEvents.register();
 		// B2: the hunt of Act 5 (the broken Nona, hiding places, holding the breath); before Director.register()
 		com.deadline.horror.casa.hunt.HuntEntities.init();
+		// C: the set pieces of the acts (sp_*: the arrival, the dinner, the night, the 1961 room, the car)
+		com.deadline.horror.casa.SetPieces.register();
+		// B1a: the poltergeist (events 1-32), the interactables (their use callback must come before the director's) and
+		// the flying objects
+		com.deadline.horror.casa.PoltergeistEvents.register();
+		// B1b: blood, phone and lore (events 46-54, blood decals, the papers of the house; its use hooks run in an early
+		// phase, so the order of these calls does not matter)
+		com.deadline.horror.casa.BloodEvents.register();
 		// the car, its keys and the GPS; overworld cases (the house in the real world, the frozen night)
 		com.deadline.car.Cars.init();
 		com.deadline.caseload.OverworldCase.register();

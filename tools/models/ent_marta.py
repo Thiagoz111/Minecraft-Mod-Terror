@@ -1742,6 +1742,18 @@ POSES = {
 }
 # <<< POSES
 
+# C (set pieces): seated on a dining chair / the back seat (added to 'idle_nervous', which keeps the phone in her lap).
+# Hips down 4.5 texels and 2 back against the chair's back; the one-piece legs angled down and forward to the floor; the
+# wrap-skirt panels follow the thighs.
+POSES['sit_chair'] = {
+    'body': (0, 0, 0, 0, 4.5, 2.0),
+    'right_leg': (-0.84, 0, 0, 0, 0, 0),
+    'left_leg': (-0.84, 0, 0, 0, 0, 0),
+    'skirt_right': (-0.7, 0, 0, 0, 0, 0),
+    'skirt_left': (-0.7, 0, 0, 0, 0, 0),
+    'skirt_back': (0.15, 0, 0, 0, 0, 0),
+}
+
 
 if __name__ == '__main__':
     if '--rest' in sys.argv:

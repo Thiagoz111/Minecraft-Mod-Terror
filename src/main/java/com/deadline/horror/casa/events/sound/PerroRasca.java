@@ -31,7 +31,7 @@ public class PerroRasca extends HorrorEvent {
 		if (door == null || !Polter.isDoor(c.run, door) || c.run.doorOpen(door)) {
 			return false;
 		}
-		Vec3 out = outside(c, door, room, 0.7);
+		Vec3 out = outside(c, door, room, 1.8);
 		if (out == null || out.distanceTo(c.p.position()) < 1.5 || out.distanceTo(c.p.position()) > 12) {
 			return false;
 		}
@@ -43,8 +43,11 @@ public class PerroRasca extends HorrorEvent {
 	/** A point just outside a room's door, `d` blocks from it, at the height of the door's lower block. */
 	public static Vec3 outside(Ctx c, String door, String room, double d) {
 		Vec3 dp = HouseQuery.doorPos(c.run, door);
+		if (dp == null || room == null || !c.run.def.areas.containsKey(room)) {
+			return null;
+		}
 		BlockState s = c.level().getBlockState(BlockPos.containing(dp));
-		if (dp == null || !(s.getBlock() instanceof DoorBlock) || room == null || !c.run.def.areas.containsKey(room)) {
+		if (!(s.getBlock() instanceof DoorBlock)) {
 			return null;
 		}
 		Direction f = s.getValue(DoorBlock.FACING);

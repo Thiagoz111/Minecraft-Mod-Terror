@@ -1694,6 +1694,15 @@ POSES = {
         'right_fingers': (0, 0, 1.571, 0, 0, 0),
         'right_thumb': (0, 0.785, 1.571, 0, 0, 0),
     },
+    # C (set pieces): seated on a chair (the dinner, the kitchen table): hips down 4.5 and 2 back, the forward lean of
+    # the rest stance taken out, thighs level, shins down
+    'sit_chair': {
+        'body': (-0.1, 0, 0, 0, 4.5, 2.0),
+        'right_leg': (-1.47, 0, 0, 0, 0, 0),
+        'left_leg': (-1.47, 0, 0, 0, 0, 0),
+        'right_shin': (1.57, 0, 0, 0, 0, 0),
+        'left_shin': (1.57, 0, 0, 0, 0, 0),
+    },
 }
 
 

@@ -95,7 +95,7 @@ public final class Fridge {
 			r.setBlock(upper, Blocks.AIR.defaultBlockState());
 		}
 		fr.shell();
-		fr.swing(OPEN, 9);
+		// the door swings open on the next ticks (a pose sent with the spawn would just appear open)
 		r.sound(ModSounds.POLTER_HELADERA, Vec3.atCenterOf(lower).add(0, 0.5, 0), 0.9F, 1.0F);
 		return fr;
 	}
@@ -199,6 +199,9 @@ public final class Fridge {
 			return true;
 		}
 		t++;
+		if (t == 2 && closing < 0) {
+			swing(OPEN, 9);
+		}
 		if (run.actor(door) == null) {
 			end();  // removed from outside (a chapter replay): the remembered blocks come back by themselves
 			return true;

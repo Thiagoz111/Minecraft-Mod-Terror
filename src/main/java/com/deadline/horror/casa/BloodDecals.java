@@ -179,6 +179,32 @@ public final class BloodDecals {
 		return SPLATS[rnd.nextInt(SPLATS.length)];
 	}
 
+	/** A splatter on any surface: `face` is the way the surface looks (UP a floor, DOWN a ceiling, else a wall). */
+	public static Display.ItemDisplay splatter(Run r, Vec3 at, Direction face, float size, RandomSource rnd) {
+		float spin = rnd.nextFloat() * 360F;
+		return switch (face) {
+			case UP -> floor(r, splat(rnd), at, spin, size, size);
+			case DOWN -> ceiling(r, splat(rnd), at, spin, size, size);
+			default -> wall(r, splat(rnd), at, face, spin, size, size);
+		};
+	}
+
+	/** A pool on the floor (at.y = the floor) that spreads to `size` blocks over `growTicks` (a tap, a drip, a body). */
+	public static Display.ItemDisplay pool(Run r, Vec3 at, float size, int growTicks, RandomSource rnd) {
+		float yaw = rnd.nextFloat() * 360F;
+		Display.ItemDisplay d = floor(r, POOL, at, yaw, size * 0.06F, size * 0.06F);
+		if (d != null) {
+			GROW.add(new Grow(d, dirOf(yaw), size, Math.max(1, growTicks), r.now() + 2));
+		}
+		return d;
+	}
+
+	/** A pool waiting to start spreading (the growth must be a change after the spawn to be interpolated). */
+	private record Grow(Display.ItemDisplay d, Vec3 up, float size, int ticks, long at) {
+	}
+
+	private static final List<Grow> GROW = new ArrayList<>();
+
 	// ------------------------------------------------------------------ blood writing
 	/** The writing markers the events write on (the special ones, cuaderno and the mirror, are not blood walls). */
 	public static List<String> walls(Run r) {
@@ -226,9 +252,9 @@ public final class BloodDecals {
 		}
 		Direction f = w.facing();
 		Vec3 right = new Vec3(f.getStepZ(), 0, -f.getStepX());
-		float h = 0.42F;
-		float adv = 0.30F;
-		float space = 0.22F;
+		float h = 0.56F;
+		float adv = 0.40F;
+		float space = 0.30F;
 		double limit = Math.max(1.2, w.width() * 0.94);
 		List<String> lines = new ArrayList<>(List.of(text.trim()));
 		if (width(text.trim(), adv, space) > limit && text.trim().contains(" ")) {
@@ -242,7 +268,7 @@ public final class BloodDecals {
 			}
 			lines = List.of(t.substring(0, best), t.substring(best + 1));
 		}
-		double lineGap = 0.54;
+		double lineGap = 0.72;
 		double top = (lines.size() - 1) * lineGap / 2.0;
 		for (int li = 0; li < lines.size(); li++) {
 			String line = lines.get(li);
@@ -373,6 +399,17 @@ public final class BloodDecals {
 
 	/** Server tick (from {@link BloodEvents}): orphans out, and the blood of runs that ended washed away. */
 	static void tick(MinecraftServer server) {
+		if (!GROW.isEmpty()) {
+			for (Iterator<Grow> it = GROW.iterator(); it.hasNext();) {
+				Grow g = it.next();
+				if (g.d().isRemoved()) {
+					it.remove();
+				} else if (g.d().level().getGameTime() >= g.at()) {
+					resize(g.d(), new Vec3(0, 1, 0), g.up(), g.size(), g.size(), null, g.ticks());
+					it.remove();
+				}
+			}
+		}
 		if (!LOADED.isEmpty()) {
 			List<Entity> now = new ArrayList<>(LOADED);
 			LOADED.clear();

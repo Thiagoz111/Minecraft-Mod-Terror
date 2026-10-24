@@ -36,6 +36,9 @@ rendered circularly and heard through a cheap boombox three houses away on a sti
 
 Positional sounds are mono; only the casa.cumbia_far / casa.cumbia_musicbox streams are stereo. Loudness: stingers
 -0.5 dBFS, vocal sounds -1 dBFS, foley -3 dBFS, loops/streams -4 dBFS.
+
+C cleanup (casa_terror.md 0: no comedy): the cute barks, the sneeze, fetch_drop, chomp, vomit,
+metro_retract and the three cumbia streams were cut with their events; their builders below are kept, unused.
 """
 import sys as _sys, os as _os
 _sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), '..'))
@@ -1721,20 +1724,11 @@ def cumbia_musicbox():
 
 # ====================================================================== event table + build
 EVENTS = {  # event -> ([variant builders], peak dBFS, loop)
-    'choripan.bark_cute': ([lambda: bark_cute(1), lambda: bark_cute(2), lambda: bark_cute(3)], -1.0, False),
     'choripan.whine': ([lambda: whine(1), lambda: whine(2)], -1.0, False),
     'choripan.growl_low': ([lambda: growl_low(1), lambda: growl_low(2)], -1.0, False),
-    'choripan.sneeze': ([sneeze], -1.0, False),
     'choripan.crack': ([lambda v=v: crack(v) for v in range(1, 7)], -3.0, False),
     'choripan.unspool': ([unspool], -3.0, False),
     'choripan.demon_roar': ([lambda: demon_roar(1), lambda: demon_roar(2)], -0.5, False),
-    'choripan.fetch_drop': ([fetch_drop], -3.0, False),
-    'choripan.chomp': ([chomp], -3.0, False),
-    'choripan.vomit': ([vomit], -3.0, False),
-    'choripan.metro_retract': ([metro_retract], -3.0, False),
-    'casa.cumbia_far': ([cumbia_far], -4.0, True),
-    'casa.cumbia_cut': ([cumbia_cut], -3.0, False),
-    'casa.cumbia_musicbox': ([lambda: cumbia_musicbox()[0]], -4.0, True),
 }
 SEAM_WINDOW = {'casa.cumbia_musicbox': 0.35}   # keep the seam inside the far-cumbia ghost (the swap point)
 

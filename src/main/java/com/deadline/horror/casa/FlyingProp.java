@@ -434,6 +434,8 @@ public final class FlyingProp {
 						return;
 					}
 					vel = new Vec3(-vel.x * 0.2, Math.min(vel.y, 0.05), -vel.z * 0.2);
+					gravity = Math.max(gravity, 0.04);  // whatever hit him drops (a knife too)
+					stick = false;
 					next = pos.add(vel);
 					break;
 				}

@@ -26,6 +26,7 @@ public class DeadLineClient implements ClientModInitializer {
 		com.deadline.client.horror.ApparitionRenderers.init();  // B3: Choripán, the long dog, the hand, the sheet
 		com.deadline.client.car.CarClient.init();  // the car (renderer, keys, engine/radio loops) and the GPS
 		com.deadline.client.hunt.HuntClient.init();  // B2: the broken Nona, hiding places, holding the breath, 3D jumpscares
+		com.deadline.client.lore.LoreClient.init();  // B1b: the papers of the Casa, read full screen
 		BlockRenderLayerMap.putBlocks(ChunkSectionLayer.CUTOUT, ModBlocks.SALT_LINE, ModBlocks.BLOOD_STAIN, ModBlocks.RITUAL_CANDLE);
 		com.deadline.registry.gen.ModBlocksGen.CUTOUT.forEach(b -> BlockRenderLayerMap.putBlock(b, ChunkSectionLayer.CUTOUT));
 		com.deadline.registry.gen.ModBlocksGen.TRANSLUCENT.forEach(b -> BlockRenderLayerMap.putBlock(b, ChunkSectionLayer.TRANSLUCENT));

@@ -292,3 +292,105 @@ ENTITIES.update({
     'sabana': ('Una sábana', 'A bedsheet'),
 })
 # --- end B3 apparitions
+
+# --- B1a poltergeist (the interactables of the Casa: what a drawer holds, shown over the hotbar)
+MISC.update({
+    'deadline.casa.cajon.nada': ('Vacío.', 'Empty.'),
+    'deadline.casa.cajon.foto': ('Una foto vieja. Alguien le tachó las caras.', 'An old photo. Somebody scratched the faces out.'),
+    'deadline.casa.cajon.rosario': ('Un rosario roto. Las cuentas sueltas.', 'A broken rosary. The beads loose.'),
+    'deadline.casa.cajon.dientes': ('Dientes. Humanos.', 'Teeth. Human.'),
+    'deadline.casa.cajon.carta': ('Una carta. "P. Anselmo, 1961".', 'A letter. "Fr. Anselmo, 1961".'),
+})
+# --- end B1a poltergeist
+
+# --- B1b blood, phone, lore (events 46-54: Marta's extra texts per act, msg_marta; the papers of the house, LoreBook)
+SCRIPT.update({
+    # msg_marta: a second pool per act, never the ones the act script sends on its own clock (8)
+    'deadline.sms.marta.solo': ('Venga solo.', 'Come alone.'),
+    'deadline.sms.marta.no_pare': ('No pare en la ruta. Por nada.', "Don't stop on the road. Not for anything."),
+    'deadline.sms.marta.no_mire': ('No la mire a los ojos.', "Don't look her in the eyes."),
+    'deadline.sms.marta.cubiertos': ('Coma despacio. Que no se oigan los cubiertos.', "Eat slowly. Don't let the cutlery make a sound."),
+    'deadline.sms.marta.fotos_nono': ('En el escritorio del Nono hay fotos del 61. Mírelas.',
+                                      "In Nono's study there are photos from '61. Look at them."),
+    'deadline.sms.marta.cuaderno': ('Lucía escribe en un cuaderno. No es la letra de ella.',
+                                    "Lucía writes in a notebook. It isn't her handwriting."),
+    'deadline.sms.marta.cura': ('En el 61 vino un cura. No terminó.', "In '61 a priest came. He didn't finish."),
+    'deadline.sms.marta.perro_parado': ('Si ve al perro parado en dos patas, no lo mire.',
+                                        "If you see the dog standing on two legs, don't look at it."),
+    'deadline.sms.marta.luz_bano': ('No prenda la luz del baño.', "Don't turn on the bathroom light."),
+    'deadline.sms.marta.quien_camina': ('Estamos todos en la cama. ¿Quién camina?', "We're all in bed. Who is walking?"),
+    'deadline.sms.marta.roperos': ('No abra los roperos.', "Don't open the wardrobes."),
+    'deadline.sms.marta.cual_chico': ('Ya no sé cuál de los chicos es el que duerme.',
+                                      "I don't know any more which of the children is the one asleep."),
+    'deadline.sms.marta.no_corra': ('No corra. Oye los pasos.', "Don't run. She hears footsteps."),
+    'deadline.sms.marta.pantalla': ('Apriete el celular contra el pecho cuando vibre.', 'Press the phone against your chest when it buzzes.'),
+    'deadline.sms.marta.perdon': ('Perdón por hacerlo venir.', "I'm sorry I made you come."),
+    'deadline.sms.marta.no_baje': ('No baje.', "Don't come down."),
+    'deadline.sms.marta.no_soy_yo': ('Yo no le escribí «bajá».', "I didn't write 'come down' to you."),
+    # the papers (com.deadline.horror.casa.lore.LoreBook): read full screen, nobody reads them aloud
+    'deadline.lore.hint': ('clic: dar vuelta · esc: dejarlo', 'click: turn over · esc: put it down'),
+    'deadline.lore.cuaderno_lucia.1': (
+        'MI AMIGO SE LLAMA LEMAZA\nMI AMIGO SE LLAMA LEMAZA\nMI AMIGO SE LLAMA LEMAZA\n\nVive en mi ropero. De día no está. '
+        'De noche se sienta a los pies de la cama y me mira dormir.',
+        "MY FRIEND IS CALLED LEMAZA\nMY FRIEND IS CALLED LEMAZA\nMY FRIEND IS CALLED LEMAZA\n\nHe lives in my wardrobe. In "
+        "the daytime he isn't there. At night he sits at the foot of my bed and watches me sleep."),
+    'deadline.lore.cuaderno_lucia.2': (
+        'Lemaza es muy alto. Para mirarme se tiene que doblar todo, como una percha.\n\nMe dijo que no le cuente a nadie. '
+        'Que si hablo fuerte, ella escucha.',
+        'Lemaza is very tall. To look at me he has to fold all the way down, like a coat hanger.\n\nHe told me not to tell '
+        'anyone. That if I talk out loud, she hears.'),
+    'deadline.lore.cuaderno_lucia.3': ('LEMAZA DICE QUE LA NONA ES SUYA', 'LEMAZA SAYS NONA IS HIS'),
+    'deadline.lore.cuaderno_lucia.4': (
+        'Dice que la Nona ya fue suya una vez, cuando era chiquita como yo. Que vino un cura y se la sacó, y a él lo '
+        'encerraron abajo.\n\nQue ahora volvió a buscarla.',
+        'He says Nona was his once before, when she was little like me. That a priest came and took her away from him, '
+        'and they locked him downstairs.\n\nThat now he has come back for her.'),
+    'deadline.lore.cuaderno_lucia.5': ('Le pregunté qué va a hacer con nosotros.\n\nSe rió con la boca de la Nona.',
+                                       "I asked him what he is going to do with us.\n\nHe laughed with Nona's mouth."),
+    'deadline.lore.cuaderno_lucia.6': ('LEMAZA LEMAZA LEMAZA\nLEMAZA LEMAZA\nLEMAZA\nAZAMEL',
+                                       'LEMAZA LEMAZA LEMAZA\nLEMAZA LEMAZA\nLEMAZA\nAZAMEL'),
+    'deadline.lore.cuaderno_lucia.7': ('YA SÉ QUE LO ESTÁS LEYENDO', 'I KNOW YOU ARE READING THIS'),
+    'deadline.lore.foto_nona_cura.1': ('Pocha y el padre Anselmo.\nLas Glicinas, agosto de 1961.\n\n\nNo la dejen sola.',
+                                       "Pocha and Father Anselmo.\nLas Glicinas, August 1961.\n\n\nDon't leave her alone."),
+    'deadline.lore.foto_nelida.1': ('Nélida y Ofelia.\nNavidad de 1960.\n\n\nAntes.', 'Nélida and Ofelia.\nChristmas 1960.\n\n\nBefore.'),
+    'deadline.lore.fotos_1961.1': ('Familia Bertolotti.\nJulio de 1961.', 'The Bertolotti family.\nJuly 1961.'),
+    'deadline.lore.fotos_1961.2': ('Sótano, 13 de agosto.\nTercera noche.\n\n\nEn la foto no se ve, pero no estábamos solos.',
+                                   "Basement, 13 August.\nThird night.\n\n\nYou can't see it in the photo, but we were not alone."),
+    'deadline.lore.fotos_1961.3': (
+        'EL DIARIO DEL SUR - 18 de agosto de 1961\n\nMURIÓ EL SACERDOTE QUE ATENDIÓ A LA NIÑA DE LAS GLICINAS\n\nEl padre '
+        'Anselmo Ruiz, de 41 años, fue hallado sin vida en la casa parroquial de Nuestra Señora del Carmen.\n\nVecinos del '
+        'pasaje Las Glicinas aseguran que durante cuatro noches se oyeron rezos en el sótano de la familia Bertolotti, '
+        '«como si alguien los dijera al revés».\n\nLa niña, de 8 años, se encuentra bien.',
+        'EL DIARIO DEL SUR - 18 August 1961\n\nPRIEST WHO TENDED THE LAS GLICINAS GIRL IS DEAD\n\nFather Anselmo Ruiz, 41, '
+        'was found dead in the parish house of Our Lady of Carmel.\n\nNeighbours on Las Glicinas lane say that for four '
+        'nights prayers were heard from the Bertolotti family\'s basement, "as if someone were saying them '
+        'backwards".\n\nThe girl, aged 8, is well.'),
+    'deadline.lore.cartas_anselmo.1': (
+        '12 de agosto de 1961\n\nMonseñor:\n\nLa niña Bertolotti no está enferma. Habla con una voz que no es la suya y '
+        'contesta en latín preguntas que todavía no le hice.\n\nPido su autorización para continuar.\n\nP. Anselmo Ruiz\n'
+        'Nuestra Señora del Carmen',
+        '12 August 1961\n\nMonsignor,\n\nThe Bertolotti girl is not ill. She speaks with a voice that is not hers and '
+        'answers in Latin questions I have not yet asked.\n\nI ask your permission to continue.\n\nFr. Anselmo Ruiz\nOur '
+        'Lady of Carmel'),
+    'deadline.lore.cartas_anselmo.2': (
+        '14 de agosto de 1961\n\nCuarta noche. Dice llamarse LEMAZA y lo escribe en las paredes con las uñas. Dice que al '
+        'revés se lee su nombre verdadero.\n\nLo saqué de la niña. No pude sacarlo de la casa. Tapamos el cuarto con '
+        'ladrillo y cal.\n\nA.',
+        '14 August 1961\n\nFourth night. It calls itself LEMAZA and writes it on the walls with its nails. It says its '
+        'true name is read backwards.\n\nI got it out of the girl. I could not get it out of the house. We walled up the '
+        'room with brick and lime.\n\nA.'),
+    'deadline.lore.cartas_anselmo.3': (
+        '16 de agosto de 1961\n\nSeñora Bertolotti:\n\nNo abran el cuarto del sótano. Nunca. Si la nena vuelve a '
+        'nombrarlo, no le contesten. No hablen de él en voz alta.\n\nEscucha. Escucha todo.\n\nQue Dios me perdone.\n'
+        'P. Anselmo',
+        '16 August 1961\n\nMrs Bertolotti,\n\nDo not open the basement room. Ever. If the girl names it again, do not '
+        'answer her. Do not speak of it out loud.\n\nIt listens. It listens to everything.\n\nMay God forgive me.\nFr. '
+        'Anselmo'),
+    'deadline.lore.misal_anselmo.1': (
+        'RITUALE ROMANUM\nDe exorcizandis obsessis a daemonio\n\n\nNo contesta a su nombre.\nContesta a su nombre al '
+        'revés.\n\nSi lo nombran, oye.\nSi lo oyen, vuelve.\n\nA.',
+        'RITUALE ROMANUM\nDe exorcizandis obsessis a daemonio\n\n\nIt does not answer to its name.\nIt answers to its '
+        'name backwards.\n\nName it, and it hears.\nHear it, and it comes back.\n\nA.'),
+    'deadline.lore.rosario_roto.1': ('El hilo no está cortado. Está mordido.', "The string wasn't cut. It was bitten."),
+})
+# --- end B1b blood, phone, lore

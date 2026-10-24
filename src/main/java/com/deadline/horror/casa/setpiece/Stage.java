@@ -13,7 +13,6 @@ import com.deadline.horror.casa.dog.Choripan;
 import com.deadline.horror.casa.dog.ChoripanEntity;
 import com.deadline.registry.ModEntities;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -29,7 +28,6 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
-import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
 /**
@@ -90,19 +88,26 @@ public final class Stage {
 		return forward(p.getYRot());
 	}
 
-	/** The spot on the floor of the corridor side of a door: the door moved `out` blocks toward `side`. */
+	/**
+	 * The spot on the floor `out` blocks from a door, on the side of `side` (crossing the door the way it opens: along
+	 * the axis its block faces). Null when the site has no such door.
+	 */
 	public static Vec3 doorStep(Run r, String door, Vec3 side, double out) {
 		Vec3 d = HouseQuery.doorPos(r, door);
 		if (d == null) {
 			return null;
 		}
 		Vec3 base = new Vec3(d.x, Math.floor(d.y), d.z);
-		Vec3 to = side.subtract(base).multiply(1, 0, 1);
-		if (to.lengthSqr() < 1.0E-4) {
-			return base;
+		Vec3 to = side.subtract(base);
+		BlockState st = r.level.getBlockState(BlockPos.containing(d));
+		Direction.Axis ax = st.hasProperty(BlockStateProperties.HORIZONTAL_FACING)
+				? st.getValue(BlockStateProperties.HORIZONTAL_FACING).getAxis()
+				: Math.abs(to.x) >= Math.abs(to.z) ? Direction.Axis.X : Direction.Axis.Z;
+		double sign = ax == Direction.Axis.X ? Math.signum(to.x) : Math.signum(to.z);
+		if (sign == 0.0) {
+			sign = 1.0;
 		}
-		// snap to the axis the door opens along (a door is crossed straight, never diagonally)
-		Vec3 axis = Math.abs(to.x) >= Math.abs(to.z) ? new Vec3(Math.signum(to.x), 0, 0) : new Vec3(0, 0, Math.signum(to.z));
+		Vec3 axis = ax == Direction.Axis.X ? new Vec3(sign, 0, 0) : new Vec3(0, 0, sign);
 		return base.add(axis.scale(out));
 	}
 
@@ -456,8 +461,8 @@ public final class Stage {
 				if (e.isRemoved()) {
 					return true;
 				}
-				boolean seen = seen(run, null, e) || to != null && seen(run, null, to.add(0, 1.0, 0));
-				this.unseen = seen ? 0 : this.unseen + 1;
+				boolean visible = seen(run, null, e) || to != null && seen(run, null, to.add(0, 1.0, 0));
+				this.unseen = visible ? 0 : this.unseen + 1;
 				if (this.unseen < 10) {
 					return false;
 				}
@@ -529,21 +534,5 @@ public final class Stage {
 		var shape = r.level.getBlockState(p).getCollisionShape(r.level, p);
 		double y = shape.isEmpty() ? p.getY() + 0.5 : p.getY() + shape.max(Direction.Axis.Y);
 		return new Vec3(p.getX() + 0.5, y, p.getZ() + 0.5);
-	}
-
-	/** Entities of a class around a point (handy guard: is the real one standing nearby). */
-	public static <T extends Entity> List<T> around(Run r, Class<T> cls, Vec3 at, double radius) {
-		return r.level.getEntitiesOfClass(cls, new AABB(at, at).inflate(radius));
-	}
-
-	/** Small per-run memory of the set pieces (what they need to remember between firings). */
-	public static Map<String, Object> memory(Run r) {
-		return MEMORY.computeIfAbsent(r, k -> new HashMap<>());
-	}
-
-	private static final Map<Run, Map<String, Object>> MEMORY = new WeakHashMap<>();
-
-	public static void forgetMemory(Run r) {
-		MEMORY.remove(r);
 	}
 }

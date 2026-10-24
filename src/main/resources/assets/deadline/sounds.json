@@ -598,30 +598,6 @@
    "deadline:coro/acorde_final"
   ]
  },
- "casa.cumbia_far": {
-  "subtitle": "subtitles.deadline.casa.cumbia_far",
-  "sounds": [
-   {
-    "name": "deadline:casa/cumbia_far",
-    "stream": true
-   }
-  ]
- },
- "casa.cumbia_cut": {
-  "subtitle": "subtitles.deadline.casa.cumbia_cut",
-  "sounds": [
-   "deadline:casa/cumbia_cut"
-  ]
- },
- "casa.cumbia_musicbox": {
-  "subtitle": "subtitles.deadline.casa.cumbia_musicbox",
-  "sounds": [
-   {
-    "name": "deadline:casa/cumbia_musicbox",
-    "stream": true
-   }
-  ]
- },
  "casa.breaker_trip": {
   "subtitle": "subtitles.deadline.casa.breaker_trip",
   "sounds": [
@@ -643,14 +619,6 @@
    }
   ]
  },
- "choripan.bark_cute": {
-  "subtitle": "subtitles.deadline.choripan.bark_cute",
-  "sounds": [
-   "deadline:choripan/bark_cute_1",
-   "deadline:choripan/bark_cute_2",
-   "deadline:choripan/bark_cute_3"
-  ]
- },
  "choripan.whine": {
   "subtitle": "subtitles.deadline.choripan.whine",
   "sounds": [
@@ -663,12 +631,6 @@
   "sounds": [
    "deadline:choripan/growl_low_1",
    "deadline:choripan/growl_low_2"
-  ]
- },
- "choripan.sneeze": {
-  "subtitle": "subtitles.deadline.choripan.sneeze",
-  "sounds": [
-   "deadline:choripan/sneeze"
   ]
  },
  "choripan.crack": {
@@ -695,36 +657,6 @@
    "deadline:choripan/demon_roar_2"
   ]
  },
- "choripan.fetch_drop": {
-  "subtitle": "subtitles.deadline.choripan.fetch_drop",
-  "sounds": [
-   "deadline:choripan/fetch_drop"
-  ]
- },
- "choripan.chomp": {
-  "subtitle": "subtitles.deadline.choripan.chomp",
-  "sounds": [
-   "deadline:choripan/chomp"
-  ]
- },
- "choripan.vomit": {
-  "subtitle": "subtitles.deadline.choripan.vomit",
-  "sounds": [
-   "deadline:choripan/vomit"
-  ]
- },
- "choripan.metro_retract": {
-  "subtitle": "subtitles.deadline.choripan.metro_retract",
-  "sounds": [
-   "deadline:choripan/metro_retract"
-  ]
- },
- "fire.blue_whoosh": {
-  "subtitle": "subtitles.deadline.fire.blue_whoosh",
-  "sounds": [
-   "deadline:fire/blue_whoosh"
-  ]
- },
  "knife.lift": {
   "subtitle": "subtitles.deadline.knife.lift",
   "sounds": [
@@ -748,12 +680,6 @@
    "deadline:knife/impact_3"
   ]
  },
- "pool.splash": {
-  "subtitle": "subtitles.deadline.pool.splash",
-  "sounds": [
-   "deadline:pool/splash"
-  ]
- },
  "plate.whoosh": {
   "subtitle": "subtitles.deadline.plate.whoosh",
   "sounds": [
@@ -775,24 +701,6 @@
   "subtitle": "subtitles.deadline.plate.storm",
   "sounds": [
    "deadline:plate/storm"
-  ]
- },
- "mate.slide": {
-  "subtitle": "subtitles.deadline.mate.slide",
-  "sounds": [
-   "deadline:mate/slide"
-  ]
- },
- "mate.sip_empty": {
-  "subtitle": "subtitles.deadline.mate.sip_empty",
-  "sounds": [
-   "deadline:mate/sip_empty"
-  ]
- },
- "termo.fly": {
-  "subtitle": "subtitles.deadline.termo.fly",
-  "sounds": [
-   "deadline:termo/fly"
   ]
  },
  "alacena.golpe": {
@@ -848,12 +756,6 @@
   "subtitle": "subtitles.deadline.rocking.creak_slow",
   "sounds": [
    "deadline:rocking/creak_slow"
-  ]
- },
- "azamel.suck": {
-  "subtitle": "subtitles.deadline.azamel.suck",
-  "sounds": [
-   "deadline:azamel/suck"
   ]
  },
  "candles.out": {
@@ -1050,6 +952,217 @@
    "deadline:perro_largo/respira"
   ]
  },
+ "polter.pasos_arriba": {
+  "subtitle": "subtitles.deadline.polter.pasos_arriba",
+  "sounds": [
+   "deadline:polter/pasos_arriba_1",
+   "deadline:polter/pasos_arriba_2",
+   "deadline:polter/pasos_arriba_3"
+  ]
+ },
+ "polter.golpe": {
+  "subtitle": "subtitles.deadline.polter.golpe",
+  "sounds": [
+   "deadline:polter/golpe_1",
+   "deadline:polter/golpe_2",
+   "deadline:polter/golpe_3"
+  ]
+ },
+ "polter.palmadas": {
+  "subtitle": "subtitles.deadline.polter.palmadas",
+  "sounds": [
+   "deadline:polter/palmadas"
+  ]
+ },
+ "polter.risita": {
+  "subtitle": "subtitles.deadline.polter.risita",
+  "sounds": [
+   "deadline:polter/risita_1",
+   "deadline:polter/risita_2"
+  ]
+ },
+ "polter.caja_musica": {
+  "subtitle": "subtitles.deadline.polter.caja_musica",
+  "sounds": [
+   "deadline:polter/caja_musica"
+  ]
+ },
+ "polter.dentadura": {
+  "subtitle": "subtitles.deadline.polter.dentadura",
+  "sounds": [
+   "deadline:polter/dentadura_1",
+   "deadline:polter/dentadura_2"
+  ]
+ },
+ "polter.susurro": {
+  "subtitle": "subtitles.deadline.polter.susurro",
+  "sounds": [
+   "deadline:polter/susurro_1",
+   "deadline:polter/susurro_2"
+  ]
+ },
+ "polter.respira": {
+  "subtitle": "subtitles.deadline.polter.respira",
+  "sounds": [
+   "deadline:polter/respira_1",
+   "deadline:polter/respira_2"
+  ]
+ },
+ "polter.rezo_reves": {
+  "subtitle": "subtitles.deadline.polter.rezo_reves",
+  "sounds": [
+   "deadline:polter/rezo_reves"
+  ]
+ },
+ "polter.rasguno_puerta": {
+  "subtitle": "subtitles.deadline.polter.rasguno_puerta",
+  "sounds": [
+   "deadline:polter/rasguno_puerta_1",
+   "deadline:polter/rasguno_puerta_2"
+  ]
+ },
+ "polter.telefono_ring": {
+  "subtitle": "subtitles.deadline.polter.telefono_ring",
+  "sounds": [
+   "deadline:polter/telefono_ring"
+  ]
+ },
+ "polter.telefono_respira": {
+  "subtitle": "subtitles.deadline.polter.telefono_respira",
+  "sounds": [
+   "deadline:polter/telefono_respira"
+  ]
+ },
+ "polter.llanto_rejilla": {
+  "subtitle": "subtitles.deadline.polter.llanto_rejilla",
+  "sounds": [
+   "deadline:polter/llanto_rejilla"
+  ]
+ },
+ "polter.picaporte": {
+  "subtitle": "subtitles.deadline.polter.picaporte",
+  "sounds": [
+   "deadline:polter/picaporte_1",
+   "deadline:polter/picaporte_2"
+  ]
+ },
+ "polter.heladera": {
+  "subtitle": "subtitles.deadline.polter.heladera",
+  "sounds": [
+   "deadline:polter/heladera"
+  ]
+ },
+ "polter.papel": {
+  "subtitle": "subtitles.deadline.polter.papel",
+  "sounds": [
+   "deadline:polter/papel"
+  ]
+ },
+ "polter.canilla": {
+  "subtitle": "subtitles.deadline.polter.canilla",
+  "sounds": [
+   "deadline:polter/canilla"
+  ]
+ },
+ "polter.canilla_sangre": {
+  "subtitle": "subtitles.deadline.polter.canilla_sangre",
+  "sounds": [
+   "deadline:polter/canilla_sangre"
+  ]
+ },
+ "polter.persianas": {
+  "subtitle": "subtitles.deadline.polter.persianas",
+  "sounds": [
+   "deadline:polter/persianas"
+  ]
+ },
+ "polter.persiana": {
+  "subtitle": "subtitles.deadline.polter.persiana",
+  "sounds": [
+   "deadline:polter/persiana"
+  ]
+ },
+ "polter.mecedora": {
+  "subtitle": "subtitles.deadline.polter.mecedora",
+  "sounds": [
+   "deadline:polter/mecedora"
+  ]
+ },
+ "polter.cajon": {
+  "subtitle": "subtitles.deadline.polter.cajon",
+  "sounds": [
+   "deadline:polter/cajon_1",
+   "deadline:polter/cajon_2"
+  ]
+ },
+ "polter.cajones": {
+  "subtitle": "subtitles.deadline.polter.cajones",
+  "sounds": [
+   "deadline:polter/cajones"
+  ]
+ },
+ "polter.tele_on": {
+  "subtitle": "subtitles.deadline.polter.tele_on",
+  "sounds": [
+   "deadline:polter/tele_on"
+  ]
+ },
+ "polter.tele_off": {
+  "subtitle": "subtitles.deadline.polter.tele_off",
+  "sounds": [
+   "deadline:polter/tele_off"
+  ]
+ },
+ "polter.radio": {
+  "subtitle": "subtitles.deadline.polter.radio",
+  "sounds": [
+   "deadline:polter/radio"
+  ]
+ },
+ "polter.llave_luz": {
+  "subtitle": "subtitles.deadline.polter.llave_luz",
+  "sounds": [
+   "deadline:polter/llave_luz"
+  ]
+ },
+ "polter.zumbido": {
+  "subtitle": "subtitles.deadline.polter.zumbido",
+  "sounds": [
+   "deadline:polter/zumbido"
+  ]
+ },
+ "polter.maquina_coser": {
+  "subtitle": "subtitles.deadline.polter.maquina_coser",
+  "sounds": [
+   "deadline:polter/maquina_coser"
+  ]
+ },
+ "polter.puerta_lenta": {
+  "subtitle": "subtitles.deadline.polter.puerta_lenta",
+  "sounds": [
+   "deadline:polter/puerta_lenta"
+  ]
+ },
+ "polter.cuadro": {
+  "subtitle": "subtitles.deadline.polter.cuadro",
+  "sounds": [
+   "deadline:polter/cuadro"
+  ]
+ },
+ "polter.objeto": {
+  "subtitle": "subtitles.deadline.polter.objeto",
+  "sounds": [
+   "deadline:polter/objeto_1",
+   "deadline:polter/objeto_2"
+  ]
+ },
+ "polter.vidrio": {
+  "subtitle": "subtitles.deadline.polter.vidrio",
+  "sounds": [
+   "deadline:polter/vidrio_1",
+   "deadline:polter/vidrio_2"
+  ]
+ },
  "hunt.stinger_nona": {
   "subtitle": "subtitles.deadline.hunt.stinger_nona",
   "sounds": [
@@ -1185,6 +1298,133 @@
     "name": "deadline:hunt/chase",
     "stream": true
    }
+  ]
+ },
+ "sangre.gota": {
+  "subtitle": "subtitles.deadline.sangre.gota",
+  "sounds": [
+   "deadline:sangre/gota_1",
+   "deadline:sangre/gota_2",
+   "deadline:sangre/gota_3"
+  ]
+ },
+ "sangre.escribe": {
+  "subtitle": "subtitles.deadline.sangre.escribe",
+  "sounds": [
+   "deadline:sangre/escribe"
+  ]
+ },
+ "sangre.revela": {
+  "subtitle": "subtitles.deadline.sangre.revela",
+  "sounds": [
+   "deadline:sangre/revela"
+  ]
+ },
+ "sangre.mano_vidrio": {
+  "subtitle": "subtitles.deadline.sangre.mano_vidrio",
+  "sounds": [
+   "deadline:sangre/mano_vidrio_1",
+   "deadline:sangre/mano_vidrio_2",
+   "deadline:sangre/mano_vidrio_3"
+  ]
+ },
+ "sangre.arrastre": {
+  "subtitle": "subtitles.deadline.sangre.arrastre",
+  "sounds": [
+   "deadline:sangre/arrastre"
+  ]
+ },
+ "sangre.pisada": {
+  "subtitle": "subtitles.deadline.sangre.pisada",
+  "sounds": [
+   "deadline:sangre/pisada_1",
+   "deadline:sangre/pisada_2",
+   "deadline:sangre/pisada_3"
+  ]
+ },
+ "sangre.burbujea": {
+  "subtitle": "subtitles.deadline.sangre.burbujea",
+  "sounds": [
+   "deadline:sangre/burbujea"
+  ]
+ },
+ "sangre.hunde": {
+  "subtitle": "subtitles.deadline.sangre.hunde",
+  "sounds": [
+   "deadline:sangre/hunde"
+  ]
+ },
+ "sangre.dientes": {
+  "subtitle": "subtitles.deadline.sangre.dientes",
+  "sounds": [
+   "deadline:sangre/dientes"
+  ]
+ },
+ "sangre.cajon": {
+  "subtitle": "subtitles.deadline.sangre.cajon",
+  "sounds": [
+   "deadline:sangre/cajon"
+  ]
+ },
+ "sangre.respira": {
+  "subtitle": "subtitles.deadline.sangre.respira",
+  "sounds": [
+   "deadline:sangre/respira_1",
+   "deadline:sangre/respira_2"
+  ]
+ },
+ "linterna.muere": {
+  "subtitle": "subtitles.deadline.linterna.muere",
+  "sounds": [
+   "deadline:linterna/muere"
+  ]
+ },
+ "celular.obturador": {
+  "subtitle": "subtitles.deadline.celular.obturador",
+  "sounds": [
+   "deadline:celular/obturador"
+  ]
+ },
+ "lore.papel": {
+  "subtitle": "subtitles.deadline.lore.papel",
+  "sounds": [
+   "deadline:lore/papel_1",
+   "deadline:lore/papel_2"
+  ]
+ },
+ "sp.cerrojo": {
+  "subtitle": "subtitles.deadline.sp.cerrojo",
+  "sounds": [
+   "deadline:sp/cerrojo"
+  ]
+ },
+ "sp.puerta_cruje": {
+  "subtitle": "subtitles.deadline.sp.puerta_cruje",
+  "sounds": [
+   "deadline:sp/puerta_cruje"
+  ]
+ },
+ "sp.cubiertos": {
+  "subtitle": "subtitles.deadline.sp.cubiertos",
+  "sounds": [
+   "deadline:sp/cubiertos_1",
+   "deadline:sp/cubiertos_2",
+   "deadline:sp/cubiertos_3"
+  ]
+ },
+ "sp.radio_cuna": {
+  "subtitle": "subtitles.deadline.sp.radio_cuna",
+  "sounds": [
+   {
+    "name": "deadline:sp/radio_cuna",
+    "stream": true
+   }
+  ]
+ },
+ "sp.asiento": {
+  "subtitle": "subtitles.deadline.sp.asiento",
+  "sounds": [
+   "deadline:sp/asiento"
   ]
  },
  "spirit_box.voice_1": {

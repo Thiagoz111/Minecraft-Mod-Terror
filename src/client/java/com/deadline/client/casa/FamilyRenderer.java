@@ -35,7 +35,12 @@ public class FamilyRenderer<T extends HauntEntity, M extends EntityModel<HauntRe
 		public boolean floating;
 		public boolean wet;
 		public int stun;
+		/** C: the expression bits of a {@link FamilyEntity} (EXPR_STARE, EXPR_SMILE). */
+		public int expr;
 	}
+
+	/** C: how far round (degrees off the body) a staring head is drawn (FamilyEntity.EXPR_STARE). */
+	public static final float STARE_MAX = 170F;
 
 	private final Identifier[] textures;
 	private final Identifier[] eyes;
@@ -102,9 +107,11 @@ public class FamilyRenderer<T extends HauntEntity, M extends EntityModel<HauntRe
 			if (entity instanceof FamilyEntity fam) {
 				f.talking = fam.isTalking();
 				f.floating = fam.isFloating();
+				f.expr = fam.expression();
 			} else {
 				f.talking = false;
 				f.floating = false;
+				f.expr = 0;
 			}
 		}
 	}
@@ -174,6 +181,16 @@ public class FamilyRenderer<T extends HauntEntity, M extends EntityModel<HauntRe
 
 	public static int stun(HauntRenderState s) {
 		return s instanceof State f ? f.stun : 0;
+	}
+
+	/** C: the head follows round much further than a neck should (FamilyEntity.EXPR_STARE). */
+	public static boolean staring(HauntRenderState s) {
+		return s instanceof State f && (f.expr & FamilyEntity.EXPR_STARE) != 0;
+	}
+
+	/** C: the Nona's grin, the dentures shown (FamilyEntity.EXPR_SMILE). */
+	public static boolean smiling(HauntRenderState s) {
+		return s instanceof State f && (f.expr & FamilyEntity.EXPR_SMILE) != 0;
 	}
 
 	/** 0..1 mouth opening of a talking face: syllables (~3 a second) beating against slower phrases. */

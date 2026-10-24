@@ -102,34 +102,20 @@ SOUNDS = {
     'coro.ave_derecho_3': (1, 'El coro canta', 'The choir sings', True),
     'coro.acorde_final': (1, 'Acorde luminoso', 'Bright chord', False),
     # ---------------------------------------------------------------- case 2: Casa Morales
-    'casa.cumbia_far': (1, 'Cumbia de un vecino', "A neighbour's cumbia", True),
-    'casa.cumbia_cut': (1, 'Se corta la cumbia', 'The cumbia cuts off', False),
-    'casa.cumbia_musicbox': (1, 'Cajita de música', 'Music box', True),
     'casa.breaker_trip': (1, 'Salta la térmica', 'The breaker trips', False),
     'casa.breaker_reset': (1, 'Vuelve la luz', 'Power comes back', False),
     'casa.tv_static': (1, 'Estática', 'TV static', True),
-    'choripan.bark_cute': (3, 'Choripán ladra', 'Choripán barks', False),
     'choripan.whine': (2, 'Choripán gime', 'Choripán whines', False),
     'choripan.growl_low': (2, 'Choripán gruñe', 'Choripán growls', False),
-    'choripan.sneeze': (1, 'Choripán estornuda', 'Choripán sneezes', False),
     'choripan.crack': (6, 'Crujido húmedo', 'Wet crack', False),
     'choripan.unspool': (1, 'Algo sale y no termina de salir', 'Something keeps coming out', False),
     'choripan.demon_roar': (2, 'Rugido', 'Roar', False),
-    'choripan.fetch_drop': (1, 'Te deja algo a los pies', 'Drops something at your feet', False),
-    'choripan.chomp': (1, 'Mordisco', 'Chomp', False),
-    'choripan.vomit': (1, 'Vómito negro', 'Black vomit', False),
-    'choripan.metro_retract': (1, 'Se enrolla como un metro', 'Retracts like a tape measure', False),
-    'fire.blue_whoosh': (1, 'Fuego azul', 'Blue fire', False),
     'knife.lift': (2, 'Los cuchillos se elevan', 'Knives rise', False),
     'knife.whoosh': (3, 'Un cuchillo vuela', 'A knife flies', False),
     'knife.impact': (3, 'Un cuchillo se clava', 'A knife hits', False),
-    'pool.splash': (1, 'Chapuzón', 'Splash', False),
     'plate.whoosh': (4, 'Un plato vuela', 'A plate flies', False),
     'plate.shatter': (3, 'Un plato se rompe', 'A plate shatters', False),
     'plate.storm': (1, 'Tormenta de platos', 'Storm of plates', False),
-    'mate.slide': (1, 'El mate se desliza', 'The mate slides', False),
-    'mate.sip_empty': (1, 'Mate vacío', 'Empty mate gurgle', False),
-    'termo.fly': (1, 'El termo vuela', 'The thermos flies', False),
     'alacena.golpe': (3, 'Golpean las alacenas', 'Cupboards bang', False),
     'chair.stack': (1, 'Sillas apiladas', 'Chairs stacked', False),
     'door.slam_cascade': (1, 'Portazos en cadena', 'Doors slam in a row', False),
@@ -138,7 +124,6 @@ SOUNDS = {
     'doll.giggle_chorus': (1, 'Risitas de muñecas', 'Dolls giggle', False),
     'andador.squeak': (3, 'Rueda que chilla', 'Squeaky wheel', False),
     'rocking.creak_slow': (1, 'Mecedora', 'Rocking chair', False),
-    'azamel.suck': (1, 'Algo es absorbido', 'Something is sucked in', False),
     'candles.out': (1, 'Se apagan las velas', 'Candles go out', False),
     'wall.break': (1, 'Se derrumba una pared', 'A wall collapses', False),
     'morning.birds': (1, 'Pájaros', 'Birds', True),
@@ -186,6 +171,44 @@ SOUNDS.update({
 })
 # --- end B3 apparitions
 
+# --- B1a poltergeist (Casa Morales events 1-32 and the interactables of 6.3; tools/audio/snd_polter.py)
+SOUNDS.update({
+    'polter.pasos_arriba': (3, 'Pasos en el piso de arriba', 'Footsteps upstairs', False),
+    'polter.golpe': (3, 'Un golpe dentro de la pared', 'A knock inside the wall', False),
+    'polter.palmadas': (1, 'Dos palmadas detrás tuyo', 'Two claps behind you', False),
+    'polter.risita': (2, 'Una nena se ríe', 'A little girl giggles', False),
+    'polter.caja_musica': (1, 'Una cajita de música', 'A music box', False),
+    'polter.dentadura': (2, 'Chasquido de dentadura', 'Dentures click', False),
+    'polter.susurro': (2, 'Alguien susurra', 'Someone whispers', False),
+    'polter.respira': (2, 'Alguien respira a tu lado', 'Someone breathes beside you', False),
+    'polter.rezo_reves': (1, 'Un rezo al revés', 'A prayer, backwards', False),
+    'polter.rasguno_puerta': (2, 'Algo rasca la puerta', 'Something scratches the door', False),
+    'polter.telefono_ring': (1, 'Suena el teléfono', 'The phone rings', False),
+    'polter.telefono_respira': (1, 'Estática y una respiración', 'Static and breathing', False),
+    'polter.llanto_rejilla': (1, 'Un nene llora en el sótano', 'A child cries in the basement', False),
+    'polter.picaporte': (2, 'El picaporte se mueve', 'The door handle moves', False),
+    'polter.heladera': (1, 'La heladera zumba', 'The fridge hums', False),
+    'polter.papel': (1, 'Algo se mueve en un papel', 'Something moves inside paper', False),
+    'polter.canilla': (1, 'Corre el agua', 'Water runs', False),
+    'polter.canilla_sangre': (1, 'Algo espeso sale de la canilla', 'Something thick pours from the tap', False),
+    'polter.persianas': (1, 'Caen las persianas', 'The blinds crash down', False),
+    'polter.persiana': (1, 'Una persiana', 'A roller blind', False),
+    'polter.mecedora': (1, 'La mecedora se mece sola', 'The rocking chair rocks by itself', False),
+    'polter.cajon': (2, 'Un cajón', 'A drawer', False),
+    'polter.cajones': (1, 'Se cierran todos los cajones', 'Every drawer slams shut', False),
+    'polter.tele_on': (1, 'Se prende la tele', 'The TV comes on', False),
+    'polter.tele_off': (1, 'Se apaga la tele', 'The TV goes off', False),
+    'polter.radio': (1, 'Estática de radio', 'Radio static', False),
+    'polter.llave_luz': (1, 'Clic', 'Click', False),
+    'polter.zumbido': (1, 'Zumba la luz', 'The light buzzes', False),
+    'polter.maquina_coser': (1, 'La máquina de coser', 'The sewing machine', False),
+    'polter.puerta_lenta': (1, 'Una puerta se abre sola', 'A door creaks open', False),
+    'polter.cuadro': (1, 'Un cuadro raspa la pared', 'A picture scrapes the wall', False),
+    'polter.objeto': (2, 'Algo te golpea', 'Something hits you', False),
+    'polter.vidrio': (2, 'Se rompe un vidrio', 'Glass shatters', False),
+})
+# --- end B1a poltergeist
+
 
 # --- B2 hunt (Act 5 "Ella escucha todo": the broken Nona, hiding, holding the breath, 3D jumpscares; tools/audio/snd_hunt.py)
 SOUNDS.update({
@@ -211,6 +234,35 @@ SOUNDS.update({
     'hunt.chase': (1, 'Te persigue', 'She is after you', True),
 })
 # --- end B2 hunt
+
+# --- B1b blood, phone, lore (Casa Morales events 46-54, the lore papers; tools/audio/snd_sangre.py)
+SOUNDS.update({
+    'sangre.gota': (3, 'Gotea algo espeso', 'Something thick drips', False),
+    'sangre.escribe': (1, 'Dedos húmedos sobre la pared', 'Wet fingers on the wall', False),
+    'sangre.revela': (1, 'Algo está escrito', 'Something is written there', False),
+    'sangre.mano_vidrio': (3, 'Una mano golpea el vidrio', 'A hand slaps the glass', False),
+    'sangre.arrastre': (1, 'Una mano se arrastra por el vidrio', 'A hand drags down the glass', False),
+    'sangre.pisada': (3, 'Pasos descalzos, mojados', 'Wet bare footsteps', False),
+    'sangre.burbujea': (1, 'Burbujea algo espeso', 'Something thick bubbles', False),
+    'sangre.hunde': (1, 'Algo se hunde', 'Something sinks', False),
+    'sangre.dientes': (1, 'Algo chico repiquetea', 'Something small rattles', False),
+    'sangre.cajon': (1, 'Un cajón se abre', 'A drawer slides open', False),
+    'sangre.respira': (2, 'Algo respira muy cerca', 'Something breathes very close', False),
+    'linterna.muere': (1, 'La linterna se muere', 'The flashlight dies', False),
+    'celular.obturador': (1, 'Una foto, detrás tuyo', 'A photo, behind you', False),
+    'lore.papel': (2, 'Papel viejo', 'Old paper', False),
+})
+# --- end B1b blood, phone, lore
+
+# --- C set pieces (the acts of Casa Morales: the arrival, the dinner, the car; tools/audio/snd_setpieces.py)
+SOUNDS.update({
+    'sp.cerrojo': (1, 'Un cerrojo gira', 'A deadbolt turns', False),
+    'sp.puerta_cruje': (1, 'Una puerta se abre sola', 'A door creaks open by itself', False),
+    'sp.cubiertos': (3, 'Cubiertos contra los platos', 'Cutlery on plates', False),
+    'sp.radio_cuna': (1, 'Un nene tararea entre la estática', 'A child hums through the static', True),
+    'sp.asiento': (1, 'Cruje el asiento de atrás', 'The back seat creaks', False),
+})
+# --- end C set pieces
 
 def java_name(s):
     return s.replace('.', '_').upper()

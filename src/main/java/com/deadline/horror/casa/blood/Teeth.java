@@ -8,6 +8,7 @@ import java.util.List;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.Display;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
@@ -30,6 +31,12 @@ public final class Teeth {
 	 * no facing. denture: the Nona's dentures too. Returns the displays (empty when it could not place them).
 	 */
 	public static List<Display.ItemDisplay> spill(Run r, BlockPos drawer, Vec3 viewer, boolean denture, RandomSource rnd) {
+		return spill(r, drawer, viewer, null, denture, rnd);
+	}
+
+	/** {@link #spill(Run, BlockPos, Vec3, boolean, RandomSource)}; `who` (the hunter) lets it find the real table top. */
+	public static List<Display.ItemDisplay> spill(Run r, BlockPos drawer, Vec3 viewer, Entity who, boolean denture,
+			RandomSource rnd) {
 		List<Display.ItemDisplay> out = new ArrayList<>();
 		BlockState st = r.level.getBlockState(drawer);
 		Vec3 mid = Vec3.atCenterOf(drawer);
@@ -40,8 +47,9 @@ public final class Teeth {
 			f = com.deadline.director.Props.towards(mid, viewer == null ? mid.add(0, 0, 1) : viewer);
 		}
 		Vec3 front = new Vec3(f.getStepX(), 0, f.getStepZ());
-		double top = LoreDocs.top(r, drawer);
-		Vec3 base = new Vec3(mid.x, top, mid.z).add(front.scale(0.2));
+		Vec3 base0 = mid.add(front.scale(0.2));
+		double top = LoreDocs.surface(r, drawer, base0.x, base0.z, who);
+		Vec3 base = new Vec3(base0.x, top, base0.z);
 		add(out, BloodDecals.floor(r, BloodDecals.splat(rnd), base, rnd.nextFloat() * 360F, 0.5F, 0.5F));
 		if (denture) {
 			Vec3 at = base.add((rnd.nextFloat() - 0.5F) * 0.08, 0.004, (rnd.nextFloat() - 0.5F) * 0.08);

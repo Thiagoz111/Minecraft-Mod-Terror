@@ -183,6 +183,14 @@ public class CasaScript extends CaseScript {
 				run.level.setDayTime(Math.floorDiv(run.level.getDayTime(), 24000L) * 24000L + 23200L);  // a grey dawn
 				run.sound(ModSounds.MORNING_BIRDS, run.at("final_auto"), 0.5F, 0.9F);
 				h.stopAll();
+				// C (sp_final_auto needs the car): his car waits on the street, at final_auto, unless it is already near
+				if (run.def.points.containsKey("final_auto")) {
+					CarEntity car = com.deadline.car.CarKeysItem.find(p);
+					Vec3 street = run.at("final_auto");
+					if (car == null || car.level() != run.level || car.position().distanceTo(street) > 40.0) {
+						com.deadline.car.CarKeysItem.bring(p, car, street, run.yaw("final_auto"));
+					}
+				}
 			}
 			default -> {
 			}
@@ -292,7 +300,9 @@ public class CasaScript extends CaseScript {
 				run.post("a_dormir:fin");
 			}
 		}
-		if (s.transitionAt >= 0 && (run.event("a_dormir:fin") || run.now() - s.transitionAt > 20 * 60)) {
+		// C: the scripted bedtime walks everyone up the stairs and waits for him at his door: give it time
+		boolean bedtimeScripted = HorrorEvents.get(run.type.key(), "sp_a_dormir") != null;
+		if (s.transitionAt >= 0 && (run.event("a_dormir:fin") || run.now() - s.transitionAt > 20 * (bedtimeScripted ? 150 : 60))) {
 			family(run, false);
 			blackout(run, true);
 			run.startChapter(4, false);
@@ -321,7 +331,9 @@ public class CasaScript extends CaseScript {
 				s.setPieces.remove(0);
 				s.nextSetPiece = run.now() + 20 * (75 + run.level.getRandom().nextInt(40));
 			} else {
-				s.nextSetPiece = run.now() + 20 * 10;  // not the right place yet: try again in a moment
+				// not the right place yet: the next one gets its turn, this one waits at the back of the line (C)
+				s.setPieces.add(s.setPieces.remove(0));
+				s.nextSetPiece = run.now() + 20 * 10;
 			}
 		}
 		if (t > 20 * 480 || h.bigScares() - s.bigAtStart >= 5 && t > 20 * 200) {
@@ -339,8 +351,10 @@ public class CasaScript extends CaseScript {
 			if (run.event("hunt:transformed") || Hunt.active(run)) {
 				s.huntSince = run.now();
 				s.huntStarted = true;
-			} else if (h.actTicks() > 20 * 40) {
-				Hunt.start(run);  // the transformation never happened (no kitchen in sight): she is simply out there now
+			} else if (h.actTicks() > 20 * 40 && !h.isRunning("sp_nona_se_rompe")) {
+				// the transformation never happened (no kitchen in sight): she is simply out there now (C: unless the set
+				// piece is still luring him to the kitchen; it breaks her itself, seen or not)
+				Hunt.start(run);
 			}
 			return;
 		}
@@ -384,7 +398,11 @@ public class CasaScript extends CaseScript {
 				}
 			}
 		}
-		if (!run.has("cuarto61") && run.def.areas.containsKey("cuarto61") && run.inside(p, "cuarto61")) {
+		// C: the scripted 1961 room starts as he reaches the basement (the family is put in the room before he can see in)
+		boolean roomScripted = HorrorEvents.get(run.type.key(), "sp_cuarto61") != null;
+		boolean inRoom = run.def.areas.containsKey("cuarto61") && run.inside(p, "cuarto61");
+		boolean below = roomScripted && run.def.areas.containsKey("sotano") && run.inside(p, "sotano");
+		if (!run.has("cuarto61") && (inRoom || below)) {
 			run.flag("cuarto61");
 			if (h.fire("sp_cuarto61", p, false) == null) {
 				// fallback: the lights die, a flash, the stinger, and the way out is open
@@ -446,6 +464,9 @@ public class CasaScript extends CaseScript {
 	public void onLeave(Run run, ServerPlayer p) {
 		Hunt.stop(run);
 		Haunt.forget(run);
+		// what the poltergeist left changed (pictures turned, blinds, TV, drawers, flying props still out)
+		com.deadline.horror.casa.PoltergeistEvents.cleanup(run);
+		com.deadline.horror.casa.SetPieces.forget(run);
 		STATES.remove(run);
 	}
 

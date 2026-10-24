@@ -53,7 +53,12 @@ public final class Drawers {
 
 	/** True for a kit block with drawers. */
 	public static boolean is(BlockState s) {
-		return FRONTS.containsKey(Polter.key(s));
+		return s != null && FRONTS.containsKey(Polter.key(s));
+	}
+
+	/** True for the registry path of a kit block with drawers ("casa_comoda_izq"). */
+	public static boolean isKey(String key) {
+		return FRONTS.containsKey(key);
 	}
 
 	public static int count(BlockState s) {
@@ -104,7 +109,7 @@ public final class Drawers {
 		double x1 = f.x1() - 0.3;
 		double y0 = f.y0() + 0.2;
 		double y1 = f.y1() - 0.2;
-		box(r, out, pos, dir, hole, f.x0() + 0.2, f.y0() + 0.15, f.z() - 0.06, f.x1() - 0.2, f.y1() - 0.15, f.z() - 0.02);
+		box(r, out, pos, dir, hole, f.x0() + 0.2, f.y0() + 0.15, f.z() - 0.3, f.x1() - 0.2, f.y1() - 0.15, f.z() - 0.12);
 		box(r, out, pos, dir, w, f.x0(), f.y0(), z0 - 0.5, f.x1(), f.y1(), z0);          // its front
 		box(r, out, pos, dir, w, x0, y0, z0, x1, y0 + 0.5, f.z());                        // bottom
 		box(r, out, pos, dir, w, x0, y0, z0, x0 + 0.5, y1, f.z());                         // sides

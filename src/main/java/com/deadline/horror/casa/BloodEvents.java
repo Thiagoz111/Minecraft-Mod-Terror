@@ -5,6 +5,7 @@ import com.deadline.caseload.HunterData;
 import com.deadline.director.Director;
 import com.deadline.director.Run;
 import com.deadline.horror.HorrorEvents;
+import com.deadline.horror.HouseQuery;
 import com.deadline.horror.casa.blood.Banera;
 import com.deadline.horror.casa.blood.Diente;
 import com.deadline.horror.casa.blood.Escritura;
@@ -16,6 +17,8 @@ import com.deadline.horror.casa.blood.MsgMarta;
 import com.deadline.horror.casa.blood.Pisadas;
 import com.deadline.horror.casa.lore.LoreDocs;
 import com.deadline.horror.casa.lore.LorePayload;
+import com.deadline.item.FlashlightItem;
+import com.deadline.item.ItemUtil;
 import com.deadline.registry.ModAttachments;
 import com.deadline.registry.ModItems;
 import net.fabricmc.fabric.api.event.Event;
@@ -43,7 +46,8 @@ import net.minecraft.world.phys.BlockHitResult;
  * every default-phase listener (the director, the hiding places, the interactables), so the order of the register
  * calls in DeadLine does not matter:
  * <ul>
- *   <li>use block: a drawer opened while 'diente' waits for it; a lore document (kit block or laid-out prop);</li>
+ *   <li>use block: which drawer he opens while 'diente' waits (noted, passed on); a lore document (kit block or
+ *   laid-out prop: taken);</li>
  *   <li>use item: the flashlight clicked while 'linterna_muere' holds it dead.</li>
  * </ul>
  * Everything else passes through untouched.
@@ -93,6 +97,12 @@ public final class BloodEvents {
 	}
 
 	private static InteractionResult onUseBlock(Player player, Level world, InteractionHand hand, BlockHitResult hit) {
+		if (world.isClientSide()) {
+			// the client takes the click on a document block too, so it does not go on to use the item in hand (the
+			// flashlight would toggle); the server opens it
+			return !player.isSpectator() && LoreDocs.KIT.containsKey(HouseQuery.key(world.getBlockState(hit.getBlockPos())))
+					? InteractionResult.SUCCESS : InteractionResult.PASS;
+		}
 		if (!(player instanceof ServerPlayer sp) || sp.isSpectator()) {
 			return InteractionResult.PASS;
 		}
@@ -102,13 +112,17 @@ public final class BloodEvents {
 		}
 		BlockPos pos = hit.getBlockPos();
 		BlockState st = world.getBlockState(pos);
-		if (Diente.armed(sp) && Diente.isDrawer(r, pos, st) && Diente.opened(sp, r, pos)) {
-			return InteractionResult.SUCCESS;
+		if (Diente.armed(sp) && Diente.isDrawer(r, pos, st)) {
+			Diente.clicked(sp, r, pos);  // noted; the drawer itself opens as usual (the interactables)
 		}
 		String doc = LoreDocs.docAt(r, pos, st, hit.getLocation());
 		if (doc != null) {
 			if (hand == InteractionHand.MAIN_HAND) {
 				LoreDocs.open(sp, r, doc, hit.getLocation());
+				String m = r.markerAt(pos);
+				if (m != null) {
+					r.post("use:" + m);  // a marked prop: the script still hears the click the director would have posted
+				}
 			}
 			return InteractionResult.SUCCESS;
 		}
@@ -116,12 +130,21 @@ public final class BloodEvents {
 	}
 
 	private static InteractionResult onUseItem(Player player, Level world, InteractionHand hand) {
-		if (player instanceof ServerPlayer sp && LinternaMuere.dead(sp)) {
-			ItemStack st = sp.getItemInHand(hand);
+		if (!(player instanceof ServerPlayer sp)) {
+			return InteractionResult.PASS;
+		}
+		ItemStack st = sp.getItemInHand(hand);
+		if (LinternaMuere.dead(sp) && st.is(ModItems.FLASHLIGHT)) {
+			LinternaMuere.deadClick(sp, st);
+			return InteractionResult.FAIL;
+		}
+		if (LoreDocs.justOpened(sp)) {
+			// the same click that opened a paper lying on a prop: the item in hand is not used (the client already
+			// guessed it was; a touched flashlight is sent back to it as it really is)
 			if (st.is(ModItems.FLASHLIGHT)) {
-				LinternaMuere.deadClick(sp, st);
-				return InteractionResult.FAIL;
+				ItemUtil.setFlags(st, FlashlightItem.isOn(st), FlashlightItem.isUv(st), !ItemUtil.getFlag(st, 2));
 			}
+			return InteractionResult.FAIL;
 		}
 		return InteractionResult.PASS;
 	}
@@ -138,7 +161,7 @@ public final class BloodEvents {
 				Escritura.watch(r, p);
 			}
 			if (t % 40 == 0 && r.siteBox().contains(p.position())) {
-				LoreDocs.ensure(r);
+				LoreDocs.ensure(r, p);
 			}
 		}
 	}
@@ -147,6 +170,6 @@ public final class BloodEvents {
 		LinternaMuere.revive(p);
 		Diente.forget(p);
 		Escritura.forget(p);
-		LoreDocs.forget(p);
+		LoreDocs.forgetPlayer(p);
 	}
 }

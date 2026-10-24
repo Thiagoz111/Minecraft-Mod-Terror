@@ -61,6 +61,9 @@ Loops (tv_static, rocking.creak_slow, morning.birds, ambient.casa) live on a per
 events wrap round, beds and reverbs are circular (FFT), IIR stages run over two periods; dsp.master is applied to three
 tiled periods and the middle one is kept, so its edge fades never touch the loop point. Review PNGs + stats.json go
 to <WORK>/audio/casa_sfx (tools/workdir.py). Runtime ~35 s.
+
+C cleanup (casa_terror.md 0: no comedy): fire.blue_whoosh, pool.splash, mate.slide, mate.sip_empty,
+termo.fly and azamel.suck were cut with their events; their builders below are kept, unused.
 """
 import sys as _sys, os as _os
 _sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), '..'))
@@ -2402,17 +2405,12 @@ EVENTS = {  # event -> ([variant builders], peak dBFS, loop)
     'casa.breaker_trip': ([breaker_trip], -3.0, False),
     'casa.breaker_reset': ([breaker_reset], -3.0, False),
     'casa.tv_static': ([tv_static], -4.0, True),
-    'fire.blue_whoosh': ([fire_blue_whoosh], -0.5, False),
     'knife.lift': ([lambda: knife_lift(1), lambda: knife_lift(2)], -3.0, False),
     'knife.whoosh': ([lambda v=v: knife_whoosh(v) for v in (1, 2, 3)], -3.0, False),
     'knife.impact': ([lambda v=v: knife_impact(v) for v in (1, 2, 3)], -3.0, False),
-    'pool.splash': ([pool_splash], -3.0, False),
     'plate.whoosh': ([lambda v=v: plate_whoosh(v) for v in (1, 2, 3, 4)], -3.0, False),
     'plate.shatter': ([lambda v=v: plate_shatter(v) for v in (1, 2, 3)], -3.0, False),
     'plate.storm': ([plate_storm], -3.0, False),
-    'mate.slide': ([mate_slide], -3.0, False),
-    'mate.sip_empty': ([mate_sip_empty], -3.0, False),
-    'termo.fly': ([termo_fly], -3.0, False),
     'alacena.golpe': ([lambda v=v: alacena_golpe(v) for v in (1, 2, 3)], -3.0, False),
     'chair.stack': ([chair_stack], -3.0, False),
     'door.slam_cascade': ([door_slam_cascade], -0.5, False),
@@ -2421,7 +2419,6 @@ EVENTS = {  # event -> ([variant builders], peak dBFS, loop)
     'doll.giggle_chorus': ([doll_giggle_chorus], -1.0, False),
     'andador.squeak': ([lambda v=v: andador_squeak(v) for v in (1, 2, 3)], -3.0, False),
     'rocking.creak_slow': ([rocking_creak_slow], -4.0, True),
-    'azamel.suck': ([azamel_suck], -0.5, False),
     'candles.out': ([candles_out], -3.0, False),
     'wall.break': ([wall_break], -0.5, False),
     'kettle.whistle': ([kettle_whistle], -3.0, False),
