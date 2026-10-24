@@ -42,6 +42,12 @@ jobs:
           echo "=== CLIENT END"
           python3 -m pip install -q pillow > /dev/null 2>&1 || true
           python3 tools/ci/shots.py run/screenshots
+      - name: smoke summary
+        if: always()
+        run: |
+          echo "=== SUMMARY BEGIN"
+          grep -E "DEADLINE-SMOKE|Horror event|DEADLINE-CLIENT" smoke.log client.log 2>/dev/null | grep -vE "^\S+:\s+at " | cut -c1-600 | head -80
+          echo "=== SUMMARY END"
       - name: upload jar
         if: success()
         uses: actions/upload-artifact@v4
