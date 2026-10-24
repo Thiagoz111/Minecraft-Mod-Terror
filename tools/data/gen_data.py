@@ -254,6 +254,14 @@ def lang():
     if os.path.exists(extra):
         for k, (e_es, e_en) in json.load(open(extra)).items():
             es[k], en[k] = e_es, e_en
+    else:
+        # tools/blocks/out is not versioned: keep the kit block names already in the lang files (build_blocks.py --all
+        # rewrites them) instead of dropping ~750 keys in a fresh checkout
+        for path, d in ((f'{A}/lang/en_us.json', en), (f'{A}/lang/es_ar.json', es)):
+            if os.path.exists(path):
+                for k, v in json.load(open(path, encoding='utf-8')).items():
+                    if (k.startswith(f'block.{NS}.') or k == f'itemGroup.{NS}_build') and k not in d:
+                        d[k] = v
     write(f'{A}/lang/en_us.json', dict(sorted(en.items())))
     for loc in ('es_es', 'es_ar', 'es_mx', 'es_cl', 'es_uy', 'es_ve', 'es_ec'):
         write(f'{A}/lang/{loc}.json', dict(sorted(es.items())))
