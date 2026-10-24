@@ -18,7 +18,6 @@ import com.deadline.net.Fx;
 import com.deadline.registry.ModEntities;
 import com.deadline.registry.ModItems;
 import com.deadline.registry.ModSounds;
-import com.deadline.sanity.SanityManager;
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.core.BlockPos;
@@ -181,7 +180,6 @@ public class SpCuarto61 extends HorrorEvent {
 			Vec3 mid = Apparitions.has(r, "cuarto61") ? r.at("cuarto61").add(0, 1.2, 0) : c.p.getEyePosition();
 			r.sound(ModSounds.APARICION_COPIA, mid, 1.0F, 0.85F);
 			Fx.shake(c.p, 0.35F, 20);
-			SanityManager.add(c.p, -10F);
 		}
 		if (k == 14) {
 			for (String who : WHO) {
@@ -209,7 +207,7 @@ public class SpCuarto61 extends HorrorEvent {
 		}
 		r.sound(ModSounds.CANDLES_OUT, c.p.getEyePosition(), 1.2F, 0.8F);
 		r.sound(ModSounds.FLASHLIGHT_FLICKER, c.p.getEyePosition(), 1.0F, 0.8F);
-		r.sound(ModSounds.SANITY_HEARTBEAT, c.p.getEyePosition(), 1.0F, 1.0F);
+		r.sound(ModSounds.HORROR_HEARTBEAT, c.p.getEyePosition(), 1.0F, 1.0F);
 		killFlashlight(c.p);
 		Apparitions.despawnAll(c);
 		for (String who : WHO) {
@@ -272,7 +270,6 @@ public class SpCuarto61 extends HorrorEvent {
 				Fx.redFlash(c.p, 0.6F);
 			}
 			Fx.shake(c.p, 1.4F, 24);
-			SanityManager.add(c.p, -15F);
 			Apparitions.noise(c, n.position(), 100F);
 		}
 		if (screamAt != null && c.t - screamAt == 10) {
@@ -306,7 +303,6 @@ public class SpCuarto61 extends HorrorEvent {
 			// right at his neck: a breath -- she never takes him here, she wants him to run
 			r.sound(ModSounds.APARICION_ALIENTO, p.getEyePosition().subtract(Stage.look(p).scale(0.5)), 1.1F, 0.8F);
 			Fx.shake(p, 0.5F, 10);
-			SanityManager.add(p, -4F);
 			c.put("tapDist", 4.0);
 		}
 		hallLoop(c);

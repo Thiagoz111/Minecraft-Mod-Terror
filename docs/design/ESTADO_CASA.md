@@ -73,10 +73,14 @@ a `casa_terror.md`, manda `casa_terror.md`.
   standAt`, copias (`FamilyEntity.LOOK_COPIA`, `POSE_CORNER(_TURN)`), Lucía `ACT_CEILING(_RUN)`, `ACT_SIT`, `LOOK_NORMAL`.
 - **Smoke de la Casa** (`horror/CasaSmoke`): contrato §11 + cada evento disparado con un `FakePlayer`; cualquier excepción
   en un evento (`Haunt.errors`) rompe el CI.
-- En curso con agentes: B2 cacería, B1a poltergeist, B1b sangre/celular/lore. Después: C set pieces.
-- Cordura eliminada (ver reglas del dueño). Los sonidos que sobrevivieron pasaron de `sanity.*` a `horror.*`
-  (`ModSounds.HORROR_HEARTBEAT/FOOTSTEPS/KNOCK/BREATH`); `SANITY_*` quedan como alias transitorios en `ModSounds`
-  (`tools/audio/gen_defs.py` ALIASES) hasta que `setpiece/**` use los nombres nuevos.
+- **B2 hecho** (cacería: `horror/casa/hunt`), **B1a hecho** (poltergeist 1–32, `Interactables`, `FlyingProp`; limpieza
+  `PoltergeistEvents.cleanup`), **B1b hecho** (sangre 46–51, celular 52–53, linterna 54, `BloodDecals`, documentos de lore).
+- **C (set pieces) quedó a medio hacer**: el dueño frenó al agente. Lo escrito está en `horror/casa/setpiece/**` +
+  `SetPieces.java`, sin revisar ni probar.
+- **Cordura eliminada** por decisión del dueño (manager, HUD, pastillas, alucinaciones por cordura, payloads, comando). Los
+  sonidos que quedaron pasaron de `sanity.*` a `horror.*` (`ModSounds.HORROR_HEARTBEAT/FOOTSTEPS/KNOCK/BREATH`).
+- Pendiente anotado (no empezar sin pedido del dueño): resource pack de interfaz (inventario, hotbar, botones) con
+  estética del mod; el probe del CI ya lista tamaños y `.mcmeta` de `textures/gui` vanilla (`tools/ci/probe-assets.txt`).
 
 ## Pendiente (en orden)
 1. ~~CI verde~~ (hecho).

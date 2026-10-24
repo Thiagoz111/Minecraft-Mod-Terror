@@ -9,10 +9,8 @@ for name, (n, es, en, stream) in SOUNDS.items():
     for f in files:
         entry['sounds'].append({'name': f, 'stream': True} if stream else f)
     sj[name] = entry
-# Transitional Java aliases (old constant -> event) for code still being written in parallel by another agent
-# (horror/casa/setpiece/**). Drop an entry as soon as nothing uses its old name.
-ALIASES = {'SANITY_HEARTBEAT': 'horror.heartbeat', 'SANITY_FOOTSTEPS': 'horror.footsteps',
-           'SANITY_KNOCK': 'horror.knock', 'SANITY_BREATH': 'horror.breath'}
+# Java aliases (old constant -> event) kept while code still uses an old name; empty when nothing does
+ALIASES = {}
 VARIANT_EVENTS = ('spirit_box.voice',)  # also one event per file, so the code can pick the exact take
 for name in VARIANT_EVENTS:
     n, es_, en_, stream = SOUNDS[name]

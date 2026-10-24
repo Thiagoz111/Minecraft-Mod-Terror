@@ -10,7 +10,6 @@ import com.deadline.net.Fx;
 import com.deadline.registry.ModEntities;
 import com.deadline.registry.ModParticles;
 import com.deadline.registry.ModSounds;
-import com.deadline.sanity.SanityManager;
 import java.util.List;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.AABB;
@@ -160,7 +159,6 @@ public class SpLuciaTecho extends HorrorEvent {
 		if (g.seen >= 6) {
 			c.put("seenAt", c.t);
 			Apparitions.sound(c, ModSounds.APARICION_CUELLO, head, 1.0F, 0.85F);
-			SanityManager.add(c.p, -6F);
 			return false;
 		}
 		if (c.t > NEVER) {
@@ -219,7 +217,6 @@ public class SpLuciaTecho extends HorrorEvent {
 			Fx.jumpscare(c.p, "lucia");
 			c.haunt.jumpscared();
 			Fx.shake(c.p, 1.2F, 18);
-			SanityManager.add(c.p, -12F);
 			Apparitions.sound(c, ModSounds.POSEIDA_SCREAM, c.p.getEyePosition().add(0, 0.8, 0), 1.6F, 0.9F);
 		} else {
 			Apparitions.sound(c, ModSounds.POSEIDA_GIGGLE, l.position(), 1.1F, 0.75F);

@@ -221,12 +221,6 @@ public final class ModSounds {
 	public static final SoundEvent SP_RADIO_CUNA = register("sp.radio_cuna");
 	public static final SoundEvent SP_ASIENTO = register("sp.asiento");
 
-	/** Transitional aliases (old names still used by code in progress): use the event they point to. */
-	public static final SoundEvent SANITY_HEARTBEAT = HORROR_HEARTBEAT;
-	public static final SoundEvent SANITY_FOOTSTEPS = HORROR_FOOTSTEPS;
-	public static final SoundEvent SANITY_KNOCK = HORROR_KNOCK;
-	public static final SoundEvent SANITY_BREATH = HORROR_BREATH;
-
 	/** Single-file events of multi-take sounds, so a take can be chosen (e.g. the spirit box answer matching its subtitle). */
 	private static final java.util.Map<String, SoundEvent[]> VARIANTS = new java.util.HashMap<>();
 	static {

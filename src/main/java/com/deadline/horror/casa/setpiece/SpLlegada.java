@@ -64,7 +64,7 @@ public class SpLlegada extends HorrorEvent {
 			float k = (t - SQUEAK_1) / 84F;
 			Vec3 at = hall.lerp(umbral, k);
 			c.run.sound(ModSounds.ANDADOR_SQUEAK, at, 0.35F + 0.35F * k, 0.82F);
-			c.run.sound(ModSounds.SANITY_FOOTSTEPS, at, 0.25F + 0.25F * k, 0.7F);
+			c.run.sound(ModSounds.HORROR_FOOTSTEPS, at, 0.25F + 0.25F * k, 0.7F);
 		}
 		if (t == BOLT_1 || t == BOLT_2) {
 			c.run.sound(ModSounds.SP_CERROJO, door, 1.0F, t == BOLT_1 ? 0.95F : 0.85F);

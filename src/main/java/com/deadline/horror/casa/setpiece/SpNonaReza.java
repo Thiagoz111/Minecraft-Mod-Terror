@@ -7,7 +7,6 @@ import com.deadline.horror.HorrorEvent;
 import com.deadline.horror.casa.Apparitions;
 import com.deadline.net.Fx;
 import com.deadline.registry.ModSounds;
-import com.deadline.sanity.SanityManager;
 import java.util.List;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.AABB;
@@ -156,7 +155,6 @@ public class SpNonaReza extends HorrorEvent {
 		}
 		if (k == 42) {
 			Apparitions.sound(c, ModSounds.APARICION_CUELLO, n.getEyePosition(), 1.2F, 0.7F);
-			SanityManager.add(c.p, -8F);
 		}
 		if (k == 80) {
 			Vec3 bulb = lampPos(c);

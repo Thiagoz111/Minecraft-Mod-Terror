@@ -126,7 +126,7 @@ public class SpJorgeSonambulo extends HorrorEvent {
 		int since = c.t - c.<Integer>get("phaseAt");
 		if (c.t % 70 == 35 && phase <= STAND) {
 			// the slow breath of a sleeper
-			Apparitions.sound(c, ModSounds.SANITY_BREATH, j.getEyePosition(), 0.45F, 0.72F);
+			Apparitions.sound(c, ModSounds.HORROR_BREATH, j.getEyePosition(), 0.45F, 0.72F);
 		}
 		switch (phase) {
 			case GO -> {

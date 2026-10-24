@@ -8,7 +8,6 @@ import com.deadline.horror.casa.Apparitions;
 import com.deadline.horror.casa.SetPieces;
 import com.deadline.net.Fx;
 import com.deadline.registry.ModSounds;
-import com.deadline.sanity.SanityManager;
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.world.phys.Vec3;
@@ -108,7 +107,7 @@ public class SpRoperoToti extends HorrorEvent {
 		List<SetPieces.Knock> ks = SetPieces.knocks(c.p, in, 2.6, since);
 		if (!ks.isEmpty()) {
 			for (SetPieces.Knock k : ks) {
-				c.run.sound(ModSounds.SANITY_KNOCK, Vec3.atCenterOf(k.pos()), 0.8F, 1.0F);  // his own knock, wood
+				c.run.sound(ModSounds.HORROR_KNOCK, Vec3.atCenterOf(k.pos()), 0.8F, 1.0F);  // his own knock, wood
 			}
 			c.put("since", ks.get(ks.size() - 1).at());
 			c.put("heard", Math.min(6, c.<Integer>get("heard") + ks.size()));
@@ -128,7 +127,7 @@ public class SpRoperoToti extends HorrorEvent {
 		if (at >= 0 && c.t >= at && (c.t - at) % 8 == 0) {
 			int k = (c.t - at) / 8;
 			if (k < n) {
-				c.run.sound(ModSounds.SANITY_KNOCK, in, 0.75F, 0.78F + 0.02F * k);
+				c.run.sound(ModSounds.HORROR_KNOCK, in, 0.75F, 0.78F + 0.02F * k);
 			} else {
 				c.put("answerAt", -1);
 			}
@@ -167,7 +166,6 @@ public class SpRoperoToti extends HorrorEvent {
 			c.run.sound(ModSounds.DOOR_SLAM, in, 1.3F, 0.65F);
 			c.run.sound(ModSounds.APARICION_COPIA, in, 1.0F, 0.95F);
 			Fx.shake(c.p, 0.6F, 10);
-			SanityManager.add(c.p, -10F);
 			Apparitions.noise(c, in, 70F);
 		}
 		if (k == 58) {
@@ -189,7 +187,7 @@ public class SpRoperoToti extends HorrorEvent {
 			bed = Apparitions.at(c.run, "toti_cama");
 		}
 		if (bed != null && k >= 40 && k <= 56 && (k - 40) % 8 == 0) {
-			c.run.sound(ModSounds.SANITY_KNOCK, bed.add(0, 0.2, 0), 0.8F, 0.7F);
+			c.run.sound(ModSounds.HORROR_KNOCK, bed.add(0, 0.2, 0), 0.8F, 0.7F);
 		}
 		return k > 70 || bed == null;
 	}
