@@ -67,6 +67,21 @@ public final class Stage {
 		return e != null && hasArea(r, area) && r.area(area).contains(e.position());
 	}
 
+	/** Room areas that are outside the walls (the front garden, the yard, the balcony). */
+	private static final List<String> OUTDOORS = List.of("jardin", "patio", "balcon", "cucha", "galpon");
+
+	/**
+	 * Past the front door: inside the house and in one of its rooms. The recess in front of the door and the door block
+	 * are inside the 'casa' box but in no room (the hall starts behind the door), so stepping up to knock does not count.
+	 */
+	public static boolean pastThreshold(Run r, Entity e) {
+		if (e == null || !HouseQuery.inHouse(r, e)) {
+			return false;
+		}
+		String room = HouseQuery.room(r, e);
+		return room != null && !OUTDOORS.contains(room);
+	}
+
 	public static float yawTo(Vec3 from, Vec3 to) {
 		return Props.yawTowards(from, to);
 	}

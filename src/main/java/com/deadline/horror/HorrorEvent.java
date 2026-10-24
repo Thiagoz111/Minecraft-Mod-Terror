@@ -6,6 +6,10 @@ package com.deadline.horror;
  * Subclasses configure themselves in the constructor with the fluent setters and implement {@link #start}.
  */
 public abstract class HorrorEvent {
+	/**
+	 * What the event is. A random SCARE is only picked while {@link Haunt#canJumpscare()}; it must call
+	 * {@link Haunt#jumpscared()} itself at the moment the jumpscare really shows (it may end without one).
+	 */
 	public enum Kind {
 		SOUND, POLTER, APPARITION, BLOOD, PHONE, SCARE, SETPIECE
 	}

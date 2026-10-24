@@ -125,7 +125,7 @@ public class SpLlegada extends HorrorEvent {
 			n.face(c.run.yaw("nona_umbral") + 180F + (c.rnd.nextBoolean() ? 25F : -25F));
 		}
 		int in = c.<Integer>get("in");
-		if (in < 0 && t > OPEN && HouseQuery.inHouse(c.run, c.p)) {
+		if (in < 0 && t > OPEN && Stage.pastThreshold(c.run, c.p)) {
 			c.put("in", t);
 			in = t;
 		}

@@ -3,7 +3,6 @@ package com.deadline.horror.casa.setpiece;
 import com.deadline.entity.PoseidaEntity;
 import com.deadline.horror.Ctx;
 import com.deadline.horror.HorrorEvent;
-import com.deadline.horror.HouseQuery;
 import com.deadline.horror.casa.Apparitions;
 import com.deadline.horror.casa.BloodDecals;
 import com.deadline.net.Fx;
@@ -19,9 +18,8 @@ import net.minecraft.world.phys.Vec3;
  * Act 4 (design 2, "Lucía en el techo"): Marta has just written that Lucía is not in her bed. She is not: she is on the
  * ceiling. Upside down over the room, every limb bent the wrong way, her face turned down at him. Something drips on the
  * floor beside him, a drop at a time (blood), and a giggle comes from nowhere -- until he looks up. She holds still a
- * moment; her neck cracks; and she scuttles across the ceiling straight over his head (the jumpscare when the director
- * allows one, otherwise out through the door into the dark, and the door slams). Never seen in 45 s: something runs
- * across the ceiling and is gone.
+ * moment; her neck cracks; and she scuttles across the ceiling straight over his head (the jumpscare). Never seen in
+ * 45 s: something runs across the ceiling and is gone.
  * <p>In her own room ({@code lucia_techo}) when he is there; otherwise on the ceiling of the room he is in (the 1P hall:
  * {@code pasillo_techo}).
  */
@@ -181,26 +179,10 @@ public class SpLuciaTecho extends HorrorEvent {
 			l.setAction(PoseidaEntity.ACT_CEILING_RUN);
 			Apparitions.sound(c, ModSounds.APARICION_TECHO_CORRE, l.position().add(0, BODY, 0), 1.4F, 1.1F);
 			Apparitions.noise(c, l.position(), 45F);
-			boolean scare = c.haunt.canJumpscare();
-			c.put("scare", scare);
-			if (!scare) {
-				// out the nearest door into the dark
-				List<String> doors = HouseQuery.doorsNear(c.run, l.position(), 9.0);
-				doors.removeIf(d -> d.startsWith("ropero_"));
-				c.put("door", doors.isEmpty() ? null : doors.get(0));
-			}
 		}
-		boolean scare = Boolean.TRUE.equals(c.get("scare"));
-		String door = c.get("door");
-		Vec3 goal;
-		if (scare) {
-			goal = new Vec3(c.p.getX(), ceil - BODY, c.p.getZ());
-		} else if (door != null) {
-			Vec3 dp = HouseQuery.doorPos(c.run, door);
-			goal = new Vec3(dp.x, Math.min(ceil, Math.floor(dp.y) + 2.0) - BODY, dp.z);
-		} else {
-			goal = l.position().add(l.position().subtract(c.p.position()).multiply(1, 0, 1).normalize().scale(4.0));
-		}
+		// once per run and earned (he found her): the scare is always hers, not traded for an exit by the generic 3-minute
+		// rule (the night's set pieces only start once the peak of the last scare has relaxed)
+		Vec3 goal = new Vec3(c.p.getX(), ceil - BODY, c.p.getZ());
 		Vec3 pos = l.position();
 		Vec3 delta = goal.subtract(pos);
 		double len = delta.length();
@@ -213,18 +195,10 @@ public class SpLuciaTecho extends HorrorEvent {
 		if (!there) {
 			return false;
 		}
-		if (scare) {
-			Fx.jumpscare(c.p, "lucia");
-			c.haunt.jumpscared();
-			Fx.shake(c.p, 1.2F, 18);
-			Apparitions.sound(c, ModSounds.POSEIDA_SCREAM, c.p.getEyePosition().add(0, 0.8, 0), 1.6F, 0.9F);
-		} else {
-			Apparitions.sound(c, ModSounds.POSEIDA_GIGGLE, l.position(), 1.1F, 0.75F);
-			if (door != null) {
-				c.run.door(door, false, true);
-			}
-			Apparitions.noise(c, l.position(), 70F);
-		}
+		Fx.jumpscare(c.p, "lucia");
+		c.haunt.jumpscared();
+		Fx.shake(c.p, 1.2F, 18);
+		Apparitions.sound(c, ModSounds.POSEIDA_SCREAM, c.p.getEyePosition().add(0, 0.8, 0), 1.6F, 0.9F);
 		Apparitions.vanish(l, false);
 		return true;
 	}

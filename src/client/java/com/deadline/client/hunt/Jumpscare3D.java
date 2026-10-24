@@ -33,14 +33,21 @@ import net.minecraft.util.RandomSource;
  * Jumpscares with a face (docs/design/casa_terror.md 6.6): the creature's 3D head rushes in and fills the screen, glued
  * to the camera, shaking violently, with a red flash and its own stinger, for ~0.85 s. Keys: nona_rota, lucia, copia,
  * perro_largo, cara_roja (any other key keeps the old full-screen picture of DeadLineHud).
- * <p>Rendered in the world pass (WorldRenderEvents.BEFORE_ENTITIES) a few decimetres in front of the camera, full
- * bright, from the creature models themselves: the broken Nona (look 'rota', pose 'jumpscare'), Lucía ('scream'), a
- * smiling copy (Marta with the 'copia' look when B3's texture exists), the long dog ('lunge') and the red face (the
- * ánima's skull and maw painted red: hunt/cara_roja.png from tools/art/hunt_cara_roja.py).
+ * <p>Rendered in the world pass (WorldRenderEvents.BEFORE_ENTITIES) a few centimetres in front of the camera, shrunk
+ * about the eye ({@link #NEAR}) so no wall can cover it, full bright, from the creature models themselves: the broken
+ * Nona (look 'rota', pose 'jumpscare'), Lucía ('scream'), a smiling copy (Marta with the 'copia' look when B3's
+ * texture exists), the long dog ('lunge') and the red face (the ánima's skull and maw painted red: hunt/cara_roja.png
+ * from tools/art/hunt_cara_roja.py).
  */
 public final class Jumpscare3D {
 	/** Length in ticks (0.85 s). */
 	public static final int LEN = 17;
+	/**
+	 * The whole face is drawn shrunk by this much about the eye: the same picture on screen (a scale about the camera
+	 * does not change the projection), but the face sits within ~0.28 of the eye, closer than any wall or door can be
+	 * (a player's eye stays 0.3 from them), so the world pass cannot hide it when he is caught against a wall.
+	 */
+	private static final float NEAR = 0.35F;
 	private static final RandomSource RNG = RandomSource.create();
 
 	/** One face: model, pose state, textures, framing (head centre above the feet / forward, distance to the eye). */
@@ -154,11 +161,12 @@ public final class Jumpscare3D {
 		PoseStack ps = ctx.matrices();
 		ps.pushPose();
 		ps.mulPose(ctx.worldState().cameraRenderState.orientation);
-		// camera space: -Z ahead. The model stands with its head centre on the eye line, `dist` in front.
-		ps.translate(jx, -f.up + jy, -(dist + f.fwd));
+		// camera space: -Z ahead. The model stands with its head centre on the eye line, `dist` in front; all of it
+		// (offsets and size) scaled by NEAR about the eye: the same picture, but nearer than the wall he is pressed to
+		ps.translate(jx * NEAR, (-f.up + jy) * NEAR, -(dist + f.fwd) * NEAR);
 		ps.mulPose(Axis.ZP.rotationDegrees(rz));
 		ps.mulPose(Axis.YP.rotationDegrees(180F + ry));
-		ps.scale(-1F, -1F, 1F);
+		ps.scale(-NEAR, -NEAR, NEAR);
 		ps.translate(0F, -1.501F, 0F);
 		int light = LightTexture.FULL_BRIGHT;
 		ctx.commandQueue().submitModel(f.model, f.state, ps, f.model.renderType(f.texture), light, OverlayTexture.NO_OVERLAY, f.color, null, 0, null);

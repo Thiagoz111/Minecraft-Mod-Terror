@@ -1,9 +1,12 @@
 package com.deadline.horror.casa.hunt;
 
+import com.deadline.casa.CasaProps;
 import com.deadline.director.Director;
 import com.deadline.director.Props;
 import com.deadline.director.Run;
 import com.deadline.horror.HouseQuery;
+import com.deadline.horror.casa.Drawers;
+import com.deadline.horror.casa.Tap;
 import com.deadline.voice.NoiseMeter;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -180,12 +183,17 @@ public final class HideSpots {
 		if (spots.isEmpty()) {
 			return InteractionResult.PASS;
 		}
-		Vec3 clicked = Vec3.atCenterOf(hit.getBlockPos());
+		BlockPos pos = hit.getBlockPos();
+		BlockState state = level.getBlockState(pos);
+		if (Drawers.is(state) || Tap.is(state)) {
+			return InteractionResult.PASS;  // the bedside table (the Nona's radio), the dresser, the tub tap: the interactables
+		}
+		Vec3 clicked = Vec3.atCenterOf(pos);
 		Spot best = null;
 		double bd = Double.MAX_VALUE;
 		for (Spot s : spots) {
 			double dOut = horizontal(sp.position(), s.out());
-			if (dOut > 2.6 || Math.abs(sp.getY() - s.out().y) > 1.6) {
+			if (dOut > 2.6 || Math.abs(sp.getY() - s.out().y) > 1.6 || !partOf(run, s, pos, state)) {
 				continue;
 			}
 			double dClick = clicked.distanceTo(s.hide().add(0, 0.5, 0));
@@ -212,6 +220,38 @@ public final class HideSpots {
 			return InteractionResult.FAIL;  // she is right there
 		}
 		return enter(sp, run, best) ? InteractionResult.SUCCESS : InteractionResult.PASS;
+	}
+
+	/**
+	 * True when the clicked block is the hiding place itself: one of its doors, the block it is in (or the one over it:
+	 * the bed, the tub's curtain), or a piece of its own bed / tub right beside it. The furniture next to it is not.
+	 */
+	private static boolean partOf(Run run, Spot s, BlockPos pos, BlockState state) {
+		for (String d : s.doors()) {
+			BlockPos rel = run.def.doors.get(d);
+			if (rel != null) {
+				BlockPos door = run.origin.offset(rel);
+				if (pos.equals(door) || pos.equals(door.above())) {
+					return true;
+				}
+			}
+		}
+		BlockPos hide = BlockPos.containing(s.hide());
+		int dy = pos.getY() - hide.getY();
+		int dx = Math.abs(pos.getX() - hide.getX());
+		int dz = Math.abs(pos.getZ() - hide.getZ());
+		if (dy < 0 || dy > 1 || dx > 1 || dz > 1) {
+			return false;
+		}
+		if (dx == 0 && dz == 0) {
+			return true;
+		}
+		String k = CasaProps.path(state);
+		return switch (s.type()) {
+			case BED -> k.startsWith("casa_cama_");
+			case TUB -> k.startsWith("casa_banadera") || k.startsWith("casa_cortina_ducha");
+			default -> false;
+		};
 	}
 
 	private static double horizontal(Vec3 a, Vec3 b) {

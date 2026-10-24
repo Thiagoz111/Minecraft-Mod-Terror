@@ -53,6 +53,7 @@ public final class NoiseMeter {
 			boolean air = !p.onGround();
 			if (Boolean.TRUE.equals(AIRBORNE.get(id)) && !air && p.fallDistance > 0.5) {
 				n = Math.min(100F, n + 8F);
+				com.deadline.horror.casa.hunt.Hunt.noise(r, p.position(), 18F);  // the thud of a landing carries (design 6.1)
 			}
 			AIRBORNE.put(id, air);
 			if (Voice.enabled(p) && Voice.speaking(p, now) && !holding) {

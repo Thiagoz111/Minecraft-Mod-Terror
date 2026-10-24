@@ -121,7 +121,7 @@ public class SpFinalAuto extends HorrorEvent {
 			c.run.sound(ModSounds.HUNT_SCREAM, c.p.getEyePosition(), 2.2F, 1.0F);
 		}
 		if (k == STARE + CUT) {
-			Fx.fade(c.p, 120);  // cut to black: full black ~43-77 ticks in; the case ends inside it
+			Fx.fade(c.p, 120);  // cut to black: full black ~43-77 ticks in; DEAD LINE and the credits start inside it
 		}
 		if (k == STARE + CUT + 44 && n != null && !n.isPassenger()) {
 			Apparitions.vanish(n, false);  // in the black (one still in a seat waits for stop(): no car door heard)

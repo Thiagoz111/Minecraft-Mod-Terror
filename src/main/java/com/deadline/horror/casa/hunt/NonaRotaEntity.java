@@ -97,6 +97,8 @@ public class NonaRotaEntity extends HauntEntity {
 	private final List<HideSpots.Spot> searchQueue = new ArrayList<>();
 	private HideSpots.Spot searching;
 	private boolean searchOpened;
+	/** Where she heard a lesser sound while searching (she goes there once the search is done). */
+	private Vec3 heardWhileSearching;
 	private BlockPos doorPos;
 	private int doorWait;
 	private int saltTicks;
@@ -274,7 +276,7 @@ public class NonaRotaEntity extends HauntEntity {
 			case IDLE -> {
 			}
 		}
-		if (mode == Mode.PATROL || mode == Mode.INVESTIGATE || mode == Mode.LISTEN || mode == Mode.CHASE) {
+		if (mode == Mode.PATROL || mode == Mode.INVESTIGATE || mode == Mode.LISTEN || mode == Mode.CHASE || mode == Mode.SEARCH) {
 			if ((this.tickCount + this.getId()) % 4 == 0) {
 				hear(level);
 				look(level);
@@ -288,6 +290,9 @@ public class NonaRotaEntity extends HauntEntity {
 	}
 
 	private void setMode(Mode m, int length) {
+		if (m != Mode.SEARCH) {
+			heardWhileSearching = null;
+		}
 		mode = m;
 		modeTicks = 0;
 		modeLength = length;
@@ -469,6 +474,9 @@ public class NonaRotaEntity extends HauntEntity {
 
 	// ------------------------------------------------------------------ chase
 	private void chase(ServerPlayer p) {
+		if (mode == Mode.SEARCH) {
+			endSearch();
+		}
 		if (mode != Mode.CHASE) {
 			setMode(Mode.CHASE, 0);
 			sound(this.level() instanceof ServerLevel l ? l : null, ModSounds.HUNT_SCREAM, 2.0F, 1.1F + this.random.nextFloat() * 0.15F);
@@ -499,7 +507,9 @@ public class NonaRotaEntity extends HauntEntity {
 			}
 			return;
 		}
-		boolean contact = d < 10 && hasLineTo(p) || d < TOUCH || NoiseMeter.get(p) > 14F && d < 16;
+		// touching counts only on the same side of the wall: one block of wall is not "bumping into him"
+		boolean sees = d < 10 && hasLineTo(p);
+		boolean contact = sees || NoiseMeter.get(p) > 14F && d < 16;
 		if (contact) {
 			lastKnown = p.position();
 			lastContact = now;
@@ -515,7 +525,7 @@ public class NonaRotaEntity extends HauntEntity {
 		if (lungeTicks > 0) {
 			lungeTicks--;
 			speed = SPEED_LUNGE;
-		} else if (d < 4.2 && lungeCooldown == 0 && hasLineTo(p)) {
+		} else if (d < 4.2 && lungeCooldown == 0 && sees) {
 			lungeTicks = 9;
 			lungeCooldown = 70;
 			sound(level, ModSounds.HUNT_HISS, 1.6F, 1.25F);
@@ -530,7 +540,7 @@ public class NonaRotaEntity extends HauntEntity {
 		}
 		this.getLookControl().setLookAt(p, 30F, 30F);
 		double dy = Math.abs(p.getY() - this.getY());
-		if (d < CAPTURE_REACH + 0.4 && dy < 1.6) {
+		if (d < CAPTURE_REACH + 0.4 && dy < 1.6 && sees) {
 			Hunt.capture(run, p);
 			target = null;
 			listen(null, 40);
@@ -601,7 +611,7 @@ public class NonaRotaEntity extends HauntEntity {
 		}
 		// someone sneaking out right under her nose
 		for (ServerPlayer p : run.hunters()) {
-			if (targetable(p) && !HideSpots.hidden(p) && p.distanceTo(this) < TOUCH + 0.4) {
+			if (targetable(p) && !HideSpots.hidden(p) && p.distanceTo(this) < TOUCH + 0.4 && hasLineTo(p)) {
 				HideSpots.searched(run, s, false);
 				searching = null;
 				chase(p);
@@ -615,9 +625,18 @@ public class NonaRotaEntity extends HauntEntity {
 			if (!searchQueue.isEmpty()) {
 				search(searchQueue.remove(0));
 			} else {
-				listen(null, 30);
+				listen(heardWhileSearching, 30);  // then to what she heard meanwhile, if anything
 			}
 		}
+	}
+
+	/** Drops the hiding place she is checking (pulled shut again if she had opened it). */
+	private void endSearch() {
+		if (searching != null && searchOpened) {
+			HideSpots.searched(run, searching, false);
+			HideSpots.open(run, searching, false);
+		}
+		searching = null;
 	}
 
 	/** Holds the grab / lunge pose for a second (she has him). */
@@ -698,10 +717,17 @@ public class NonaRotaEntity extends HauntEntity {
 		if (hidden) {
 			// a noise from inside a hiding place: she goes to check THAT one first
 			HideSpots.Spot s = HideSpots.spotOf(who);
-			if (s != null) {
+			if (s != null && !s.equals(searching)) {
 				searchQueue.remove(s);
 				searchQueue.add(0, s);
 			}
+		}
+		if (mode == Mode.SEARCH) {
+			// a lesser sound does not pull her off the place she is checking: she goes to it afterwards
+			if (!hidden) {
+				heardWhileSearching = where;
+			}
+			return;
 		}
 		if (voice || mode == Mode.INVESTIGATE) {
 			investigate(where, voice);
@@ -725,7 +751,7 @@ public class NonaRotaEntity extends HauntEntity {
 				continue;
 			}
 			double d = p.distanceTo(this);
-			if (d < TOUCH) {
+			if (d < TOUCH && hasLineTo(p)) {
 				chase(p);
 				return;
 			}
@@ -918,6 +944,10 @@ public class NonaRotaEntity extends HauntEntity {
 				BlockState st = level.getBlockState(pos);
 				if (st.getBlock() instanceof DoorBlock door && DoorBlock.isWoodenDoor(st) && !door.isOpen(st)
 						&& this.distanceToSqr(Vec3.atBottomCenterOf(pos)) < 2.7 * 2.7) {
+					if (lockedDoor(pos)) {
+						barred(level, pos);
+						return;
+					}
 					doorPos = pos;
 					doorWait = mode == Mode.CHASE || mode == Mode.FLEE ? 2 : 12 + this.random.nextInt(10);
 					if (doorWait > 2) {
@@ -927,6 +957,31 @@ public class NonaRotaEntity extends HauntEntity {
 				}
 			}
 		}
+	}
+
+	/** True for a door the script keeps shut right now (the front door until the end): she never opens those. */
+	private boolean lockedDoor(BlockPos pos) {
+		for (BlockPos at : new BlockPos[] {pos, pos.below()}) {
+			String m = run.markerAt(at);
+			if (m != null && run.def.doors.containsKey(m)) {
+				return run.locked(m);
+			}
+		}
+		return false;
+	}
+
+	/** Her way runs through a locked door: the handle rattles hard, it does not give, and she stays on this side. */
+	private void barred(ServerLevel level, BlockPos pos) {
+		this.getNavigation().stop();
+		level.playSound(null, pos, ModSounds.HUNT_RATTLE, SoundSource.BLOCKS, 1.3F, 0.7F + this.random.nextFloat() * 0.2F);
+		if (mode == Mode.FLEE) {
+			return;
+		}
+		if (mode == Mode.SEARCH) {
+			endSearch();
+		}
+		target = null;
+		listen(null, LISTEN_MIN + this.random.nextInt(40));
 	}
 
 	// ------------------------------------------------------------------ sounds of her body

@@ -9,7 +9,9 @@ import com.deadline.director.Steps;
 import com.deadline.horror.Haunt;
 import com.deadline.horror.HorrorEvents;
 import com.deadline.horror.HouseQuery;
+import com.deadline.horror.casa.hunt.HideSpots;
 import com.deadline.horror.casa.hunt.Hunt;
+import com.deadline.horror.casa.setpiece.Stage;
 import com.deadline.net.Fx;
 import com.deadline.phone.PhoneMessages;
 import com.deadline.registry.ModSounds;
@@ -36,15 +38,23 @@ import net.minecraft.world.phys.Vec3;
 public class CasaScript extends CaseScript {
 	public static final double ARRIVAL_RADIUS = 24.0;
 	public static final int FINAL = 7;
+	/** Ticks from "final:fin" (the cut to black) to the case closing: the DEAD LINE card and the credits. */
+	private static final int CREDITS = 25 + 20 * 6 + 10 + 20 * 9 + 10;
 
 	/** Act 4 set pieces: each happens once, in a random order (design 2, Act 4). */
 	private static final List<String> NIGHT_SET_PIECES = List.of("sp_lucia_techo", "sp_jorge_sonambulo", "sp_ropero_toti",
 			"torre_sillas", "sp_nona_reza");
 
+	/** The way out of the lot: every leaf of the car gate and the small gate (each leaf is its own door marker). */
+	private static final List<String> GATES = List.of("porton", "porton_2", "porton_3", "porton_4", "portoncito");
+
 	/** Script state that must survive chapter changes (run vars and counters are reset per chapter). */
 	private static final class State {
 		long chapterStart = Long.MIN_VALUE;
 		int msg;
+		double driveStart = -1;
+		boolean yaViene;
+		boolean lucesAuto;
 		int knocks;
 		long knockAt;
 		long nearDoorSince = -1;
@@ -56,8 +66,11 @@ public class CasaScript extends CaseScript {
 		int capturesAtStart;
 		long huntSince = -1;
 		boolean huntStarted;
+		int lastCaptures;
+		long caughtAt = -1;
 		long escapeAt = -1;
 		long finalAt = -1;
+		long creditsAt = -1;
 		final List<String> setPieces = new ArrayList<>();
 	}
 
@@ -79,7 +92,14 @@ public class CasaScript extends CaseScript {
 		s.chapter(FINAL, "final_auto").noCard(); // the ending: dawn, the car
 		// knocking does not open it (the Nona does); once inside it never opens by hand again until the ending
 		s.lock("entrada", 1, FINAL);
-		s.lock("porton", 3, FINAL);
+		// C: nobody walks round to the back before knocking, nor out of the house before the first hour (acts 1-2)
+		s.lock("puerta_patio", 1, 3);
+		s.lock("lavadero_patio", 1, 3);
+		s.lock("balcon", 1, 3);
+		// C: from the first hour to the dawn the lot is shut: no walking (or driving) away from the night
+		for (String g : GATES) {
+			s.lock(g, 3, FINAL);
+		}
 	}
 
 	private static State state(Run run) {
@@ -131,8 +151,16 @@ public class CasaScript extends CaseScript {
 		if (ch != 5 && Hunt.active(run)) {
 			Hunt.stop(run);
 		}
+		if (ch >= 3 && ch < FINAL) {
+			gates(run, false);  // the car gate and the small gate closed (and locked) until the dawn
+		}
 		switch (ch) {
-			case 1 -> run.lights("luces_cuarto_nono", true);  // ONE light upstairs: the dead grandfather's room
+			case 1 -> {
+				run.lights("luces_cuarto_nono", true);  // ONE light upstairs: the dead grandfather's room
+				if (s.driveStart < 0) {
+					s.driveStart = p.position().distanceTo(arrival(run));  // Marta's texts and the dog fit any drive (C)
+				}
+			}
 			case 2 -> {
 				run.lights("luces_cuarto_nono", true);
 				s.knocks = 0;
@@ -156,12 +184,14 @@ public class CasaScript extends CaseScript {
 				s.setPieces.clear();
 				s.setPieces.addAll(NIGHT_SET_PIECES);
 				java.util.Collections.shuffle(s.setPieces, new java.util.Random(run.level.getRandom().nextLong()));
-				s.nextSetPiece = run.now() + 20 * 70;
+				s.nextSetPiece = run.now() + 20 * 45;
 			}
 			case 5 -> {
 				blackout(run, false);
 				s.huntSince = -1;
 				s.capturesAtStart = Hunt.captures(run);
+				s.lastCaptures = s.capturesAtStart;
+				s.caughtAt = -1;
 				// "La Nona se rompe": in the kitchen, back turned; the hunt starts when she drops to all fours
 				if (s.huntStarted) {
 					Hunt.start(run);
@@ -178,8 +208,10 @@ public class CasaScript extends CaseScript {
 			}
 			case FINAL -> {
 				s.finalAt = run.now();
+				s.creditsAt = -1;
 				blackout(run, false);
 				run.door("entrada", true, false);
+				gates(run, true);  // the street: the way out of the lot is open again
 				run.level.setDayTime(Math.floorDiv(run.level.getDayTime(), 24000L) * 24000L + 23200L);  // a grey dawn
 				run.sound(ModSounds.MORNING_BIRDS, run.at("final_auto"), 0.5F, 0.9F);
 				h.stopAll();
@@ -200,16 +232,21 @@ public class CasaScript extends CaseScript {
 	// ------------------------------------------------------------------ act 1: the drive
 	private void drive(Run run, State s, Haunt h, ServerPlayer p) {
 		long t = run.chapterTicks();
-		if (s.msg == 0 && t > 20 * 60) {
-			s.msg = 1;
-			PhoneMessages.typing(p, PhoneMessages.MARTA, 40);
-			PhoneMessages.textLater(p, PhoneMessages.MARTA, "deadline.sms.marta.ya_viene", 40);
-			PhoneMessages.textLater(p, PhoneMessages.MARTA, "deadline.sms.marta.luces_auto", 20 * 30);
-		}
 		Vec3 target = arrival(run);
 		double d = p.position().distanceTo(target);
+		// C: Marta's texts come on the way by distance, not by time (most drives last well under a minute)
+		if (!s.yaViene && (d < 0.8 * s.driveStart || t > 20 * 45)) {
+			s.yaViene = true;
+			typing(run, PhoneMessages.MARTA, 40);
+			text(run, PhoneMessages.MARTA, "deadline.sms.marta.ya_viene", 40);
+		}
+		if (!s.lucesAuto && s.yaViene && d < 100) {
+			s.lucesAuto = true;
+			text(run, PhoneMessages.MARTA, "deadline.sms.marta.luces_auto", 20 * 3);
+		}
 		// halfway there, in the headlights: Choripán standing on two legs in the middle of the road, his back turned
-		if (!run.has("sp:perro_camino") && p.getVehicle() instanceof CarEntity && d > 60 && d < 150 && t > 20 * 20) {
+		if (!run.has("sp:perro_camino") && p.getVehicle() instanceof CarEntity && d > 50 && d < Math.max(90, 0.6 * s.driveStart)
+				&& t > 20 * 3) {
 			run.flag("sp:perro_camino");
 			h.fire("sp_perro_camino", p, false);
 		}
@@ -223,7 +260,6 @@ public class CasaScript extends CaseScript {
 	// ------------------------------------------------------------------ act 2: the door, the Nona, the dinner
 	private void arrival(Run run, State s, Haunt h, ServerPlayer p) {
 		long now = run.now();
-		boolean inside = HouseQuery.inHouse(run, p);
 		if (s.insideAt < 0) {
 			// three knocks (right click on the door). Silence. Knock again: slow steps, the bolt, the door opens by itself
 			Vec3 door = run.at("puerta_entrada");
@@ -254,26 +290,30 @@ public class CasaScript extends CaseScript {
 							Steps.door("entrada", true, false)));
 				}
 			}
-			if (inside && run.has("puerta:abierta")) {
+			// C: in = past the threshold (not the recess in front of the door), through a door that is really open
+			if (Stage.pastThreshold(run, p) && run.has("puerta:abierta") && run.doorOpen("entrada")) {
 				s.insideAt = now;
 			}
 			return;
 		}
 		// inside: the door closes behind you and the bolt turns. It will not open again until the end
 		if (!run.has("puerta:cerrada") && now - s.insideAt > 40) {
-			Vec3 door = HouseQuery.doorPos(run, "entrada");
-			if (door == null || p.position().distanceTo(door) > 2.2) {
+			if (!Stage.pastThreshold(run, p)) {
+				s.insideAt = -1;  // C: he stepped back out: wait for him again (never bolt it with him outside)
+				return;
+			}
+			if (allInside(run)) {
 				run.flag("puerta:cerrada");
 				run.door("entrada", false, true);
 				run.start("bolt", p, List.of(Steps.delay(16), Steps.run(e -> run.sound(SoundEvents.CHEST_LOCKED, run.at("puerta_entrada"), 1.0F, 0.5F))));
-				PhoneMessages.textLater(p, PhoneMessages.MARTA, "deadline.sms.marta.no_sola", 20 * 4);
+				text(run, PhoneMessages.MARTA, "deadline.sms.marta.no_sola", 20 * 4);
 			}
 		}
 		// the family eats in silence; Marta looks up, down at her phone, and texts you
 		if (s.dinnerAt < 0 && run.has("puerta:cerrada") && (run.inside(p, "comedor") || now - s.insideAt > 20 * 40)) {
 			s.dinnerAt = now;
-			PhoneMessages.typing(p, PhoneMessages.MARTA, 30);
-			PhoneMessages.textLater(p, PhoneMessages.MARTA, "deadline.sms.marta.no_hable", 30);
+			typing(run, PhoneMessages.MARTA, 30);
+			text(run, PhoneMessages.MARTA, "deadline.sms.marta.no_hable", 30);
 			if (h.fire("sp_cena", p, false) == null) {
 				family(run, true);
 			}
@@ -290,7 +330,7 @@ public class CasaScript extends CaseScript {
 			{285, "deadline.sms.marta.no_coma"}};
 
 	private void firstHour(Run run, State s, Haunt h, ServerPlayer p) {
-		messages(run, s, p, ACT3, PhoneMessages.MARTA);
+		messages(run, s, ACT3, PhoneMessages.MARTA);
 		long t = h.actTicks();
 		boolean upstairs = upstairs(run, p);
 		if (s.transitionAt < 0 && (t > 20 * 360 || upstairs && t > 20 * 120)) {
@@ -315,12 +355,12 @@ public class CasaScript extends CaseScript {
 			{200, "deadline.sms.marta.no_es_usted"}, {300, "deadline.sms.marta.escondase"}};
 
 	private void night(Run run, State s, Haunt h, ServerPlayer p) {
-		messages(run, s, p, ACT4, PhoneMessages.MARTA);
+		messages(run, s, ACT4, PhoneMessages.MARTA);
 		long t = h.actTicks();
 		if (t > 20 * 375 && !run.has("msg:puntos")) {
 			run.flag("msg:puntos");
-			PhoneMessages.typing(p, PhoneMessages.DESCONOCIDO, 20 * 8);
-			PhoneMessages.textLater(p, PhoneMessages.DESCONOCIDO, "deadline.sms.desconocido.puntos", 20 * 9);
+			typing(run, PhoneMessages.DESCONOCIDO, 20 * 8);
+			text(run, PhoneMessages.DESCONOCIDO, "deadline.sms.desconocido.puntos", 20 * 9);
 		}
 		// the big set pieces of the night, once each, never on top of another scare
 		if (!s.setPieces.isEmpty() && run.now() >= s.nextSetPiece && !h.busy() && h.phase() != Haunt.Phase.RELAX) {
@@ -329,14 +369,18 @@ public class CasaScript extends CaseScript {
 				s.setPieces.remove(0);
 			} else if (h.fire(id, p, true) != null) {
 				s.setPieces.remove(0);
-				s.nextSetPiece = run.now() + 20 * (75 + run.level.getRandom().nextInt(40));
+				// (its own peak and the relax after it already keep them apart: this is only the extra breath)
+				s.nextSetPiece = run.now() + 20 * (40 + run.level.getRandom().nextInt(30));
 			} else {
 				// not the right place yet: the next one gets its turn, this one waits at the back of the line (C)
 				s.setPieces.add(s.setPieces.remove(0));
 				s.nextSetPiece = run.now() + 20 * 10;
 			}
 		}
-		if (t > 20 * 480 || h.bigScares() - s.bigAtStart >= 5 && t > 20 * 200) {
+		// C: the night ends once its set pieces have all played and Marta has said "Escóndase" (sooner if it was a heavy
+		// night); 9 minutes at most (design 2: 6-9 min)
+		boolean played = s.setPieces.isEmpty() && s.msg >= ACT4.length;
+		if (t > 20 * 540 || played && (t > 20 * 320 || h.bigScares() - s.bigAtStart >= 5)) {
 			run.startChapter(5, false);
 		}
 	}
@@ -358,9 +402,20 @@ public class CasaScript extends CaseScript {
 			}
 			return;
 		}
-		messages(run, s, p, ACT5, PhoneMessages.MARTA);
+		if (!Hunt.active(run) && !h.isRunning("sp_nona_se_rompe")) {
+			Hunt.start(run);  // C: watchdog -- she was stopped some other way: the act always has its hunter
+		}
+		messages(run, s, ACT5, PhoneMessages.MARTA);
+		int caught = Hunt.captures(run);
+		if (caught != s.lastCaptures) {
+			s.lastCaptures = caught;
+			s.caughtAt = run.now();
+		}
+		// C: never mid-capture: the face, the fade and the wake-up in the guest bed (t 48) play out first, and the act
+		// changes in the black
+		boolean settled = run.now() - s.caughtAt > 52;
 		boolean survived = run.now() - s.huntSince > 20 * 360;
-		if (survived || Hunt.captures(run) - s.capturesAtStart >= 2) {
+		if ((survived || caught - s.capturesAtStart >= 2) && settled) {
 			run.startChapter(6, false);
 		}
 	}
@@ -370,7 +425,7 @@ public class CasaScript extends CaseScript {
 		// every door slams shut but the ones down to the basement; the cracked wall is broken from the inside
 		run.unflag("escape");
 		List<String> doors = new ArrayList<>(run.def.doors.keySet());
-		doors.removeIf(d -> d.equals("sotano") || d.equals("entrada") || d.equals("porton") || d.startsWith("ropero_")
+		doors.removeIf(d -> d.equals("sotano") || d.equals("entrada") || GATES.contains(d) || d.startsWith("ropero_")
 				|| p.position().distanceTo(HouseQuery.doorPos(run, d)) < 2.5);
 		for (int i = 0; i < doors.size(); i++) {
 			String d = doors.get(i);
@@ -383,9 +438,9 @@ public class CasaScript extends CaseScript {
 			}
 			run.sound(ModSounds.WALL_BREAK, run.at("sotano_pared"), 1.4F, 0.7F);
 		}
-		PhoneMessages.textLater(p, PhoneMessages.DESCONOCIDO, "deadline.sms.desconocido.baja", 20 * 10);
-		PhoneMessages.textLater(p, PhoneMessages.DESCONOCIDO, "deadline.sms.desconocido.baja", 20 * 22);
-		PhoneMessages.textLater(p, PhoneMessages.DESCONOCIDO, "deadline.sms.desconocido.baja", 20 * 34);
+		text(run, PhoneMessages.DESCONOCIDO, "deadline.sms.desconocido.baja", 20 * 10);
+		text(run, PhoneMessages.DESCONOCIDO, "deadline.sms.desconocido.baja", 20 * 22);
+		text(run, PhoneMessages.DESCONOCIDO, "deadline.sms.desconocido.baja", 20 * 34);
 	}
 
 	private void descent(Run run, State s, Haunt h, ServerPlayer p) {
@@ -402,6 +457,11 @@ public class CasaScript extends CaseScript {
 		boolean roomScripted = HorrorEvents.get(run.type.key(), "sp_cuarto61") != null;
 		boolean inRoom = run.def.areas.containsKey("cuarto61") && run.inside(p, "cuarto61");
 		boolean below = roomScripted && run.def.areas.containsKey("sotano") && run.inside(p, "sotano");
+		// C: watchdog -- the room ended without its "fin" (he reconnected, another hunter left): it plays again
+		if (roomScripted && run.has("cuarto61") && !run.has("escape") && run.since("cuarto61") > 40
+				&& !h.isRunning("sp_cuarto61") && !run.event("cuarto61:fin")) {
+			run.unflag("cuarto61");
+		}
 		if (!run.has("cuarto61") && (inRoom || below)) {
 			run.flag("cuarto61");
 			if (h.fire("sp_cuarto61", p, false) == null) {
@@ -426,10 +486,19 @@ public class CasaScript extends CaseScript {
 		long t = run.now() - s.finalAt;
 		if (t > 20 * 3 && !run.has("msg:gracias")) {
 			run.flag("msg:gracias");
-			PhoneMessages.textLater(p, PhoneMessages.MARTA, "deadline.sms.marta.gracias", 20);
-			PhoneMessages.typing(p, PhoneMessages.MARTA, 20 * 5);
-			PhoneMessages.textLater(p, PhoneMessages.MARTA, "deadline.sms.marta.ya_somos", 20 * 7);
-			PhoneMessages.photoLater(p, PhoneMessages.MARTA, "final_familia", 20 * 10);
+			text(run, PhoneMessages.MARTA, "deadline.sms.marta.gracias", 20);
+			typing(run, PhoneMessages.MARTA, 20 * 5);
+			text(run, PhoneMessages.MARTA, "deadline.sms.marta.ya_somos", 20 * 7);
+			for (ServerPlayer hunter : run.hunters()) {
+				PhoneMessages.photoLater(hunter, PhoneMessages.MARTA, "final_familia", 20 * 10);
+			}
+		}
+		// C: watchdog -- the mirror scene ended without its "fin" (he reconnected, another hunter left, hidden for 20
+		// min): it plays again
+		boolean mirrorScripted = HorrorEvents.get(run.type.key(), "sp_final_auto") != null;
+		if (mirrorScripted && run.has("final:auto") && !run.has("final:fin") && run.since("final:auto") > 40
+				&& !h.isRunning("sp_final_auto") && !run.event("final:fin")) {
+			run.unflag("final:auto");
 		}
 		// you get in the car and start it: in the mirror, the Nona sitting in the back seat
 		if (!run.has("final:auto") && t > 20 * 12 && (p.getVehicle() instanceof CarEntity || t > 20 * 120)) {
@@ -447,8 +516,20 @@ public class CasaScript extends CaseScript {
 		}
 		if (run.event("final:fin") && !run.has("final:fin")) {
 			run.flag("final:fin");
+			// the house stays in the world: by night, one light upstairs (design 2, Final)
+			run.lights("luces_cuarto_nono", true);
+			// C: "DEAD LINE" as the black lifts, then the credits; the case closes only after them, so its "solved" card
+			// and jingle never land on the last scare (and the dawn holds through the credits)
+			s.creditsAt = run.now();
+			run.start("credits", p, List.of(
+					Steps.delay(25),
+					Steps.bigText("deadline.casa.fin", 20 * 6),
+					Steps.delay(20 * 6 + 10),
+					Steps.bigText("deadline.casa.creditos", 20 * 9)));
+		}
+		if (s.creditsAt >= 0 && run.now() - s.creditsAt > CREDITS) {
+			s.creditsAt = -1;
 			for (ServerPlayer hunter : run.hunters()) {
-				Fx.bigText(hunter, "deadline.casa.fin", 120, 1F);
 				CaseManager.returnHome(hunter, true);
 			}
 		}
@@ -462,6 +543,12 @@ public class CasaScript extends CaseScript {
 
 	@Override
 	public void onLeave(Run run, ServerPlayer p) {
+		// C: one of several hunters goes home: only he is let go, the night goes on for the others (hunters() still lists
+		// him here). The story set pieces that were aimed at him start over through the act watchdogs
+		if (run.hunters().stream().anyMatch(o -> o != p)) {
+			HideSpots.release(p);
+			return;
+		}
 		Hunt.stop(run);
 		Haunt.forget(run);
 		// what the poltergeist left changed (pictures turned, blinds, TV, drawers, flying props still out)
@@ -473,16 +560,56 @@ public class CasaScript extends CaseScript {
 	}
 
 	/** Sends the act's messages (seconds of act time → lang key), in order, one at a time. */
-	private static void messages(Run run, State s, ServerPlayer p, Object[][] list, String thread) {
+	private static void messages(Run run, State s, Object[][] list, String thread) {
 		if (s.msg >= list.length) {
 			return;
 		}
 		long t = Haunt.of(run).actTicks();
 		if (t >= 20L * (Integer) list[s.msg][0]) {
-			PhoneMessages.typing(p, thread, 30);
-			PhoneMessages.textLater(p, thread, (String) list[s.msg][1], 30);
+			typing(run, thread, 30);
+			text(run, thread, (String) list[s.msg][1], 30);
 			s.msg++;
 		}
+	}
+
+	/** C: a story text reaches every hunter's phone (the phone is the only voice of the story). */
+	private static void text(Run run, String thread, String key, int delay) {
+		for (ServerPlayer h : run.hunters()) {
+			PhoneMessages.textLater(h, thread, key, delay);
+		}
+	}
+
+	private static void typing(Run run, String thread, int ticks) {
+		for (ServerPlayer h : run.hunters()) {
+			PhoneMessages.typing(h, thread, ticks);
+		}
+	}
+
+	/** Opens or closes every gate of the lot (the car gate leaves and the small gate). */
+	private static void gates(Run run, boolean open) {
+		for (String g : GATES) {
+			if (run.def.doors.containsKey(g)) {
+				run.door(g, open, false);
+			}
+		}
+	}
+
+	/**
+	 * C: every hunter on the lot is past the front door and clear of the doorway: it only closes behind the last one
+	 * (a hunter still on the road does not hold it).
+	 */
+	private static boolean allInside(Run run) {
+		Vec3 door = HouseQuery.doorPos(run, "entrada");
+		boolean lot = run.def.areas.containsKey("sitio");
+		for (ServerPlayer h : run.hunters()) {
+			if (lot && !run.inside(h, "sitio")) {
+				continue;
+			}
+			if (!Stage.pastThreshold(run, h) || door != null && h.position().distanceTo(door) <= 2.2) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	/** The breaker trips: every light of the house goes out (the panel in the laundry can bring them back for a while). */

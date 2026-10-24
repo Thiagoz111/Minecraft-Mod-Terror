@@ -573,6 +573,33 @@ public class PhoneScreen extends Screen {
 
 		// progress (a scripted case shows its chapter and the HUD checklist instead of the four legacy stages)
 		boolean story = com.deadline.client.hud.StoryHud.active();
+		// a scripted case without objectives (the Casa) shows no progress, objective, hint or weakness: only the way out
+		boolean quiet = !story && ClientState.caseType(key).scripted();
+		if (!quiet) {
+			drawCaseProgress(g, d, key, story, y);
+		}
+
+		int by = SY + SH - 30;
+		if (!story && !quiet && d.stage() >= 3) {
+			button(g, SX + 10, by, SW - 20, 22, Component.translatable("deadline.phone.go_home"), 0xFF1FAF5A, () -> {
+				send(PhoneActionPayload.RETURN_HOME, 0);
+				onClose();
+			});
+		} else {
+			Component label = Component.translatable(confirmAbandon ? "deadline.phone.sure" : "deadline.phone.abandon");
+			button(g, SX + 10, by, SW - 20, 22, label, confirmAbandon ? 0xFFE01B24 : 0xFF5A1218, () -> {
+				if (confirmAbandon) {
+					send(PhoneActionPayload.ABANDON, 0);
+					onClose();
+				} else {
+					confirmAbandon = true;
+				}
+			});
+		}
+	}
+
+	/** Progress bar, objective, evidence, hint and weakness of the case page (legacy cases and story chapters). */
+	private void drawCaseProgress(GuiGraphics g, PhoneDataPayload d, String key, boolean story, int y) {
 		int steps = story ? 9 : 4;
 		int bw = (SW - 20 - (steps - 1) * 4) / steps;
 		for (int i = 0; i < steps; i++) {
@@ -602,24 +629,6 @@ public class PhoneScreen extends Screen {
 		g.drawString(font, Component.translatable("deadline.phone.weakness"), SX + 10, y, 0xFF9A9AA6, false);
 		y += 11;
 		wrap(g, Component.translatable("deadline.weakness." + beast), SX + 10, y, SW - 20, 0xFFFFC23A);
-
-		int by = SY + SH - 30;
-		if (!story && d.stage() >= 3) {
-			button(g, SX + 10, by, SW - 20, 22, Component.translatable("deadline.phone.go_home"), 0xFF1FAF5A, () -> {
-				send(PhoneActionPayload.RETURN_HOME, 0);
-				onClose();
-			});
-		} else {
-			Component label = Component.translatable(confirmAbandon ? "deadline.phone.sure" : "deadline.phone.abandon");
-			button(g, SX + 10, by, SW - 20, 22, label, confirmAbandon ? 0xFFE01B24 : 0xFF5A1218, () -> {
-				if (confirmAbandon) {
-					send(PhoneActionPayload.ABANDON, 0);
-					onClose();
-				} else {
-					confirmAbandon = true;
-				}
-			});
-		}
 	}
 
 	// ------------------------------------------------------------------ shop

@@ -281,12 +281,10 @@ public class SpCuarto61 extends HorrorEvent {
 			screamAt = c.t;
 			c.put("screamAt", screamAt);
 			c.run.sound(ModSounds.HUNT_SCREAM, n.position(), 2.4F, 1.0F);
-			if (c.haunt.canJumpscare()) {
-				Fx.jumpscare(c.p, "nona_rota");
-				c.haunt.jumpscared();
-			} else {
-				Fx.redFlash(c.p, 0.6F);
-			}
+			// the climax of the night (once per run): never traded for a flash by the 3-minute rule -- act 5 usually
+			// ends on a capture, which just spent it
+			Fx.jumpscare(c.p, "nona_rota");
+			c.haunt.jumpscared();
 			Fx.shake(c.p, 1.4F, 24);
 			Apparitions.noise(c, n.position(), 100F);
 		}

@@ -30,6 +30,8 @@ public final class Haunt {
 	/** Haunts live beside their run (run vars are reset per chapter, so they are not kept there). */
 	private static final Map<Run, Haunt> HAUNTS = new WeakHashMap<>();
 	private static final int RECENT = 6;
+	/** Highest intensity a random event may have in each act (scripted fires bypass it). */
+	private static final int[] ACT_CAP = {1, 1, 2, 3, 4, 5, 5};
 	/** Events that threw (start, tick, stop or canRun) since the server started; the CI smoke test fails on any. */
 	public static int errors;
 
@@ -242,6 +244,7 @@ public final class Haunt {
 
 	private Ctx pick(ServerPlayer p, long now) {
 		int cap = phase == Phase.RELAX ? 1 : tension < 25 ? 2 : tension < 50 ? 3 : tension < 75 ? 4 : 5;
+		cap = Math.min(cap, ACT_CAP[Math.max(0, Math.min(6, act))]);  // the act bounds the scare size (design 2: act 3 soft)
 		List<Ctx> pool = new ArrayList<>();
 		List<Integer> weights = new ArrayList<>();
 		int total = 0;
@@ -325,9 +328,7 @@ public final class Haunt {
 			recent.removeLast();
 		}
 		addTension(e.intensity * 5F);
-		if (e.kind == HorrorEvent.Kind.SCARE) {
-			jumpscared();
-		}
+		// a SCARE event calls jumpscared() itself when the face actually shows (it may end without one)
 		if (e.intensity >= 4) {
 			bigScares++;
 			phase = Phase.PEAK;

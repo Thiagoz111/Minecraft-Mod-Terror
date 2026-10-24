@@ -11,11 +11,12 @@ import net.minecraft.world.entity.player.Player;
 
 /**
  * The GPS of an accepted overworld case (docs/design/casa_terror.md 6.9): an arrow at the top centre pointing at the
- * house relative to where the hunter looks, and the distance ("312 m"), styled like the checklist panel. Hidden within
- * 30 blocks of the arrival marker. The target comes from the server ({@link GpsPayload}).
+ * house relative to where the hunter looks, and the distance ("312 m"), styled like the checklist panel. Hidden at the
+ * site (design 6.9): within 64 blocks of the arrival marker, which covers the whole lot (its far corner is ~54 away),
+ * so it never shows up inside the house or in the yard. The target comes from the server ({@link GpsPayload}).
  */
 public final class GpsHud {
-	public static final double HIDE = 30.0;
+	public static final double HIDE = 64.0;
 	public static boolean on;
 	public static double x, y, z;
 	public static String caseKey = "";

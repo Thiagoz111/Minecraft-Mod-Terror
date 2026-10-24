@@ -20,6 +20,9 @@ import net.minecraft.world.phys.Vec3;
 public class SpNonaSeRompe extends HorrorEvent {
 	private static final int LURE = 0, BREAK = 1;
 	private static final int UNSEEN_LIMIT = 20 * 75;
+	/** No new transformation starts after this: the BREAK (~131 ticks) always fits before {@link #maxTicks}. */
+	private static final int LURE_LIMIT = UNSEEN_LIMIT + 20 * 30;
+	private static final int BREAK_TICKS = 140;
 
 	public SpNonaSeRompe() {
 		super("sp_nona_se_rompe", Kind.SETPIECE);
@@ -97,6 +100,9 @@ public class SpNonaSeRompe extends HorrorEvent {
 		Apparitions.Gaze g = Apparitions.gaze(c);
 		g.update(!hidden && Apparitions.dist(c, n.position()) < 16.0 && Apparitions.watches(c, n, 50F));
 		boolean found = g.seen >= 15 || !hidden && Apparitions.dist(c, n.position()) < 6.0;
+		if (c.t >= LURE_LIMIT) {
+			return true;  // he stayed hidden all along: the act script lets her out (Hunt.start) without the scene
+		}
 		if (found || c.t > UNSEEN_LIMIT && !hidden) {
 			Vec3 pos = n.position();
 			float yaw = n.getYRot();
@@ -114,17 +120,15 @@ public class SpNonaSeRompe extends HorrorEvent {
 		if (c.get("done") != null) {
 			return;
 		}
-		// aborted (a replay of the act, the case ending): the kitchen dark again, and no half-made hunter left behind
+		// aborted (a replay of the act, the case ending, he dropped out): the kitchen dark again. A transformation already
+		// under way is left to finish -- she is the hunter of the act; the act script stops her when the act changes
 		if (c.run.def.groups.containsKey("luces_cocina")) {
 			c.run.lights("luces_cocina", false);
-		}
-		if (Integer.valueOf(BREAK).equals(c.get("phase"))) {
-			Hunt.stop(c.run);
 		}
 	}
 
 	@Override
 	public int maxTicks() {
-		return UNSEEN_LIMIT + 20 * 30;
+		return LURE_LIMIT + BREAK_TICKS;
 	}
 }

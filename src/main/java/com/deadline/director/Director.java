@@ -45,6 +45,8 @@ public final class Director {
 					if (st.getBlock() instanceof net.minecraft.world.level.block.DoorBlock
 							|| st.getBlock() instanceof net.minecraft.world.level.block.TrapDoorBlock) {
 						com.deadline.voice.NoiseMeter.add(sp, 10F);
+						// a door is a real sound in the house: she hears it from across the floor (design 6.1)
+						com.deadline.horror.casa.hunt.Hunt.noise(r, net.minecraft.world.phys.Vec3.atCenterOf(pos), sp.isShiftKeyDown() ? 15F : 30F);
 					}
 					String m = r.markerAt(pos);
 					if (m == null) {
