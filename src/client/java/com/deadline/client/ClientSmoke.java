@@ -345,7 +345,8 @@ public final class ClientSmoke {
 		}));
 		for (String k : new String[] {"nona_rota", "lucia", "copia", "perro_largo", "cara_roja"}) {
 			step(30, mc -> com.deadline.client.hunt.Jumpscare3D.start(k));
-			shot(6, "casa_js_" + k);
+			shot(3, "casa_js_" + k);
+			shot(6, "casa_js_" + k + "_late");
 		}
 		step(30, mc -> ClientState.reset());
 	}

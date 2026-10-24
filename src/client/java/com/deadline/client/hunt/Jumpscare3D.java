@@ -200,7 +200,7 @@ public final class Jumpscare3D {
 				s.action = NonaRotaEntity.ACT_GRAB;
 				s.variant = NonaRotaEntity.LOOK_ROTA;
 				s.seed = 0x5EED;
-				return new Face(m, s, tex("nona_rota"), tex("nona_rota_eyes"), 1.15F, 0.28F, 0.40F, -1);
+				return new Face(m, s, tex("nona_rota"), tex("nona_rota_eyes"), 1.15F, 0.28F, 0.62F, -1);
 			}
 			case "lucia" -> {
 				HauntModel m = posed(() -> PoseidaModelBase.createBodyLayer().bakeRoot(), r -> new PoseidaModelBase(r) {
@@ -214,7 +214,7 @@ public final class Jumpscare3D {
 				// her possessed look when B3's two looks exist (poseida_poseida.png), else the single old texture
 				String look = exists(tex("poseida_poseida")) ? "poseida_poseida" : "poseida";
 				Identifier glow = tex(look + "_eyes");
-				return new Face(m, state(), tex(look), exists(glow) ? glow : null, 1.25F, -0.15F, 0.42F, -1);
+				return new Face(m, state(), tex(look), exists(glow) ? glow : null, 1.25F, -0.15F, 0.66F, -1);
 			}
 			case "copia" -> {
 				boolean copy = exists(tex("marta_copia"));
@@ -227,7 +227,7 @@ public final class Jumpscare3D {
 				});
 				// without B3's copy look, a bloodless Marta (grey tint) is the fallback
 				Identifier glow = tex("marta_copia_eyes");
-				return new Face(m, state(), tex(copy ? "marta_copia" : "marta"), copy && exists(glow) ? glow : null, 1.47F, 0.03F, 0.36F,
+				return new Face(m, state(), tex(copy ? "marta_copia" : "marta"), copy && exists(glow) ? glow : null, 1.47F, 0.03F, 0.60F,
 						copy ? -1 : 0xFFB8BEC4);
 			}
 			case "perro_largo" -> {
@@ -240,7 +240,7 @@ public final class Jumpscare3D {
 					}
 				});
 				Identifier glow = tex("choripan_demonio_eyes");
-				return new Face(m, state(), tex("choripan_demonio"), exists(glow) ? glow : null, 0.75F, 1.75F, 0.45F, -1);
+				return new Face(m, state(), tex("choripan_demonio"), exists(glow) ? glow : null, 0.75F, 1.75F, 0.70F, -1);
 			}
 			case "cara_roja" -> {
 				// Lemaza's red face: the anima's skull of a face and its torn maw, painted red (tools/art/hunt_cara_roja.py);
@@ -256,7 +256,7 @@ public final class Jumpscare3D {
 					}
 				});
 				Identifier glow = DeadLine.id("textures/entity/hunt/cara_roja_eyes.png");
-				return new Face(m, state(), painted ? red : tex("anima"), painted && exists(glow) ? glow : null, 1.47F, 0.10F, 0.40F,
+				return new Face(m, state(), painted ? red : tex("anima"), painted && exists(glow) ? glow : null, 1.47F, 0.10F, 0.64F,
 						painted ? -1 : 0xFFFF3A2A);
 			}
 			default -> {
