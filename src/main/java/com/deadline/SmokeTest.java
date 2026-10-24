@@ -59,6 +59,9 @@ public final class SmokeTest {
 			}
 			run.startChapter(c.n, false);
 		}
+		if (type.key().equals("casa")) {
+			failures += com.deadline.horror.CasaSmoke.run(run);
+		}
 		com.deadline.director.Director.end(type, 950);
 		DeadLine.LOGGER.info("DEADLINE-SMOKE OK {} site: {} blocks, {} beats, {} points, {} ms", type.key(), placed,
 				run.compiled.beats().size(), def.points.size(), (System.nanoTime() - t0) / 1_000_000);

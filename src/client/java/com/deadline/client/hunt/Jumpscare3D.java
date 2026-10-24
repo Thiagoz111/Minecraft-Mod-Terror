@@ -8,7 +8,6 @@ import com.deadline.client.model.gen.ChoripanDemonioModelBase;
 import com.deadline.client.model.gen.MartaModelBase;
 import com.deadline.client.model.gen.NonaModelBase;
 import com.deadline.client.model.gen.PoseidaModelBase;
-import com.deadline.client.model.gen.SombraModelBase;
 import com.deadline.client.render.HauntModel;
 import com.deadline.client.render.HauntRenderState;
 import com.deadline.horror.casa.hunt.NonaRotaEntity;
@@ -37,7 +36,7 @@ import net.minecraft.util.RandomSource;
  * <p>Rendered in the world pass (WorldRenderEvents.BEFORE_ENTITIES) a few decimetres in front of the camera, full
  * bright, from the creature models themselves: the broken Nona (look 'rota', pose 'jumpscare'), Lucía ('scream'), a
  * smiling copy (Marta with the 'copia' look when B3's texture exists), the long dog ('lunge') and the red face (the
- * tall shadow's grinning head, painted red: hunt/cara_roja.png, or the ánima's maw tinted red as a fallback).
+ * ánima's skull and maw painted red: hunt/cara_roja.png from tools/art/hunt_cara_roja.py).
  */
 public final class Jumpscare3D {
 	/** Length in ticks (0.85 s). */
@@ -212,7 +211,10 @@ public final class Jumpscare3D {
 						scare(this, s, 0.35F);
 					}
 				});
-				return new Face(m, state(), tex("poseida"), null, 1.25F, -0.15F, 0.42F, -1);
+				// her possessed look when B3's two looks exist (poseida_poseida.png), else the single old texture
+				String look = exists(tex("poseida_poseida")) ? "poseida_poseida" : "poseida";
+				Identifier glow = tex(look + "_eyes");
+				return new Face(m, state(), tex(look), exists(glow) ? glow : null, 1.25F, -0.15F, 0.42F, -1);
 			}
 			case "copia" -> {
 				boolean copy = exists(tex("marta_copia"));
@@ -224,7 +226,9 @@ public final class Jumpscare3D {
 					}
 				});
 				// without B3's copy look, a bloodless Marta (grey tint) is the fallback
-				return new Face(m, state(), tex(copy ? "marta_copia" : "marta"), null, 1.47F, 0.03F, 0.36F, copy ? -1 : 0xFFB8BEC4);
+				Identifier glow = tex("marta_copia_eyes");
+				return new Face(m, state(), tex(copy ? "marta_copia" : "marta"), copy && exists(glow) ? glow : null, 1.47F, 0.03F, 0.36F,
+						copy ? -1 : 0xFFB8BEC4);
 			}
 			case "perro_largo" -> {
 				HauntModel m = posed(() -> ChoripanDemonioModelBase.createBodyLayer().bakeRoot(), r -> new ChoripanDemonioModelBase(r) {
@@ -239,29 +243,21 @@ public final class Jumpscare3D {
 				return new Face(m, state(), tex("choripan_demonio"), exists(glow) ? glow : null, 0.75F, 1.75F, 0.45F, -1);
 			}
 			case "cara_roja" -> {
+				// Lemaza's red face: the anima's skull of a face and its torn maw, painted red (tools/art/hunt_cara_roja.py);
+				// without that texture, the anima tinted red
 				Identifier red = DeadLine.id("textures/entity/hunt/cara_roja.png");
-				if (exists(red)) {
-					HauntModel m = posed(() -> SombraModelBase.createBodyLayer().bakeRoot(), r -> new SombraModelBase(r) {
-						@Override
-						public void setupAnim(HauntRenderState s) {
-							super.setupAnim(s);
-							apply(pose("scream"), 1F);
-							hide("hat", true);
-							scare(this, s, 0.45F);
-						}
-					});
-					Identifier glow = DeadLine.id("textures/entity/hunt/cara_roja_eyes.png");
-					return new Face(m, state(), red, exists(glow) ? glow : null, 2.71F, 0.10F, 0.42F, -1);
-				}
+				boolean painted = exists(red);
 				HauntModel m = posed(() -> AnimaModelBase.createBodyLayer().bakeRoot(), r -> new AnimaModelBase(r) {
 					@Override
 					public void setupAnim(HauntRenderState s) {
 						super.setupAnim(s);
-						apply(pose("scream"), 1F);
-						scare(this, s, 0.35F);
+						apply(pose("attack"), 1F);
+						scare(this, s, 0.4F);
 					}
 				});
-				return new Face(m, state(), tex("anima"), null, 1.47F, 0.10F, 0.40F, 0xFFFF3A2A);
+				Identifier glow = DeadLine.id("textures/entity/hunt/cara_roja_eyes.png");
+				return new Face(m, state(), painted ? red : tex("anima"), painted && exists(glow) ? glow : null, 1.47F, 0.10F, 0.40F,
+						painted ? -1 : 0xFFFF3A2A);
 			}
 			default -> {
 				return null;

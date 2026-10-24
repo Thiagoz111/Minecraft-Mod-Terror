@@ -30,6 +30,8 @@ public final class Haunt {
 	/** Haunts live beside their run (run vars are reset per chapter, so they are not kept there). */
 	private static final Map<Run, Haunt> HAUNTS = new WeakHashMap<>();
 	private static final int RECENT = 6;
+	/** Events that threw (start, tick, stop or canRun) since the server started; the CI smoke test fails on any. */
+	public static int errors;
 
 	public final Run run;
 	private int act;
@@ -306,6 +308,7 @@ public final class Haunt {
 		try {
 			e.start(c);
 		} catch (RuntimeException ex) {
+			errors++;
 			DeadLine.LOGGER.error("Horror event {} failed to start", e.id, ex);
 			return false;
 		}
@@ -337,6 +340,7 @@ public final class Haunt {
 		try {
 			c.event.stop(c);
 		} catch (RuntimeException ex) {
+			errors++;
 			DeadLine.LOGGER.error("Horror event {} failed to stop", c.event.id, ex);
 		}
 		if (c == peak) {
@@ -363,6 +367,7 @@ public final class Haunt {
 		try {
 			return c.event.tick(c);
 		} catch (RuntimeException ex) {
+			errors++;
 			DeadLine.LOGGER.error("Horror event {} crashed", c.event.id, ex);
 			return true;
 		}
@@ -372,6 +377,7 @@ public final class Haunt {
 		try {
 			return c.event.canRun(c);
 		} catch (RuntimeException ex) {
+			errors++;
 			DeadLine.LOGGER.error("Horror event {} canRun crashed", c.event.id, ex);
 			return false;
 		}

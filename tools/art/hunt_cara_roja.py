@@ -37,6 +37,7 @@ def main():
     base = np.array(m.paint(S.DEFAULT_MAT).convert('RGBA')).astype(float)
     glow = np.array(m.paint(S.DEFAULT_MAT, layer='eyes').convert('RGBA')).astype(float) if 'eyes' in m.layers() else None
     mask = np.zeros(base.shape[:2], bool)
+    jaw = np.zeros(base.shape[:2], bool)
     for b in m.bones():
         if b.name not in FACE_BONES:
             continue
@@ -44,11 +45,15 @@ def main():
             u, v = c.uv
             w, h = c.uv_size()
             mask[v:v + h, u:u + w] = True
+            if b.name == 'jaw':
+                jaw[v:v + h, u:u + w] = True
     rgb = base[..., :3]
     lum = (0.3 * rgb[..., 0] + 0.59 * rgb[..., 1] + 0.11 * rgb[..., 2]) / 255.0
     ref = np.percentile(lum[mask & (base[..., 3] > 0)], 92) if mask.any() else 0.3
     skin = ramp(np.clip(lum / max(ref, 0.05), 0, 1) * 0.85 + 0.12)
-    teeth = lum > max(0.42, ref * 1.6)
+    mx = rgb.max(-1)
+    sat = (mx - rgb.min(-1)) / np.maximum(mx, 1.0)
+    teeth = jaw & (lum > 0.6) & (sat < 0.45)                         # only the teeth stay pale: the skull goes red
     out = rgb.copy()
     out[mask] = skin[mask]
     out[mask & teeth] = np.array([214, 196, 150]) * (0.75 + 0.25 * lum[mask & teeth, None])

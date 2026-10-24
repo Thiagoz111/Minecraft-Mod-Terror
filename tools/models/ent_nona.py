@@ -2839,6 +2839,30 @@ LOOKS (VARIANT_MATS, Java picks by the entity's variant index)
              bleached white hair (bun hidden, hair_loose shown), long dark nails; the right lens cracked in a spider web
              over a glassy blue doll's eye (still glowing), the left blown out on a black hole with an ember, weeping one
              black tear down the cheek, the jaw and the neck (rhymes with Ofelia's broken eye).
+  2 rota     (B2, the hunt of Act 5: NonaRotaEntity, client/hunt/NonaRotaModel; NOT used by the family's Nona) corpse
+             grey-blue skin with dark veins, no glasses, two small milky cataracts sunk in black sockets (the face has
+             slipped: her left eye a row lower), blood from the eyes, the nostrils and the torn corners of a gaping black
+             mouth; greasy thinned hair with the scalp showing, the white locks lank; the cardigan and dress turned into
+             one filthy blood-soaked nightgown, bare veined legs.  Emissive: the cataracts glow dimly (nona_rota_eyes).
+             Toggle bones of the look (hidden in 'normal' / 'poseida'): jaw_long (the unhinged jaw hanging to the chest:
+             an open black throat between stretched cheek cords, the lower dentures at its chin end), teeth_upper,
+             right_talons / left_talons (three long jointed fingers with split black nails), spine (vertebrae and shoulder
+             blades through a tear in the back of the gown).  bun, glasses, walker and yarn_ball hidden.
+
+HUNT POSES (B2; shown with 'rota'; NonaRotaModel cross-fades them and adds what a table cannot):
+  listen          frozen, the head cocked hard, chin up, sniffing; the talons hang in front.  Java: sniff twitch.
+  stand_tall      the hunch straightened, head level, arms hanging to the knees.  Java STRETCH on top: legs yScale
+                  1 + 0.9 s (the body raised 13.5 s texels), neck 1 + 0.5 s, arms 1 + 0.5 s, base uniform 1 + 0.2 s
+                  (~2.5 blocks at s = 1).  Never scale the chest: the head would stretch with it.  The loose locks get
+                  HANG rotations so they hang down lank.  Upright gait: long stiff legs, a lurch per step, head lolling.
+  neck_twist      ONLY the twist (180 deg over neck + head): added on top of a body pose (the transformation).
+  crawl_spider    the Exorcist bridge, belly up, the head upside down in front; neck 1.3, arms 1.3 (base lifted 2.7).
+                  Java gait: diagonal pairs (right hand + left foot) scuttling, the bridge bobbing, the head snapping.
+  ceiling_hang    upside down from the ceiling (base raised 46: the ceiling 1.44 blocks over her box).
+  jumpscare       lunging, the jaw dropped to the chest, the talons framing the face (also the 3D jumpscare face).
+  TRANSFORM ("La Nona se rompe", 150 ticks): 0-30 trembling, look 'poseida'; 30 the look turns 'rota' and the neck
+                  turns 180 in five jerks until 90 (jaw_long shown from 60, the jaw drops 60-90); 90-120 the stretch;
+                  120-134 the drop onto all fours (crawl_spider).
 """
 
 
