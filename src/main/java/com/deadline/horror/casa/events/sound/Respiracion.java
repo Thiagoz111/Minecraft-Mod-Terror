@@ -4,7 +4,6 @@ import com.deadline.horror.Ctx;
 import com.deadline.horror.HorrorEvent;
 import com.deadline.horror.casa.Polter;
 import com.deadline.registry.ModSounds;
-import com.deadline.sanity.SanityManager;
 import net.minecraft.util.Mth;
 
 /**
@@ -28,7 +27,6 @@ public class Respiracion extends HorrorEvent {
 		c.put("side", side);
 		c.put("yaw", c.p.getYRot());
 		Polter.heard(c.p, ModSounds.POLTER_RESPIRA, Polter.ear(c.p, side, 0.55), 1.0F);
-		SanityManager.add(c.p, -2F);
 	}
 
 	@Override
@@ -38,7 +36,6 @@ public class Respiracion extends HorrorEvent {
 			if (Math.abs(Mth.wrapDegrees(c.p.getYRot() - yaw0)) < 45F) {
 				double side = c.get("side");
 				Polter.heard(c.p, ModSounds.POLTER_RESPIRA, Polter.ear(c.p, side, 0.3), 1.2F);
-				SanityManager.add(c.p, -2F);
 			}
 		}
 		return c.t >= 82;

@@ -5,7 +5,6 @@ import com.deadline.horror.Ctx;
 import com.deadline.horror.HorrorEvent;
 import com.deadline.horror.casa.Polter;
 import com.deadline.registry.ModSounds;
-import com.deadline.sanity.SanityManager;
 import net.minecraft.world.phys.Vec3;
 
 /** 3 palmadas (acts 3-5, intensity 3; The Conjuring): two claps right behind him. There is nobody there. */
@@ -36,6 +35,5 @@ public class Palmadas extends HorrorEvent {
 	public void start(Ctx c) {
 		Vec3 at = c.get("at");
 		c.run.sound(ModSounds.POLTER_PALMADAS, at, 1.0F, Polter.pitch(c, 0.95F, 1.05F));
-		SanityManager.add(c.p, -4F);
 	}
 }

@@ -10,10 +10,6 @@ public final class ClientState {
 
 	public static long ticks;
 
-	// sanity
-	public static float sanity = 100F;
-	public static float sanityShown = 100F;
-
 	// screen effects
 	public static float shakeIntensity;
 	public static int shakeTicks;
@@ -46,24 +42,19 @@ public final class ClientState {
 	public static boolean endSolved;
 	public static int endReward;
 
-	// hallucinated figure at the edge of the screen
-	public static int figureTicks;
-	public static boolean figureLeft;
-
 	// recording overlay
 	public static boolean vhs;
 	public static long vhsStart;
 
 	// last phone snapshot
-	public static PhoneDataPayload phone = new PhoneDataPayload(false, 0, 0, 100F, 0, "", 0, 0);
+	public static PhoneDataPayload phone = new PhoneDataPayload(false, 0, 0, 0, "", 0, 0);
 
 	public static void reset() {
-		sanity = sanityShown = 100F;
-		shakeTicks = fadeTicks = staticTicks = jumpscareTicks = titleTicks = endTicks = figureTicks = objFlash = 0;
+		shakeTicks = fadeTicks = staticTicks = jumpscareTicks = titleTicks = endTicks = objFlash = 0;
 		flash = redFlash = 0F;
 		objCase = "";
 		objStage = -1;
-		phone = new PhoneDataPayload(false, 0, 0, 100F, 0, "", 0, 0);
+		phone = new PhoneDataPayload(false, 0, 0, 0, "", 0, 0);
 		com.deadline.client.hud.StoryHud.reset();
 		com.deadline.client.phone.ClientMessages.reset();
 	}

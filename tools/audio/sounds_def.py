@@ -16,12 +16,11 @@ SOUNDS = {
     'ambient.whispers': (4, 'Susurros', 'Whispers', False),
     'ambient.stinger': (4, 'Algo se acerca', 'Something approaches', False),
     'music.case': (1, 'Música', 'Music', True),
-    # sanity hallucinations
-    'sanity.heartbeat': (1, 'Latidos', 'Heartbeat', False),
-    'sanity.whisper': (5, 'Alguien susurra tu nombre', 'Someone whispers your name', False),
-    'sanity.footsteps': (3, 'Pasos detrás tuyo', 'Footsteps behind you', False),
-    'sanity.knock': (3, 'Golpes en la pared', 'Knocking', False),
-    'sanity.breath': (2, 'Respiración', 'Breathing', False),
+    # stock noises of the house (set pieces and the act script play them; tools/audio/snd_tools.py)
+    'horror.heartbeat': (1, 'Latidos', 'Heartbeat', False),
+    'horror.footsteps': (3, 'Pasos detrás tuyo', 'Footsteps behind you', False),
+    'horror.knock': (3, 'Golpes en la pared', 'Knocking', False),
+    'horror.breath': (2, 'Respiración', 'Breathing', False),
     # tools
     'crucifix.activate': (1, 'Crucifijo brilla', 'Crucifix glows', False),
     'crucifix.repel': (1, 'Entidad repelida', 'Entity repelled', False),
@@ -38,7 +37,6 @@ SOUNDS = {
     'ritual.chant': (1, 'Rezo en latín', 'Latin chanting', False),
     'ritual.complete': (1, 'Exorcismo completo', 'Exorcism complete', False),
     'jar.capture': (1, 'Alma atrapada', 'Soul captured', False),
-    'pills.swallow': (1, 'Pastillas', 'Pills', False),
     'flare.ignite': (1, 'Bengala encendida', 'Flare ignites', False),
     'flare.burn': (1, 'Bengala arde', 'Flare burns', False),
     # entities
@@ -52,7 +50,6 @@ SOUNDS = {
     'monja.scream': (1, 'La monja grita', 'Nun screams', False),
     'monja.hurt': (1, 'La monja se quema', 'Nun burns', False),
     'monja.death': (1, 'La monja se desvanece', 'Nun fades', False),
-    'sombra.appear': (1, 'Presencia', 'Presence', False),
     'sombra.vanish': (1, 'Se desvanece', 'Vanishes', False),
     'muneca.giggle': (2, 'La muñeca se ríe', 'Doll giggles', False),
     'muneca.creak': (1, 'Porcelana cruje', 'Porcelain creaks', False),

@@ -16,7 +16,6 @@ import com.deadline.registry.ModEntities;
 import com.deadline.registry.ModItems;
 import com.deadline.registry.ModParticles;
 import com.deadline.registry.ModSounds;
-import com.deadline.sanity.SanityManager;
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.core.BlockPos;
@@ -407,15 +406,7 @@ public class ColegioScript extends CaseScript {
 				say("colegio.madre.megafonia", "megafono"));
 
 		s.beat("mate").chapter(4).when(event("use:direccion_mate")).repeat(40).then(
-				sound(ModSounds.MATE_SORBO, "direccion_mate", 1.0F),
-				run(e -> {
-					int n = e.run.inc("mate");
-					for (ServerPlayer p : e.run.hunters()) {
-						if (n == 2) {
-							SanityManager.add(p, 5F);
-						}
-					}
-				}));
+				sound(ModSounds.MATE_SORBO, "direccion_mate", 1.0F));
 
 		s.beat("direccion_entra").chapter(4).when(enter("direccion")).then(
 				delay(30),

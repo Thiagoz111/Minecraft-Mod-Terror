@@ -6,7 +6,6 @@ import com.deadline.horror.casa.Interactables;
 import com.deadline.horror.casa.Polter;
 import com.deadline.net.Fx;
 import com.deadline.registry.ModSounds;
-import com.deadline.sanity.SanityManager;
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.core.BlockPos;
@@ -64,7 +63,6 @@ public class Persianas extends HorrorEvent {
 			Polter.noise(c.run, at, 60F);
 		}
 		Fx.shake(c.p, 0.3F, 8);
-		SanityManager.add(c.p, -4F);
 	}
 
 	@Override

@@ -9,7 +9,6 @@ import com.deadline.horror.casa.Interactables;
 import com.deadline.horror.casa.Polter;
 import com.deadline.net.Fx;
 import com.deadline.registry.ModSounds;
-import com.deadline.sanity.SanityManager;
 import com.mojang.math.Transformation;
 import java.util.List;
 import net.minecraft.core.BlockPos;
@@ -106,7 +105,6 @@ public class TeleSola extends HorrorEvent {
 			showFace(c, tv);
 			Fx.staticNoise(c.p, 0.45F, 10);
 			c.run.sound(ModSounds.POLTER_SUSURRO, at, 0.8F, 0.6F);
-			SanityManager.add(c.p, -5F);
 		}
 		if (face >= 0 && c.t - face == 9) {
 			c.run.despawn("tele_sola:cara");

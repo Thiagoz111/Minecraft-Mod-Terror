@@ -7,7 +7,6 @@ import com.deadline.director.Run;
 import com.deadline.net.Fx;
 import com.deadline.registry.ModParticles;
 import com.deadline.registry.ModSounds;
-import com.deadline.sanity.SanityManager;
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.core.BlockPos;
@@ -305,7 +304,6 @@ public final class KnifeOrbit {
 				p.hurtServer(r.level, r.level.damageSources().magic(), 3.0F);
 				Fx.shake(p, 0.5F, 8);
 				Fx.redFlash(p, 0.5F);
-				SanityManager.add(p, -3F);
 				r.sound(ModSounds.KNIFE_IMPACT, p.position().add(0, 1, 0), 1.2F, 1.3F);
 				drop(k, p.position().add(0, 0.6, 0));
 				r.post("cuchillo:golpe");

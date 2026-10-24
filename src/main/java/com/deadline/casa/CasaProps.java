@@ -9,7 +9,6 @@ import com.deadline.director.Step;
 import com.deadline.net.Fx;
 import com.deadline.registry.ModBlocks;
 import com.deadline.registry.ModSounds;
-import com.deadline.sanity.SanityManager;
 import com.mojang.math.Transformation;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -811,7 +810,6 @@ public final class CasaProps {
 					victim.hurtServer(r.level, r.level.damageSources().magic(), 1.5F);
 					Fx.shake(victim, 0.4F, 8);
 					Fx.redFlash(victim, 0.3F);
-					SanityManager.add(victim, -4F);
 					smash(r, state, p.actor, next);
 					it.remove();
 					continue;

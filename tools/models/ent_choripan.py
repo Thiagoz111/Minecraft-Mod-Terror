@@ -1823,8 +1823,8 @@ pose except 'belly_up' was grounded by FK: the lowest point of the dog sits exac
   Hand-placed (no FK grounding); enter it with a 10-tick roll (body zRot 0 -> 3.02 with an overshoot).
 * tilt: the curious head tilt with the inside-out right ear.  Use it for "¿qué?" moments and whenever someone says
   his name.  Additive with walk.
-* growl: at a hallucination (SanityManager delays it 40 ticks; he growls at that point first, so the audience learns to
-  believe him).  Head low and aimed at the target (keep the head-look on the hallucination point), lips up, brows
+* growl: at something the hunter has not seen yet (he growls at that point first, so the audience learns to believe
+  him).  Head low and aimed at the target (keep the head-look on that point), lips up, brows
   down, ears back, tail stiff and low, front legs braced.  Lip tremble (see lips).  Blend in over 8 ticks.
 * bark: at spectral things (Ofelia when she moves, the voluta, the Nona's chair).  Front legs braced, chest up, mouth
   wide (teeth, tongue), ears thrown back, brows up.  Each bark SNAPS into the pose in 2 ticks with choripan.bark_cute,

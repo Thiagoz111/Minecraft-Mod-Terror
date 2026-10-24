@@ -453,7 +453,6 @@ public final class ClientSmoke {
 
 		// --- HUD + phone
 		step(40, mc -> {
-			ClientState.sanity = ClientState.sanityShown = 24F;
 			ClientState.objCase = "colegio";
 			ClientState.objStage = 1;
 			com.deadline.client.phone.ClientMessages.demo();
@@ -467,7 +466,7 @@ public final class ClientSmoke {
 		step(1, mc -> {
 			ClientState.vhs = false;
 			com.deadline.client.phone.ClientMessages.toastTicks = 0;
-			ClientState.phone = new PhoneDataPayload(false, 1250, 3, 64F, 0b10111, "", 0, 0);
+			ClientState.phone = new PhoneDataPayload(false, 1250, 3, 0b10111, "", 0, 0);
 			mc.setScreen(PhoneScreen.at("home", 0));
 		});
 		shot(20, "phone_home");
@@ -482,7 +481,7 @@ public final class ClientSmoke {
 		step(1, mc -> mc.setScreen(PhoneScreen.at("beast", 1)));
 		shot(10, "phone_beast");
 		step(1, mc -> {
-			ClientState.phone = new PhoneDataPayload(false, 1250, 3, 18F, 0b10111, "colegio", 1, 2);
+			ClientState.phone = new PhoneDataPayload(false, 1250, 3, 0b10111, "colegio", 1, 2);
 			mc.setScreen(PhoneScreen.at("case", 0));
 		});
 		shot(10, "phone_case");

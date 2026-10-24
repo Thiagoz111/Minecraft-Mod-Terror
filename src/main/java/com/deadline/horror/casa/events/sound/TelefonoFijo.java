@@ -5,7 +5,6 @@ import com.deadline.horror.HorrorEvent;
 import com.deadline.horror.casa.Apparitions;
 import com.deadline.horror.casa.Polter;
 import com.deadline.registry.ModSounds;
-import com.deadline.sanity.SanityManager;
 import java.util.List;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.Vec3;
@@ -56,7 +55,6 @@ public class TelefonoFijo extends HorrorEvent {
 				c.put("answered", answered);
 				Polter.stopSound(c.run, ModSounds.POLTER_TELEFONO_RING);
 				Polter.heard(c.p, ModSounds.POLTER_TELEFONO_RESPIRA, Polter.ear(c.p, 1, 0.3), 1.0F);
-				SanityManager.add(c.p, -4F);
 				return false;
 			}
 			if (c.t % RING_EVERY == 0) {

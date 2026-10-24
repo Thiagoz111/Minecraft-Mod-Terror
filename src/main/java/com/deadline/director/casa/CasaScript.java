@@ -233,7 +233,7 @@ public class CasaScript extends CaseScript {
 				s.knocks++;
 				for (int i = 0; i < 3; i++) {
 					final int k = i;
-					run.start("knock", p, List.of(Steps.delay(6 * k), Steps.run(e -> run.sound(ModSounds.SANITY_KNOCK, door, 1.0F, 0.75F + 0.05F * k))));
+					run.start("knock", p, List.of(Steps.delay(6 * k), Steps.run(e -> run.sound(ModSounds.HORROR_KNOCK, door, 1.0F, 0.75F + 0.05F * k))));
 				}
 			}
 			s.nearDoorSince = near ? (s.nearDoorSince < 0 ? now : s.nearDoorSince) : -1;

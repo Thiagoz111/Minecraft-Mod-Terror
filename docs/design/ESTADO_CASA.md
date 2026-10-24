@@ -9,6 +9,9 @@ a `casa_terror.md`, manda `casa_terror.md`.
 - Terror adulto: sangre, deformaciones, jumpscares ganados, eventos aleatorios que empeoran. **Sin misiones**, sin HUD
   de objetivos, **sin voces ni diálogos** (solo mensajes de texto al celular y sonidos no verbales). Nada de comedia.
 - La casa está en el **overworld real**; se llega en **auto**; golpeás la puerta y abre la Nona.
+- **Sin cordura** (decisión del dueño, 24/10/2026): la mecánica se sacó entera (valor guardado, HUD/ECG, celular,
+  pastillas, alucinaciones por cordura baja, `/deadline sanity`). Los sustos quedan igual; nada nuevo guarda ni lee
+  un valor de cordura.
 - Respuestas en español rioplatense, cortas, sin preguntas ni sugerencias al final.
 - Uso: esfuerzo **extra** por defecto, como máximo 3 agentes a la vez; ultracode/workflows solo para la revisión final
   de la partida completa. Guardar trabajo de agentes en el repo seguido (el contenedor se reinicia).
@@ -71,6 +74,9 @@ a `casa_terror.md`, manda `casa_terror.md`.
 - **Smoke de la Casa** (`horror/CasaSmoke`): contrato §11 + cada evento disparado con un `FakePlayer`; cualquier excepción
   en un evento (`Haunt.errors`) rompe el CI.
 - En curso con agentes: B2 cacería, B1a poltergeist, B1b sangre/celular/lore. Después: C set pieces.
+- Cordura eliminada (ver reglas del dueño). Los sonidos que sobrevivieron pasaron de `sanity.*` a `horror.*`
+  (`ModSounds.HORROR_HEARTBEAT/FOOTSTEPS/KNOCK/BREATH`); `SANITY_*` quedan como alias transitorios en `ModSounds`
+  (`tools/audio/gen_defs.py` ALIASES) hasta que `setpiece/**` use los nombres nuevos.
 
 ## Pendiente (en orden)
 1. ~~CI verde~~ (hecho).

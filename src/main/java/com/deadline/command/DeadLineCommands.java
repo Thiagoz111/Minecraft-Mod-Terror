@@ -6,9 +6,7 @@ import com.deadline.caseload.CaseType;
 import com.deadline.caseload.HunterData;
 import com.deadline.net.Fx;
 import com.deadline.registry.ModAttachments;
-import com.deadline.sanity.SanityManager;
 import com.mojang.brigadier.CommandDispatcher;
-import com.mojang.brigadier.arguments.FloatArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
@@ -28,7 +26,6 @@ import net.minecraft.server.level.ServerPlayer;
  * /deadline msg &lt;case&gt; [player]       the case's intro text thread now (casa: Marta's act 0 + "Aceptar caso")
  * /deadline start &lt;case&gt; [player]     jump straight into a case
  * /deadline home [player]              leave the current case
- * /deadline sanity &lt;0-100&gt; [player]   set sanity
  * /deadline money &lt;amount&gt; [player]   add money
  * /deadline jumpscare &lt;entity&gt; [player]
  * /deadline kit [player]               full hunter kit
@@ -58,10 +55,6 @@ public final class DeadLineCommands {
 				.then(Commands.literal("home")
 						.executes(c -> home(self(c)))
 						.then(Commands.argument("player", EntityArgument.player()).executes(c -> home(EntityArgument.getPlayer(c, "player")))))
-				.then(Commands.literal("sanity")
-						.then(Commands.argument("value", FloatArgumentType.floatArg(0, 100))
-								.executes(c -> sanity(c, self(c)))
-								.then(Commands.argument("player", EntityArgument.player()).executes(c -> sanity(c, EntityArgument.getPlayer(c, "player"))))))
 				.then(Commands.literal("money")
 						.then(Commands.argument("amount", IntegerArgumentType.integer())
 								.executes(c -> money(c, self(c)))
@@ -121,11 +114,6 @@ public final class DeadLineCommands {
 
 	private static int home(ServerPlayer p) {
 		CaseManager.returnHome(p, false);
-		return 1;
-	}
-
-	private static int sanity(CommandContext<CommandSourceStack> c, ServerPlayer p) {
-		SanityManager.set(p, FloatArgumentType.getFloat(c, "value"));
 		return 1;
 	}
 

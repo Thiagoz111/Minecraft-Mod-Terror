@@ -3,7 +3,6 @@ package com.deadline.item;
 import com.deadline.entity.HauntEntity;
 import com.deadline.registry.ModParticles;
 import com.deadline.registry.ModSounds;
-import com.deadline.sanity.SanityManager;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundSource;
@@ -85,7 +84,6 @@ public class CrucifixItem extends Item {
 		}
 		if (used % 20 == 0) {
 			stack.hurtAndBreak(hit ? 3 : 1, player, player.getUsedItemHand());
-			SanityManager.add(player, 0.5F);
 		}
 	}
 

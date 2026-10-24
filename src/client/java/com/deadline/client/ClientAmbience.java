@@ -11,7 +11,7 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 
-/** Per-case soundscape: looping ambience + score, random stingers, whispers when the mind starts to slip. */
+/** Per-case soundscape: looping ambience + score and random stingers. */
 public final class ClientAmbience {
 	private ClientAmbience() {
 	}
@@ -21,7 +21,6 @@ public final class ClientAmbience {
 	private static Loop music;
 	private static String current = "";
 	private static int stingerCooldown = 600;
-	private static int whisperCooldown = 400;
 
 	/** A non-positional loop that fades in, and fades out when asked to stop. */
 	static final class Loop extends AbstractTickableSoundInstance {
@@ -97,10 +96,6 @@ public final class ClientAmbience {
 		if (!current.isEmpty() && --stingerCooldown <= 0) {
 			stingerCooldown = 900 + RNG.nextInt(900);
 			playAround(mc, pl, ModSounds.AMBIENT_STINGER, 6.0, 0.8F);
-		}
-		if (ClientState.sanityShown < 45F && --whisperCooldown <= 0) {
-			whisperCooldown = 300 + RNG.nextInt((int) Math.max(60, ClientState.sanityShown * 12));
-			playAround(mc, pl, ModSounds.AMBIENT_WHISPERS, 3.0, 0.6F);
 		}
 	}
 

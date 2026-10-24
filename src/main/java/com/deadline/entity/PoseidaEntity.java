@@ -3,7 +3,6 @@ package com.deadline.entity;
 import com.deadline.net.Fx;
 import com.deadline.registry.ModEntities;
 import com.deadline.registry.ModSounds;
-import com.deadline.sanity.SanityManager;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
@@ -161,7 +160,6 @@ public class PoseidaEntity extends HauntEntity {
 			level.playSound(null, this.getX(), this.getY(), this.getZ(), ModSounds.POSEIDA_SCREAM, SoundSource.HOSTILE, 2.5F, 1.0F);
 			if (target instanceof ServerPlayer p) {
 				Fx.shake(p, 0.8F, 40);
-				SanityManager.add(p, -8.0F);
 			}
 		}
 	}
@@ -224,10 +222,7 @@ public class PoseidaEntity extends HauntEntity {
 					p.hurtMarked = true;
 				}
 				case 1 -> Fx.flash(p, 0.7F);
-				case 2 -> {
-					Fx.shake(p, 1.5F, 30);
-					SanityManager.add(p, -5.0F);
-				}
+				case 2 -> Fx.shake(p, 1.5F, 30);
 				default -> Fx.staticNoise(p, 0.8F, 30);
 			}
 		}
@@ -263,11 +258,6 @@ public class PoseidaEntity extends HauntEntity {
 	public void remove(RemovalReason reason) {
 		exorcismBar.removeAllPlayers();
 		super.remove(reason);
-	}
-
-	@Override
-	public float fearAura() {
-		return 0.8F;
 	}
 
 	@Override

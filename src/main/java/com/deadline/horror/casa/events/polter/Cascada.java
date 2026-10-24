@@ -8,7 +8,6 @@ import com.deadline.horror.HouseQuery;
 import com.deadline.horror.casa.Apparitions;
 import com.deadline.horror.casa.Polter;
 import com.deadline.net.Fx;
-import com.deadline.sanity.SanityManager;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -73,7 +72,6 @@ public class Cascada extends HorrorEvent {
 				c.run.door(d, true, false);
 			}
 		}
-		SanityManager.add(c.p, -3F);
 	}
 
 	@Override
@@ -87,9 +85,6 @@ public class Cascada extends HorrorEvent {
 		}
 		if (c.t > LEAD && (c.t - LEAD) % GAP == 0 && (c.t - LEAD) / GAP <= doors.size()) {
 			Fx.shake(c.p, 0.35F, 6);
-		}
-		if (c.t == LEAD + GAP * doors.size()) {
-			SanityManager.add(c.p, -5F);
 		}
 		return c.t > LEAD + 2 && (c.run.event("puertas:fin") || c.t > LEAD + GAP * doors.size() + 30);
 	}

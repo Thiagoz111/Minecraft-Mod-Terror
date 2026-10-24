@@ -10,7 +10,6 @@ import com.deadline.item.FlashlightLights;
 import com.deadline.item.ItemUtil;
 import com.deadline.registry.ModItems;
 import com.deadline.registry.ModSounds;
-import com.deadline.sanity.SanityManager;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -135,9 +134,6 @@ public class LinternaMuere extends HorrorEvent {
 			Vec3 lateral = new Vec3(l.z, 0, -l.x).scale(left ? 1.1 : -1.1);
 			Vec3 at = c.p.getEyePosition().add(lateral).add(l.scale(-0.4));
 			Apparitions.sound(c, ModSounds.SANGRE_RESPIRA, at, 0.9F, Apparitions.pitch(c, 0.9F, 1.0F));
-			if (c.t == FLICKER + 14) {
-				SanityManager.add(c.p, -3F);
-			}
 		}
 		if (c.t == FLICKER + DEAD) {
 			DEAD_NOW.remove(c.p.getUUID());
@@ -165,7 +161,6 @@ public class LinternaMuere extends HorrorEvent {
 		Vec3 side = new Vec3(toward.z, 0, -toward.x);
 		BloodDecals.floor(c.run, BloodDecals.FOOT_L, BloodDecals.onFloor(c.run, spot.add(side.scale(0.12))), yaw, 0.17F, 0.36F);
 		BloodDecals.floor(c.run, BloodDecals.FOOT_R, BloodDecals.onFloor(c.run, spot.add(side.scale(-0.12))), yaw, 0.17F, 0.36F);
-		SanityManager.add(c.p, -2F);
 	}
 
 	@Override

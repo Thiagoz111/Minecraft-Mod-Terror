@@ -8,7 +8,6 @@ import com.deadline.horror.casa.Apparitions;
 import com.deadline.horror.casa.FlyingProp;
 import com.deadline.horror.casa.Polter;
 import com.deadline.registry.ModSounds;
-import com.deadline.sanity.SanityManager;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -97,9 +96,6 @@ public class SillaCorre extends HorrorEvent {
 		FlyingProp f = props.get(0);
 		if (f.moving()) {
 			f.tick();
-			if (!f.moving()) {
-				SanityManager.add(c.p, -2F);
-			}
 			return false;
 		}
 		Apparitions.Gaze g = Apparitions.gaze(c);

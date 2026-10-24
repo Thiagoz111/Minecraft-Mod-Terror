@@ -4,7 +4,6 @@ import com.deadline.horror.Ctx;
 import com.deadline.horror.HorrorEvent;
 import com.deadline.horror.casa.Polter;
 import com.deadline.registry.ModSounds;
-import com.deadline.sanity.SanityManager;
 import com.deadline.voice.Voice;
 import com.deadline.voice.VoiceBackend;
 import java.util.HashMap;
@@ -69,7 +68,6 @@ public class TuVoz extends HorrorEvent {
 		if (!voiced) {
 			c.run.sound(ModSounds.POLTER_SUSURRO, at, 0.9F, Polter.pitch(c, 0.9F, 1.0F));
 		}
-		SanityManager.add(c.p, -4F);
 	}
 
 	@Override

@@ -12,7 +12,7 @@ rendered circularly and heard through a cheap boombox three houses away on a sti
 
   choripan.bark_cute (3)  beat 1 hello / barking at spectres: small happy "arf!", "arf-arf!", playful "rr-ARF!", tag jingle.
   choripan.whine (2)      at the salt line / begging / "don't go": nasal pleading whine with a voice crack; whimpers + sigh.
-  choripan.growl_low (2)  his warning (40 ticks before a hallucination): low pulsed growl, in-breath; growl -> lip-curl snarl.
+  choripan.growl_low (2)  his warning (before something shows up): low pulsed growl, in-breath; growl -> lip-curl snarl.
   choripan.sneeze         the happy ending: two sniffs, a tiny "pff-CHI!", the huge ears flapping, the CHORIPÁN tag rattling.
   choripan.crack (6)      beat 7 transformation: celery snap + low wet thump, each different (double, twist, ribs, heavy, knuckles).
   choripan.unspool        beat 7: 5 s of rubber stretching over flesh WITHOUT a break while the links keep coming out

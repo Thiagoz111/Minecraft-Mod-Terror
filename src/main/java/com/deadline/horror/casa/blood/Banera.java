@@ -8,7 +8,6 @@ import com.deadline.horror.HouseQuery;
 import com.deadline.horror.casa.Apparitions;
 import com.deadline.horror.casa.BloodDecals;
 import com.deadline.registry.ModSounds;
-import com.deadline.sanity.SanityManager;
 import java.util.List;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -142,7 +141,6 @@ public class Banera extends HorrorEvent {
 		if (n != null && seenAt == null && c.t > HEAD + 20 && Apparitions.watches(c, n, 30F)) {
 			c.put("seenAt", c.t);
 			seenAt = c.t;
-			SanityManager.add(c.p, -6F);
 		}
 		Integer sinkAt = c.get("sinkAt");
 		if (sinkAt == null && n != null && (c.t >= HEAD + RISE + HOLD || seenAt != null && c.t - seenAt > 30

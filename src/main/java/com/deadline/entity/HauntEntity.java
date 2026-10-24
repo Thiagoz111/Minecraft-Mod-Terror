@@ -4,7 +4,6 @@ import com.deadline.caseload.CaseManager;
 import com.deadline.net.Fx;
 import com.deadline.registry.ModItems;
 import com.deadline.registry.ModParticles;
-import com.deadline.sanity.SanityManager;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
@@ -32,7 +31,6 @@ import net.minecraft.world.phys.Vec3;
  *   <li>It cannot be killed by damage: at 25% health it becomes <b>weakened</b> and must be banished
  *   (spirit jar or exorcism).</li>
  *   <li>Crucifix / camera flash stun it; holy water and the silver dagger hurt it more.</li>
- *   <li>It drains the sanity of nearby hunters.</li>
  * </ul>
  */
 public abstract class HauntEntity extends Monster {
@@ -139,11 +137,6 @@ public abstract class HauntEntity extends Monster {
 		return 1.0F;
 	}
 
-	/** Sanity drained per second from a hunter within 8 blocks. */
-	public float fearAura() {
-		return 0.6F;
-	}
-
 	// ------------------------------------------------------------------ ticking
 	@Override
 	public void tick() {
@@ -171,13 +164,6 @@ public abstract class HauntEntity extends Monster {
 		}
 		if (this.isWeakened() && this.tickCount % 10 == 0 && level instanceof ServerLevel server) {
 			server.sendParticles(ModParticles.ECTOPLASM, this.getX(), this.getY() + this.getBbHeight() * 0.6, this.getZ(), 3, 0.3, 0.4, 0.3, 0.01);
-		}
-		if (this.tickCount % 20 == 0 && level instanceof ServerLevel server) {
-			for (ServerPlayer p : server.players()) {
-				if (!p.isSpectator() && !p.isCreative() && p.distanceToSqr(this) < 64) {
-					SanityManager.add(p, -this.fearAura() * (this.isWeakened() ? 0.4F : 1.0F));
-				}
-			}
 		}
 	}
 
@@ -279,7 +265,6 @@ public abstract class HauntEntity extends Monster {
 	public boolean doHurtTarget(ServerLevel level, Entity target) {
 		boolean hit = super.doHurtTarget(level, target);
 		if (hit && target instanceof ServerPlayer player) {
-			SanityManager.add(player, -6.0F);
 			Fx.redFlash(player, 0.6F);
 		}
 		return hit;

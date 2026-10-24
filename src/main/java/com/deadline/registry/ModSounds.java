@@ -17,11 +17,10 @@ public final class ModSounds {
 	public static final SoundEvent AMBIENT_WHISPERS = register("ambient.whispers");
 	public static final SoundEvent AMBIENT_STINGER = register("ambient.stinger");
 	public static final SoundEvent MUSIC_CASE = register("music.case");
-	public static final SoundEvent SANITY_HEARTBEAT = register("sanity.heartbeat");
-	public static final SoundEvent SANITY_WHISPER = register("sanity.whisper");
-	public static final SoundEvent SANITY_FOOTSTEPS = register("sanity.footsteps");
-	public static final SoundEvent SANITY_KNOCK = register("sanity.knock");
-	public static final SoundEvent SANITY_BREATH = register("sanity.breath");
+	public static final SoundEvent HORROR_HEARTBEAT = register("horror.heartbeat");
+	public static final SoundEvent HORROR_FOOTSTEPS = register("horror.footsteps");
+	public static final SoundEvent HORROR_KNOCK = register("horror.knock");
+	public static final SoundEvent HORROR_BREATH = register("horror.breath");
 	public static final SoundEvent CRUCIFIX_ACTIVATE = register("crucifix.activate");
 	public static final SoundEvent CRUCIFIX_REPEL = register("crucifix.repel");
 	public static final SoundEvent HOLY_WATER_THROW = register("holy_water.throw");
@@ -37,7 +36,6 @@ public final class ModSounds {
 	public static final SoundEvent RITUAL_CHANT = register("ritual.chant");
 	public static final SoundEvent RITUAL_COMPLETE = register("ritual.complete");
 	public static final SoundEvent JAR_CAPTURE = register("jar.capture");
-	public static final SoundEvent PILLS_SWALLOW = register("pills.swallow");
 	public static final SoundEvent FLARE_IGNITE = register("flare.ignite");
 	public static final SoundEvent FLARE_BURN = register("flare.burn");
 	public static final SoundEvent POSEIDA_GIGGLE = register("poseida.giggle");
@@ -50,7 +48,6 @@ public final class ModSounds {
 	public static final SoundEvent MONJA_SCREAM = register("monja.scream");
 	public static final SoundEvent MONJA_HURT = register("monja.hurt");
 	public static final SoundEvent MONJA_DEATH = register("monja.death");
-	public static final SoundEvent SOMBRA_APPEAR = register("sombra.appear");
 	public static final SoundEvent SOMBRA_VANISH = register("sombra.vanish");
 	public static final SoundEvent MUNECA_GIGGLE = register("muneca.giggle");
 	public static final SoundEvent MUNECA_CREAK = register("muneca.creak");
@@ -223,6 +220,12 @@ public final class ModSounds {
 	public static final SoundEvent SP_CUBIERTOS = register("sp.cubiertos");
 	public static final SoundEvent SP_RADIO_CUNA = register("sp.radio_cuna");
 	public static final SoundEvent SP_ASIENTO = register("sp.asiento");
+
+	/** Transitional aliases (old names still used by code in progress): use the event they point to. */
+	public static final SoundEvent SANITY_HEARTBEAT = HORROR_HEARTBEAT;
+	public static final SoundEvent SANITY_FOOTSTEPS = HORROR_FOOTSTEPS;
+	public static final SoundEvent SANITY_KNOCK = HORROR_KNOCK;
+	public static final SoundEvent SANITY_BREATH = HORROR_BREATH;
 
 	/** Single-file events of multi-take sounds, so a take can be chosen (e.g. the spirit box answer matching its subtitle). */
 	private static final java.util.Map<String, SoundEvent[]> VARIANTS = new java.util.HashMap<>();

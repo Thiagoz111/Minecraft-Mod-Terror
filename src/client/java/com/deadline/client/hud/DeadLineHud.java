@@ -17,21 +17,19 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 
-/** In-game overlays: sanity ECG, objective, incoming text messages, VHS camera, jumpscares and screen effects. */
+/** In-game overlays: objective, incoming text messages, VHS camera, jumpscares and screen effects. */
 public final class DeadLineHud {
 	private DeadLineHud() {
 	}
 
-	private static final Identifier VIGNETTE = DeadLine.id("textures/gui/overlay/vignette.png");
 	private static final Identifier STATIC = DeadLine.id("textures/gui/overlay/static.png");
-	private static final Identifier FIGURE = DeadLine.id("textures/gui/overlay/shadow_figure.png");
 	private static final Identifier APPS = DeadLine.id("textures/gui/phone/apps.png");
 
 	public static Identifier jumpscareTexture(String key) {
 		return DeadLine.id("textures/gui/jumpscare/" + key + ".png");
 	}
 
-	/** Drawn under the chat: world-space feel effects (vignette, figure, static, VHS). */
+	/** Drawn under the chat: world-space feel effects (static, VHS). */
 	public static void renderBackdrop(GuiGraphics g, DeltaTracker dt) {
 		Minecraft mc = Minecraft.getInstance();
 		if (mc.player == null || mc.options.hideGui && !ClientState.vhs) {
@@ -40,31 +38,6 @@ public final class DeadLineHud {
 		float pt = dt.getGameTimeDeltaPartialTick(false);
 		int w = g.guiWidth();
 		int h = g.guiHeight();
-		float s = ClientState.sanityShown;
-
-		// darkness creeping in from the edges as sanity drops
-		float vig = Mth.clamp((70F - s) / 70F, 0F, 1F);
-		if (vig > 0F) {
-			int a = (int) (vig * 230);
-			g.blit(RenderPipelines.GUI_TEXTURED, VIGNETTE, 0, 0, 0F, 0F, w, h, 256, 256, 256, 256, a << 24);
-		}
-		if (s < 25F) {
-			float beat = (float) Math.pow(Math.max(0, Math.sin((ClientState.ticks + pt) * 0.45)), 6);
-			int a = (int) ((1F - s / 25F) * 120 * beat);
-			if (a > 0) {
-				g.blit(RenderPipelines.GUI_TEXTURED, VIGNETTE, 0, 0, 0F, 0F, w, h, 256, 256, 256, 256, a << 24 | 0x9A0000);
-			}
-		}
-
-		// a shadow at the corner of your eye
-		if (ClientState.figureTicks > 0) {
-			float k = ClientState.figureTicks / 34F;
-			float alpha = Mth.clamp(Math.min(k, 1F - k) * 3F, 0F, 1F) * 0.85F;
-			int fh = (int) (h * 0.75F);
-			int fw = fh / 2;
-			int x = ClientState.figureLeft ? (int) (w * 0.02F) : (int) (w * 0.98F) - fw;
-			g.blit(RenderPipelines.GUI_TEXTURED, FIGURE, x, h - fh, 0F, 0F, fw, fh, 64, 128, 64, 128, ((int) (alpha * 255)) << 24 | 0xFFFFFF);
-		}
 
 		if (ClientState.vhs) {
 			renderVhs(g, mc, w, h, pt);
@@ -74,9 +47,6 @@ public final class DeadLineHud {
 		float st = 0F;
 		if (ClientState.staticTicks > 0) {
 			st = ClientState.staticStrength * Math.min(1F, ClientState.staticTicks / (float) Math.min(10, ClientState.staticTotal));
-		}
-		if (s < 15F) {
-			st = Math.max(st, (15F - s) / 15F * 0.22F * (0.6F + 0.4F * (float) Math.sin(ClientState.ticks * 0.7)));
 		}
 		if (st > 0.01F) {
 			drawStatic(g, w, h, st);
@@ -96,7 +66,6 @@ public final class DeadLineHud {
 		Font font = mc.font;
 
 		if (!mc.options.hideGui) {
-			renderSanity(g, font, h, pt);
 			if (!StoryHud.active()) {
 				renderObjective(g, font, w);
 			}
@@ -123,72 +92,6 @@ public final class DeadLineHud {
 		if (ClientState.jumpscareTicks > 0) {
 			renderJumpscare(g, w, h, pt);
 		}
-	}
-
-	// ------------------------------------------------------------------ sanity
-	private static void renderSanity(GuiGraphics g, Font font, int h, float pt) {
-		float s = ClientState.sanityShown;
-		int pw = 96;
-		int ph = 30;
-		int x = 6;
-		int y = h - ph - 6;
-		if (s < 30F) {
-			float j = (30F - s) / 30F;
-			x += (int) ((Math.sin(ClientState.ticks * 1.7) * 1.2) * j);
-			y += (int) ((Math.cos(ClientState.ticks * 2.3) * 1.2) * j);
-		}
-		int col = s > 60F ? 0xFF55FF8A : s > 30F ? 0xFFFFC23A : 0xFFFF3B3B;
-		g.fill(x, y, x + pw, y + ph, 0x99000000);
-		g.fill(x, y, x + pw, y + 1, 0x55FFFFFF & col);
-		g.fill(x, y + ph - 1, x + pw, y + ph, 0x33FFFFFF & col);
-		g.drawString(font, Component.translatable("deadline.hud.sanity"), x + 4, y + 3, 0xFFB8B8B8, false);
-		String pct = Mth.ceil(s) + "%";
-		g.drawString(font, pct, x + pw - 4 - font.width(pct), y + 3, col, false);
-
-		// electrocardiogram: rate rises as sanity falls
-		int gx = x + 4;
-		int gy = y + 13;
-		int gw = pw - 8;
-		int gh = 14;
-		g.fill(gx, gy + gh / 2, gx + gw, gy + gh / 2 + 1, 0x22FFFFFF);
-		float bpm = 62F + (100F - s) * 1.15F;
-		float speed = bpm / 60F / 20F;
-		float now = (ClientState.ticks + pt) * speed;
-		int prevY = gy + gh / 2;
-		for (int i = 0; i < gw; i++) {
-			float phase = now - (gw - i) * 0.012F;
-			float v = ecg(phase - (float) Math.floor(phase), s);
-			int py = gy + gh / 2 - Math.round(v * gh * 0.5F);
-			float age = i / (float) gw;
-			int a = (int) (40 + 215 * age * age);
-			int c = (a << 24) | (col & 0xFFFFFF);
-			int y0 = Math.min(prevY, py);
-			int y1 = Math.max(prevY, py);
-			g.fill(gx + i, y0, gx + i + 1, y1 + 1, c);
-			prevY = py;
-		}
-		// leading dot
-		g.fill(gx + gw - 1, prevY - 1, gx + gw + 1, prevY + 1, 0xFFFFFFFF);
-	}
-
-	/** One heartbeat of an ECG trace, t in 0..1 -> -1..1. Low sanity makes it erratic. */
-	private static float ecg(float t, float sanity) {
-		float v = 0F;
-		v += 0.12F * bump(t, 0.12F, 0.035F);
-		v -= 0.18F * bump(t, 0.23F, 0.012F);
-		v += 1.00F * bump(t, 0.26F, 0.014F);
-		v -= 0.35F * bump(t, 0.29F, 0.014F);
-		v += 0.22F * bump(t, 0.50F, 0.05F);
-		if (sanity < 30F) {
-			float n = (30F - sanity) / 30F;
-			v += (float) (Math.sin(t * 91.0 + ClientState.ticks * 0.3) * 0.12 * n);
-		}
-		return Mth.clamp(v, -1F, 1F);
-	}
-
-	private static float bump(float t, float c, float w) {
-		float d = (t - c) / w;
-		return (float) Math.exp(-d * d);
 	}
 
 	// ------------------------------------------------------------------ objective

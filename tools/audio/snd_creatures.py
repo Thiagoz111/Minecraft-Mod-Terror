@@ -13,8 +13,6 @@ Run from the repo root:  python3 tools/audio/snd_creatures.py [substring ...]
   poseida.hurt        "AY!" yelp with a demonic snarl and an angry hiss under it.
   poseida.death       the demon is torn out: roar pulled away (pitch/tape drop, closing low-pass, Doppler), wind
                       vacuum, implosion... silence... and Lucia's sharp gasp, a shaky exhale and a tiny whimper.
-  sombra.appear       low pressure swell: 29/33 Hz beating infrasound + harmonics, pressure noise, a long dark
-                      breath behind you, faint ear-pressure tone, ends in a "whomp".
   sombra.vanish       sucked-back reverse swell (rumble + breath + whisper played backwards into a cut), air pop.
   muneca.giggle (2)   Ofelia: a tiny porcelain voice (child formants x1.6 inside a hollow ceramic head) + music-box
                       tines (free-clamped bar partials, pin click, wooden box). 2 = wound-down.
@@ -1067,42 +1065,6 @@ def poseida_crack(v):
 
 
 # ====================================================================== the shadow
-def sombra_appear():
-    dur = 4.0
-    n = N(dur)
-    t = taxis(n)
-    pk = 2.3
-    swell = env_pts(n, [(0, 0), (0.6, 0.15), (1.6, 0.6), (pk - 0.05, 1.0), (pk + 0.08, 0.45), (3.4, 0.05), (dur, 0)]) ** 1.3
-    # infrasound beating 29/33 Hz under an audible 55-110 Hz rumble (drive adds the harmonics speakers can play)
-    inf = np.sin(TWO_PI * 29 * t) + 0.8 * np.sin(TWO_PI * 33.3 * t + 1.0)
-    aud = np.sin(TWO_PI * 58 * t + 0.3) + 0.7 * np.sin(TWO_PI * 66.6 * t + 2.0) + 0.45 * np.sin(TWO_PI * 87.3 * t)
-    aud = dsp.drive(norm(aud) * 2.5, 2.5)
-    rumble = dsp.lowpass(dsp.noise(dur, 'brown', 5101), 140, 4)
-    press = tv_bandpass(dsp.noise(dur, 'pink', 5102), 110 + 450 * np.clip(t / pk, 0, 1) ** 2, 48, 1.6)
-    # (QA: the pure 29/33 Hz sines are inaudible on phones/laptops yet ate the headroom; trimmed 0.45 -> 0.3 and the
-    #  breath/whispers raised so the audible band gains ~2.4 dB. The whomp stays the climax.)
-    low = norm(inf) * 0.3 + norm(aud) * 0.35 + norm(rumble) * 0.55 + norm(press) * 0.5
-    low = low * swell
-    # a long dark breath right behind you (huge chest, closed throat), and a faint inhale first
-    br = hiss(1.9, 5103, 0.72, vow='a', shape=[(0, 0), (0.9, 0.7), (1.6, 1.0), (1.9, 0)])
-    br = dsp.lowpass(br, 3200, 2)
-    inh = breath_in(0.5, 5104, 1.3, 1.0)
-    # a few unintelligible whispered syllables smeared through the breath
-    w = whisper(say('ya estoy acá, detrás tuyo', 'em_alex', 0.85), 5105)
-    w = dsp.granular(w, 1.6, grain=0.09, density=24, pitch_jitter=1.5, seed=5106)
-    w = dsp.lowpass(w, 4000, 2) * env_pts(N(1.6), [(0, 0), (0.8, 1), (1.6, 0)])
-    # ear pressure: a faint high tone creeping in, gone with the whomp
-    tone = np.sin(TWO_PI * 7350 * t) * env_pts(n, [(0, 0), (0.9, 0), (pk - 0.02, 1), (pk, 0)]) ** 2
-    m = N(1.6)
-    tm = taxis(m)
-    whomp = np.sin(TWO_PI * np.cumsum(30 + 40 * np.exp(-tm / 0.07)) / SR) * np.exp(-tm / 0.35)
-    whomp += 0.6 * dsp.lowpass(white(m, 5107), 160, 2) * np.exp(-tm / 0.12)
-    whomp = dsp.drive(norm(whomp) * 1.8, 1.8) * env_pts(m, [(0, 1), (1.2, 1), (1.6, 0)])
-    out = stack((low, 0.0, 1.0), (inh, 0.15, 0.08), (br, 0.5, 0.42), (w, 0.7, 0.14), (tone, 0.0, 0.004),
-                (whomp, pk - 0.02, 0.7), length=dur)
-    return verb(out, 'pasillo', 0.18, seed=5108)
-
-
 def sombra_vanish():
     # material: rumble + breath + whisper with a big tail, played BACKWARDS so it is sucked into a cut
     d = 1.4
@@ -1804,7 +1766,6 @@ JOBS = [   # (event, file, renderer -> (array, reference or None))
     ('poseida.scream', 'poseida/scream', lambda: (finish_voice(poseida_scream(), -0.5, 13.0, -55.0, 0.1), None)),
     ('poseida.hurt', 'poseida/hurt', lambda: (finish_voice(poseida_hurt(), -0.5, 13.0, -55.0, 0.08), None)),
     ('poseida.death', 'poseida/death', lambda: (finish_sfx(poseida_death(), -0.5, -60.0, 0.1), None)),
-    ('sombra.appear', 'sombra/appear', lambda: (finish_sfx(sombra_appear(), -0.5, -55.0, 0.1), None)),
     ('sombra.vanish', 'sombra/vanish', lambda: (finish_sfx(sombra_vanish(), -3.0, -55.0, 0.08), None)),
     ('muneca.giggle', 'muneca/giggle_1', lambda: (finish_voice(muneca_giggle(1), -1.0, 16.0, -55.0, 0.1), None)),
     ('muneca.giggle', 'muneca/giggle_2', lambda: (finish_voice(muneca_giggle(2), -1.0, 16.0, -55.0, 0.1), None)),

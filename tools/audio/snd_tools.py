@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""DEAD LINE - sound group "tools": the hunter's kit and the sanity hallucinations.
+"""DEAD LINE - sound group "tools": the hunter's kit and a few stock noises of the house (heartbeat, steps, knocks, breath).
 
 Run from the repo root:  python3 tools/audio/snd_tools.py [substring ...]
 
@@ -7,12 +7,10 @@ Every sound is built from physical models (modal resonators excited by contact p
 debris and crackle, turbulent noise through vocal-tract formants) or from Kokoro speech turned into a character.
 All files are MONO (positional). In-game use it is sized to (see the Java items):
 
-  sanity.heartbeat     one tight lub-dub (0.5 s), retriggered every 0.65-1.5 s as sanity drops.
-  sanity.whisper (5)   a woman whispering right at your ear (rioplatense): "Estoy aca." / "Mira, atras." /
-                       "No estas solo." (doubled by a second, lower whisper) / "Te estoy viendo." / "Veni... veni conmigo."
-  sanity.footsteps (3) shoes on old floorboards: approaching / circling you / three heavy steps that stop behind you.
-  sanity.knock (3)     knuckles on a door (slow x3) / inside the wall (knock-knock... knock-knock) / frantic fists.
-  sanity.breath (2)    heavy breathing right behind your head: slow and deep / excited, wet and raspy.
+  horror.heartbeat     one tight lub-dub (0.5 s).
+  horror.footsteps (3) shoes on old floorboards: approaching / circling you / three heavy steps that stop behind you.
+  horror.knock (3)     knuckles on a door (slow x3) / inside the wall (knock-knock... knock-knock) / frantic fists.
+  horror.breath (2)    heavy breathing right behind your head: slow and deep / excited, wet and raspy.
   crucifix.activate    holy shimmer: celesta arpeggio, boys'-choir "aah" swell, sparkles, chapel air.
   crucifix.repel       holy blast: reverse swell -> boom + bell clang + choir burst, shock-wave whoosh, demon snarl.
   holy_water.throw     bottle grabbed (glass tick), liquid sloshing inside, whoosh past the ear.
@@ -30,7 +28,6 @@ All files are MONO (positional). In-game use it is sized to (see the Java items)
                        cross-synthesised A2/E3/A1 chant), chapel; replayed every 5 s while praying.
   ritual.complete      holy release (swell -> bells + choir major chord) and the demon's scream dragged away.
   jar.capture          a soul sucked into a glass jar (vortex + shrinking wail), jar ring, cork squeak + pop.
-  pills.swallow        pill bottle rattle, cap pop, pills in the palm, gulp, relieved exhale.
   flare.ignite         road flare struck on its cap, pops, ignition whoosh, settling into the burn.
   flare.burn           2.0 s seamless loop (FlareEntity retriggers it every 40 ticks): roaring hiss, crackle, sputter,
                        slag snaps, spits; mastered on three tiled periods (master_loop) so no fade touches the seam.
@@ -445,7 +442,7 @@ def say(text, voice='ef_dora', speed=0.85):
     return norm(dsp.fade(y, 0.003, 0.012), 0.8)
 
 
-# ====================================================================== sanity hallucinations
+# ====================================================================== heartbeat, steps, knocks, breath (horror.*)
 def heartbeat():
     """lub (S1: longer, lower) + dub (S2: shorter, higher, snappier), felt from inside the chest."""
     n = N(0.5)
@@ -471,55 +468,6 @@ def heartbeat():
     y = dsp.peak(y, 115, 4.5, 1.2)          # chest resonance: keeps it audible on small speakers
     y = dsp.drive(norm(y) * 1.4, 1.8)         # tissue saturation -> 2nd/3rd harmonics around 150-300 Hz
     return fit(y, n)
-
-
-WHISPERS = [
-    # (text, seed, double_voice, slow_echo)
-    ('Estoy acá.', 11, False, False),
-    ('Mirá, atrás.', 12, False, False),      # QA: the comma keeps "mirá" and "atrás" apart (ASR heard "miraba atrás")
-    ('No estás solo.', 13, True, False),
-    ('Te estoy viendo.', 14, False, False),
-    ('Vení... vení conmigo.', 15, False, True),
-]
-
-
-def whisper_voice(text, seed, voice='ef_dora', speed=0.85, keep=0.1):
-    v = say(text, voice, speed)
-    w = to_whisper(v, seed)
-    # a breath of the voiced original above 1.4 kHz keeps the consonants and vowels crisp (stage whisper)
-    y = norm(w) + keep * norm(dsp.highpass(v, 1400, 2))
-    y = shelf_lo(y, 260, 5.0)               # proximity effect: lips 3 cm from your ear
-    y = dsp.peak(y, 6500, 3.0, 1.0)          # air
-    y = wobble(y, 0.7, 0.6, seed, 0.6)
-    return norm(y)
-
-
-def sanity_whisper(i):
-    text, seed, double, echo_ = WHISPERS[i]
-    r = dsp.rng(seed)
-    w = whisper_voice(text, seed)
-    pre = 0.42
-    n = N(pre) + len(w) + N(0.9)
-    out = np.zeros(n, np.float32)
-    add(out, breath_in(0.32, seed + 1, 1.0), 0.02, 0.11)
-    add(out, lip_click(seed + 2, 0.18), pre - 0.06)
-    add(out, w, pre, 1.0)
-    if double:
-        # a second, lower whisper a hair behind the first: "no estas solo" said by two mouths. QA: it is time-aligned
-        # to the first voice and kept below 2.8 kHz, so its sibilants no longer smear the final 's' of "estás"
-        # (whisper-base ASR heard "no está solo" before, "no estás solo" now).
-        v2 = say(text, 'em_alex', 0.85)
-        v2 = dsp.time_stretch(v2, len(v2) / max(1, len(say(text, 'ef_dora', 0.85))))
-        w2 = to_whisper(v2, seed + 7)
-        w2 = dsp.lowpass(shelf_lo(norm(w2), 300, 3.0), 2800, 2)
-        add(out, norm(w2), pre + 0.03, 0.38)
-    t_end = pre + len(w) / SR
-    add(out, breath_out(r.uniform(0.45, 0.6), seed + 3, 1.0), t_end + 0.04, 0.1)
-    if echo_:
-        tail = dsp.lowpass(out, 3500, 2)
-        out = padsum(out, 0.22 * fit(np.concatenate([np.zeros(N(0.33), np.float32), tail]), len(out) + N(0.33)))
-    y = space(out, 0.45, 0.06, 5000, 0.002, EAR_ER, 0.3, 150, seed)
-    return y
 
 
 WOOD_FLOOR = [(92, 28, 1.0), (171, 36, .75), (243, 45, .55), (388, 60, .45), (547, 75, .32), (820, 95, .22),
@@ -587,7 +535,7 @@ def walk(steps, seed, total, room_wet=0.35):
     return padsum(dry, room_wet * rv)
 
 
-def sanity_footsteps(i):
+def horror_footsteps(i):
     if i == 0:      # approaching from the end of the corridor, slowly, and stopping close
         st = [(0.0, 0.95, 1.0, 0.0), (0.68, 0.75, 1.0, 0.3), (1.34, 0.52, 1.0, 0.0), (2.0, 0.3, 1.0, 0.0), (2.7, 0.12, 1.05, 0.9)]
         return walk(st, 100, 4.6)
@@ -629,7 +577,7 @@ def knock_hit(seed, kind='knuckle', amp=1.0):
     return norm(y, amp)
 
 
-def sanity_knock(i):
+def horror_knock(i):
     r = dsp.rng(400 + i)
     if i == 0:      # slow: three even, deliberate knuckle knocks on the door
         n = N(3.6)
@@ -670,7 +618,7 @@ def rasp(dur, seed, f0=82.0, amt=1.0):
     return norm(dsp.drive(norm(y), 2.0), amt)
 
 
-def sanity_breath(i):
+def horror_breath(i):
     if i == 0:      # slow, deep, big chest: in ... out (rasp) ... in ... long out
         seq = [('in', 0.95), ('gap', 0.12), ('out', 1.25), ('gap', 0.35), ('in', 0.85), ('gap', 0.1), ('out', 1.5)]
         size, shaky, rasp_amt, seed = 1.25, 0.15, 0.8, 500
@@ -1379,51 +1327,7 @@ def jar_capture():
     return space(y, 0.9, 0.1, 4500, 0.008, SMALL_ER, 0.25, 120, 2108)
 
 
-# ====================================================================== consumables / flare
-def pill_click(seed, amp=1.0, plastic=True):
-    r = dsp.rng(seed)
-    c = dsp.highpass(burst(0.0006, seed, 2), 2500, 2)
-    modes = [(r.uniform(1700, 2000), 500, 1.0), (r.uniform(2800, 3100), 700, 0.7), (r.uniform(4100, 4500), 900, 0.4)] if plastic \
-        else [(r.uniform(5200, 7000), 1400, 1.0)]
-    b = modal_ir(modes, 0.012, seed)
-    x = fit(c, len(b)) + 0.5 * norm(b)
-    return norm(x, amp)
-
-
-def pills_swallow():
-    dur = 2.3
-    n = N(dur)
-    r = dsp.rng(2200)
-    y = np.zeros(n, np.float32)
-    # two shakes of the bottle: pills hitting the walls and each other, bottle body thump
-    for s, t0 in enumerate([0.0, 0.19, 0.38]):
-        add(y, dsp.lowpass(modal_ir([(420, 60, 1.0), (980, 90, 0.4)], 0.08, 2210 + s), 2000, 2), t0 + 0.035, 0.3)
-        for k in range(int(r.integers(24, 34))):
-            # the pills fly as one clump: most land within 40 ms of the reversal, a few stragglers
-            dt = r.gamma(2.0, 0.012)
-            add(y, pill_click(2220 + 60 * s + k, r.uniform(0.15, 1.0), r.random() < 0.6), t0 + 0.03 + dt, 0.35)
-    # child-proof cap pressed and popped off
-    add(y, pill_click(2300, 0.6), 0.62, 0.6)
-    m = N(0.06)
-    tt = taxis(m)
-    cap = np.sin(TWO_PI * np.cumsum(900 * np.exp(-tt * 40) + 500) / SR) * np.exp(-tt * 70)
-    add(y, norm(cap) + 0.4 * norm(fit(dsp.highpass(burst(0.002, 2301, 2), 2000, 2), m)), 0.68, 0.7)
-    # pills poured into the palm (muffled)
-    for k in range(4):
-        add(y, dsp.lowpass(pill_click(2310 + k, r.uniform(0.4, 1.0), False), 3000, 2), 0.9 + 0.035 * k + r.uniform(0, 0.02), 0.3)
-    # swallow: lips, tongue click, gulp (two throat blips), relieved exhale through the nose
-    add(y, lip_click(2320, 0.4), 1.25)
-    for k, (tg, f0, a) in enumerate([(1.38, 260, 1.0), (1.5, 190, 0.6)]):
-        m = N(0.09)
-        tt = taxis(m)
-        g = np.sin(TWO_PI * np.cumsum(f0 * (1 - 0.45 * tt / 0.09)) / SR) * np.exp(-tt * 45) * np.minimum(1, tt / 0.004)
-        wet = bp(burst(0.012, 2330 + k, 1.5), 700, 2600)
-        gl = norm(g) + 0.5 * norm(fit(wet, m))
-        add(y, dsp.lowpass(gl, 2500, 2), tg, a * 1.1)
-    add(y, breath_out(0.5, 2340, 1.1), 1.72, 0.22)
-    return space(y, 0.3, 0.05, 6000, 0.002, EAR_ER, 0.2, 150, 2350)
-
-
+# ====================================================================== flare
 def flare_texture(n, seed, env, crackle=1.0):
     """Burning strontium-nitrate flare: roaring hiss, low rumble, crackle and spits, irregular sputter."""
     r = dsp.rng(seed)
@@ -1555,11 +1459,10 @@ def V(fn, k):
 
 EVENTS = [
     # name, [variant renderers], peak dBFS, loop
-    ('sanity.heartbeat', [heartbeat], -3.0, False),
-    ('sanity.whisper', [V(sanity_whisper, k) for k in range(5)], -1.0, False),
-    ('sanity.footsteps', [V(sanity_footsteps, k) for k in range(3)], -3.0, False),
-    ('sanity.knock', [V(sanity_knock, k) for k in range(3)], -3.0, False),
-    ('sanity.breath', [V(sanity_breath, k) for k in range(2)], -3.0, False),
+    ('horror.heartbeat', [heartbeat], -3.0, False),
+    ('horror.footsteps', [V(horror_footsteps, k) for k in range(3)], -3.0, False),
+    ('horror.knock', [V(horror_knock, k) for k in range(3)], -3.0, False),
+    ('horror.breath', [V(horror_breath, k) for k in range(2)], -3.0, False),
     ('crucifix.activate', [crucifix_activate], -1.0, False),
     ('crucifix.repel', [crucifix_repel], -0.5, False),
     ('holy_water.throw', [holy_water_throw], -3.0, False),
@@ -1575,7 +1478,6 @@ EVENTS = [
     ('ritual.chant', [ritual_chant], -1.0, False),
     ('ritual.complete', [ritual_complete], -0.5, False),
     ('jar.capture', [jar_capture], -0.5, False),
-    ('pills.swallow', [pills_swallow], -3.0, False),
     ('flare.ignite', [flare_ignite], -3.0, False),
     ('flare.burn', [flare_burn], -4.0, True),
 ]

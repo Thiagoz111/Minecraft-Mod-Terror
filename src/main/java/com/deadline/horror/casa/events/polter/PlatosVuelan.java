@@ -9,7 +9,6 @@ import com.deadline.horror.casa.FlyingProp;
 import com.deadline.horror.casa.Polter;
 import com.deadline.net.Fx;
 import com.deadline.registry.ModSounds;
-import com.deadline.sanity.SanityManager;
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.core.BlockPos;
@@ -61,7 +60,6 @@ public class PlatosVuelan extends HorrorEvent {
 		Vec3 m = mouths(c).get(0);
 		c.run.sound(ModSounds.PLATE_STORM, m, 1.6F, 1.0F);
 		Polter.noise(c.run, m, 55F);
-		SanityManager.add(c.p, -4F);
 	}
 
 	@Override

@@ -1035,11 +1035,6 @@ public class NonaRotaEntity extends HauntEntity {
 	}
 
 	@Override
-	public float fearAura() {
-		return 0.8F;
-	}
-
-	@Override
 	public float holyWeakness() {
 		return 2.0F;
 	}

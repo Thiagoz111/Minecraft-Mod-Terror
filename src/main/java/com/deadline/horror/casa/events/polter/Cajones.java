@@ -7,7 +7,6 @@ import com.deadline.horror.casa.Drawers;
 import com.deadline.horror.casa.Polter;
 import com.deadline.net.Fx;
 import com.deadline.registry.ModSounds;
-import com.deadline.sanity.SanityManager;
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.core.BlockPos;
@@ -82,7 +81,6 @@ public class Cajones extends HorrorEvent {
 			for (BlockPos p : drawers) {
 				if (Apparitions.sees(c, Vec3.atCenterOf(p), 40F)) {
 					c.put("seen", c.t);
-					SanityManager.add(c.p, -3F);
 					return false;
 				}
 			}

@@ -3,7 +3,6 @@ package com.deadline.horror.casa.dog;
 import com.deadline.entity.HauntEntity;
 import com.deadline.net.Fx;
 import com.deadline.registry.ModSounds;
-import com.deadline.sanity.SanityManager;
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.network.syncher.EntityDataAccessor;
@@ -33,7 +32,7 @@ import net.minecraft.world.phys.Vec3;
  *   segment that pops out; then it holds, staring, until the script sends it after somebody.</li>
  *   <li>{@link #STATE_CRAWL}: a fast skittering run: along a list of points ({@link #crawl(List)}) or straight at a
  *   hunter ({@link #chase(ServerPlayer)}, ground navigation through open doors). Reaching the hunter = the jumpscare
- *   'perro_largo' (fail forward: sanity, no death) and it pulls back.</li>
+ *   'perro_largo' (fail forward: a scare, no death) and it pulls back.</li>
  *   <li>{@link #STATE_RETRACT}: it goes back along its own path into the doghouse, fast, and is gone.</li>
  * </ul>
  * The door (plane centre + the yaw it comes out along) is synced so the client can keep the hidden segments inside.
@@ -291,7 +290,6 @@ public class ChoripanDemonioEntity extends HauntEntity {
 		Fx.jumpscare(p, "perro_largo");
 		Fx.shake(p, 1.4F, 26);
 		Fx.redFlash(p, 0.8F);
-		SanityManager.add(p, -20F);
 		this.sound(ModSounds.CHORIPAN_DEMON_ROAR, 2.0F, 0.8F);
 		if (this.onCaught != null) {
 			this.onCaught.accept(p);
@@ -401,11 +399,6 @@ public class ChoripanDemonioEntity extends HauntEntity {
 	@Override
 	public boolean removeWhenFarAway(double distance) {
 		return false;
-	}
-
-	@Override
-	public float fearAura() {
-		return 1.2F;
 	}
 
 	/** A box round the door and the head together: the chain between them must not pop out of view at corners. */

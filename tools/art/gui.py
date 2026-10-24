@@ -72,38 +72,7 @@ def phone_frame():
         px[0, y] = (60, 62, 76, 255)
     for y in range(110, 150):
         px[W - 1, y] = (60, 62, 76, 255)
-    # crack in the glass overlay is drawn separately (crack.png)
     return save(img, 'phone/frame.png')
-
-
-def phone_crack():
-    W, H = 176, 308
-    img = Image.new('RGBA', (W, H), (0, 0, 0, 0))
-    px = img.load()
-    rng = np.random.default_rng(3)
-    cx, cy = 150, 40
-
-    def branch(x, y, ang, length, depth):
-        for i in range(length):
-            x += math.cos(ang)
-            y += math.sin(ang)
-            ang += rng.normal(0, 0.12)
-            ix, iy = int(x), int(y)
-            if 0 <= ix < W and 0 <= iy < H:
-                px[ix, iy] = (210, 220, 235, 150)
-                if 0 <= ix + 1 < W and 0 <= iy + 1 < H and px[ix + 1, iy + 1][3] == 0:
-                    px[ix + 1, iy + 1] = (0, 0, 0, 90)
-            if depth > 0 and rng.random() < 0.06:
-                branch(x, y, ang + rng.choice([-1, 1]) * rng.uniform(0.5, 1.1), int(length * 0.5), depth - 1)
-    for k in range(7):
-        branch(cx, cy, k * (2 * math.pi / 7) + rng.normal(0, 0.2), int(rng.integers(30, 90)), 2)
-    for k in range(18):
-        a = k * (2 * math.pi / 18)
-        for rr in (9, 16):
-            x, y = int(cx + math.cos(a) * rr), int(cy + math.sin(a) * rr)
-            if 0 <= x < W and 0 <= y < H:
-                px[x, y] = (210, 220, 235, 120)
-    return save(img, 'phone/crack.png')
 
 
 def wallpaper():
@@ -329,15 +298,6 @@ def avatars():
 
 
 # ------------------------------------------------------------------ overlays
-def vignette():
-    S = 256
-    ys, xs = np.mgrid[0:S, 0:S].astype(float)
-    d = np.sqrt(((xs - S / 2) / (S / 2)) ** 2 + ((ys - S / 2) / (S / 2)) ** 2)
-    al = np.clip((d - 0.45) / 0.85, 0, 1) ** 1.6
-    a = np.dstack([np.zeros((S, S)), np.zeros((S, S)), np.zeros((S, S)), al * 255]).astype(np.uint8)
-    return save(Image.fromarray(a, 'RGBA'), 'overlay/vignette.png')
-
-
 def static_noise():
     S = 256
     rng = np.random.default_rng(9)
@@ -353,32 +313,7 @@ def static_noise():
     return save(Image.fromarray(img, 'RGBA'), 'overlay/static.png')
 
 
-def shadow_figure():
-    W, H = 64, 128
-    img = Image.new('RGBA', (W, H))
-    px = img.load()
-    for y in range(H):
-        for x in range(W):
-            cx = 32
-            a = 0
-            if 6 <= y <= 14 and abs(x - cx) <= 15:
-                a = 1  # hat brim
-            if 0 <= y <= 8 and abs(x - cx) <= 7:
-                a = 1
-            if 14 <= y <= 30 and abs(x - cx) <= 6:
-                a = 1  # head
-            if 30 <= y <= 120 and abs(x - cx) <= 9 + (y - 30) * 0.08:
-                a = 1  # coat
-            if 34 <= y <= 100 and (abs(x - (cx - 13)) <= 2 or abs(x - (cx + 13)) <= 2):
-                a = 1  # arms
-            if a:
-                fade = 1.0 if y < 100 else max(0, 1 - (y - 100) / 28)
-                px[x, y] = (0, 0, 0, int(235 * fade))
-    px[29, 22] = px[35, 22] = (200, 20, 20, 255)
-    return save(img, 'overlay/shadow_figure.png')
-
-
 if __name__ == '__main__':
-    phone_frame(); phone_crack(); wallpaper(); icons(); avatars()
-    vignette(); static_noise(); shadow_figure()
+    phone_frame(); wallpaper(); icons(); avatars()
+    static_noise()
     print('gui textures ->', OUT)

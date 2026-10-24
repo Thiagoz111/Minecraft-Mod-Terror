@@ -4,7 +4,6 @@ import com.deadline.horror.Ctx;
 import com.deadline.horror.HorrorEvent;
 import com.deadline.horror.casa.Polter;
 import com.deadline.registry.ModSounds;
-import com.deadline.sanity.SanityManager;
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.core.BlockPos;
@@ -90,9 +89,6 @@ public class TresGolpes extends HorrorEvent {
 			knocks.clear();
 			for (int i = 0; i < n; i++) {
 				knocks.add(c.t + 6 + i * SPACING);
-			}
-			if (answers == 3) {
-				SanityManager.add(c.p, -4F);
 			}
 			heard = 0;
 			last = c.t + 6 + n * SPACING;

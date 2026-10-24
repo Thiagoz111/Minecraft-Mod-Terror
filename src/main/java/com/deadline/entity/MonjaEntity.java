@@ -322,11 +322,6 @@ public class MonjaEntity extends HauntEntity {
 	}
 
 	@Override
-	public float fearAura() {
-		return 0.75F;
-	}
-
-	@Override
 	protected SoundEvent getAmbientSound() {
 		return null;
 	}

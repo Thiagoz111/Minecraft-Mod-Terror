@@ -5,7 +5,6 @@ import com.deadline.horror.HorrorEvent;
 import com.deadline.horror.HouseQuery;
 import com.deadline.horror.casa.Polter;
 import com.deadline.registry.ModSounds;
-import com.deadline.sanity.SanityManager;
 import net.minecraft.world.phys.Vec3;
 
 /**
@@ -54,9 +53,6 @@ public class Picaporte extends HorrorEvent {
 			if (c.t == BURSTS[i]) {
 				c.run.sound(ModSounds.POLTER_PICAPORTE, at, 0.8F + i * 0.25F, Polter.pitch(c, 0.9F, 1.05F) + i * 0.05F);
 				Polter.noise(c.run, at, 20F + i * 10F);
-				if (i == BURSTS.length - 1) {
-					SanityManager.add(c.p, -3F);
-				}
 			}
 		}
 		return c.t >= 90;

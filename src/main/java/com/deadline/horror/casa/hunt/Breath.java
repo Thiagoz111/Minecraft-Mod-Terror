@@ -1,8 +1,6 @@
 package com.deadline.horror.casa.hunt;
 
-import com.deadline.director.Director;
 import com.deadline.registry.ModSounds;
-import com.deadline.sanity.SanityManager;
 import com.deadline.voice.NoiseMeter;
 import java.util.HashMap;
 import java.util.Map;
@@ -14,7 +12,7 @@ import net.minecraft.sounds.SoundSource;
 /**
  * Holding the breath (key B by default; docs/design/casa_terror.md 6.1, 6.2): 100 -> 0 in 8 s while the key is held,
  * back to full in 5 s once released. While held the player makes no vocal noise (his breathing, the microphone: see
- * NoiseMeter) and his noise fades faster; it costs a little sanity. At 0 he gasps: a loud noise spike she hears from
+ * NoiseMeter) and his noise fades faster. At 0 he gasps: a loud noise spike she hears from
  * across the house, and the key does nothing until he has caught some breath again.
  */
 public final class Breath {
@@ -99,9 +97,6 @@ public final class Breath {
 			}
 			if (s.holding) {
 				s.breath -= 100F / HOLD_TICKS;
-				if (p.tickCount % 10 == 0) {
-					SanityManager.add(p, -0.3F);
-				}
 				if (s.breath <= 0F) {
 					gasp(p, s);
 				}
@@ -120,9 +115,5 @@ public final class Breath {
 		p.level().playSound(null, p.getX(), p.getEyeY(), p.getZ(), ModSounds.HUNT_GASP, SoundSource.PLAYERS, 1.6F, 0.95F + p.getRandom().nextFloat() * 0.1F);
 		NoiseMeter.add(p, 55F);
 		com.deadline.net.Fx.shake(p, 0.5F, 10);
-		if (Director.of(p) == null) {
-			return;
-		}
-		SanityManager.add(p, -2F);
 	}
 }

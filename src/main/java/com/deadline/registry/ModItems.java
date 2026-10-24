@@ -9,7 +9,6 @@ import com.deadline.item.FlareItem;
 import com.deadline.item.FlashlightItem;
 import com.deadline.item.HolyWaterItem;
 import com.deadline.item.PhoneItem;
-import com.deadline.item.PillsItem;
 import com.deadline.item.RitualBookItem;
 import com.deadline.item.SaltItem;
 import com.deadline.item.SpiritBoxItem;
@@ -37,7 +36,6 @@ import net.minecraft.world.item.ToolMaterial;
 import net.minecraft.world.item.equipment.ArmorMaterial;
 import net.minecraft.world.item.equipment.ArmorType;
 import net.minecraft.world.item.equipment.EquipmentAssets;
-import net.minecraft.world.entity.player.Player;
 
 public final class ModItems {
 	private static final List<Item> TAB_ORDER = new ArrayList<>();
@@ -53,7 +51,6 @@ public final class ModItems {
 	public static final RitualBookItem RITUAL_BOOK = register("ritual_book", RitualBookItem::new, new Item.Properties().stacksTo(1).rarity(Rarity.UNCOMMON));
 	public static final SpiritJarItem SPIRIT_JAR = register("spirit_jar", p -> new SpiritJarItem(p, false), new Item.Properties().stacksTo(4));
 	public static final SpiritJarItem SPIRIT_JAR_FULL = register("spirit_jar_full", p -> new SpiritJarItem(p, true), new Item.Properties().stacksTo(1).rarity(Rarity.EPIC));
-	public static final PillsItem PILLS = register("pills", PillsItem::new, new Item.Properties().stacksTo(8));
 	public static final Item SILVER_DAGGER = register("silver_dagger", Item::new, new Item.Properties().sword(ToolMaterial.IRON, 3.0F, -2.2F).rarity(Rarity.UNCOMMON));
 	public static final Item ROSARY = register("rosary", Item::new, new Item.Properties().stacksTo(1));
 	public static final FlareItem FLARE = register("flare", FlareItem::new, new Item.Properties().stacksTo(16));
@@ -110,12 +107,6 @@ public final class ModItems {
 
 	private static Item egg(String name, EntityType<?> type) {
 		return register(name + "_spawn_egg", SpawnEggItem::new, new Item.Properties().spawnEgg(type));
-	}
-
-	/** True when the player wears the four pieces of the exorcist's suit (set bonus: slower sanity loss). */
-	public static boolean wearsSuit(Player p) {
-		return p.getItemBySlot(EquipmentSlot.HEAD).is(EXORCIST_HAT) && p.getItemBySlot(EquipmentSlot.CHEST).is(EXORCIST_CASSOCK)
-				&& p.getItemBySlot(EquipmentSlot.LEGS).is(EXORCIST_SKIRT) && p.getItemBySlot(EquipmentSlot.FEET).is(EXORCIST_BOOTS);
 	}
 
 	public static void init() {

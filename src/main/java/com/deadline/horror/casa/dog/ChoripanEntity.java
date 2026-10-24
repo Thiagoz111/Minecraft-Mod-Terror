@@ -43,12 +43,6 @@ public class ChoripanEntity extends FamilyEntity {
 		return this.variant() == LOOK_MUERTO;
 	}
 
-	/** The dead dog chills you; the family dog does not. */
-	@Override
-	public float fearAura() {
-		return this.variant() == LOOK_MUERTO ? 0.5F : 0F;
-	}
-
 	// ------------------------------------------------------------------ walking with a gait
 	/** Walks there at a dachshund trot (gait {@link #POSE_WALK}); the current pose comes back on arrival. */
 	public boolean trot(Vec3 target) {

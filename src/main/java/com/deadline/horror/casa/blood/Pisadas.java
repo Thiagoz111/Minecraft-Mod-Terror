@@ -7,7 +7,6 @@ import com.deadline.horror.HouseQuery;
 import com.deadline.horror.casa.Apparitions;
 import com.deadline.horror.casa.BloodDecals;
 import com.deadline.registry.ModSounds;
-import com.deadline.sanity.SanityManager;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -216,9 +215,6 @@ public class Pisadas extends HorrorEvent {
 			BloodDecals.floor(c.run, s.left() ? BloodDecals.FOOT_L : BloodDecals.FOOT_R, s.at(), s.yaw() + (c.rnd.nextFloat() - 0.5F) * 8F,
 					0.17F, 0.36F);
 			Apparitions.sound(c, ModSounds.SANGRE_PISADA, s.at(), 0.55F, Apparitions.pitch(c, 0.85F, 1.05F));
-			if (i == 0 && Apparitions.sees(c, s.at(), 55F)) {
-				SanityManager.add(c.p, -2F);
-			}
 		}
 		int done = 4 + steps.size() * STEP_TICKS;
 		if (c.t > 4 && anyOpen(c.run, plan.wardrobe())) {
@@ -227,9 +223,6 @@ public class Pisadas extends HorrorEvent {
 		if (c.t == done + 30) {
 			// whoever walked in is inside now
 			Apparitions.sound(c, ModSounds.SANGRE_RESPIRA, plan.inside().add(0, 1.4, 0), 0.6F, 0.9F);
-			if (Apparitions.dist(c, plan.inside()) < 8.0) {
-				SanityManager.add(c.p, -3F);
-			}
 		}
 		return c.t > done + 60;
 	}

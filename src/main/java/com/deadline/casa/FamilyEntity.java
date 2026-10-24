@@ -569,12 +569,6 @@ public class FamilyEntity extends HauntEntity {
 		return false;
 	}
 
-	/** The family is not scary; a possessed one chills you a little. */
-	@Override
-	public float fearAura() {
-		return this.isPossessed() ? 0.4F : 0F;
-	}
-
 	@Override
 	public SoundEvent getHurtSoundEvent() {
 		return null;

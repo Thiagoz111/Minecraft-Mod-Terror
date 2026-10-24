@@ -11,7 +11,6 @@ import com.deadline.registry.ModAttachments;
 import com.deadline.registry.ModEntities;
 import com.deadline.registry.ModItems;
 import com.deadline.registry.ModSounds;
-import com.deadline.sanity.SanityManager;
 import java.util.ArrayList;
 import java.util.List;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
@@ -53,7 +52,6 @@ public final class CaseManager {
 		}
 		SHOP.add(new ShopEntry(ModItems.HOLY_WATER, 40, 2));
 		SHOP.add(new ShopEntry(ModItems.SALT, 60, 1));
-		SHOP.add(new ShopEntry(ModItems.PILLS, 50, 2));
 		SHOP.add(new ShopEntry(ModItems.FLARE, 45, 2));
 		SHOP.add(new ShopEntry(ModItems.CRUCIFIX, 150, 1));
 		SHOP.add(new ShopEntry(ModItems.FLASHLIGHT, 100, 1));
@@ -76,7 +74,6 @@ public final class CaseManager {
 			d.nextCall = p.level().getGameTime() + 300;
 			p.sendSystemMessage(Component.translatable("deadline.msg.welcome"));
 		}
-		Fx.sanity(p, d.sanity);
 		if (d.active != null && d.active.type.scripted()) {
 			com.deadline.director.Run r = com.deadline.director.Director.of(p);
 			if (r != null) {
@@ -96,7 +93,6 @@ public final class CaseManager {
 		give(p, new ItemStack(ModItems.SALT));
 		give(p, new ItemStack(ModItems.EMF));
 		give(p, new ItemStack(ModItems.SPIRIT_JAR));
-		give(p, new ItemStack(ModItems.PILLS, 2));
 		if (full) {
 			give(p, new ItemStack(ModItems.SPIRIT_BOX));
 			give(p, new ItemStack(ModItems.CAMERA));
@@ -145,8 +141,6 @@ public final class CaseManager {
 		p.setHealth(p.getMaxHealth());
 		p.clearFire();
 		p.removeAllEffects();
-		d.sanity = Math.max(d.sanity, 60.0F);
-		Fx.sanity(p, d.sanity);
 		Fx.redFlash(p, 1.0F);
 		Fx.fade(p, 40);
 		// not from inside the blow: the checkpoint removes the actors, maybe the very nun that is hitting
@@ -172,8 +166,6 @@ public final class CaseManager {
 
 	public static void onRespawn(ServerPlayer p, boolean alive) {
 		HunterData d = ModAttachments.get(p);
-		d.sanity = Math.max(d.sanity, 60.0F);
-		Fx.sanity(p, d.sanity);
 		if (!alive && d.active != null && d.active.type.scripted() && checkpoint(p, d.active)) {
 			return;
 		}
@@ -298,7 +290,7 @@ public final class CaseManager {
 		}
 		HunterData d = ModAttachments.get(p);
 		ActiveCase ac = d.active;
-		ServerPlayNetworking.send(p, new PhoneDataPayload(open, d.money, d.solved, d.sanity, d.bestiary,
+		ServerPlayNetworking.send(p, new PhoneDataPayload(open, d.money, d.solved, d.bestiary,
 				ac == null ? "" : ac.type.key(), ac == null ? 0 : ac.stage, ac == null ? 0 : ac.evidence));
 	}
 
@@ -438,7 +430,6 @@ public final class CaseManager {
 			BlockPos rp = ac.returnPos;
 			p.teleport(new TeleportTransition(home, Vec3.atBottomCenterOf(rp), Vec3.ZERO, p.getYRot(), 0.0F, TeleportTransition.DO_NOTHING));
 		}
-		SanityManager.add(p, 25.0F);
 		syncPhone(p, false);
 	}
 

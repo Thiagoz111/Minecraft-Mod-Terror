@@ -153,7 +153,7 @@ public final class OverworldCase {
 		return new AABB(o.offset(def.min)).expandTowards(def.w, def.h, def.d).inflate(grow);
 	}
 
-	/** True while a hunter working an overworld case is at its house (sanity drains like in a case dimension). */
+	/** True while a hunter working an overworld case is at its house (8 blocks around the site's box). */
 	public static boolean atSite(ServerPlayer p) {
 		ActiveCase ac = ModAttachments.get(p).active;
 		if (ac == null || !ac.type.overworld() || !p.level().dimension().equals(Level.OVERWORLD)) {

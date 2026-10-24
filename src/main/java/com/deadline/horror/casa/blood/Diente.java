@@ -7,7 +7,6 @@ import com.deadline.horror.HouseQuery;
 import com.deadline.horror.casa.Apparitions;
 import com.deadline.horror.casa.Interactables;
 import com.deadline.registry.ModSounds;
-import com.deadline.sanity.SanityManager;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -134,7 +133,6 @@ public class Diente extends HorrorEvent {
 				Teeth.spill(c.run, open, c.p.getEyePosition(), c.p, true, c.rnd);
 				Apparitions.sound(c, ModSounds.SANGRE_DIENTES, mid.add(0, 0.4, 0), 0.8F, 1.0F);
 				Apparitions.noise(c, mid, 15F);
-				SanityManager.add(c.p, -4F);
 				return false;
 			}
 			return c.t - at > 10;

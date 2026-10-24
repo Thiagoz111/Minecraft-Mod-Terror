@@ -96,9 +96,10 @@ cantidad de sustos vividos). No se le dice al jugador nada: la casa cambia.
   gira 180°, la mandíbula se descuelga, se alarga hasta casi tocar el techo y baja a cuatro patas (caminata araña).
 - Desde acá **ella caza**: no ve bien (cataratas) pero escucha todo: micrófono, correr, puertas, objetos que tirás,
   linterna haciendo click. Patrulla, revisa escondites, abre roperos. Si te agarra: jumpscare y te desmayás (fade);
-  te despertás atado a la cama de tu cuarto, sangre en la boca, cordura baja (fail-forward, sin game over).
+  te despertás atado a la cama de tu cuarto, sangre en la boca, ciego y mareado unos segundos (fail-forward, sin game
+  over).
 - Te escondés: roperos, debajo de las camas, la despensa, la bañadera con la cortina. Adentro: rendijas, latido,
-  **contener la respiración** (tecla; consume cordura) cuando ella está cerca.
+  **contener la respiración** (tecla; 8 s como máximo, después jadeás fuerte y ella te oye) cuando ella está cerca.
 - El resto de la familia ya no es la familia: **copias** que sonríen demasiado, paradas en rincones, que giran la
   cabeza para seguirte. Marta te escribe desde OTRO lugar: "Estamos encerrados en el sótano. No sé quién está arriba."
 - Avance: sobrevivir 6 min, o ser agarrado 2 veces → **Acto 6**.
@@ -268,11 +269,12 @@ teléfono fijo, máquina de coser, persianas (subir/bajar), roperos (abrir/escon
 
 ### 6.7 Las herramientas del exorcista (no son para ganar: compran segundos)
 - Linterna (pila que se gasta; el click hace ruido), crucifijo (la cazadora retrocede 3 s, se calienta y quema),
-  agua bendita (la cazadora huye 8 s; 3 usos), sal (línea que no cruza 20 s). Pastillas: cordura.
+  agua bendita (la cazadora huye 8 s; 3 usos), sal (línea que no cruza 20 s).
 
-### 6.8 Cordura
-- Baja con la oscuridad, los sustos, contener la respiración. Baja = más alucinaciones (sistema existente),
-  susurros, viñeta. No mata.
+### 6.8 (sin cordura)
+- No hay cordura: el dueño la sacó (24/10/2026). Nada guarda, muestra ni reacciona a un valor de cordura; no hay
+  pastillas ni alucinaciones por cordura baja. Los sustos son los mismos (sonido, sacudida, flash, jumpscare,
+  ceguera, náusea), sin el descuento. Se deja el número para no correr las referencias a 6.9 y 6.10.
 
 ### 6.9 El auto y el GPS
 - `CarEntity` (Renault 12): W/S acelera/frena/reversa, A/D dobla (radio de giro según velocidad), sube escalones
@@ -315,11 +317,11 @@ por venir.", "Ya somos todos." + foto.
 
 - Se reutiliza: sitio y kits de la casa (se agranda), modelos de Marta/Jorge/Nona/Toti/Lucía (poseída)/Ofelia/
   Choripán/perro largo, `FamilyEntity` (poses + `walkTo`/`face`/`watch`), `Run` (marcadores, puertas, luces,
-  actores), `KnifeOrbit` (cuchillos), `DollShelf` (muñecas que giran), sistema de ruido/voz del Colegio, cordura,
-  alucinaciones, jumpscare, linterna/crucifijo/agua bendita/sal.
+  actores), `KnifeOrbit` (cuchillos), `DollShelf` (muñecas que giran), sistema de ruido/voz del Colegio, jumpscare,
+  linterna/crucifijo/agua bendita/sal.
 - Se corta (borrar código y assets): choripán bendito y su receta, parrilla/cocinar, chancleta, chat de nombres,
   rueda de espíritus, puntadas (`Stitch`), telarañas de lana (`YarnWeb`), el fuego fatuo (`DemonWisp`), voces,
-  llamadas, `CasaScript` de 8 capítulos con objetivos.
+  llamadas, `CasaScript` de 8 capítulos con objetivos, la cordura (valor, HUD, pastillas, alucinaciones).
 
 ## 10. Plan de implementación (tandas de 3 agentes como máximo)
 

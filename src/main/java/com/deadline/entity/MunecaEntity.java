@@ -88,11 +88,6 @@ public class MunecaEntity extends HauntEntity {
 	}
 
 	@Override
-	public float fearAura() {
-		return 0.3F;
-	}
-
-	@Override
 	protected SoundEvent getAmbientSound() {
 		return this.frozen ? null : ModSounds.MUNECA_GIGGLE;
 	}

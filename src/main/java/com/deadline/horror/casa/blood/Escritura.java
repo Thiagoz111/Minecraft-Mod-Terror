@@ -8,7 +8,6 @@ import com.deadline.horror.casa.Apparitions;
 import com.deadline.horror.casa.BloodDecals;
 import com.deadline.registry.ModParticles;
 import com.deadline.registry.ModSounds;
-import com.deadline.sanity.SanityManager;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -136,7 +135,6 @@ public class Escritura extends HorrorEvent {
 			if (!Apparitions.hidden(c.p) && Apparitions.dist(c, at) < 13.0 && Apparitions.sees(c, at, 40F)) {
 				c.put("seenAt", c.t);
 				Apparitions.sound(c, ModSounds.SANGRE_REVELA, at, 1.0F, 1.0F);
-				SanityManager.add(c.p, -5F);
 			}
 			return c.t > 20 * 45;  // he never turned round: it waits for him on the wall all the same
 		}
@@ -147,7 +145,6 @@ public class Escritura extends HorrorEvent {
 		if (ESTA_DETRAS.equals(c.get("text")) && since == 24 && !Apparitions.hidden(c.p)) {
 			Vec3 neck = c.p.getEyePosition().add(c.p.getViewVector(1F).scale(-0.6));
 			Apparitions.sound(c, ModSounds.APARICION_ALIENTO, neck, 0.9F, 0.9F);
-			SanityManager.add(c.p, -3F);
 		}
 		return since > 90;
 	}

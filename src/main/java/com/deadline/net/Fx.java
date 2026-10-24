@@ -46,14 +46,6 @@ public final class Fx {
 		send(p, FxPayload.TITLE, 1.0F, ticks, 0, 0, 0, key);
 	}
 
-	public static void hallucination(ServerPlayer p, String kind) {
-		send(p, FxPayload.HALLUCINATION, 1.0F, 0, 0, 0, 0, kind);
-	}
-
-	public static void sanity(ServerPlayer p, float value) {
-		send(p, FxPayload.SANITY, value, 0, 0, 0, 0, "");
-	}
-
 	public static void objective(ServerPlayer p, String caseKey, int stage) {
 		send(p, FxPayload.OBJECTIVE, 1.0F, stage, 0, 0, 0, caseKey);
 	}

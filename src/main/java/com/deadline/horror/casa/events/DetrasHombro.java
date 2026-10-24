@@ -5,7 +5,6 @@ import com.deadline.horror.HorrorEvent;
 import com.deadline.horror.casa.Apparitions;
 import com.deadline.net.Fx;
 import com.deadline.registry.ModSounds;
-import com.deadline.sanity.SanityManager;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 
@@ -57,7 +56,6 @@ public class DetrasHombro extends HorrorEvent {
 			Fx.jumpscare(c.p, "cara_roja");
 			Fx.shake(c.p, 1.3F, 14);
 			Fx.redFlash(c.p, 0.6F);
-			SanityManager.add(c.p, -14F);
 			return true;
 		}
 		return c.t > 20 * 7;

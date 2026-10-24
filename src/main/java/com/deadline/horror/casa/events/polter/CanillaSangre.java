@@ -6,7 +6,6 @@ import com.deadline.horror.HouseQuery;
 import com.deadline.horror.casa.Apparitions;
 import com.deadline.horror.casa.Polter;
 import com.deadline.horror.casa.Tap;
-import com.deadline.sanity.SanityManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.Vec3;
 
@@ -53,7 +52,6 @@ public class CanillaSangre extends HorrorEvent {
 		if (t != null) {
 			Polter.noise(c.run, t.spout(), 25F);
 		}
-		c.put("felt", false);
 	}
 
 	@Override
@@ -65,11 +63,6 @@ public class CanillaSangre extends HorrorEvent {
 		if (Polter.got(c, "canilla") && Apparitions.dist(c, t.spout()) < 3.5) {
 			t.stop();
 			return true;
-		}
-		boolean felt = c.get("felt");
-		if (!felt && t.blood() && Apparitions.dist(c, t.spout()) < 7) {
-			c.put("felt", true);
-			SanityManager.add(c.p, -4F);
 		}
 		return t.tick();
 	}

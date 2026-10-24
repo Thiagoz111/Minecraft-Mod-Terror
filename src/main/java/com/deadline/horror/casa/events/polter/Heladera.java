@@ -9,7 +9,6 @@ import com.deadline.horror.casa.Fridge;
 import com.deadline.horror.casa.Polter;
 import com.deadline.registry.ModParticles;
 import com.deadline.registry.ModSounds;
-import com.deadline.sanity.SanityManager;
 import java.util.List;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.Entity;
@@ -63,7 +62,6 @@ public class Heladera extends HorrorEvent {
 		}
 		c.put("bundle", f.addBlock(Blocks.WHITE_WOOL.defaultBlockState(), 3.6, 9.4, 4.0, 12.0, 12.8, 11.4));
 		Polter.noise(c.run, Vec3.atCenterOf(lower), 20F);
-		c.put("seen", false);
 	}
 
 	@Override
@@ -103,11 +101,6 @@ public class Heladera extends HorrorEvent {
 				Vec3 drip = f.inside(9.2);
 				c.level().sendParticles(ModParticles.BLOOD_DRIP, drip.x, drip.y, drip.z, 1, 0.12, 0.0, 0.12, 0.0);
 			}
-		}
-		boolean seen = c.get("seen");
-		if (!seen && Apparitions.sees(c, front, 30F)) {
-			c.put("seen", true);
-			SanityManager.add(c.p, -4F);
 		}
 		if (Polter.got(c, "heladera") || Apparitions.dist(c, front) < 1.7) {
 			f.close();

@@ -15,7 +15,7 @@ com.deadline.horror.casa.hunt (Hunt.start/stop/active/captures/noise/transform, 
 the dog and the copies are com.deadline.horror.casa (ApparitionEvents, dog/, events/).
 Reusable: casa/CasaProps (BlockDisplay props: lift, settle, levitate, chairTower, remember/swap/restore), casa/KnifeOrbit,
 casa/DollShelf, casa/FamilyEntity (poses, walkTo, face, watch, floatTo, looks), director/Run, director/Props, net/Fx,
-voice/NoiseMeter, sanity/SanityManager, phone/PhoneMessages.
+voice/NoiseMeter, phone/PhoneMessages.
 Shared files (DeadLine.java, DeadLineClient.java, registries, FamilyEntity, sounds_def.py, lang.py, build_all.py KEYS)
 only with small unique-anchor Edit calls; your sound/lang entries go in a block marked with your id; rerun
 tools/audio/gen_defs.py and tools/data/gen_data.py at the end. `export DEADLINE_WORK=<scratchpad>/work`.

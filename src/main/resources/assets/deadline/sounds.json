@@ -68,43 +68,33 @@
    }
   ]
  },
- "sanity.heartbeat": {
-  "subtitle": "subtitles.deadline.sanity.heartbeat",
+ "horror.heartbeat": {
+  "subtitle": "subtitles.deadline.horror.heartbeat",
   "sounds": [
-   "deadline:sanity/heartbeat"
+   "deadline:horror/heartbeat"
   ]
  },
- "sanity.whisper": {
-  "subtitle": "subtitles.deadline.sanity.whisper",
+ "horror.footsteps": {
+  "subtitle": "subtitles.deadline.horror.footsteps",
   "sounds": [
-   "deadline:sanity/whisper_1",
-   "deadline:sanity/whisper_2",
-   "deadline:sanity/whisper_3",
-   "deadline:sanity/whisper_4",
-   "deadline:sanity/whisper_5"
+   "deadline:horror/footsteps_1",
+   "deadline:horror/footsteps_2",
+   "deadline:horror/footsteps_3"
   ]
  },
- "sanity.footsteps": {
-  "subtitle": "subtitles.deadline.sanity.footsteps",
+ "horror.knock": {
+  "subtitle": "subtitles.deadline.horror.knock",
   "sounds": [
-   "deadline:sanity/footsteps_1",
-   "deadline:sanity/footsteps_2",
-   "deadline:sanity/footsteps_3"
+   "deadline:horror/knock_1",
+   "deadline:horror/knock_2",
+   "deadline:horror/knock_3"
   ]
  },
- "sanity.knock": {
-  "subtitle": "subtitles.deadline.sanity.knock",
+ "horror.breath": {
+  "subtitle": "subtitles.deadline.horror.breath",
   "sounds": [
-   "deadline:sanity/knock_1",
-   "deadline:sanity/knock_2",
-   "deadline:sanity/knock_3"
-  ]
- },
- "sanity.breath": {
-  "subtitle": "subtitles.deadline.sanity.breath",
-  "sounds": [
-   "deadline:sanity/breath_1",
-   "deadline:sanity/breath_2"
+   "deadline:horror/breath_1",
+   "deadline:horror/breath_2"
   ]
  },
  "crucifix.activate": {
@@ -204,12 +194,6 @@
    "deadline:jar/capture"
   ]
  },
- "pills.swallow": {
-  "subtitle": "subtitles.deadline.pills.swallow",
-  "sounds": [
-   "deadline:pills/swallow"
-  ]
- },
  "flare.ignite": {
   "subtitle": "subtitles.deadline.flare.ignite",
   "sounds": [
@@ -284,12 +268,6 @@
   "subtitle": "subtitles.deadline.monja.death",
   "sounds": [
    "deadline:monja/death"
-  ]
- },
- "sombra.appear": {
-  "subtitle": "subtitles.deadline.sombra.appear",
-  "sounds": [
-   "deadline:sombra/appear"
   ]
  },
  "sombra.vanish": {

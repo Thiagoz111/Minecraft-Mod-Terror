@@ -3118,7 +3118,7 @@ by POSE_ANCHOR before blending, trail rule 9)
 * lunge -- LungeGoal / the attack and the JUMPSCARE PORTRAIT: the chain bunches and the head drops low with the
   flower fully open round the black maw (these are the flower values), the tongue lying on the floor of the maw and
   hanging out over the lower-left petal, furious brows, the ears flung, every hand gripping the floor.  Blend in 3
-  ticks, hold 4, hit: Fx.jumpscare(p, "choripan_demonio") (4 damage, -10 sanity) -- the open flower fills the camera
+  ticks, hold 4, hit: Fx.jumpscare(p, "choripan_demonio") (4 damage) -- the open flower fills the camera
   until the crucifix is raised.
 * catch -- casa.parrilla, CatchBlessedGoal: it catches the blessed choripan in the air.  The chest rears up off its
   stubby forelegs (paws dangling: it jumped), the neck goes up and the head tips back ~62 deg -- JAWS POINTING UP but

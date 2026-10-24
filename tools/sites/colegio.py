@@ -733,7 +733,7 @@ def build():
 
 
 def plan_png(s, path):
-    """Top-down plan of the ground floor (y=0 and y=-1) for a quick sanity check."""
+    """Top-down plan of the ground floor (y=0 and y=-1) for a quick visual check."""
     from PIL import Image, ImageDraw
     x0, y0, z0, x1, y1, z1 = s.bounds()
     k = 8

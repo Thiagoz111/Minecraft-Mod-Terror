@@ -10,7 +10,6 @@ import com.deadline.registry.ModEntities;
 import com.deadline.registry.ModItems;
 import com.deadline.registry.ModParticles;
 import com.deadline.registry.ModSounds;
-import com.deadline.sanity.SanityManager;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
@@ -74,7 +73,6 @@ public class DeadLine implements ModInitializer {
 
 		ServerTickEvents.END_SERVER_TICK.register(server -> {
 			CaseManager.tick(server);
-			SanityManager.tick(server);
 			FlashlightLights.tick(server);
 			com.deadline.site.SitePlacer.tick(server);
 			com.deadline.voice.Voice.tick(server);

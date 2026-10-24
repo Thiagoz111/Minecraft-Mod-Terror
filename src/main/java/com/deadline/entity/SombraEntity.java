@@ -3,7 +3,6 @@ package com.deadline.entity;
 import com.deadline.net.Fx;
 import com.deadline.registry.ModParticles;
 import com.deadline.registry.ModSounds;
-import com.deadline.sanity.SanityManager;
 import net.minecraft.commands.arguments.EntityAnchorArgument;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -81,7 +80,6 @@ public class SombraEntity extends HauntEntity {
 		double dist = Math.sqrt(best);
 		if (dist < 2.2) {
 			Fx.jumpscare(target, "sombra");
-			SanityManager.add(target, -25.0F);
 			target.addEffect(new MobEffectInstance(MobEffects.BLINDNESS, 60, 0));
 			target.addEffect(new MobEffectInstance(MobEffects.NAUSEA, 120, 0));
 			vanish(level);
@@ -104,11 +102,6 @@ public class SombraEntity extends HauntEntity {
 	public boolean hurtServer(ServerLevel level, DamageSource source, float amount) {
 		vanish(level);
 		return false;
-	}
-
-	@Override
-	public float fearAura() {
-		return 1.0F;
 	}
 
 	@Override

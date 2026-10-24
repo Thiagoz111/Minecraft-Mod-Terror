@@ -96,9 +96,6 @@ public class AnimaEntity extends HauntEntity {
 		if (this.tickCount % 200 == 0 && this.random.nextBoolean()) {
 			this.playSound(ModSounds.ANIMA_MOAN, 1.2F, 0.8F + this.random.nextFloat() * 0.4F);
 		}
-		if (near instanceof ServerPlayer sp && sp.distanceToSqr(this) < 4 && this.tickCount % 20 == 0) {
-			com.deadline.sanity.SanityManager.add(sp, -2.0F);
-		}
 	}
 
 	@Override
@@ -113,11 +110,6 @@ public class AnimaEntity extends HauntEntity {
 	protected void becomeWeakened(ServerLevel level) {
 		super.becomeWeakened(level);
 		reveal(400);
-	}
-
-	@Override
-	public float fearAura() {
-		return 0.25F;
 	}
 
 	@Override

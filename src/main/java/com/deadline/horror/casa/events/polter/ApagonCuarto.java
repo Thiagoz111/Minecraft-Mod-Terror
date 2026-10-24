@@ -8,7 +8,6 @@ import com.deadline.horror.casa.Apparitions;
 import com.deadline.horror.casa.FlyingProp;
 import com.deadline.horror.casa.Polter;
 import com.deadline.registry.ModSounds;
-import com.deadline.sanity.SanityManager;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -132,11 +131,7 @@ public class ApagonCuarto extends HorrorEvent {
 		}
 		FlyingProp f = props.get(0);
 		Apparitions.Gaze gz = Apparitions.gaze(c);
-		boolean was = gz.ever;
 		gz.update(f.seen(35F));
-		if (!was && gz.ever) {
-			SanityManager.add(c.p, -4F);
-		}
 		boolean left = !c.run.area(roomOf(c, f)).contains(c.p.position());
 		return (gz.lookedAway(60) || left || c.t > 20 * 50) && !f.seen(60F);
 	}

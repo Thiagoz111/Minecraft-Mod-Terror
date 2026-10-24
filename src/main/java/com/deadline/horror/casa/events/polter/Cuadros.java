@@ -7,7 +7,6 @@ import com.deadline.horror.HorrorEvent;
 import com.deadline.horror.casa.Apparitions;
 import com.deadline.horror.casa.Polter;
 import com.deadline.registry.ModSounds;
-import com.deadline.sanity.SanityManager;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -117,7 +116,6 @@ public class Cuadros extends HorrorEvent {
 			Vec3 at = Vec3.atCenterOf(p);
 			if (Apparitions.dist(c, at) < 12 && Apparitions.sees(c, at, 25F)) {
 				c.run.sound(ModSounds.POLTER_CUADRO, at, 0.7F, Polter.pitch(c, 0.85F, 1.05F));
-				SanityManager.add(c.p, -3F);
 				return true;
 			}
 		}

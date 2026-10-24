@@ -6,7 +6,6 @@ import com.deadline.director.Run;
 import com.deadline.net.Fx;
 import com.deadline.registry.ModParticles;
 import com.deadline.registry.ModSounds;
-import com.deadline.sanity.SanityManager;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -532,7 +531,6 @@ public final class FlyingProp {
 		Polter.hurt(run, h, (float) (damage * Math.min(1.0, 0.4 + speed * 1.5)));
 		Fx.shake(h, 0.45F, 8);
 		Fx.redFlash(h, 0.3F);
-		SanityManager.add(h, -3F);
 		if (hitSound != null) {
 			run.sound(hitSound, h.position().add(0, 1.2, 0), 1.2F, 1.1F);
 		}

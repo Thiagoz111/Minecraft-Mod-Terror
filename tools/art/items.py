@@ -419,31 +419,6 @@ def spirit_jar(frame=None):
     return img
 
 
-def pills():
-    s = Sprite(S, seed=37)
-    ORANGE_GLASS = Material([(80, 30, 4, 230), (150, 60, 8, 220), (210, 104, 16, 210), (244, 150, 40, 210), (255, 206, 120, 230)], spec=0.8, shininess=14)
-    s.rect(9, 10, 22, 29, ORANGE_GLASS, bevel=2.4)
-    s.rect(8, 4, 23, 9, WHITE_PLASTIC, bevel=1.5)
-    s.rect(9, 15, 22, 24, PAPER, bevel=0.5, outline=False)
-    s.capsule(24, 28, 28, 25, 1.6, WHITE_PLASTIC)
-    img = s.render()
-    px = img.load()
-    for x in range(9, 23, 2):
-        px[x, 5] = (150, 154, 164, 255); px[x, 7] = (150, 154, 164, 255)
-    for y in range(17, 23):
-        px[12, y] = (200, 30, 40, 255)
-    for x in range(10, 15):
-        px[x, 19] = (200, 30, 40, 255)
-    for x in range(15, 21):
-        px[x, 17] = (60, 60, 70, 255)
-        if x < 20: px[x, 19] = (110, 110, 120, 255)
-        if x < 19: px[x, 21] = (110, 110, 120, 255)
-    for y in range(11, 28):
-        px[10, y] = (255, 230, 180, 220)
-    px[26, 27] = (230, 70, 60, 255); px[27, 26] = (230, 70, 60, 255)
-    return img
-
-
 def silver_dagger():
     s = Sprite(S, seed=41)
     s.poly([(13, 17), (27, 3), (29, 2), (28, 5), (15, 19)], SILVER, bevel=1.5)    # blade
@@ -668,7 +643,7 @@ ALL = {
     'phone': phone, 'phone_ringing': lambda: phone(True), 'crucifix': crucifix, 'holy_water': holy_water,
     'salt': salt, **{f'emf_{i}': (lambda i=i: emf(i)) for i in range(6)}, 'flashlight': flashlight,
     'flashlight_on': lambda: flashlight(True), 'spirit_box': spirit_box, 'camera': camera,
-    'ritual_book': ritual_book, 'spirit_jar': spirit_jar, 'spirit_jar_full': lambda: spirit_jar(0), 'pills': pills,
+    'ritual_book': ritual_book, 'spirit_jar': spirit_jar, 'spirit_jar_full': lambda: spirit_jar(0),
     'silver_dagger': silver_dagger, 'rosary': rosary, 'inverted_rosary': lambda: rosary(True), 'flare': flare,
     'flare_lit': lambda: flare(True), 'baby_shoe': baby_shoe, 'bone_totem': bone_totem, 'music_box': music_box,
     'cursed_doll': cursed_doll,

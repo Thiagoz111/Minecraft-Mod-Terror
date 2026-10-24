@@ -25,10 +25,8 @@ Aceptás el caso, te ponés la sotana y vas al lugar. Dos casos, cada uno con su
 - **G** abre el teléfono (mensajes, casos, tienda, bestiario). **H** activa la cámara VHS para grabar.
 - Arriba a la izquierda tenés el **capítulo** y la lista de **objetivos**; si te trabás, a los tres minutos aparece una
   pista. Si morís, volvés al principio del capítulo.
-- Abajo a la izquierda, la **cordura**. Baja en la oscuridad y cerca de lo que no tiene que estar ahí.
 - El **ruido** importa: correr, saltar, dar portazos y gritar te delatan. En el colegio no se corre por los pasillos.
 - La **linterna** quema a la monja. Las pilas no duran para siempre.
-- El **traje de exorcista** (sombrero, sotana, faldón y zapatos) te protege de perder cordura tan rápido.
 
 ## Comandos para grabar
 
@@ -41,7 +39,6 @@ Aceptás el caso, te ponés la sotana y vas al lugar. Dos casos, cada uno con su
 | `/deadline voice on\|off` | Usa o ignora tu micrófono en el caso |
 | `/deadline home [jugador]` | Vuelve a casa |
 | `/deadline msg <caso> [jugador]` | Manda ya el hilo de mensajes del caso (casa: Marta, foto y "Aceptar caso") |
-| `/deadline sanity <0-100> [jugador]` | Fija la cordura (10 = modo pesadilla) |
 | `/deadline jumpscare <entidad> [jugador]` | Jumpscare a pantalla completa (`monja`, `poseida`, `sombra`, `muneca`, `anima`) |
 | `/deadline kit [jugador]` | Traje y equipo completos |
 | `/deadline money <cantidad> [jugador]` | Da dinero |
@@ -59,7 +56,7 @@ El `.jar` queda en `build/libs/`.
 ## Estructura
 
 - `src/main` — lógica común: casos, director de escenas (capítulos, guion, puertas, luces), entidades, ítems,
-  cordura, ruido y voz, red, comandos.
+  ruido y voz, red, comandos.
 - `src/client` — HUD de historia, teléfono, renderers y animaciones, shaders y efectos de pantalla.
 - `tools/blocks` — el kit de construcción (cada bloque y mueble del colegio, pintado a mano en Python).
 - `tools/sites` — los edificios de cada caso, armados con el kit.

@@ -8,7 +8,6 @@ import com.deadline.horror.casa.Apparitions;
 import com.deadline.horror.casa.PoltergeistEvents;
 import com.deadline.horror.casa.Polter;
 import com.deadline.net.Fx;
-import com.deadline.sanity.SanityManager;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -91,7 +90,6 @@ public class TorreSillas extends HorrorEvent {
 		}
 		if (seen < 0 && (c.run.event("sillas:vistas") || c.run.inside(c.p, "comedor") && Apparitions.sees(c, mid.add(0, 1.0, 0), 40F))) {
 			c.put("seen", c.t);
-			SanityManager.add(c.p, -7F);
 			Fx.shake(c.p, 0.3F, 10);
 			return false;
 		}

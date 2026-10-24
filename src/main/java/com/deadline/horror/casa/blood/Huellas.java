@@ -7,7 +7,6 @@ import com.deadline.horror.HouseQuery;
 import com.deadline.horror.casa.Apparitions;
 import com.deadline.horror.casa.BloodDecals;
 import com.deadline.registry.ModSounds;
-import com.deadline.sanity.SanityManager;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -147,9 +146,6 @@ public class Huellas extends HorrorEvent {
 			Vec3 outside = p.at().add(w.out().scale(0.4));
 			Apparitions.sound(c, ModSounds.SANGRE_MANO_VIDRIO, outside, 1.0F, Apparitions.pitch(c, 0.85F, 1.1F));
 			Apparitions.noise(c, outside, 18F);
-			if (i == 0 && Apparitions.sees(c, w.center(), 50F)) {
-				SanityManager.add(c.p, -3F);
-			}
 		}
 		if (c.t == end + 6 && !plan.isEmpty()) {
 			// the last hand slides down the glass, slowly

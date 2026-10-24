@@ -8,7 +8,6 @@ import com.deadline.horror.casa.Apparitions;
 import com.deadline.horror.casa.Polter;
 import com.deadline.registry.ModEntities;
 import com.deadline.registry.ModSounds;
-import com.deadline.sanity.SanityManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.Vec3;
 
@@ -94,7 +93,6 @@ public class LamparaFondo extends HorrorEvent {
 			gz.update(s != null && Apparitions.watches(c, s, 40F));
 			if (!was && gz.ever) {
 				c.run.sound(ModSounds.APARICION_VISITANTE, s.position().add(0, 2.0, 0), 0.8F, 0.9F);
-				SanityManager.add(c.p, -6F);
 			}
 			boolean near = s != null && Apparitions.dist(c, s.position()) < 5.0;
 			if (Apparitions.hidden(c.p) || near || gz.total >= 30 || c.t >= 70 || gz.lookedAway(15)) {

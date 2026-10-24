@@ -6,7 +6,6 @@ import com.deadline.horror.HouseQuery;
 import com.deadline.horror.casa.Apparitions;
 import com.deadline.phone.PhoneMessages;
 import com.deadline.registry.ModSounds;
-import com.deadline.sanity.SanityManager;
 import net.minecraft.world.phys.Vec3;
 
 /**
@@ -57,7 +56,6 @@ public class MsgDesconocido extends HorrorEvent {
 			if (back != null) {
 				Apparitions.sound(c, ModSounds.CELULAR_OBTURADOR, back.add(0, 1.5, 0), 0.4F, 1.0F);
 			}
-			SanityManager.add(c.p, -4F);
 		}
 		return c.t > LAND + 2;
 	}

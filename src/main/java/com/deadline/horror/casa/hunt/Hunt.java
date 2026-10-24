@@ -7,7 +7,6 @@ import com.deadline.horror.Haunt;
 import com.deadline.horror.HouseQuery;
 import com.deadline.net.Fx;
 import com.deadline.registry.ModSounds;
-import com.deadline.sanity.SanityManager;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -37,7 +36,7 @@ import net.minecraft.world.phys.Vec3;
  *   <li>{@link #stop} despawns her, pulls every hunter out of his hiding place and clears the state.</li>
  *   <li>{@link #noise} lets any event make a sound she hears (a plate that shatters, a door slammed by the house).</li>
  *   <li>A capture never kills: jumpscare, black, and the hunter wakes up on the guest bed with the taste of blood
- *   (blindness, nausea, sanity -30); posts {@code hunt:captured}; {@link #captures} counts them.</li>
+ *   (blindness, nausea); posts {@code hunt:captured}; {@link #captures} counts them.</li>
  * </ul>
  * Debug: these static methods are what {@code /deadline horror} sub-commands should call.
  */
@@ -322,7 +321,7 @@ public final class Hunt {
 		}
 	}
 
-	/** Teleport to the guest bed (huespedes_cama) in the dark of the fade, blind and sick, sanity -30. */
+	/** Teleport to the guest bed (huespedes_cama) in the dark of the fade, blind and sick. */
 	private static void wakeUp(Run run, ServerPlayer p) {
 		String bed = run.def.points.containsKey("huespedes_cama") ? "huespedes_cama"
 				: run.def.points.containsKey("huespedes") ? "huespedes" : "spawn";
@@ -335,7 +334,6 @@ public final class Hunt {
 		p.addEffect(new MobEffectInstance(MobEffects.BLINDNESS, 60, 0));
 		p.addEffect(new MobEffectInstance(MobEffects.NAUSEA, 200, 0));
 		p.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 100, 1, false, false));
-		SanityManager.add(p, -30F);
 		Fx.redFlash(p, 0.5F);
 		run.level.playSound(null, p.getX(), p.getY(), p.getZ(), ModSounds.HUNT_GASP, SoundSource.PLAYERS, 0.9F, 0.8F);
 		State s = peek(run);

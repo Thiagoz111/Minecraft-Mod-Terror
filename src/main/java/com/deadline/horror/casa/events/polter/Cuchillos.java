@@ -8,7 +8,6 @@ import com.deadline.horror.casa.FlyingProp;
 import com.deadline.horror.casa.Polter;
 import com.deadline.net.Fx;
 import com.deadline.registry.ModSounds;
-import com.deadline.sanity.SanityManager;
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.core.BlockPos;
@@ -150,7 +149,6 @@ public class Cuchillos extends HorrorEvent {
 			Vec3 aim = eye.add(lat.scale(sideOff)).add(0, c.rnd.nextDouble() * 0.5 - 0.3, 0);
 			k.launch(aim.subtract(at).normalize().scale(1.15));
 			c.run.sound(ModSounds.KNIFE_WHOOSH, at, 1.3F, Polter.pitch(c, 0.9F, 1.1F));
-			SanityManager.add(c.p, -3F);
 			c.put("thrown", thrown + 1);
 		}
 		if (thrown >= knives.size()) {

@@ -4,7 +4,6 @@ import com.deadline.caseload.CaseManager;
 import com.deadline.entity.HauntEntity;
 import com.deadline.net.Fx;
 import com.deadline.registry.ModSounds;
-import com.deadline.sanity.SanityManager;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundSource;
@@ -68,7 +67,6 @@ public class SpiritBoxItem extends Item {
 			server.playSound(null, p.getX(), p.getY(), p.getZ(), ModSounds.variant("spirit_box.voice", phrase), SoundSource.PLAYERS, 1.2F, 1.0F);
 			Fx.title(p, "deadline.spiritbox." + phrase, 70);
 			Fx.staticNoise(p, 0.5F, 25);
-			SanityManager.add(p, -4.0F);
 			CaseManager.evidence(p, 2);
 		}
 	}

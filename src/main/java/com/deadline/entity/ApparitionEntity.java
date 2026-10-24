@@ -11,7 +11,7 @@ import net.minecraft.world.level.Level;
 
 /**
  * A ghost that is only ever staged by the director: the choir girls, the Mother Superior, Clara. No AI, no collision,
- * cannot be hurt, never drains sanity by itself. Poses are synced with {@link #setAction(int)}, looks with
+ * cannot be hurt. Poses are synced with {@link #setAction(int)}, looks with
  * {@link #setVariant(int)}.
  */
 public class ApparitionEntity extends HauntEntity {
@@ -45,11 +45,6 @@ public class ApparitionEntity extends HauntEntity {
 	@Override
 	public boolean isPickable() {
 		return false;
-	}
-
-	@Override
-	public float fearAura() {
-		return 0F;
 	}
 
 	@Override

@@ -8,7 +8,6 @@ import com.deadline.net.Fx;
 import com.deadline.registry.ModItems;
 import com.deadline.registry.ModParticles;
 import com.deadline.registry.ModSounds;
-import com.deadline.sanity.SanityManager;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
@@ -402,7 +401,6 @@ public final class DollShelf {
 
 	private void touch(Doll d, Display.ItemDisplay e, ServerPlayer p, Vec3 dir) {
 		d.cooldown = 60;
-		SanityManager.add(p, -5F);
 		Fx.redFlash(p, 0.35F);
 		Fx.shake(p, 0.3F, 6);
 		r.sound(ModSounds.MUNECA_GIGGLE, d.pos, 1.2F, 1.1F);

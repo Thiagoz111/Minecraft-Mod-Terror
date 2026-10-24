@@ -27,7 +27,7 @@ public final class Teeth {
 	}
 
 	/**
-	 * Spills teeth out of the drawer furniture at `drawer` (absolute), on the side facing `viewer` when the block has
+	 * Scatters teeth out of the drawer furniture at `drawer` (absolute), on the side facing `viewer` when the block has
 	 * no facing. denture: the Nona's dentures too. Returns the displays (empty when it could not place them).
 	 */
 	public static List<Display.ItemDisplay> spill(Run r, BlockPos drawer, Vec3 viewer, boolean denture, RandomSource rnd) {

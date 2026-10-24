@@ -112,7 +112,7 @@ def ref(m):
 
 
 SIMPLE_ITEMS = ['crucifix', 'holy_water', 'salt', 'spirit_box', 'camera', 'ritual_book', 'spirit_jar', 'spirit_jar_full',
-                'pills', 'rosary', 'inverted_rosary', 'cursed_doll', 'llave_capilla', 'regla_quebracho', 'diario_teresita']
+                'rosary', 'inverted_rosary', 'cursed_doll', 'llave_capilla', 'regla_quebracho', 'diario_teresita']
 EGGS = ['monja', 'poseida', 'sombra', 'muneca', 'anima']
 
 

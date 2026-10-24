@@ -14,16 +14,13 @@ import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.phys.Vec3;
 
-/** Applies server effect packets and runs the client-side horror ambience (heartbeat, screen effects...). */
+/** Applies server effect packets and runs the client-side screen effects (shake, flashes, the VHS shader...). */
 public final class ClientFx {
 	private ClientFx() {
 	}
 
 	private static final RandomSource RNG = RandomSource.create();
-	private static int heartbeatCooldown;
 	private static String postEffect = null;
 	private static int postCheck;
 
@@ -63,8 +60,6 @@ public final class ClientFx {
 				ClientState.titleKey = p.s();
 				ClientState.titleTicks = ClientState.titleTotal = Math.max(1, p.b());
 			}
-			case FxPayload.HALLUCINATION -> hallucination(p.s());
-			case FxPayload.SANITY -> ClientState.sanity = p.a();
 			case FxPayload.OBJECTIVE -> {
 				ClientState.objCase = p.s();
 				ClientState.objStage = p.b();
@@ -123,7 +118,6 @@ public final class ClientFx {
 
 	public static void onPhoneData(PhoneDataPayload p) {
 		ClientState.phone = p;
-		ClientState.sanity = p.sanity();
 		Minecraft mc = Minecraft.getInstance();
 		if (p.open() && !(mc.screen instanceof PhoneScreen) && mc.screen == null) {
 			mc.setScreen(new PhoneScreen());
@@ -137,38 +131,8 @@ public final class ClientFx {
 		}
 	}
 
-	private static void hallucination(String kind) {
-		Minecraft mc = Minecraft.getInstance();
-		Player pl = mc.player;
-		if (pl == null || mc.level == null) {
-			return;
-		}
-		Vec3 look = pl.getLookAngle();
-		Vec3 behind = pl.position().subtract(look.x * 3.0, 0, look.z * 3.0)
-				.add((RNG.nextFloat() - 0.5) * 2.0, 1.0, (RNG.nextFloat() - 0.5) * 2.0);
-		switch (kind) {
-			case "whisper" -> {
-				Vec3 ear = pl.getEyePosition().add(look.z * (RNG.nextBoolean() ? 1.2 : -1.2), 0, -look.x * 1.2);
-				mc.level.playLocalSound(ear.x, ear.y, ear.z, ModSounds.SANITY_WHISPER, SoundSource.AMBIENT, 0.9F, 0.9F + RNG.nextFloat() * 0.2F, false);
-			}
-			case "footsteps" -> mc.level.playLocalSound(behind.x, behind.y, behind.z, ModSounds.SANITY_FOOTSTEPS, SoundSource.AMBIENT, 1.0F, 1.0F, false);
-			case "knock" -> {
-				Vec3 at = pl.position().add((RNG.nextFloat() - 0.5) * 12, 1.5, (RNG.nextFloat() - 0.5) * 12);
-				mc.level.playLocalSound(at.x, at.y, at.z, ModSounds.SANITY_KNOCK, SoundSource.AMBIENT, 1.2F, 1.0F, false);
-			}
-			case "figure" -> {
-				ClientState.figureTicks = 34;
-				ClientState.figureLeft = RNG.nextBoolean();
-				mc.level.playLocalSound(behind.x, behind.y, behind.z, ModSounds.SANITY_BREATH, SoundSource.AMBIENT, 0.8F, 0.8F, false);
-			}
-			default -> {
-			}
-		}
-	}
-
 	public static void tick(Minecraft mc) {
 		ClientState.ticks++;
-		ClientState.sanityShown += (ClientState.sanity - ClientState.sanityShown) * 0.15F;
 		if (ClientState.shakeTicks > 0) {
 			ClientState.shakeTicks--;
 		}
@@ -189,9 +153,6 @@ public final class ClientFx {
 		if (ClientState.endTicks > 0) {
 			ClientState.endTicks--;
 		}
-		if (ClientState.figureTicks > 0) {
-			ClientState.figureTicks--;
-		}
 		com.deadline.client.hud.StoryHud.tick();
 		if (ClientState.objFlash > 0) {
 			ClientState.objFlash--;
@@ -201,26 +162,11 @@ public final class ClientFx {
 		}
 
 		updatePostEffect(mc);
-
-		// heartbeat speeds up as sanity drains
-		float s = ClientState.sanityShown;
-		if (s < 40F && !mc.isPaused()) {
-			if (--heartbeatCooldown <= 0) {
-				float t = Mth.clamp(s / 40F, 0F, 1F);
-				heartbeatCooldown = (int) Mth.lerp(t, 13F, 30F);
-				float vol = Mth.lerp(t, 1.0F, 0.35F);
-				mc.getSoundManager().play(SimpleSoundInstance.forUI(ModSounds.SANITY_HEARTBEAT, 1.0F + (1F - t) * 0.12F, vol));
-				if (s < 20F) {
-					ClientState.redFlash = Math.max(ClientState.redFlash, 0.18F * (1F - s / 20F));
-				}
-			}
-		}
 	}
 
-	/** Screen shader: VHS camera look, or a failing mind (desaturation + red fringing). */
+	/** Screen shader: the VHS camera look while recording. */
 	private static void updatePostEffect(Minecraft mc) {
-		float s = ClientState.sanityShown;
-		String want = ClientState.vhs ? "vhs" : s < 15F ? "insanity_2" : s < 30F ? "insanity_1" : null;
+		String want = ClientState.vhs ? "vhs" : null;
 		Identifier current = mc.gameRenderer.currentPostEffect();
 		boolean ours = current != null && DeadLine.MOD_ID.equals(current.getNamespace());
 		if (want == null) {
@@ -245,10 +191,6 @@ public final class ClientFx {
 		if (ClientState.shakeTicks > 0) {
 			float k = (ClientState.shakeTicks - partial) / ClientState.shakeTotal;
 			amount = ClientState.shakeIntensity * Mth.clamp(k, 0F, 1F);
-		}
-		float s = ClientState.sanityShown;
-		if (s < 25F) {
-			amount += (25F - s) / 25F * 0.35F;
 		}
 		if (amount <= 0.001F) {
 			return null;

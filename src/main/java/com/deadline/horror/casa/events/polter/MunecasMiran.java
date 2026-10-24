@@ -6,7 +6,6 @@ import com.deadline.horror.Ctx;
 import com.deadline.horror.HorrorEvent;
 import com.deadline.horror.casa.Apparitions;
 import com.deadline.horror.casa.Polter;
-import com.deadline.sanity.SanityManager;
 import java.util.List;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.Vec3;
@@ -71,11 +70,7 @@ public class MunecasMiran extends HorrorEvent {
 			return true;
 		}
 		Apparitions.Gaze g = Apparitions.gaze(c);
-		boolean was = g.ever;
 		g.update(Apparitions.dist(c, mid) < 16 && Apparitions.sees(c, mid, 35F));
-		if (!was && g.ever) {
-			SanityManager.add(c.p, -3F);
-		}
 		return g.lookedAway(60) && !Apparitions.sees(c, mid, 70F) || !g.ever && c.t > 20 * 80;
 	}
 

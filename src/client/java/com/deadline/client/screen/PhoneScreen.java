@@ -31,7 +31,6 @@ import org.lwjgl.glfw.GLFW;
 public class PhoneScreen extends Screen {
 	private static final Identifier FRAME = DeadLine.id("textures/gui/phone/frame.png");
 	private static final Identifier WALLPAPER = DeadLine.id("textures/gui/phone/wallpaper.png");
-	private static final Identifier CRACK = DeadLine.id("textures/gui/phone/crack.png");
 	private static final Identifier APPS = DeadLine.id("textures/gui/phone/apps.png");
 	private static final Identifier AVATARS = DeadLine.id("textures/gui/phone/avatars.png");
 
@@ -132,14 +131,6 @@ public class PhoneScreen extends Screen {
 			case BEAST -> drawBeast(g, d);
 		}
 		drawStatusBar(g);
-		if (ClientState.sanityShown < 35F) {
-			int a = (int) (Mth.clamp((35F - ClientState.sanityShown) / 25F, 0F, 1F) * 255);
-			g.blit(RenderPipelines.GUI_TEXTURED, CRACK, SX, SY, 0F, 0F, SW, SH, SW, SH, a << 24 | 0xFFFFFF);
-		}
-		if (ClientState.sanityShown < 20F && (ClientState.ticks % 37) < 3) {
-			int gy = SY + (int) ((ClientState.ticks * 53) % SH);
-			g.fill(SX, gy, SX + SW, gy + 3, 0x66FF2030);
-		}
 		g.blit(RenderPipelines.GUI_TEXTURED, FRAME, 0, 0, 0F, 0F, FW, FH, FW, FH);
 		hits.add(new Hit(74, 334, 44, 12, this::goHome));
 		g.pose().popMatrix();
@@ -154,11 +145,9 @@ public class PhoneScreen extends Screen {
 		g.drawString(font, time, SX + 5, SY + 2, 0xFFFFFFFF, false);
 		String carrier = "DEAD LINE";
 		g.drawString(font, carrier, SX + SW / 2 - font.width(carrier) / 2, SY + 2, 0xFFB3121B, false);
-		// signal: fades as sanity drops
-		int bars = ClientState.sanityShown > 75 ? 4 : ClientState.sanityShown > 50 ? 3 : ClientState.sanityShown > 25 ? 2 : 1;
+		// signal
 		for (int i = 0; i < 4; i++) {
-			int c = i < bars ? 0xFFFFFFFF : 0x44FFFFFF;
-			g.fill(SX + SW - 40 + i * 4, SY + 9 - (i + 1) * 2, SX + SW - 37 + i * 4, SY + 9, c);
+			g.fill(SX + SW - 40 + i * 4, SY + 9 - (i + 1) * 2, SX + SW - 37 + i * 4, SY + 9, 0xFFFFFFFF);
 		}
 		g.renderOutline(SX + SW - 20, SY + 3, 13, 7, 0xFFFFFFFF);
 		g.fill(SX + SW - 7, SY + 5, SX + SW - 6, SY + 8, 0xFFFFFFFF);
@@ -236,13 +225,6 @@ public class PhoneScreen extends Screen {
 		g.drawString(font, Component.translatable("deadline.phone.money"), SX + 16, wy + 5, 0xFF9A9AA6, false);
 		g.drawString(font, "$" + d.money(), SX + 16, wy + 16, 0xFF6BFF8E, true);
 		g.drawString(font, Component.translatable("deadline.phone.solved", d.solved()), SX + 16, wy + 29, 0xFFD8D0C8, false);
-		Component san = Component.translatable("deadline.phone.sanity");
-		g.drawString(font, san, SX + SW - 16 - font.width(san), wy + 5, 0xFF9A9AA6, false);
-		int sc = d.sanity() > 60 ? 0xFF55FF8A : d.sanity() > 30 ? 0xFFFFC23A : 0xFFFF3B3B;
-		String sp = Mth.ceil(d.sanity()) + "%";
-		g.drawString(font, sp, SX + SW - 16 - font.width(sp), wy + 16, sc, true);
-		g.fill(SX + SW - 66, wy + 30, SX + SW - 16, wy + 33, 0x55FFFFFF);
-		g.fill(SX + SW - 66, wy + 30, SX + SW - 66 + (int) (50 * d.sanity() / 100F), wy + 33, sc);
 
 		// apps
 		Component[] names = {Component.translatable("deadline.phone.messages"), Component.translatable("deadline.phone.case"),

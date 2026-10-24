@@ -11,7 +11,7 @@ import net.minecraft.server.level.ServerPlayer;
 
 /**
  * How loud each hunter is (0-100, decays 8 per second). Running, landing, doors and the voice push it up; the nun
- * hunts towards loud players. Shown next to the sanity ECG while a scripted case runs.
+ * hunts towards loud players. Shown in the HUD while a scripted case runs.
  */
 public final class NoiseMeter {
 	private static final Map<UUID, Float> LEVEL = new HashMap<>();

@@ -6,7 +6,6 @@ import com.deadline.horror.HorrorEvent;
 import com.deadline.horror.casa.Apparitions;
 import com.deadline.horror.casa.Polter;
 import com.deadline.horror.casa.Rocker;
-import com.deadline.sanity.SanityManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.Vec3;
 
@@ -50,9 +49,6 @@ public class Mecedora extends HorrorEvent {
 		Rocker k = c.get("rocker");
 		if (k == null) {
 			return true;
-		}
-		if (k.age() == Rocker.RAMP + 1) {
-			SanityManager.add(c.p, -3F);
 		}
 		return k.tick();
 	}

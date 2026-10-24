@@ -3574,7 +3574,7 @@ def ropero_parts(half, pal_=CAOBA, seed=671):
 
 def mesa_luz_parts(kind='lisa'):
     """Lustred nightstand, top at 12/16 (so every 'sobre mesa' prop fits on it): turned feet, drawer over a door, a
-    doily. kind 'nona': her 60s radio, a glass of water with her dentures, pills and a rosary."""
+    doily. kind 'nona': her 60s radio, a glass of water with her dentures, a medicine bottle and a rosary."""
     wd = lambda sd, **kw: lustre(CAOBA, seed=681 + sd, worn_pal=RAW, **kw)
     mF = fin(panels(wd(0, base=4, axis=1), rects=((2, 2, -2, -2),), faces=('north',)))
     mD = fin(panels(wd(1, base=4, axis=0), rects=((1, 1, -1, -1),), faces=('north',), bevel=0))
