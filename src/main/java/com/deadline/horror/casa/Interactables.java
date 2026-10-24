@@ -732,12 +732,12 @@ public final class Interactables {
 	}
 
 	/** One sound played once at a given tick (the Singer running on by itself). */
-	private record LaterSound(net.minecraft.sounds.SoundEvent sound, Vec3 at, float volume, float pitch, long when) implements Anim {
+	private record LaterSound(net.minecraft.sounds.SoundEvent sound, Vec3 where, float volume, float pitch, long when) implements Anim {
 		@Override
 		public boolean tick(Run r) {
 			if (r.now() >= when) {
-				r.sound(sound, at, volume, pitch);
-				Polter.noise(r, at, 30F);
+				r.sound(sound, where, volume, pitch);
+				Polter.noise(r, where, 30F);
 				return true;
 			}
 			return false;
