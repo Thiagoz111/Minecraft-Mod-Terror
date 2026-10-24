@@ -75,8 +75,10 @@ a `casa_terror.md`, manda `casa_terror.md`.
   en un evento (`Haunt.errors`) rompe el CI.
 - **B2 hecho** (cacería: `horror/casa/hunt`), **B1a hecho** (poltergeist 1–32, `Interactables`, `FlyingProp`; limpieza
   `PoltergeistEvents.cleanup`), **B1b hecho** (sangre 46–51, celular 52–53, linterna 54, `BloodDecals`, documentos de lore).
-- **C (set pieces) quedó a medio hacer**: el dueño frenó al agente. Lo escrito está en `horror/casa/setpiece/**` +
-  `SetPieces.java`, sin revisar ni probar.
+- **C hecho** (set pieces `sp_*` en `horror/casa/setpiece/**` + `SetPieces.java`): llegada, cena muda, a dormir, Lucía en
+  el techo, Jorge sonámbulo, ropero de Toti, la Nona reza, la Nona se rompe, cuarto 1961 (cabezas 180°, Ofelia, la Nona en
+  el techo, loop P.T. del pasillo PB ×2, la puerta ahora abierta) y el final en el auto (espejo retrovisor). Falta: foto
+  final con la skin del jugador (`final_familia` sigue siendo placeholder).
 - **Cordura eliminada** por decisión del dueño (manager, HUD, pastillas, alucinaciones por cordura, payloads, comando). Los
   sonidos que quedaron pasaron de `sanity.*` a `horror.*` (`ModSounds.HORROR_HEARTBEAT/FOOTSTEPS/KNOCK/BREATH`).
 - Pendiente anotado (no empezar sin pedido del dueño): resource pack de interfaz (inventario, hotbar, botones) con

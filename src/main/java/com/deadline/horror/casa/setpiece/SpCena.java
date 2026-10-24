@@ -82,7 +82,8 @@ public class SpCena extends HorrorEvent {
 			r.lights("luces_comedor", true);
 		}
 		c.put("entered", -1);
-		c.put("glance", 8);
+		// she looks up at him at once, and down at her phone just before her text reaches him (the script sends it)
+		c.put("glance", 0);
 		c.put("glanceEnd", -1);
 		c.put("hush", -1);
 		c.put("cutlery", 20);
@@ -107,6 +108,11 @@ public class SpCena extends HorrorEvent {
 				&& (n.hasArrived() || n.position().distanceTo(r.at("silla_1")) < 0.7 || t > 20 * 40)) {
 			sitNona(c);
 		}
+		// under the table the dog never takes his eyes off her (growling low: ChoripanEntity.POSE_GROWL)
+		ChoripanEntity growl = Choripan.get(r);
+		if (growl != null && n != null && t % 20 == 0 && growl.action() == ChoripanEntity.POSE_GROWL) {
+			growl.watch(n);
+		}
 		FamilyEntity marta = Stage.member(r, Stage.MARTA);
 		boolean hushed = c.<Integer>get("hush") >= 0 && t - c.<Integer>get("hush") < 110;
 		// Marta: looks up at him, then down at the phone in her lap; now and then she looks up again
@@ -115,7 +121,7 @@ public class SpCena extends HorrorEvent {
 			int end = c.get("glanceEnd");
 			if (end < 0 && t >= glance) {
 				marta.watch(c.p);
-				c.put("glanceEnd", t + (t < 20 ? 62 : 30 + c.rnd.nextInt(25)));
+				c.put("glanceEnd", t + (t < 20 ? 22 : 30 + c.rnd.nextInt(25)));
 			} else if (end >= 0 && t >= end) {
 				marta.watch(null);
 				marta.lookAt(lap(r));
@@ -177,28 +183,53 @@ public class SpCena extends HorrorEvent {
 
 	/** Act 3 begins: everyone gets up without a word and goes on with the night. */
 	private void disperse(Ctx c) {
-		Run r = c.run;
+		routines(c.run, true);
+	}
+
+	/**
+	 * The first hour (Act 3): the family's silent routines -- Marta at the sink, Jorge in his armchair facing the TV, the
+	 * Nona in her room, Toti drawing at the kitchen table, Lucía at her desk upstairs; the dog out of the house. walk: they
+	 * get up from the dinner table and go there (the dinner's end); otherwise they are put there at once, Lucía and the
+	 * dog included (an act replayed from its checkpoint: CasaScript via SetPieces.firstHour).
+	 */
+	public static void routines(Run r, boolean walk) {
+		if (!walk) {
+			for (String who : Stage.MEMBERS) {
+				if (Stage.member(r, who) == null && Stage.has(r, Stage.SEATS.get(who))) {
+					Stage.member(r, who, r.at(Stage.SEATS.get(who)), r.yaw(Stage.SEATS.get(who)));
+				}
+			}
+			if (Stage.lucia(r) == null) {
+				Stage.seatLucia(r);
+			}
+		}
 		FamilyEntity n = Stage.member(r, Stage.NONA);
 		if (n != null) {
 			standUp(n);
 			n.propSounds = true;
-			sitAt(r, n, "nona_mecedora", "nona_cuarto", null);
+			sitAt(r, n, "nona_mecedora", "nona_cuarto", null, walk);
 		}
 		FamilyEntity marta = Stage.member(r, Stage.MARTA);
 		if (marta != null && Stage.has(r, "mesada")) {
 			standUp(marta);
 			Vec3 sink = r.at("mesada");
 			float yaw = r.yaw("mesada");
-			Stage.walkThen(r, marta, new Stage.Route(0.7, sink), f -> {
+			java.util.function.Consumer<FamilyEntity> wash = f -> {
 				f.face(yaw);
 				f.watchPlayers(false);
 				f.lookAt(sink.add(Stage.forward(yaw).scale(0.9)).add(0, 0.8, 0));  // washing the plates, eyes down
-			});
+			};
+			if (walk) {
+				Stage.walkThen(r, marta, new Stage.Route(0.7, sink), wash);
+			} else {
+				marta.teleportTo(sink.x, sink.y, sink.z);
+				wash.accept(marta);
+			}
 		}
 		FamilyEntity jorge = Stage.member(r, Stage.JORGE);
 		if (jorge != null) {
 			standUp(jorge);
-			sitAt(r, jorge, "sillon_jorge", null, Stage.at(r, "tv") != null ? r.at("tv").add(0, 0.8, 0) : null);
+			sitAt(r, jorge, "sillon_jorge", null, Stage.at(r, "tv") != null ? r.at("tv").add(0, 0.8, 0) : null, walk);
 		}
 		FamilyEntity toti = Stage.member(r, Stage.TOTI);
 		if (toti != null) {
@@ -208,15 +239,24 @@ public class SpCena extends HorrorEvent {
 				float yaw = Stage.chairYaw(r, chair, 0F);
 				Vec3 seat = new Vec3(chair.getX() + 0.5, chair.getY(), chair.getZ() + 0.5);
 				Vec3 side = Stage.stand(r, seat.add(Stage.forward(yaw).scale(-1.0)));
-				Stage.walkThen(r, toti, new Stage.Route(0.8, side != null ? side : seat), f -> {
+				java.util.function.Consumer<FamilyEntity> draw = f -> {
 					f.teleportTo(seat.x, seat.y, seat.z);
 					f.face(yaw);
 					f.setAction(FamilyEntity.POSE_SIT);
 					f.watchPlayers(false);
 					f.lookAt(seat.add(Stage.forward(yaw).scale(0.9)).add(0, 0.85, 0));  // drawing
-				});
+				};
+				if (walk) {
+					Stage.walkThen(r, toti, new Stage.Route(0.8, side != null ? side : seat), draw);
+				} else {
+					draw.accept(toti);
+				}
 			} else if (Stage.has(r, "cocina")) {
-				Stage.walkThen(r, toti, new Stage.Route(0.8, r.at("cocina")), null);
+				if (walk) {
+					Stage.walkThen(r, toti, new Stage.Route(0.8, r.at("cocina")), null);
+				} else {
+					toti.teleportTo(r.at("cocina").x, r.at("cocina").y, r.at("cocina").z);
+				}
 			}
 		}
 		PoseidaEntity lucia = Stage.lucia(r);
@@ -226,16 +266,20 @@ public class SpCena extends HorrorEvent {
 			Vec3 to = desk != null ? new Vec3(desk.getX() + 0.5, desk.getY(), desk.getZ() + 0.5) : Stage.at(r, "lucia_cuarto");
 			float yaw = desk != null ? Stage.chairYaw(r, desk, 0F) : Stage.has(r, "lucia_cuarto") ? r.yaw("lucia_cuarto") : 0F;
 			boolean sit = desk != null;
-			if (to != null) {
+			if (to != null && walk) {
 				Stage.whenUnseen(r, lucia, Stage.LUCIA, to, yaw, e -> {
 					if (e instanceof PoseidaEntity l) {
 						l.setAction(sit ? PoseidaEntity.ACT_SIT : PoseidaEntity.ACT_IDLE);
 					}
 				});
+			} else if (to != null) {
+				Stage.lucia(r, to, yaw, PoseidaEntity.LOOK_NORMAL, sit ? PoseidaEntity.ACT_SIT : PoseidaEntity.ACT_IDLE);
 			}
 		}
 		ChoripanEntity dog = Choripan.get(r);
-		if (dog != null) {
+		if (dog != null && !walk) {
+			Choripan.remove(r);  // "el perro no entra a la casa desde el martes"
+		} else if (dog != null) {
 			// the dog bolts out of the room and is not seen again (not as a dog)
 			Vec3 out = Stage.at(r, "cocina");
 			if (out == null) {
@@ -262,14 +306,26 @@ public class SpCena extends HorrorEvent {
 
 	/**
 	 * Walks to the seat at a marker (through a door when given), sits on it facing the marker yaw; eyes on `eyes` (null:
-	 * on whoever comes near).
+	 * on whoever comes near). walk false: sits there at once.
 	 */
-	private static void sitAt(Run r, FamilyEntity f, String seatPoint, String door, Vec3 eyes) {
+	private static void sitAt(Run r, FamilyEntity f, String seatPoint, String door, Vec3 eyes, boolean walk) {
 		Vec3 seat = Stage.at(r, seatPoint);
 		if (seat == null) {
 			return;
 		}
 		float yaw = r.yaw(seatPoint);
+		if (!walk) {
+			f.teleportTo(seat.x, seat.y, seat.z);
+			f.face(yaw);
+			f.setYBodyRot(yaw);
+			f.setAction(FamilyEntity.POSE_SIT);
+			f.propSounds = false;
+			if (eyes != null) {
+				f.watchPlayers(false);
+				f.lookAt(eyes);
+			}
+			return;
+		}
 		Vec3 front = Stage.stand(r, seat.add(Stage.forward(yaw).scale(1.0)));
 		Stage.Route route;
 		if (door != null && r.def.doors.containsKey(door)) {

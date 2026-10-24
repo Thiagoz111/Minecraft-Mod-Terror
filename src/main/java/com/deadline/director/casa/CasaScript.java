@@ -146,7 +146,7 @@ public class CasaScript extends CaseScript {
 				for (String g : groups(run, "luces_")) {
 					run.lights(g, true);
 				}
-				if (run.actor("nona") == null) {
+				if (run.actor("nona") == null && !com.deadline.horror.casa.SetPieces.firstHour(run)) {
 					family(run, true);
 				}
 			}

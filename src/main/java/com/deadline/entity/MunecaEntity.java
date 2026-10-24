@@ -18,6 +18,11 @@ import net.minecraft.world.level.Level;
 
 /** A porcelain doll that only moves when nobody is looking at it. */
 public class MunecaEntity extends HauntEntity {
+	/**
+	 * C, scripted only (Ofelia in the 1961 room): sitting, legs out, perfectly still; {@link #ACT_SIT_TURN} = the same,
+	 * and the head comes all the way round (180 degrees) while the body does not move.
+	 */
+	public static final int ACT_SIT = 2, ACT_SIT_TURN = 3;
 	private boolean frozen;
 	private boolean frozenSetNoAi;
 
@@ -49,6 +54,9 @@ public class MunecaEntity extends HauntEntity {
 		super.tick();
 		if (HauntEntity.SHOWCASE) {
 			return;
+		}
+		if (this.scripted && (this.action() == ACT_SIT || this.action() == ACT_SIT_TURN)) {
+			return;  // a seated set-piece doll: the script owns the pose (no freezing when watched)
 		}
 		if (!(this.level() instanceof ServerLevel level) || this.isStunned()) {
 			return;

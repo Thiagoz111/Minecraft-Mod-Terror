@@ -102,6 +102,19 @@ public final class SetPieces {
 		return out;
 	}
 
+	/**
+	 * Act 3 entered without the dinner before it (replayed from its checkpoint, or a debug jump): the family is put
+	 * straight into its silent routines of the first hour ({@link SpCena#routines}). False when the dinner set piece is
+	 * not registered or the site has no dining room (the act script then uses its plain fallback).
+	 */
+	public static boolean firstHour(Run run) {
+		if (!done || run == null || HorrorEvents.get(run.type.key(), "sp_cena") == null || !run.def.points.containsKey("silla_1")) {
+			return false;
+		}
+		SpCena.routines(run, false);
+		return Stage.member(run, Stage.NONA) != null;
+	}
+
 	/** Forgets what the set pieces kept for a run (call it when the case ends: CasaScript.onLeave). */
 	public static void forget(Run run) {
 		Stage.forget(run);

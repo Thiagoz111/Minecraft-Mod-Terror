@@ -30,20 +30,24 @@ import net.minecraft.world.phys.Vec3;
 /**
  * Act 6 (design 2, "El cuarto de 1961"): behind the broken wall of the basement, the sealed room -- sand on the floor,
  * the iron bed with its straps, the old salt circle, LEMAZA scratched into the walls. The whole family stands there,
- * each one with the face to a wall, perfectly still, murmuring; Ofelia sits on the bed. When he steps in, every head
- * turns round at once, 180 degrees, the bodies not moving -- the cracks of four necks. The candles go out; the flashlight
- * dies. When he gets it back on: the Nona, hanging from the ceiling right over him like a spider, her face turned down
- * at his. She screams. Then she is gone and something runs on all fours behind him, all the way up: and the hall of the
- * ground floor, on the way to the front door, goes on and on -- twice it brings him back to where it began (P.T.). The
- * third time the hall ends; the front door is open. Posts {@code cuarto61:fin} there.
+ * each one with the face to a wall, perfectly still, murmuring; Ofelia sits on the bed with her back to him. When he
+ * steps in, every head turns round at once, 180 degrees, the bodies not moving -- the cracks of four necks, the doll's
+ * porcelain creak. The candles go out; the flashlight dies. When he gets it back on: the Nona, hanging from the ceiling
+ * right over him like a spider, her face turned down at his. She screams. Then she is gone and something runs on all
+ * fours behind him, all the way up: and the hall of the ground floor, on the way to the front door, goes on and on --
+ * twice, as he reaches the entrance hall, he is back at the basement door at the far end of it (P.T.). The third time
+ * the hall ends, and the front door, bolted all night, now stands open. Posts {@code cuarto61:fin} there (or once he is
+ * out of it).
  * <p>CasaScript fires it as he reaches the basement (the family is put in the room while he cannot see into it).
  */
 public class SpCuarto61 extends HorrorEvent {
 	private static final int WAIT = 0, TURN = 1, DARK = 2, RUN = 3;
 	private static final String[] WHO = {Stage.MARTA, Stage.JORGE, Stage.LUCIA, Stage.TOTI};
 	private static final int LOOPS = 2;
-	/** Distance along the hall he is sent back each time it "repeats" (the hall is about 30 long). */
+	/** Distance along the hall he is sent back each time it "repeats" when the site has no entrance hall (fallback). */
 	private static final double LOOP_BACK = 20.0;
+	/** Ticks the heads take to come round before the blackout; the run-up after which the front door opens anyway. */
+	private static final int TURN_TICKS = 64, RUN_DOOR_ANYWAY = 20 * 100;
 
 	public SpCuarto61() {
 		super("sp_cuarto61", Kind.SETPIECE);
@@ -74,6 +78,13 @@ public class SpCuarto61 extends HorrorEvent {
 
 	@Override
 	public boolean tick(Ctx c) {
+		if (c.t >= maxTicks() - 1) {
+			// safety net (he never made it): the way out opens all the same, the act goes on
+			openFrontDoor(c);
+			c.run.post("cuarto61:fin");
+			c.put("done", true);
+			return true;
+		}
 		int phase = c.get("phase");
 		if (phase != WAIT && Apparitions.hidden(c.p)) {
 			c.put("phaseAt", c.<Integer>get("phaseAt") + 1);  // never on a hidden hunter: the scene holds its breath
@@ -142,14 +153,16 @@ public class SpCuarto61 extends HorrorEvent {
 				c.put(WHO[i], f);
 			}
 		}
-		// Ofelia sitting on the iron bed, facing the hole he comes in by
+		// Ofelia sitting on the iron bed, her back to the hole he comes in by (her head turns with theirs)
 		Vec3 bed = bedTop(c);
 		if (bed != null) {
-			Vec3 face = Apparitions.has(r, "sotano_pared") ? r.at("sotano_pared") : c.p.position();
-			MunecaEntity doll = Apparitions.spawn(c, ModEntities.MUNECA, bed, Apparitions.yawTo(bed, face));
+			Vec3 hole = Apparitions.has(r, "sotano_pared") ? r.at("sotano_pared") : c.p.position();
+			MunecaEntity doll = Apparitions.spawn(c, ModEntities.MUNECA, bed, Apparitions.yawTo(hole, bed));
 			if (doll != null) {
 				doll.setNoGravity(true);
+				doll.setAction(MunecaEntity.ACT_SIT);
 			}
+			c.put("ofelia", doll);
 		}
 	}
 
@@ -177,6 +190,10 @@ public class SpCuarto61 extends HorrorEvent {
 					r.sound(ModSounds.APARICION_CUELLO, e.getEyePosition(), 1.1F, 0.8F + c.rnd.nextFloat() * 0.2F);
 				}
 			}
+			if (c.get("ofelia") instanceof MunecaEntity doll && !doll.isRemoved()) {
+				doll.setAction(MunecaEntity.ACT_SIT_TURN);
+				r.sound(ModSounds.DOLL_TURN, doll.position().add(0, 0.5, 0), 0.9F, 0.85F);
+			}
 			Vec3 mid = Apparitions.has(r, "cuarto61") ? r.at("cuarto61").add(0, 1.2, 0) : c.p.getEyePosition();
 			r.sound(ModSounds.APARICION_COPIA, mid, 1.0F, 0.85F);
 			Fx.shake(c.p, 0.35F, 20);
@@ -189,7 +206,7 @@ public class SpCuarto61 extends HorrorEvent {
 				}
 			}
 		}
-		if (k >= 50) {
+		if (k >= TURN_TICKS) {
 			blackout(c);
 			next(c, DARK);
 		}
@@ -214,6 +231,7 @@ public class SpCuarto61 extends HorrorEvent {
 			c.put(who, null);
 		}
 		c.put("lucia", null);
+		c.put("ofelia", null);
 		// the Nona, hanging from the ceiling right over him (box top on the ceiling, the model hangs in it)
 		double ceil = Apparitions.ceilingY(r, c.p.getEyePosition());
 		if (!Double.isNaN(ceil)) {
@@ -272,7 +290,7 @@ public class SpCuarto61 extends HorrorEvent {
 			Fx.shake(c.p, 1.4F, 24);
 			Apparitions.noise(c, n.position(), 100F);
 		}
-		if (screamAt != null && c.t - screamAt == 10) {
+		if (screamAt != null && c.t - screamAt >= 10) {
 			// she drops into the dark -- and is behind him
 			Apparitions.vanish(n, true);
 			c.put("nona", null);
@@ -307,12 +325,27 @@ public class SpCuarto61 extends HorrorEvent {
 		}
 		hallLoop(c);
 		hallLamps(c);
-		if (nearDoor(c)) {
+		// the front door: bolted all night, open now -- once the hall has let him go (or it never could hold him)
+		Vec3 door = HouseQuery.doorPos(r, "entrada");
+		boolean lapsDone = c.<Integer>get("loops") >= LOOPS || !loopable(c) || k > RUN_DOOR_ANYWAY;
+		if (c.get("doorOpen") == null && lapsDone && c.get("loopAt") == null && door != null && p.position().distanceTo(door) < 14.0) {
+			openFrontDoor(c);
+			r.sound(ModSounds.SP_PUERTA_CRUJE, door, 1.0F, 0.8F);
+		}
+		boolean out = c.get("doorOpen") != null && !HouseQuery.inHouse(r, p);
+		if (nearDoor(c) && c.get("doorOpen") != null || out) {
 			r.post("cuarto61:fin");
 			c.put("done", true);
 			return true;
 		}
 		return false;
+	}
+
+	private static void openFrontDoor(Ctx c) {
+		if (c.get("doorOpen") == null && c.run.def.doors.containsKey("entrada")) {
+			c.run.door("entrada", true, false);
+			c.put("doorOpen", true);
+		}
 	}
 
 	/** At the front door (inside, a few steps from it): the way out is open. */
@@ -322,36 +355,89 @@ public class SpCuarto61 extends HorrorEvent {
 	}
 
 	/**
-	 * P.T.: running down the ground-floor hall toward the front of the house, near its end it brings him back to where
-	 * it began -- twice. A blink of black hides the seam; each lap something is different.
+	 * P.T.: running down the ground-floor hall toward the front of the house, as he reaches the entrance hall he is back
+	 * at the far end of it, by the basement door, facing the way he was running -- twice. A blink of black hides the seam;
+	 * each lap something is different. (A site without an entrance hall: near the front end of the hall he is sent back
+	 * {@link #LOOP_BACK} blocks along it.)
 	 */
 	private void hallLoop(Ctx c) {
 		Run r = c.run;
+		ServerPlayer p = c.p;
 		Integer pending = c.get("loopAt");
 		if (pending != null) {
-			if (c.t - pending == 7) {
+			if (c.t - pending >= 7) {
 				Vec3 to = c.get("loopTo");
-				ServerPlayer p = c.p;
-				p.teleportTo(r.level, to.x, to.y, to.z, java.util.Set.of(), p.getYRot(), p.getXRot(), false);
+				float yaw = c.get("loopYaw");
+				p.teleportTo(r.level, to.x, to.y, to.z, java.util.Set.of(), yaw, p.getXRot(), false);
 				int loops = c.<Integer>get("loops") + 1;
 				c.put("loops", loops);
+				c.put("lastLoop", c.t);
 				lapChange(c, loops);
 				c.put("loopAt", null);
 			}
 			return;
 		}
-		if (c.<Integer>get("loops") >= LOOPS || !Apparitions.hasArea(r, "pasillo_pb") || !Stage.in(r, c.p, "pasillo_pb")) {
+		Integer last = c.get("lastLoop");
+		if (c.<Integer>get("loops") >= LOOPS || last != null && c.t - last < 60) {
 			return;
+		}
+		Vec3 to = null;
+		float yaw = p.getYRot();
+		Vec3[] start = corridorStart(c);
+		if (start != null && Apparitions.hasArea(r, "hall")) {
+			if (Stage.in(r, p, "hall")) {
+				to = start[0];
+				yaw = Stage.yawTo(Vec3.ZERO, start[1]);
+			}
+		} else {
+			to = sentBack(c);
+		}
+		if (to == null) {
+			return;
+		}
+		Fx.fade(p, 14);
+		c.put("loopAt", c.t);
+		c.put("loopTo", to);
+		c.put("loopYaw", yaw);
+	}
+
+	/**
+	 * Where the ground-floor hall begins (a step from its far end, pasillo_pb_fondo, by the basement door) and the unit
+	 * direction along it toward the front door; null when the site lacks the markers or there is no floor there.
+	 */
+	private static Vec3[] corridorStart(Ctx c) {
+		Run r = c.run;
+		Vec3 fondo = Apparitions.at(r, "pasillo_pb_fondo");
+		Vec3 door = HouseQuery.doorPos(r, "entrada");
+		if (fondo == null || door == null || !Apparitions.hasArea(r, "pasillo_pb")) {
+			return null;
+		}
+		AABB hall = r.area("pasillo_pb");
+		boolean alongX = hall.getXsize() >= hall.getZsize();
+		double sign = Math.signum(alongX ? door.x - fondo.x : door.z - fondo.z);
+		if (sign == 0.0) {
+			return null;
+		}
+		Vec3 dir = alongX ? new Vec3(sign, 0, 0) : new Vec3(0, 0, sign);
+		Vec3 at = Stage.stand(r, fondo.add(dir.scale(2.5)));
+		return at == null || at.distanceTo(door) < 15.0 ? null : new Vec3[] {at, dir};
+	}
+
+	/** The fallback loop: near the front end of the hall, heading that way, he is sent back along it. */
+	private static Vec3 sentBack(Ctx c) {
+		Run r = c.run;
+		if (!Apparitions.hasArea(r, "pasillo_pb") || !Stage.in(r, c.p, "pasillo_pb")) {
+			return null;
 		}
 		Vec3 door = HouseQuery.doorPos(r, "entrada");
 		if (door == null) {
-			return;
+			return null;
 		}
 		AABB hall = r.area("pasillo_pb");
 		boolean alongX = hall.getXsize() >= hall.getZsize();
 		double len = alongX ? hall.getXsize() : hall.getZsize();
 		if (len < LOOP_BACK + 6.0) {
-			return;
+			return null;
 		}
 		// which end of the hall is the front (the end nearer the front door), and how far he is from it
 		double pos = alongX ? c.p.getX() : c.p.getZ();
@@ -363,17 +449,24 @@ public class SpCuarto61 extends HorrorEvent {
 		Vec3 look = Stage.look(c.p);
 		double heading = (alongX ? look.x : look.z) * (frontHigh ? 1.0 : -1.0);
 		if (toFront > 6.0 || heading < 0.3) {
-			return;
+			return null;
 		}
 		double back = frontHigh ? -LOOP_BACK : LOOP_BACK;
 		Vec3 to = c.p.position().add(alongX ? back : 0, 0, alongX ? 0 : back);
 		Vec3 ok = Stage.stand(r, to);
-		if (ok == null) {
-			return;
+		return ok == null ? null : new Vec3(to.x, ok.y, to.z);
+	}
+
+	/** True when this site lets the hall repeat at all (otherwise the front door simply opens). */
+	private static boolean loopable(Ctx c) {
+		if (corridorStart(c) != null && Apparitions.hasArea(c.run, "hall")) {
+			return true;
 		}
-		Fx.fade(c.p, 14);
-		c.put("loopAt", c.t);
-		c.put("loopTo", new Vec3(to.x, ok.y, to.z));
+		if (!Apparitions.hasArea(c.run, "pasillo_pb") || HouseQuery.doorPos(c.run, "entrada") == null) {
+			return false;
+		}
+		AABB hall = c.run.area("pasillo_pb");
+		return Math.max(hall.getXsize(), hall.getZsize()) >= LOOP_BACK + 6.0;
 	}
 
 	/** What is different each time the hall comes round again. */
@@ -415,7 +508,7 @@ public class SpCuarto61 extends HorrorEvent {
 		if (k % 5 == 0 && i < order.size()) {
 			c.run.light("luces_pasillo_pb", order.get(i), true);
 		}
-		if (k == order.size() * 5 + 16) {
+		if (k >= order.size() * 5 + 16) {
 			List<BlockPos> g = c.run.def.group("luces_pasillo_pb");
 			for (int j = 0; j < g.size(); j++) {
 				if (j % 2 == 0) {
@@ -443,10 +536,13 @@ public class SpCuarto61 extends HorrorEvent {
 		if (order != null) {
 			r.lights("luces_pasillo_pb", false);
 		}
+		if (c.get("done") == null && c.get("doorOpen") != null) {
+			r.door("entrada", false, false);  // aborted (a replay of the act): bolted again until he earns it
+		}
 	}
 
 	@Override
 	public int maxTicks() {
-		return 20 * 60 * 6;
+		return 20 * 60 * 15;
 	}
 }

@@ -18,7 +18,8 @@ import net.minecraft.world.phys.Vec3;
  * head of the table. The act script closes and bolts the door behind him.
  */
 public class SpLlegada extends HorrorEvent {
-	private static final int SQUEAK_1 = 0, BOLT_1 = 100, BOLT_2 = 117, NONA = 112, OPEN = 136, SMILE = 210, ASIDE = 232;
+	/** Timeline (ticks): the steps, the bolt twice, the door; she stares 4 s without blinking, smiles, steps aside. */
+	private static final int SQUEAK_1 = 0, BOLT_1 = 100, BOLT_2 = 117, NONA = 112, OPEN = 136, SMILE = OPEN + 80, ASIDE = SMILE + 24;
 	/** Ticks after the door opens that he gets to come in before the set piece lets go (she keeps standing there). */
 	private static final int WAIT_IN = 20 * 90;
 
@@ -77,6 +78,11 @@ public class SpLlegada extends HorrorEvent {
 				n.propSounds = false;
 				n.setExpression(FamilyEntity.EXPR_STARE);
 				n.watch(c.p);
+				// under the dinner table the dog's head comes round to where she is, and he growls
+				com.deadline.horror.casa.dog.ChoripanEntity dog = com.deadline.horror.casa.dog.Choripan.get(c.run);
+				if (dog != null) {
+					dog.watch(n);
+				}
 			}
 			if (c.run.def.groups.containsKey("luces_hall")) {
 				c.run.lights("luces_hall", true);

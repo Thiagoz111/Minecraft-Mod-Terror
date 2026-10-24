@@ -389,7 +389,10 @@ public final class Stage {
 			pts.add(up ? arriba : pie);
 		}
 		if (door != null) {
-			Vec3 corridor = at(r, room.y > 3 ? "pasillo_1p" : "pasillo_pb");
+			// the hall on the room's floor (world heights: the floor nearer the room point)
+			Vec3 pb = at(r, "pasillo_pb");
+			Vec3 p1 = at(r, "pasillo_1p");
+			Vec3 corridor = pb == null ? p1 : p1 == null ? pb : Math.abs(p1.y - room.y) < Math.abs(pb.y - room.y) ? p1 : pb;
 			pts.add(doorStep(r, door, corridor != null ? corridor : who.position(), 1.2));
 			pts.add(doorStep(r, door, room, 1.0));
 		}

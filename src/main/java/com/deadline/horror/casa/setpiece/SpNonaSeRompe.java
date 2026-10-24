@@ -33,6 +33,12 @@ public class SpNonaSeRompe extends HorrorEvent {
 
 	@Override
 	public void start(Ctx c) {
+		if (!Apparitions.has(c.run, "mesada") && !Apparitions.has(c.run, "cocina")) {
+			// fired without its conditions on a site with no kitchen: nothing to stage (the act script's hunt starts her)
+			c.put("phase", LURE);
+			c.put("abort", true);
+			return;
+		}
 		String m = Apparitions.has(c.run, "mesada") ? "mesada" : "cocina";
 		Vec3 at = Stage.stand(c.run, c.run.at(m));
 		if (at == null) {
@@ -58,6 +64,9 @@ public class SpNonaSeRompe extends HorrorEvent {
 
 	@Override
 	public boolean tick(Ctx c) {
+		if (c.get("abort") != null) {
+			return true;
+		}
 		int phase = c.get("phase");
 		if (phase == BREAK) {
 			int k = c.t - c.<Integer>get("breakAt");
