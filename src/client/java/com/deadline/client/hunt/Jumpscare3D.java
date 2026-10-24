@@ -251,12 +251,15 @@ public final class Jumpscare3D {
 					@Override
 					public void setupAnim(HauntRenderState s) {
 						super.setupAnim(s);
-						apply(pose("attack"), 1F);
+						// the face alone: the attack pose reached the arms into the camera and hid it
+						apply(pose("scream"), 1F);
 						scare(this, s, 0.4F);
+						this.rightArm.visible = false;
+						this.leftArm.visible = false;
 					}
 				});
 				Identifier glow = DeadLine.id("textures/entity/hunt/cara_roja_eyes.png");
-				return new Face(m, state(), painted ? red : tex("anima"), painted && exists(glow) ? glow : null, 1.47F, 0.10F, 0.64F,
+				return new Face(m, state(), painted ? red : tex("anima"), painted && exists(glow) ? glow : null, 1.47F, 0.10F, 0.80F,
 						painted ? -1 : 0xFFFF3A2A);
 			}
 			default -> {
