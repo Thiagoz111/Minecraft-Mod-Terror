@@ -340,7 +340,7 @@ public class FamilyEntity extends HauntEntity {
 	}
 
 	/**
-	 * A scripted physical shove (Jorge falling back into the pool): stops any walk and REPLACES the velocity, which is
+	 * A scripted physical shove (thrown back against a wall): stops any walk and REPLACES the velocity, which is
 	 * then integrated with gravity and collision. Named apart from vanilla {@code push(Vec3)}, which explosions and
 	 * wind charges call to ADD knockback.
 	 */
