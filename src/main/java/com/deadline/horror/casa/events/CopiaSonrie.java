@@ -70,6 +70,11 @@ public class CopiaSonrie extends HorrorEvent {
 		if (Apparitions.gone(f)) {
 			return true;
 		}
+		if (Apparitions.hidden(c.p)) {
+			// he hid: whatever was there is not there when he comes out
+			Apparitions.vanish(f, false);
+			return true;
+		}
 		Apparitions.Gaze g = Apparitions.gaze(c);
 		boolean was = g.ever;
 		g.update(Apparitions.sees(c, f, 45F));

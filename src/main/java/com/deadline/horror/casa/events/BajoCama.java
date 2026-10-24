@@ -89,6 +89,11 @@ public class BajoCama extends HorrorEvent {
 		if (Apparitions.gone(hand)) {
 			return true;
 		}
+		if (Apparitions.hidden(c.p)) {
+			// he hid: whatever was there is not there when he comes out
+			Apparitions.vanish(hand, false);
+			return true;
+		}
 		Bed b = c.get("bed");
 		Vec3 start = c.get("start");
 		Integer back = c.get("back");
@@ -104,7 +109,8 @@ public class BajoCama extends HorrorEvent {
 				float u = c.t / (float) CREEP;
 				// it does not slide: it pulls itself out, finger-step by finger-step
 				float steps = u + 0.06F * (float) Math.sin(u * Math.PI * 10.0);
-				hand.setPos(start.add(b.dir().scale(OUT * Math.max(0F, Math.min(1F, steps)))));
+				Vec3 at = start.add(b.dir().scale(OUT * Math.max(0F, Math.min(1F, steps))));
+				hand.setPos(at.x, at.y, at.z);
 			} else if (c.t == CREEP + 1) {
 				hand.setAction(ApparitionEntities.MANO_GRIP);
 				Apparitions.sound(c, ModSounds.APARICION_MANO_RASGUNO, hand.position(), 1.0F, 0.8F);
@@ -119,7 +125,8 @@ public class BajoCama extends HorrorEvent {
 		// yanked back under the bed, fast, then gone
 		Vec3 from = c.get("from");
 		float u = Math.min(1F, (c.t - back) / (float) RETRACT);
-		hand.setPos(from.lerp(start.subtract(b.dir().scale(1.4)), u * u));
+		Vec3 at = from.lerp(start.subtract(b.dir().scale(1.4)), u * u);
+		hand.setPos(at.x, at.y, at.z);
 		return u >= 1F;
 	}
 

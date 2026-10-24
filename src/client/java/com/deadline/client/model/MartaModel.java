@@ -59,7 +59,10 @@ public class MartaModel extends MartaModelBase {
 		boolean known = a == POINT || a == SCARED || phoneUp || throwing || a == SHOUT || a == HAND_OVER;
 		boolean fresh = t < 4F;  // just appeared: already in her pose
 		// B3: the copy (look 2, FamilyEntity.LOOK_COPIA) never fidgets: no wringing, no glances, no brows shooting up
-		float alive = s.variant == FamilyEntity.LOOK_COPIA ? 0F : 1F;
+		// B3: POSE_CORNER(_TURN) (facing a wall, perfectly still; then the head comes all the way round, the body does not)
+		boolean corner = a == FamilyEntity.POSE_CORNER || a == FamilyEntity.POSE_CORNER_TURN;
+		float twist = blend(s, 14, a == FamilyEntity.POSE_CORNER_TURN ? 1F : 0F, fresh ? 1F : 0.05F);
+		float alive = s.variant == FamilyEntity.LOOK_COPIA || corner ? 0F : 1F;
 
 		// ---- pose weights (cross-fade). One rate for every pose channel on a tick: the incoming pose's (the scared jolt
 		// fast), or the release's while a throw is still fading out, so the outgoing and incoming weights sum to 1.
@@ -146,7 +149,7 @@ public class MartaModel extends MartaModelBase {
 		rot("lapel_left", 0F, 0F, -0.05F * Mth.sin(pos * 2F) * run);
 
 		// ---- head look (neck 30 %, head 70 %); the temple rollers bob a tick after the head turns
-		float lookW = 1F - 0.5F * throwW;
+		float lookW = corner ? 0F : 1F - 0.5F * throwW;
 		float yaw = Mth.clamp(Mth.wrapDegrees(s.yRot), -75F, 75F) * Mth.DEG_TO_RAD * lookW;
 		float pitch = Mth.clamp(s.xRot, -45F, 45F) * Mth.DEG_TO_RAD * lookW;
 		rot("neck", pitch * 0.3F, yaw * 0.3F, 0F);
@@ -154,7 +157,13 @@ public class MartaModel extends MartaModelBase {
 		float follow = Mth.clamp((Mth.wrapDegrees(s.yRot) - yawLag) * Mth.DEG_TO_RAD * 0.5F, -0.04F, 0.04F);
 		rot("curler_right", 0F, 0F, follow);
 		rot("curler_left", 0F, 0F, follow);
-		if (alive == 0F) {
+		if (twist > 0.001F) {
+			float e = twist * twist * (3F - 2F * twist);
+			float hitch = Mth.sin(t * 9F) * 0.035F * Mth.clamp(twist * (1F - twist) * 4F, 0F, 1F);
+			rot("neck", 0F, Mth.PI * 0.3F * e + hitch, 0F);
+			rot("head", 0.1F * e, Mth.PI * 0.7F * e + hitch, 0.2F * e);
+		}
+		if (s.variant == FamilyEntity.LOOK_COPIA) {
 			// the copy: the brows lie flat over the wide-open eyes (no worry in that face), the painted grin keeps the jaw shut
 			rightBrow.zRot = 0F;
 			leftBrow.zRot = 0F;

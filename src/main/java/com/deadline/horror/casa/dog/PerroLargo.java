@@ -137,7 +137,7 @@ public final class PerroLargo {
 			if (s.isAir() || !HouseQuery.key(s).contains("cucha") || !s.hasProperty(BlockStateProperties.HORIZONTAL_FACING)) {
 				continue;
 			}
-			double d = p.distSqr(c);
+			double d = sq(p, c);
 			if (d < bd) {
 				bd = d;
 				best = p.immutable();
@@ -149,5 +149,10 @@ public final class PerroLargo {
 			return new Door(plane, f.toYRot());
 		}
 		return new Door(m, myaw + 180F);
+	}
+
+	private static double sq(BlockPos a, BlockPos b) {
+		double dx = a.getX() - b.getX(), dy = a.getY() - b.getY(), dz = a.getZ() - b.getZ();
+		return dx * dx + dy * dy + dz * dz;
 	}
 }

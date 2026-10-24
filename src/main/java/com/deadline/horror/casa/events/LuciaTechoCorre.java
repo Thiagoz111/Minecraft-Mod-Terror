@@ -88,12 +88,12 @@ public class LuciaTechoCorre extends HorrorEvent {
 		if (l != null) {
 			l.setVariant(PoseidaEntity.LOOK_POSSESSED);
 			l.setAction(PoseidaEntity.ACT_CEILING_RUN);
-			l.noPhysics = true;
 			l.setNoGravity(true);
 		}
 		c.put("e", l);
 		c.put("leg", 0);
 		Apparitions.sound(c, ModSounds.APARICION_TECHO_CORRE, p.start().add(0, BODY, 0), 1.4F, 1.0F);
+		Apparitions.noise(c, p.start(), 40F);
 	}
 
 	@Override
@@ -109,6 +109,7 @@ public class LuciaTechoCorre extends HorrorEvent {
 			// in: the door slams behind her, and from the room a giggle
 			Apparitions.sound(c, ModSounds.POSEIDA_GIGGLE, l.position(), 1.2F, 0.85F);
 			c.run.door(p.door(), false, true);
+			Apparitions.noise(c, l.position(), 70F);
 			Apparitions.vanish(l, false);
 			return true;
 		}
@@ -123,7 +124,7 @@ public class LuciaTechoCorre extends HorrorEvent {
 		} else {
 			Apparitions.glide(l, pos.add(delta.scale(speed / len)), false);
 		}
-		if (delta.horizontalDistanceSqr() > 1.0E-4) {
+		if (delta.x * delta.x + delta.z * delta.z > 1.0E-4) {
 			Apparitions.face(l, Apparitions.yawTo(pos, to));
 		}
 		return false;

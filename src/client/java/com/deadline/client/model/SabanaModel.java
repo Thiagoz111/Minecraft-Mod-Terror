@@ -59,7 +59,7 @@ public class SabanaModel extends SabanaModelBase {
 				rot("flat_3", Mth.sin(t * 0.08F + 2F) * 0.18F - 0.15F * gust, 0F, 0F);
 			} else {
 				// empty on the ground, crumpled
-				flat.xRot = Mth.HALF_PI;
+				flat.xRot = Mth.PI * 0.5F;
 				flat.y = -0.4F;
 				rot("flat_2", -0.18F, 0F, 0F);
 				rot("flat_3", 0.12F, 0F, 0F);

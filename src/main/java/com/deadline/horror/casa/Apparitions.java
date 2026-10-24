@@ -69,9 +69,12 @@ public final class Apparitions {
 		if (p == null || p.isSpectator() || !p.isAlive()) {
 			return true;
 		}
-		// TODO(B2 hunt): return true while the hunter is hidden -- com.deadline.horror.casa.hunt.HideSpots.hidden(p)
-		// (that class did not exist yet when the apparitions were written; wire it here, the only place that asks).
-		return false;
+		return com.deadline.horror.casa.hunt.HideSpots.hidden(p);
+	}
+
+	/** A loud thing happened here: in the hunt (Act 5) the Nona hears it (0-100: 15 a creak, 40 a plate, 70 a slam). */
+	public static void noise(Ctx c, Vec3 at, float loudness) {
+		com.deadline.horror.casa.hunt.Hunt.noise(c.run, at, loudness);
 	}
 
 	/** Common precondition of every visual apparition: a hunter inside the house who is not hidden. */

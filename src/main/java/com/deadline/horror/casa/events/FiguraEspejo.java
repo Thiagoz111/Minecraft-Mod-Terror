@@ -72,6 +72,11 @@ public class FiguraEspejo extends HorrorEvent {
 		if (Apparitions.gone(n)) {
 			return true;
 		}
+		if (Apparitions.hidden(c.p)) {
+			// he hid: whatever was there is not there when he comes out
+			Apparitions.vanish(n, false);
+			return true;
+		}
 		Vec3 neck = c.p.getEyePosition().add(c.p.getViewVector(1F).scale(-0.5));
 		if (c.t == 12) {
 			Apparitions.sound(c, ModSounds.APARICION_ALIENTO, neck, 0.8F, 0.95F);

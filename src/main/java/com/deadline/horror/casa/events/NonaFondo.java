@@ -67,6 +67,11 @@ public class NonaFondo extends HorrorEvent {
 		if (Apparitions.gone(n)) {
 			return true;
 		}
+		if (Apparitions.hidden(c.p)) {
+			// he hid: whatever was there is not there when he comes out
+			Apparitions.vanish(n, false);
+			return true;
+		}
 		Apparitions.Gaze g = Apparitions.gaze(c);
 		boolean was = g.ever;
 		g.update(Apparitions.sees(c, n, 50F));

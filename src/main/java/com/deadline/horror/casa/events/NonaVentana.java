@@ -53,6 +53,11 @@ public class NonaVentana extends HorrorEvent {
 		if (Apparitions.gone(n)) {
 			return true;
 		}
+		if (Apparitions.hidden(c.p)) {
+			// he hid: whatever was there is not there when he comes out
+			Apparitions.vanish(n, false);
+			return true;
+		}
 		Apparitions.Gaze g = Apparitions.gaze(c);
 		g.update(Apparitions.sees(c, n, 45F));
 		Vec3 face = n.position().add(0, 1.3, 0);

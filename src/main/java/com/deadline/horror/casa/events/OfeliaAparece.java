@@ -80,7 +80,7 @@ public class OfeliaAparece extends HorrorEvent {
 		for (BlockPos p : BlockPos.betweenClosed(centre.offset(-2, -1, -2), centre.offset(2, 1, 2))) {
 			BlockState s = c.level().getBlockState(p);
 			if (!s.isAir() && HouseQuery.key(s).contains(part)) {
-				double d = p.distSqr(centre);
+				double d = sq(p, centre);
 				if (d < bd) {
 					bd = d;
 					best = p.immutable();
@@ -107,7 +107,6 @@ public class OfeliaAparece extends HorrorEvent {
 		Vec3 spot = c.get("spot");
 		MunecaEntity doll = Apparitions.spawn(c, ModEntities.MUNECA, spot, Apparitions.yawTo(spot, c.p.position()));
 		if (doll != null) {
-			doll.noPhysics = true;
 			doll.setNoGravity(true);
 		}
 		c.put("e", doll);
@@ -117,6 +116,11 @@ public class OfeliaAparece extends HorrorEvent {
 	public boolean tick(Ctx c) {
 		MunecaEntity doll = c.get("e");
 		if (Apparitions.gone(doll)) {
+			return true;
+		}
+		if (Apparitions.hidden(c.p)) {
+			// he hid: whatever was there is not there when he comes out
+			Apparitions.vanish(doll, false);
 			return true;
 		}
 		Apparitions.Gaze g = Apparitions.gaze(c);
@@ -140,5 +144,10 @@ public class OfeliaAparece extends HorrorEvent {
 	@Override
 	public int maxTicks() {
 		return 20 * 110;
+	}
+
+	private static double sq(BlockPos a, BlockPos b) {
+		double dx = a.getX() - b.getX(), dy = a.getY() - b.getY(), dz = a.getZ() - b.getZ();
+		return dx * dx + dy * dy + dz * dz;
 	}
 }

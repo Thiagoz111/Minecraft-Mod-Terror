@@ -50,7 +50,6 @@ public class Visitante extends HorrorEvent {
 		SombraEntity s = Apparitions.spawn(c, ModEntities.SOMBRA, v, Apparitions.yawTo(v, c.p.position()));
 		if (s != null) {
 			s.setVariant(SombraEntity.VARIANT_VISITANTE);
-			s.noPhysics = true;
 			s.setNoGravity(true);
 		}
 		c.put("e", s);
@@ -60,6 +59,11 @@ public class Visitante extends HorrorEvent {
 	public boolean tick(Ctx c) {
 		SombraEntity s = c.get("e");
 		if (Apparitions.gone(s)) {
+			return true;
+		}
+		if (Apparitions.hidden(c.p)) {
+			// he hid: whatever was there is not there when he comes out
+			Apparitions.vanish(s, false);
 			return true;
 		}
 		// in the light it was never there

@@ -283,3 +283,12 @@ MISC.update({
     'key.deadline.breath': ('Contener la respiración', 'Hold your breath'),
 })
 # --- end B2 hunt
+
+# --- B3 apparitions (Choripán, the long dog, the hand under the bed, the bedsheet)
+ENTITIES.update({
+    'choripan': ('Choripán', 'Choripán'),
+    'choripan_demonio': ('Choripán', 'Choripán'),
+    'mano': ('Una mano', 'A hand'),
+    'sabana': ('Una sábana', 'A bedsheet'),
+})
+# --- end B3 apparitions

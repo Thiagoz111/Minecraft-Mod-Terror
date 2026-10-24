@@ -53,6 +53,11 @@ public class TotiRincon extends HorrorEvent {
 		if (Apparitions.gone(t)) {
 			return true;
 		}
+		if (Apparitions.hidden(c.p)) {
+			// he hid: whatever was there is not there when he comes out
+			Apparitions.vanish(t, false);
+			return true;
+		}
 		Apparitions.Gaze g = Apparitions.gaze(c);
 		g.update(Apparitions.sees(c, t, 45F));
 		Integer turned = c.get("turned");

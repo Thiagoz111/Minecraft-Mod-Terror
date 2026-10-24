@@ -411,7 +411,9 @@ public class ChoripanDemonioEntity extends HauntEntity {
 	/** A box round the door and the head together: the chain between them must not pop out of view at corners. */
 	public AABB cullingBox() {
 		Vec3 d = this.door();
-		return this.getBoundingBox().minmax(new AABB(d, d)).inflate(4.0, 1.5, 4.0);
+		AABB b = this.getBoundingBox();
+		return new AABB(Math.min(b.minX, d.x), Math.min(b.minY, d.y), Math.min(b.minZ, d.z), Math.max(b.maxX, d.x), Math.max(b.maxY, d.y),
+				Math.max(b.maxZ, d.z)).inflate(4.0, 1.5, 4.0);
 	}
 
 	@Override

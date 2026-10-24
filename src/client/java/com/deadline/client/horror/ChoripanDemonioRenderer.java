@@ -73,7 +73,7 @@ public class ChoripanDemonioRenderer extends HauntRenderer<ChoripanDemonioEntity
 		d.state = e.state();
 		d.stateTicks = e.stateTicks() + pt;
 		Trail tr = this.trails.computeIfAbsent(e, k -> new Trail());
-		Vec3 head = e.getPosition(pt);
+		Vec3 head = new Vec3(Mth.lerp(pt, e.xo, e.getX()), Mth.lerp(pt, e.yo, e.getY()), Mth.lerp(pt, e.zo, e.getZ()));
 		Vec3 door = e.door();
 		Vec3 out = ChoripanDemonioEntity.forward(e.doorYaw());
 		update(tr, head, door, d.state == ChoripanDemonioEntity.STATE_RETRACT);

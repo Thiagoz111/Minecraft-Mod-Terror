@@ -300,7 +300,7 @@ GOWN = pal('#26221e', '#38332d', '#4c463e', '#625a50', '#797064', '#90867a', '#a
 GRIME = hx('#3a3326')
 BLOOD = pal('#1e0204', '#3a0508', '#5a090d', '#7c0e13', '#a1161b', '#c42a2a')
 BLOOD_DRY = pal('#2a1410', '#3e1d16', '#54281d')
-CATARACT = {'W': hx('#c9cbc1'), 'w': hx('#9fa49c'), 'g': hx('#6c7576')}
+CATARACT = {'W': hx('#c4c4b4'), 'w': hx('#9a9a8a'), 'g': hx('#5e6466')}
 VEIN_R = hx('#241c36')
 ROT_TEETH = pal('#4a3f2a', '#6e6142', '#958763', '#b6a983', '#cfc4a0')
 
@@ -1767,6 +1767,15 @@ def rota_paint(ctx):
         src = maw_paint(ctx, True)
         if src is None:
             return None
+        if ctx.face == 'front' and nm(ctx) == 'maw':
+            # the gullet: black, strings of bloody saliva hanging across it, raw gums along the top
+            lx, ly, lz = local(ctx)
+            col = fl(lx)
+            if ly < 1.0:
+                return A(BLOOD[3] if col % 2 else GUM[0])
+            if h2(col, 0, 77) > 0.62 and ly < 2.0 + 5.0 * h2(col, 1, 78):
+                return A(BLOOD[1] if fl(ly) % 2 else hx('#2a0d12'))
+            return A(hx('#020001') if ly < ctx.cube.size[1] - 2 else hx('#140306'))
         return A(mix(src, hx('#030102'), 0.45))                         # a black gullet
     fn = MATS.get(k)
     return fn(ctx, True) if fn else A(hx('#ff00ff'))
@@ -1808,11 +1817,11 @@ def jawlong_paint(ctx, P):
                 return A(SKIN_R[2] if fl(ly) % 2 == 0 else SKIN_R[4])  # cheek skin stretched to cords
             if col in (1, w - 2):
                 return A(BLOOD[2] if h2(col, fl(ly), 5) > 0.45 else SKIN_R[1])
-            if 3 <= col <= w - 4 and ly > h * 0.45:
-                return A(TONGUE[0] if (col + fl(ly)) % 3 else TONGUE[1])  # the tongue lolls in the throat
-            if h2(col, fl(ly), 9) > 0.93:
-                return A(hx('#3a1218'))                                 # a wet glint
-            return A(MOUTH[0] if ly < h * 0.5 else MOUTH[1])
+            if 3 <= col <= w - 4 and ly > h * 0.6:
+                return A(hx('#2a0a10') if (col + fl(ly)) % 3 else hx('#3d1119'))  # the tongue, deep in the throat
+            if h2(col, fl(ly), 9) > 0.9:
+                return A(hx('#4a1820'))                                 # a wet glint
+            return A(MOUTH[0] if ly < h * 0.5 else hx('#0c0204'))
         if col in (1, w - 2) and ly < 2:
             return A(BLOOD[3] if fl(ly) % 2 else BLOOD[2])             # blood off the lower lip
         if ly > h - 1.5:

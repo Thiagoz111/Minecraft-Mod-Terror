@@ -16,8 +16,15 @@ import net.minecraft.util.Mth;
  * The normal Nona (FamilyEntity, NonaModel) is untouched: this model only exists for NonaRotaEntity and the jumpscare.
  */
 public class NonaRotaModel extends NonaModelBase {
-	/** Texels the hips rise per unit of stretch (the legs grow by LEG_GROW of their 15 texels). */
-	private static final float LEG_GROW = 0.75F, LEG_LEN = 15F, CHEST_GROW = 0.3F, NECK_GROW = 1.5F, ARM_GROW = 0.5F;
+	/**
+	 * The stretch: the legs grow by LEG_GROW of their 15 texels (the hips rise to match), the neck and the arms by
+	 * NECK_GROW / ARM_GROW, and the whole body by GROW about the floor. Nothing above the neck is scaled on its own
+	 * (children inherit the scale: a stretched chest would stretch the face too).
+	 */
+	private static final float LEG_GROW = 0.9F, LEG_LEN = 15F, NECK_GROW = 0.5F, ARM_GROW = 0.5F, GROW = 0.2F;
+	/** hair_loose_0..4: added rotation (rad, x / z) that makes the white locks hang down lank when she stands. */
+	private static final float[][] HANG = {{-0.6769F, 2.0935F}, {0.2428F, -0.4164F}, {0.2639F, 0.4601F}, {-0.3515F, -0.3402F},
+			{-0.3305F, 0.2867F}};
 	private static final float RATE = 0.22F, FAST = 0.5F;
 
 	private final ModelPart[] loose;
@@ -109,11 +116,12 @@ public class NonaRotaModel extends NonaModelBase {
 		// ---------------------------------------------------------------- the stretch
 		float stretch = Math.max(tall, tf ? tfTall : 0F);
 		float legs = 1F + LEG_GROW * stretch;
+		float grow = 1F + GROW * stretch;
+		scale("base", grow, grow, grow);
 		scale("right_leg", 1F, legs, 1F);
 		scale("left_leg", 1F, legs, 1F);
 		offset("body", 0F, -LEG_LEN * LEG_GROW * stretch, 0F);
-		scale("chest", 1F, 1F + CHEST_GROW * stretch, 1F);
-		scale("neck", 1F, 1F + NECK_GROW * Math.max(stretch, 0.35F * crawl), 1F);
+		scale("neck", 1F, 1F + NECK_GROW * Math.max(stretch, 0.6F * crawl), 1F);
 		float arms = 1F + ARM_GROW * Math.max(stretch, 0.6F * crawl + 0.6F * ceiling);
 		scale("right_arm", 1F, arms, 1F);
 		scale("left_arm", 1F, arms, 1F);
@@ -211,11 +219,15 @@ public class NonaRotaModel extends NonaModelBase {
 			rot("jaw", 0.25F * grab, 0F, 0F);
 		}
 
-		// ---------------------------------------------------------------- the white hair drifts as if under water
-		ripple("hair_loose_", t, 0.05F, 1.3F, 0.10F, 0.14F, 0F);
+		// ---------------------------------------------------------------- the white hair: lank and hanging when she stands,
+		// falling to the floor round her upside-down head in the crawl (the module's rest), swaying slowly
+		float hang = Math.max(0F, up - grab);
 		for (int k = 0; k < loose.length; k++) {
-			loose[k].yRot += 0.06F * Mth.sin(t * 0.03F + 2.1F * k);
+			loose[k].xRot += HANG[k][0] * hang;
+			loose[k].zRot += HANG[k][1] * hang;
+			loose[k].yRot += 0.05F * Mth.sin(t * 0.03F + 2.1F * k);
 		}
+		ripple("hair_loose_", t, 0.04F, 1.3F, 0.06F, 0.08F, 0F);
 
 		// ---------------------------------------------------------------- the head follows you only when she stands
 		float lookW = Math.max(0F, up - search - grab - recoil) * (1F - listen * 0.6F) * (tf ? 0F : 1F);

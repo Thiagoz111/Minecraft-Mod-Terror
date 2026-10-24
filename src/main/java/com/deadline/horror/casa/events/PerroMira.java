@@ -80,6 +80,11 @@ public class PerroMira extends HorrorEvent {
 		if (Apparitions.gone(dog)) {
 			return true;
 		}
+		if (Apparitions.hidden(c.p)) {
+			// he hid: whatever was there is not there when he comes out
+			Apparitions.vanish(dog, false);
+			return true;
+		}
 		Apparitions.Gaze g = Apparitions.gaze(c);
 		boolean was = g.ever;
 		g.update(Apparitions.sees(c, dog, 40F));

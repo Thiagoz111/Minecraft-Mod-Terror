@@ -47,13 +47,16 @@ public class JorgeModel extends JorgeModelBase {
 		boolean possessed = s.variant == FamilyEntity.LOOK_POSSESSED;
 		// B3: the copy (look 2, FamilyEntity.LOOK_COPIA): Jorge's body, perfectly still -- no pats, no clacks, no sway
 		boolean copy = s.variant == FamilyEntity.LOOK_COPIA;
+		// B3: POSE_CORNER(_TURN) (facing a wall, perfectly still; then the head comes all the way round, the body does not)
+		boolean corner = a == FamilyEntity.POSE_CORNER || a == FamilyEntity.POSE_CORNER_TURN;
+		float twist = blend(s, 14, a == FamilyEntity.POSE_CORNER_TURN ? 1F : 0F, fresh ? 1F : 0.05F);
 		boolean limp = a == LIMP;
 		boolean known = a == POINT || a == GRILL || a == KNIFE || limp || a == BAG;
 
 		// ---- pose weights
 		float rate = fresh ? 1F : RATE;
 		float idle = blend(s, 0, known ? 0F : 1F, rate);
-		float fidget = copy ? 0F : idle;
+		float fidget = copy || corner ? 0F : idle;
 		float point = blend(s, 1, a == POINT ? 1F : 0F, rate);
 		float grill = blend(s, 2, a == GRILL ? 1F : 0F, rate);
 		float knife = blend(s, 3, a == KNIFE ? 1F : 0F, rate);
@@ -84,7 +87,7 @@ public class JorgeModel extends JorgeModelBase {
 		smileJaw.visible = possessed;
 		demonEyes.visible = possessed;
 		bag.visible = a == BAG;
-		tongs.visible = a != BAG && a != GRILL && !limp && !copy;
+		tongs.visible = a != BAG && a != GRILL && !limp && !copy && !corner;
 
 		// ---- idle on every pose: breathing (chest + belly), a slow sway of the weight from foot to foot
 		float upright = 1F - fall;
@@ -162,11 +165,17 @@ public class JorgeModel extends JorgeModelBase {
 		rot("apron_hem", blend(s, 12, -0.6F * forwardThigh, 0.5F), 0F, 0F);
 
 		// ---- head look (neck 30 %, head 70 %); none while he lies KO'd
-		float lookW = upright * (1F - 0.5F * grill) * (1F - 0.6F * knife);
+		float lookW = corner ? 0F : upright * (1F - 0.5F * grill) * (1F - 0.6F * knife);
 		float yaw = Mth.clamp(Mth.wrapDegrees(s.yRot), -75F, 75F) * Mth.DEG_TO_RAD * lookW;
 		float pitch = Mth.clamp(s.xRot, -45F, 45F) * Mth.DEG_TO_RAD * lookW;
 		rot("neck", pitch * 0.3F, yaw * 0.3F, 0F);
 		rot("head", pitch * 0.7F, yaw * 0.7F, 0F);
+		if (twist > 0.001F) {
+			float e = twist * twist * (3F - 2F * twist);
+			float hitch = Mth.sin(t * 9F) * 0.035F * Mth.clamp(twist * (1F - twist) * 4F, 0F, 1F);
+			rot("neck", 0F, Mth.PI * 0.3F * e + hitch, 0F);
+			rot("head", 0.1F * e, Mth.PI * 0.7F * e + hitch, 0.2F * e);
+		}
 		if (copy) {
 			// the copy: brows level over the wide-open eyes, the painted grin keeps the jaw shut
 			rightBrow.zRot = 0F;

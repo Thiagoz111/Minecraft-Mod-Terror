@@ -84,7 +84,6 @@ public class SombraCruza extends HorrorEvent {
 		SombraEntity s = Apparitions.spawn(c, ModEntities.SOMBRA, p.from(), Apparitions.yawTo(p.from(), p.to()));
 		if (s != null) {
 			s.setVariant(SombraEntity.VARIANT_VISITANTE);
-			s.noPhysics = true;
 			s.setNoGravity(true);
 		}
 		c.put("e", s);
