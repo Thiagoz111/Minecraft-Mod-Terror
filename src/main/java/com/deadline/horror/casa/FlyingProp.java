@@ -355,6 +355,11 @@ public final class FlyingProp {
 		return origin;
 	}
 
+	/** Run actor name of its display (to link a remembered block to it, see {@link CasaProps#swap}). */
+	public String actor() {
+		return actor;
+	}
+
 	/** The hunter it hit last (null if none). */
 	public ServerPlayer hit() {
 		return hitWho;
