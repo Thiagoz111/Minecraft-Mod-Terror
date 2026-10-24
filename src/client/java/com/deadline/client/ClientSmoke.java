@@ -304,6 +304,91 @@ public final class ClientSmoke {
 		});
 	}
 
+	/** Casa Morales creatures in daylight (the hunt's broken Nona, the dog, the long dog, the hand, the sheet, a copy) and the 3D jumpscares. */
+	private static void casaStudio() {
+		Object[][] subjects = {
+				{"nona_rota", com.deadline.horror.casa.hunt.HuntEntities.NONA_ROTA, -1},
+				{"nona_rota_crawl", com.deadline.horror.casa.hunt.HuntEntities.NONA_ROTA, com.deadline.horror.casa.hunt.NonaRotaEntity.ACT_CRAWL},
+				{"choripan", com.deadline.horror.casa.dog.DogEntities.CHORIPAN, -1},
+				{"choripan_stand", com.deadline.horror.casa.dog.DogEntities.CHORIPAN, com.deadline.horror.casa.dog.ChoripanEntity.POSE_STAND},
+				{"choripan_demonio", com.deadline.horror.casa.dog.DogEntities.CHORIPAN_DEMONIO, -1},
+				{"mano", com.deadline.horror.casa.ApparitionEntities.MANO, -1},
+				{"sabana", com.deadline.horror.casa.ApparitionEntities.SABANA, -1},
+				{"marta_copia", com.deadline.casa.FamilyEntities.MARTA, -2},
+		};
+		for (Object[] sub : subjects) {
+			String key = (String) sub[0];
+			EntityType<?> type = (EntityType<?>) sub[1];
+			int pose = (int) sub[2];
+			step(10, mc -> spawnSubject(mc, type));
+			step(1, mc -> server(mc, p -> {
+				if (subject instanceof com.deadline.horror.casa.hunt.NonaRotaEntity n && pose >= 0) {
+					n.holdPose(pose);
+				} else if (subject instanceof com.deadline.horror.casa.dog.ChoripanEntity d) {
+					if (pose >= 0) {
+						d.pose(pose);
+						d.setVariant(com.deadline.horror.casa.dog.ChoripanEntity.LOOK_MUERTO);
+					}
+				} else if (subject instanceof com.deadline.casa.FamilyEntity f && pose == -2) {
+					f.setVariant(com.deadline.casa.FamilyEntity.LOOK_COPIA);
+				}
+			}));
+			shot(30, "casa_mob_" + key);
+			step(1, mc -> frameSubject(mc, 1.7, 0, 0.86));
+			shot(15, "casa_mob_" + key + "_face");
+		}
+		step(5, mc -> server(mc, p -> {
+			if (subject != null) {
+				subject.discard();
+				subject = null;
+			}
+		}));
+		for (String k : new String[] {"nona_rota", "lucia", "copia", "perro_largo", "cara_roja"}) {
+			step(30, mc -> com.deadline.client.hunt.Jumpscare3D.start(k));
+			shot(6, "casa_js_" + k);
+		}
+		step(30, mc -> ClientState.reset());
+	}
+
+	/** The Casa in the real overworld: the arrival view at night, then every room with night vision (no HUD). */
+	private static void casaTour() {
+		step(10, mc -> cmd(mc, "deadline start casa " + mc.player.getName().getString()));
+		// the site is found and placed in batches: give it time before going there
+		step(600, mc -> director(mc, r -> {
+			ServerPlayer p = r.star();
+			if (p != null) {
+				net.minecraft.world.phys.Vec3 v = r.at("llegada");
+				p.teleportTo(r.level, v.x, v.y, v.z, Set.of(), r.yaw("llegada"), -6F, false);
+			}
+		}));
+		shot(120, "casa_llegada_night");
+		step(1, mc -> {
+			mc.options.hideGui = true;
+			server(mc, p -> p.addEffect(new MobEffectInstance(MobEffects.NIGHT_VISION, 20 * 120, 0, false, false)));
+		});
+		shot(20, "casa_llegada_nv");
+		String[] rooms = {"hall", "living", "comedor", "cocina", "pasillo_pb", "nona_cuarto", "costurero", "escritorio",
+				"esc_principal_pie", "pasillo_1p", "lucia_cuarto", "toti_cuarto", "matrimonial", "huespedes", "bano_1p",
+				"cuarto_nono", "altillo", "sotano", "sotano_pared", "cuarto61", "patio", "cucha"};
+		for (String room : rooms) {
+			step(1, mc -> director(mc, r -> {
+				ServerPlayer p = r.star();
+				if (p != null && r.def.points.containsKey(room)) {
+					net.minecraft.world.phys.Vec3 v = r.at(room);
+					p.teleportTo(r.level, v.x, v.y, v.z, Set.of(), r.yaw(room), 4F, false);
+				}
+			}));
+			shot(30, "casa_room_" + room);
+		}
+		step(1, mc -> {
+			mc.options.hideGui = false;
+			server(mc, p -> p.removeEffect(MobEffects.NIGHT_VISION));
+		});
+		step(1, mc -> cmd(mc, "deadline home " + mc.player.getName().getString()));
+		step(40, mc -> {
+		});
+	}
+
 	/** Walks the scripted Colegio case through its first set pieces and screenshots each one. */
 	private static void colegioTour() {
 		step(10, mc -> cmd(mc, "deadline start colegio " + mc.player.getName().getString()));
@@ -444,6 +529,7 @@ public final class ClientSmoke {
 			step(1, mc -> frameSubject(mc, 1.6, 0, 0.86));
 			shot(15, "mob_" + key + "_face");
 		}
+		casaStudio();
 		carStudio();
 		step(5, mc -> server(mc, p -> {
 			if (subject != null) {
@@ -456,6 +542,7 @@ public final class ClientSmoke {
 
 		// --- every case site, at night, with the real lighting
 		colegioTour();
+		casaTour();
 		for (CaseType t : CaseType.values()) {
 			if (t.scripted()) {
 				continue;

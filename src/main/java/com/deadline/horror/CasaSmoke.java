@@ -45,7 +45,9 @@ public final class CasaSmoke {
 	private static final String[] WRITES = {"lemaza", "espejo_azamel", "cuaderno"};
 	/** Where the fake player stands while each event looks for its place (first spot where canRun passes wins). */
 	private static final String[] SPOTS = {"pasillo_pb", "hall", "comedor", "cocina", "living", "pasillo_1p", "lucia_cuarto",
-			"toti_cuarto", "huespedes", "bano_1p", "nona_cuarto", "sotano", "cuarto61", "patio", "llegada"};
+			"toti_cuarto", "huespedes", "bano_1p", "nona_cuarto", "sotano", "cuarto61", "patio", "llegada", "espejo_hall",
+			"espejo_bano", "esc_principal_arriba", "pasillo_1p_fondo", "pasillo_pb_fondo", "soga", "patio_fondo", "limonero",
+			"lucia_cama", "huespedes_cama", "matrimonial"};
 	private static final int TICKS = 100;
 
 	private CasaSmoke() {
