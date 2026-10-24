@@ -61,7 +61,16 @@ a `casa_terror.md`, manda `casa_terror.md`.
   `HorrorEvent` scripted con id `sp_*` (`sp_perro_camino`, `sp_llegada`, `sp_cena`, `sp_a_dormir`, `sp_lucia_techo`,
   `sp_jorge_sonambulo`, `sp_ropero_toti`, `sp_nona_reza`, `sp_nona_se_rompe`, `sp_cuarto61`, `sp_final_auto`) y postean
   `cena:fin`, `a_dormir:fin`, `cuarto61:fin`, `final:fin`; si un set piece no existe, el acto usa una versión simple.
-- En curso con agentes: casona (pendiente 2), B2 cacería, B3 apariciones/perro/copias.
+- **Casona cerrada** (pendiente 2): 4 ciclos de render, camas-escondite con faldón, máquina Singer, cuarto de huéspedes
+  amueblado, cuarto 1961 con LEMAZA en tres paredes, ventana del Nono con luz (grupo `luces_cuarto_nono`); 11 bloques
+  nuevos de kit; 116/116 marcadores; `casa.json` 52 KB. Renderer con puertas/escaleras: `<scratchpad>/work/../srender.py`
+  (no versionado).
+- **B3 hecho**: eventos 33–45 (`ApparitionEvents`, helpers en `horror/casa/Apparitions`), `ChoripanEntity` (poses STAND,
+  GROWL...; looks normal/bufanda/muerto), `ChoripanDemonioEntity` + `PerroLargo.emerge/chase/crawl/retract`, `Choripan.spawn/
+  standAt`, copias (`FamilyEntity.LOOK_COPIA`, `POSE_CORNER(_TURN)`), Lucía `ACT_CEILING(_RUN)`, `ACT_SIT`, `LOOK_NORMAL`.
+- **Smoke de la Casa** (`horror/CasaSmoke`): contrato §11 + cada evento disparado con un `FakePlayer`; cualquier excepción
+  en un evento (`Haunt.errors`) rompe el CI.
+- En curso con agentes: B2 cacería, B1a poltergeist, B1b sangre/celular/lore. Después: C set pieces.
 
 ## Pendiente (en orden)
 1. ~~CI verde~~ (hecho).

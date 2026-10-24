@@ -107,6 +107,8 @@ public class NonaRotaEntity extends HauntEntity {
 	private int sniffCooldown;
 	private int hissCooldown;
 	private int clackCooldown = 200;
+	/** Ticks she holds the grab pose after catching someone (so it reaches the clients before she moves on). */
+	private int grabTicks;
 
 	public NonaRotaEntity(EntityType<? extends Monster> type, Level level) {
 		super(type, level);
@@ -248,6 +250,12 @@ public class NonaRotaEntity extends HauntEntity {
 		}
 		if (Director.get(run.type, run.site) != run) {
 			this.discard();
+			return;
+		}
+		if (grabTicks > 0) {
+			grabTicks--;
+			this.getNavigation().stop();
+			act(ACT_GRAB);
 			return;
 		}
 		modeTicks++;
@@ -523,10 +531,10 @@ public class NonaRotaEntity extends HauntEntity {
 		this.getLookControl().setLookAt(p, 30F, 30F);
 		double dy = Math.abs(p.getY() - this.getY());
 		if (d < CAPTURE_REACH + 0.4 && dy < 1.6) {
-			act(ACT_GRAB);
 			Hunt.capture(run, p);
 			target = null;
 			listen(null, 40);
+			grab();
 		}
 	}
 
@@ -583,11 +591,20 @@ public class NonaRotaEntity extends HauntEntity {
 			boolean breathing = !Breath.holding(hidden);
 			boolean noisy = NoiseMeter.get(hidden) > 12F || (Voice.enabled(hidden) && Voice.speaking(hidden, level.getGameTime()));
 			if (breathing || noisy) {
-				act(ACT_GRAB);
 				HideSpots.searched(run, s, false);
 				Hunt.capture(run, hidden);
 				searching = null;
 				listen(null, 40);
+				grab();
+				return;
+			}
+		}
+		// someone sneaking out right under her nose
+		for (ServerPlayer p : run.hunters()) {
+			if (targetable(p) && !HideSpots.hidden(p) && p.distanceTo(this) < TOUCH + 0.4) {
+				HideSpots.searched(run, s, false);
+				searching = null;
+				chase(p);
 				return;
 			}
 		}
@@ -601,6 +618,13 @@ public class NonaRotaEntity extends HauntEntity {
 				listen(null, 30);
 			}
 		}
+	}
+
+	/** Holds the grab / lunge pose for a second (she has him). */
+	private void grab() {
+		grabTicks = 22;
+		act(ACT_GRAB);
+		this.getNavigation().stop();
 	}
 
 	// ------------------------------------------------------------------ hearing and the little she sees
