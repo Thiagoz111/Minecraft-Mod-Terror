@@ -61,6 +61,10 @@ public class SpNonaReza extends HorrorEvent {
 
 	@Override
 	public void start(Ctx c) {
+		if (c.get("spot") == null && !canRun(c)) {
+			c.put("abort", true);  // fired by hand without its place (a command): nothing to stage
+			return;
+		}
 		Vec3 spot = c.get("spot");
 		// her back to him: she faces the way from him to her
 		float yaw = Apparitions.yawTo(c.p.position(), spot);
@@ -108,6 +112,9 @@ public class SpNonaReza extends HorrorEvent {
 
 	@Override
 	public boolean tick(Ctx c) {
+		if (c.get("abort") != null) {
+			return true;
+		}
 		FamilyEntity n = c.get("e");
 		if (Apparitions.gone(n)) {
 			return true;

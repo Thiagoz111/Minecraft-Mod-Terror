@@ -86,6 +86,10 @@ public class SpJorgeSonambulo extends HorrorEvent {
 
 	@Override
 	public void start(Ctx c) {
+		if (c.get("plan") == null && !canRun(c)) {
+			c.put("abort", true);  // fired by hand without its place (a command): nothing to stage
+			return;
+		}
 		Plan plan = c.get("plan");
 		if (plan.wasOpen()) {
 			c.run.door(plan.door(), false, false);
@@ -109,6 +113,9 @@ public class SpJorgeSonambulo extends HorrorEvent {
 
 	@Override
 	public boolean tick(Ctx c) {
+		if (c.get("abort") != null) {
+			return true;
+		}
 		FamilyEntity j = c.get("e");
 		Plan plan = c.get("plan");
 		if (Apparitions.gone(j)) {

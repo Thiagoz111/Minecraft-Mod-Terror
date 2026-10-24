@@ -162,7 +162,7 @@ public class Escritura extends HorrorEvent {
 		if (d.isRemoved()) {
 			return;
 		}
-		c.level().sendParticles(ModParticles.BLOOD_DRIP, d.getX(), d.getY() - 0.18, d.getZ(), 1, 0.06, 0.0, 0.06, 0.0);
+		c.level().sendParticles(ModParticles.BLOOD_DRIP, d.getX(), d.getY() - 0.26, d.getZ(), 1, 0.06, 0.0, 0.06, 0.0);
 	}
 
 	@Override

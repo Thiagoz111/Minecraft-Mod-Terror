@@ -194,7 +194,7 @@ public final class LoreDocs {
 	 * top is found under the statue and the candles standing on it. Falls back to {@link #top} when the ray misses.
 	 */
 	public static double surface(Run r, BlockPos pos, double x, double z, Entity viewer) {
-		Vec3 from = new Vec3(x, pos.getY() + 1.2, z);
+		Vec3 from = new Vec3(x, pos.getY() + 0.999, z);  // from inside the block: never the one above
 		Vec3 to = new Vec3(x, pos.getY() - 0.05, z);
 		if (viewer != null) {
 			BlockHitResult hit = r.level.clip(new ClipContext(from, to, ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, viewer));

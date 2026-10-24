@@ -367,7 +367,7 @@ GLYPHS = {
     'y': [[(0.08, 0.0), (0.5, 0.5), (0.92, 0.0)], [(0.5, 0.5), (0.5, 1.0)]],
     'z': [[(0.12, 0.0), (0.88, 0.0), (0.12, 1.0), (0.88, 1.0)]],
 }
-ACCENT = [(0.5, -0.12), (0.78, -0.34)]
+ACCENT = [(0.5, -0.28), (0.78, -0.52)]
 LW, LH = 24, 30
 GTOP, GBOT = 6.0, 22.0  # the glyph's box (rows); the accent goes above, drips below
 
@@ -378,9 +378,10 @@ def letter(ch, seed, accent=False):
     x, y = field(LW, LH)
     m = np.zeros((LH, LW), bool)
     strokes = [list(s) for s in GLYPHS[ch]] + ([ACCENT] if accent else [])
+    top, bot = (GTOP + 3.0, GBOT + 1.0) if accent else (GTOP, GBOT)   # room above for the accent
     bottoms = []
     for si, s in enumerate(strokes):
-        pts = [(2.5 + px * (LW - 5), GTOP + py * (GBOT - GTOP)) for px, py in s]
+        pts = [(2.5 + px * (LW - 5), top + py * (bot - top)) for px, py in s]
         total = sum(math.hypot(pts[i + 1][0] - pts[i][0], pts[i + 1][1] - pts[i][1]) for i in range(len(pts) - 1))
         walked = 0.0
         wob = r.random() * 6
@@ -396,12 +397,13 @@ def letter(ch, seed, accent=False):
                 rad = 1.75 - 0.75 * u + 0.25 * math.sin(u * 9 + wob)
                 px += 0.35 * math.sin(u * 7 + wob)
                 m |= (x - px) ** 2 + (y - py) ** 2 < rad ** 2
-                if py > GBOT - 1.5:
+                if py > bot - 1.5:
                     bottoms.append((px, py))
             walked += L
-        # a blob where the stroke began
-        sx, sy = pts[0]
-        m |= (x - sx) ** 2 + (y - sy) ** 2 < (2.1 + r.random() * 0.4) ** 2
+        # a blob where the stroke began (not on the accent: it is a quick flick)
+        if si < len(GLYPHS[ch]):
+            sx, sy = pts[0]
+            m |= (x - sx) ** 2 + (y - sy) ** 2 < (2.1 + r.random() * 0.4) ** 2
     # runs: from the lowest points of the letter (and one from the middle bar sometimes)
     r.shuffle(bottoms)
     for (bx, by) in bottoms[:r.integers(1, 3)]:
@@ -523,9 +525,9 @@ def cartas(seed=401, size=32):
                    fill=(52, 56, 82, 255))
         env = env.rotate(ang, resample=Image.NEAREST, expand=True)
         im.alpha_composite(env, (ox - 1, oy - 2 + i))
-    d.line((3, 16, 29, 17), fill=(150, 22, 26, 255), width=1)
-    d.line((15, 4, 16, 29), fill=(150, 22, 26, 255), width=1)
-    d.point([(15, 16), (16, 17), (14, 17)], fill=(110, 12, 18, 255))
+    d.line((3, 16, 29, 17), fill=(118, 44, 38, 255), width=1)
+    d.line((15, 4, 16, 29), fill=(118, 44, 38, 255), width=1)
+    d.point([(15, 16), (16, 17), (14, 17)], fill=(92, 30, 26, 255))
     return im
 
 

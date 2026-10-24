@@ -132,6 +132,7 @@ public class SpFinalAuto extends HorrorEvent {
 		n.watch(c.p);
 		if (car != null && !car.isRemoved()) {
 			n.setAction(FamilyEntity.POSE_SIT);
+			n.setNoGravity(true);  // the seat holds her (the car places its riders every tick)
 			car.seat(n, CarEntity.REAR_RIGHT);
 			c.run.sound(ModSounds.SP_ASIENTO, at, 0.9F, 0.9F);
 		} else {

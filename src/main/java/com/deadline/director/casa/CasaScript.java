@@ -466,6 +466,8 @@ public class CasaScript extends CaseScript {
 		Haunt.forget(run);
 		// what the poltergeist left changed (pictures turned, blinds, TV, drawers, flying props still out)
 		com.deadline.horror.casa.PoltergeistEvents.cleanup(run);
+		// the blood, the teeth and the papers laid out in the house (B1b)
+		com.deadline.horror.casa.BloodDecals.clear(run);
 		com.deadline.horror.casa.SetPieces.forget(run);
 		STATES.remove(run);
 	}

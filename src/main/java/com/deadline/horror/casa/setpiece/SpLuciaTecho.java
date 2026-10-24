@@ -5,13 +5,14 @@ import com.deadline.horror.Ctx;
 import com.deadline.horror.HorrorEvent;
 import com.deadline.horror.HouseQuery;
 import com.deadline.horror.casa.Apparitions;
+import com.deadline.horror.casa.BloodDecals;
 import com.deadline.net.Fx;
 import com.deadline.registry.ModEntities;
 import com.deadline.registry.ModParticles;
 import com.deadline.registry.ModSounds;
 import com.deadline.sanity.SanityManager;
 import java.util.List;
-import net.minecraft.sounds.SoundEvents;
+import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
@@ -91,6 +92,10 @@ public class SpLuciaTecho extends HorrorEvent {
 
 	@Override
 	public void start(Ctx c) {
+		if (c.get("pos") == null && !canRun(c)) {
+			c.put("abort", true);  // fired by hand without its place (a command): nothing to stage
+			return;
+		}
 		Vec3 pos = c.get("pos");
 		PoseidaEntity l = Apparitions.spawn(c, ModEntities.POSEIDA, pos, Apparitions.yawTo(pos, c.p.position()));
 		if (l != null) {
@@ -100,10 +105,17 @@ public class SpLuciaTecho extends HorrorEvent {
 		}
 		c.put("e", l);
 		c.put("seenAt", -1);
+		c.put("drops", 0);
+		// where she hangs, the plaster is stained (a thing to notice before he finds her)
+		double ceil = c.get("ceil");
+		BloodDecals.ceiling(c.run, BloodDecals.CEILING, new Vec3(pos.x, ceil, pos.z), c.rnd.nextFloat() * 360F, 1.1F, 1.1F);
 	}
 
 	@Override
 	public boolean tick(Ctx c) {
+		if (c.get("abort") != null) {
+			return true;
+		}
 		PoseidaEntity l = c.get("e");
 		if (Apparitions.gone(l)) {
 			return true;
@@ -127,7 +139,15 @@ public class SpLuciaTecho extends HorrorEvent {
 			// a drop falls from her face to the floor, between her and him
 			Vec3 drop = head.lerp(new Vec3(c.p.getX(), head.y, c.p.getZ()), 0.35);
 			c.level().sendParticles(ModParticles.BLOOD_DRIP, drop.x, drop.y, drop.z, 1, 0.02, 0.0, 0.02, 0.0);
-			c.run.sound(SoundEvents.POINTED_DRIPSTONE_DRIP_WATER, new Vec3(drop.x, c.p.getY(), drop.z), 0.5F, 0.6F);
+			c.run.sound(ModSounds.SANGRE_GOTA, new Vec3(drop.x, c.p.getY(), drop.z), 0.6F, 0.9F);
+			int drops = c.<Integer>get("drops");
+			if (drops < 6 && (c.t / DRIP) % 2 == 1) {
+				// the drops stay on the floor (blood is cleaned only when the case ends: BloodDecals.clear)
+				double floor = Apparitions.floorY(c.run, BlockPos.containing(drop.x, c.p.getY() + 0.1, drop.z));
+				BloodDecals.floor(c.run, BloodDecals.SPLATS[drops % BloodDecals.SPLATS.length], new Vec3(drop.x, floor, drop.z),
+						c.rnd.nextFloat() * 360F, 0.16F + 0.04F * drops, 0.16F + 0.04F * drops);
+				c.put("drops", drops + 1);
+			}
 		}
 		if (c.t == GIGGLE) {
 			Apparitions.sound(c, ModSounds.POSEIDA_GIGGLE, head, 0.45F, 0.8F);
