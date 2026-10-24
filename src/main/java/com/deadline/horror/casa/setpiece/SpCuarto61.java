@@ -76,6 +76,10 @@ public class SpCuarto61 extends HorrorEvent {
 	@Override
 	public boolean tick(Ctx c) {
 		int phase = c.get("phase");
+		if (phase != WAIT && Apparitions.hidden(c.p)) {
+			c.put("phaseAt", c.<Integer>get("phaseAt") + 1);  // never on a hidden hunter: the scene holds its breath
+			return false;
+		}
 		int k = c.t - c.<Integer>get("phaseAt");
 		return switch (phase) {
 			case WAIT -> waiting(c);
