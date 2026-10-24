@@ -59,7 +59,7 @@ public class TotiRincon extends HorrorEvent {
 			return true;
 		}
 		Apparitions.Gaze g = Apparitions.gaze(c);
-		g.update(Apparitions.sees(c, t, 45F));
+		g.update(Apparitions.watches(c, t, 45F));
 		Integer turned = c.get("turned");
 		if (turned == null && g.total >= STARE) {
 			turned = c.t;

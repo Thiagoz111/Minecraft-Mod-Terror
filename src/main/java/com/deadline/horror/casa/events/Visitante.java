@@ -73,7 +73,7 @@ public class Visitante extends HorrorEvent {
 		}
 		Apparitions.Gaze g = Apparitions.gaze(c);
 		boolean was = g.ever;
-		g.update(Apparitions.sees(c, s, 40F));
+		g.update(Apparitions.watches(c, s, 40F));
 		if (!was && g.ever) {
 			Apparitions.sound(c, ModSounds.APARICION_VISITANTE, s.position().add(0, 2.0, 0), 0.9F, 1.0F);
 			SanityManager.add(c.p, -5F);

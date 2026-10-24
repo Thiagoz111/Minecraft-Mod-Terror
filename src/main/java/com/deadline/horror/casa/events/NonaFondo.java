@@ -74,7 +74,7 @@ public class NonaFondo extends HorrorEvent {
 		}
 		Apparitions.Gaze g = Apparitions.gaze(c);
 		boolean was = g.ever;
-		g.update(Apparitions.sees(c, n, 50F));
+		g.update(Apparitions.watches(c, n, 50F));
 		if (!was && g.ever) {
 			Apparitions.sound(c, ModSounds.APARICION_NONA_RESPIRA, n.position().add(0, 1.3, 0), 0.7F, Apparitions.pitch(c, 0.85F, 0.95F));
 		}

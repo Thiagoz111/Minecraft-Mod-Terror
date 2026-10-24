@@ -88,7 +88,7 @@ public final class Apparitions {
 	}
 
 	/** The player sees the entity: its head or the middle of its body, within deg of the centre, line of sight. */
-	public static boolean sees(Ctx c, Entity e, float deg) {
+	public static boolean watches(Ctx c, Entity e, float deg) {
 		if (e == null || e.isRemoved()) {
 			return false;
 		}
@@ -97,7 +97,7 @@ public final class Apparitions {
 		return c.run.looking(c.p, base.add(0, h * 0.85, 0), deg, 64.0) || c.run.looking(c.p, base.add(0, h * 0.5, 0), deg, 64.0);
 	}
 
-	/** Like {@link #sees(Ctx, Entity, float)} but for a body whose visible part is not its hitbox (a ceiling, a floor). */
+	/** Like {@link #watches(Ctx, Entity, float)} but for a body whose visible part is not its hitbox (a ceiling, a floor). */
 	public static boolean seesAny(Ctx c, float deg, Vec3... points) {
 		for (Vec3 v : points) {
 			if (c.run.looking(c.p, v, deg, 64.0)) {
@@ -138,7 +138,6 @@ public final class Apparitions {
 			h.setSiteIndex(c.run.site);
 			h.setPersistenceRequired();
 		}
-		e.setSilent(false);
 		c.level().addFreshEntity(e);
 		spawned(c).add(e);
 		return e;

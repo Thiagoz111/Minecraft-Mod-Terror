@@ -87,7 +87,7 @@ public class PerroMira extends HorrorEvent {
 		}
 		Apparitions.Gaze g = Apparitions.gaze(c);
 		boolean was = g.ever;
-		g.update(Apparitions.sees(c, dog, 40F));
+		g.update(Apparitions.watches(c, dog, 40F));
 		if (!was && g.ever) {
 			if (s >= 2) {
 				Apparitions.sound(c, ModSounds.APARICION_PERRO_RESPIRA, dog.position().add(0, 0.8, 0), s >= 3 ? 0.9F : 0.6F, 0.92F);

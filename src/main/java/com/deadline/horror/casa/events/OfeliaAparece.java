@@ -125,7 +125,7 @@ public class OfeliaAparece extends HorrorEvent {
 		}
 		Apparitions.Gaze g = Apparitions.gaze(c);
 		boolean was = g.ever;
-		g.update(Apparitions.sees(c, doll, 45F));
+		g.update(Apparitions.watches(c, doll, 45F));
 		if (!was && g.ever) {
 			Apparitions.sound(c, ModSounds.APARICION_OFELIA, doll.position().add(0, 0.4, 0), 0.8F, Apparitions.pitch(c, 0.95F, 1.1F));
 		}

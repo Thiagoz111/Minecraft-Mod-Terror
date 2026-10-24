@@ -77,7 +77,7 @@ public class CopiaSonrie extends HorrorEvent {
 		}
 		Apparitions.Gaze g = Apparitions.gaze(c);
 		boolean was = g.ever;
-		g.update(Apparitions.sees(c, f, 45F));
+		g.update(Apparitions.watches(c, f, 45F));
 		if (!was && g.ever) {
 			Apparitions.sound(c, ModSounds.APARICION_COPIA, f.getEyePosition(), 0.7F, Apparitions.pitch(c, 0.9F, 1.05F));
 		}

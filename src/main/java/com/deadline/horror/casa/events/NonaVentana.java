@@ -59,7 +59,7 @@ public class NonaVentana extends HorrorEvent {
 			return true;
 		}
 		Apparitions.Gaze g = Apparitions.gaze(c);
-		g.update(Apparitions.sees(c, n, 45F));
+		g.update(Apparitions.watches(c, n, 45F));
 		Vec3 face = n.position().add(0, 1.3, 0);
 		if (g.total == 5) {
 			Apparitions.sound(c, ModSounds.APARICION_NONA_RESPIRA, face, 0.6F, 0.8F);

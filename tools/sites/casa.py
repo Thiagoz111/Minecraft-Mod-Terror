@@ -395,8 +395,7 @@ def shell(s, hs):
                 if z == SZ0:
                     k = 'zocalo_ladrillo' if y == 0 else \
                         ('ladrillo_salitre' if H(x, y) < (420 if y == 1 else 90) else 'ladrillo_visto') if y <= 3 else \
-                        ('revoque_chorreado' if (y == 8 and H(x, y, 1) < 520) or (y == 4 and H(x, y, 1) < 160)
-                         else 'revoque_blanco')
+                        ('revoque_chorreado' if y == 8 and H(x, y, 1) < 520 else 'revoque_blanco')
                 else:
                     wet = x == SX0 or (z == SZ1 and x < -4)
                     k = ('zocalo_revoque_humedad' if wet else 'zocalo_revoque') if y == 0 else \
