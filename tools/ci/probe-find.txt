@@ -1,2 +1,0 @@
-client/renderer/(rendertype/)?RenderTypes?$
-client/model/geom/builders/LayerDefinition

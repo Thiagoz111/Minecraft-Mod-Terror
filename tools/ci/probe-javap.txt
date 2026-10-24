@@ -1,7 +1,2 @@
-net.minecraft.client.renderer.OrderedSubmitNodeCollector|submitModelPart|submitModel
-net.minecraft.client.model.geom.ModelPart|copyFrom|Scale|visible|getChild|public
-net.minecraft.client.model.player.PlayerModel#p|createMesh|static
-net.minecraft.client.model.geom.builders.LayerDefinition|create|bake
-net.minecraft.client.renderer.rendertype.RenderTypes|entityCutout|armorCutout|entityTranslucent|entitySolid
-net.minecraft.client.model.geom.ModelLayers|PLAYER
-net.minecraft.client.renderer.texture.OverlayTexture|NO_OVERLAY
+net.fabricmc.fabric.api.resource.ResourceManagerHelper|registerBuiltinResourcePack
+net.fabricmc.fabric.api.resource.ResourcePackActivationType|

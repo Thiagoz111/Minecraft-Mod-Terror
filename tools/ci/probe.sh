@@ -36,4 +36,21 @@ if [ -s tools/ci/probe-src.txt ]; then
     for s in $SRCS; do unzip -p "$s" "$p" 2>/dev/null; done | grep -vE '^import |^package |^\s*$'
   done < tools/ci/probe-src.txt
 fi
+if [ -s tools/ci/probe-assets.txt ]; then
+  # vanilla GUI assets: path, PNG size and the .mcmeta (gui scaling) of every match; never the images themselves
+  for j in $(find ~/.gradle/caches .gradle -name 'minecraft-*.jar' 2>/dev/null | sort -u); do
+    if unzip -Z1 "$j" 2>/dev/null | grep -q '^assets/minecraft/textures/gui/'; then CJ="$j"; break; fi
+  done
+  echo "=== ASSETS JAR $CJ"
+  while IFS= read -r pat; do
+    [ -z "$pat" ] && continue
+    echo "=== ASSETS $pat"
+    unzip -Z1 "$CJ" | grep -E "$pat" | while IFS= read -r f; do
+      case "$f" in
+        *.png) dims=$(unzip -p "$CJ" "$f" | python3 -c 'import sys,struct; b=sys.stdin.buffer.read(24); print("%dx%d" % struct.unpack(">II", b[16:24]))'); echo "$f $dims";;
+        *.mcmeta) echo "$f $(unzip -p "$CJ" "$f" | tr -d '\n\t ')";;
+      esac
+    done
+  done < tools/ci/probe-assets.txt
+fi
 echo "=== PROBE END"
