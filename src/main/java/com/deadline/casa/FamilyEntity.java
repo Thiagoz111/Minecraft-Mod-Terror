@@ -2,7 +2,6 @@ package com.deadline.casa;
 
 import com.deadline.entity.HauntEntity;
 import com.deadline.registry.ModSounds;
-import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
@@ -11,7 +10,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.tags.FluidTags;
 import net.minecraft.util.Mth;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
@@ -26,102 +24,79 @@ import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.Vec3;
 
 /**
- * The Morales family (Marta, Jorge, the Nona, Toti): actors staged by the Casa Morales script. Like
- * {@link com.deadline.entity.ApparitionEntity} they have no AI of their own, cannot be hurt or pushed and are
- * {@code scripted}; unlike the ghosts they are flesh and blood: gravity and block collision (a shoved Jorge falls into
- * the pelopincho and floats there on his back).
+ * The Morales family (Marta, Jorge, the Nona, Toti): silent actors staged by the Casa Morales script and its set pieces
+ * (docs/design/casa_terror.md 7: nobody speaks, they only do things). Like {@link com.deadline.entity.ApparitionEntity}
+ * they have no AI of their own, cannot be hurt or pushed and are {@code scripted}; unlike the ghosts they are flesh and
+ * blood: gravity and block collision.
  * <ul>
  *   <li>Pose = {@link #setAction(int)} with the {@code POSE_*} ids below (one set for the four; each model maps the ids
- *   it has and shows its default for the rest). Look = {@link #setVariant(int)}: {@link #LOOK_NORMAL} or
- *   {@link #LOOK_POSSESSED} (Jorge 'poseido', the Nona 'poseida'; Marta and Toti have a single look).</li>
+ *   it has and shows its default for the rest). Look = {@link #setVariant(int)}: {@link #LOOK_NORMAL},
+ *   {@link #LOOK_POSSESSED} (Jorge 'poseido', the Nona 'poseida') or {@link #LOOK_COPIA}.</li>
+ *   <li>Expression bits ({@link #setExpression(int)}): {@link #EXPR_STARE} (the head follows far further round than a
+ *   neck can) and {@link #EXPR_SMILE} (the Nona's grin).</li>
  *   <li>{@link #walkTo(Vec3, double)} walks on the ground navigation: the AI is switched on for the walk only and off
  *   again on arrival ({@link #hasArrived()}); a walk that cannot progress for 3 s snaps to the target.</li>
  *   <li>{@link #setFloating(boolean)}: no gravity, a gentle bob in place (the Nona in her rocker in the 1961 room);
  *   {@link #floatTo(Vec3, int)} glides there.</li>
- *   <li>While standing, the head follows the nearest hunter (or {@link #watch(Entity)}); the body keeps the yaw the
- *   script gave it ({@link #face(Vec3)}, or the yaw set by {@code Props.spawn / place}): vanilla's body control is
- *   overridden on both sides, so a rocker, a grill or a wardrobe door posed against the body stays put.</li>
- *   <li>{@link #talk(int)} moves the jaw for a while (nobody is heard: there are no voices, only the mouth moving).</li>
- *   <li>{@link #shove(Vec3)}: a scripted physical shove (vanilla {@code push} / knockback are left alone).</li>
+ *   <li>While standing, the head follows {@link #watch(Entity)}, else {@link #lookAt(Vec3)}, else the nearest hunter;
+ *   the body keeps the yaw the script gave it ({@link #face(Vec3)}, or the yaw set by {@code Props.spawn / place}):
+ *   vanilla's body control is overridden on both sides, so a pose posed against the body stays put.</li>
+ *   <li>{@link #talk(int)} moves the jaw for a while (nobody is heard: only the mouth moving).</li>
  * </ul>
- * <p><b>P6 integration notes</b> (not fixable inside P1's files):
+ * <p><b>Integration notes</b> (not fixable inside this file):
  * <ul>
  *   <li>The family is a {@link HauntEntity}, so everything that does {@code instanceof HauntEntity} treats them as
- *   ghosts: EMF 5 next to Marta (EmfItem), the flashlight flickering within 12 blocks (FlashlightLights), the camera
- *   flash stunning them and giving evidence (CameraItem; then they shake via HauntRenderer.isShaking), the crucifix
- *   shoving and stunning them (CrucifixItem), the spirit box answering (SpiritBoxItem), and salt lines blocking them
- *   (SaltLineBlock: a {@link #walkTo} through a salt circle stalls and snaps after 3 s). Exclude
- *   {@code e instanceof FamilyEntity f && !f.isPossessed()} in those six, or add an overridable
+ *   ghosts (EMF, the flashlight flicker, the camera flash, the crucifix, the spirit box, salt lines). Exclude
+ *   {@code e instanceof FamilyEntity f && !f.isPossessed()} in those, or add an overridable
  *   {@code HauntEntity.isSpectral()} and override it here with {@code isPossessed()}.</li>
- *   <li>Peaceful: as a {@link Monster} they may be discarded on Peaceful. Probe 1.21.11 (api-probe) for
- *   {@code Monster/Mob.shouldDespawnInPeaceful} vs {@code EntityType.Builder.notInPeaceful} before overriding
- *   anything.</li>
+ *   <li>Peaceful: as a {@link Monster} they may be discarded on Peaceful.</li>
  * </ul>
  */
 public class FamilyEntity extends HauntEntity {
 	// ------------------------------------------------------------------ poses (names = the model poses of ent_<key>.py)
-	/** Everyone's default: Marta 'idle_nervous', Jorge 'idle', the Nona 'stand_walker', Toti playing standing (rest). */
+	/** Everyone's default: Marta 'idle_nervous' (the phone in both hands), Jorge 'idle', the Nona 'stand_walker', Toti. */
 	public static final int POSE_IDLE = 0;
-	/** Marta 'point' ("¡Por la ventana!"), Jorge 'point' ("es la humedad"). Face the target first ({@link #face}). */
+	/** Marta 'point', Jorge 'point'. Face the target first ({@link #face}). */
 	public static final int POSE_POINT = 1;
-	/** Marta 'scared' ("Ay, Dios mío"): fast blend, trembles. */
+	/** Marta 'scared': the free hand flies to her cheek, the phone clutched up; a jolt, trembling. */
 	public static final int POSE_SCARED = 2;
-	/** Marta 'show_phone' (casa.ya_llego): the phone held up beside her face, screen to the player. */
+	/** Marta 'show_phone': the phone held up beside her face, the screen turned to whoever she faces (she texted you). */
 	public static final int POSE_SHOW_PHONE = 3;
-	/** Marta 'show_phone' with the 'scared' jaw and brows on top ("...Lucía no tiene celular"). */
+	/** Marta 'show_phone' with the 'scared' jaw and brows on top. */
 	public static final int POSE_SHOW_PHONE_SCARED = 4;
-	/** Marta 'throw' with the chorizo in her fist; any other pose afterwards = the release (snap, chorizo hidden). */
-	public static final int POSE_THROW = 5;
-	/** Marta 'throw' with the bread roll instead of the chorizo. */
-	public static final int POSE_THROW_BREAD = 6;
-	/** Marta 'shout' ("¡TIRALE ALGO!", "¡Te dije que no comas tanto chorizo!"). */
-	public static final int POSE_SHOUT = 7;
-	/** Jorge 'grill_flip' (possessed at the grill, bare hands): the 16-tick flip loop. */
-	public static final int POSE_GRILL_FLIP = 8;
-	/** Jorge 'knife_conduct': arms up in a V, the tongs as the baton, a downbeat every 10 ticks (launch on it). */
-	public static final int POSE_KNIFE_CONDUCT = 9;
-	/** Jorge 'limp_fall': falls back like a sack (8 ticks); afloat in water (he floats instead of sinking). */
-	public static final int POSE_LIMP_FALL = 10;
-	/** Jorge 'carry_bag': the charcoal sack on his belly, tongs hidden. */
-	public static final int POSE_CARRY_BAG = 11;
 	/** The Nona 'stand_walker' (same as {@link #POSE_IDLE} for her). */
 	public static final int POSE_STAND_WALKER = 12;
-	/** The Nona 'offer_mate' ("¿Querés un mate, nene?"): the gourd held out. */
-	public static final int POSE_OFFER_MATE = 13;
-	/** The Nona 'knit_sit': in the rocker, knitting, rocking slowly. */
+	/** The Nona 'knit_sit': in the rocker the model brings along, knitting, rocking slowly. */
 	public static final int POSE_KNIT_SIT = 14;
-	/** The Nona 'stand_no_walker': furious, fists on her hips (casa.chancleta). */
-	public static final int POSE_STAND_NO_WALKER = 15;
-	/** The Nona 'throw_chancleta': the slipper cocked; any other pose afterwards = the release (snap, slipper hidden). */
-	public static final int POSE_THROW_CHANCLETA = 16;
 	/** The Nona 'float_rock': floating in the rocker in the 1961 room (use with {@link #setFloating(boolean)}). */
 	public static final int POSE_FLOAT_ROCK = 17;
-	/** The Nona 'yarn_cast': arms flung out, the red yarn shooting from her hands (floating, seated). */
-	public static final int POSE_YARN_CAST = 18;
 	/** The Nona 'scream_dentures': the jaw dislocated, the dentures floating (shown with {@link #LOOK_POSSESSED}). */
 	public static final int POSE_SCREAM_DENTURES = 19;
-	/** The Nona 'sew_calm': seated, hands over Ofelia; from a floating pose she comes down slowly (~60 ticks). */
+	/** The Nona 'sew_calm': seated in the rocker, hands over Ofelia; from a floating pose she comes down slowly. */
 	public static final int POSE_SEW_CALM = 20;
-	/** Toti 'crouch_closet': crouched in the wardrobe, absorbed in the ranked match. */
+	/** Toti 'crouch_closet': crouched in the wardrobe, knees up. */
 	public static final int POSE_CROUCH_CLOSET = 21;
-	/** Toti 'slam': shoves the wardrobe door shut without looking ("¡Callate, Chori!"); back to crouch after. */
-	public static final int POSE_SLAM = 22;
-	/** Toti 'stand' (breakfast, "¿Qué me perdí?"): upright, shrugging, mic swung up. */
-	public static final int POSE_STAND = 23;
-	/**
-	 * Marta's hand-over beat ("¡Tomá!"): the chorizo held out in her right fist toward whoever she faces (face them
-	 * first); any other pose afterwards = handed over (chorizo hidden: give the item then). The bread is not shown.
-	 */
-	public static final int POSE_HAND_OVER = 24;
 
 	// ------------------------------------------------------------------ looks
 	public static final int LOOK_NORMAL = 0, LOOK_POSSESSED = 1;
 	/** B3 (Act 5, event copia_sonrie): the copy of Marta / Jorge / Toti -- the same face, a smile far too wide, grey. */
 	public static final int LOOK_COPIA = 2;
-	/** B3 (event toti_rincon): standing in a corner facing the wall, arms hanging, perfectly still (Toti's model). */
+	/** B3 (event toti_rincon): standing in a corner facing the wall, arms hanging, perfectly still. */
 	public static final int POSE_CORNER = 40;
 	/** B3: {@link #POSE_CORNER}, and the head turns all the way round to look at you while the body does not move. */
 	public static final int POSE_CORNER_TURN = 41;
+	/**
+	 * C (set pieces): seated on a chair, an armchair or a car seat -- the hips down at chair height, legs forward,
+	 * hands in the lap (the silent dinner, Jorge in his armchair, the Nona in the back seat). Stand the actor ON the chair
+	 * block's marker facing the way the chair faces; the Nona sits without her rocker.
+	 */
+	public static final int POSE_SIT = 42;
+
+	// ------------------------------------------------------------------ expressions (bits, synced)
+	/** C: the head follows its target round to 170 degrees off the body, further than any neck can (the Nona at the door). */
+	public static final int EXPR_STARE = 1;
+	/** C: the Nona's grin -- her too-white dentures shown in her mouth, the lips drawn back. */
+	public static final int EXPR_SMILE = 2;
 
 	// ------------------------------------------------------------------ tuning
 	/** Horizontal distance that counts as "arrived". */
@@ -135,6 +110,8 @@ public class FamilyEntity extends HauntEntity {
 	private static final float HEAD_YAW_MAX = 75F, HEAD_PITCH_MAX = 40F, HEAD_TURN = 9F, HEAD_TILT = 5F;
 	/** A target further round than this (behind her) is ignored: the head returns to the front. */
 	private static final float HEAD_GIVE_UP = 115F;
+	/** {@link #EXPR_STARE}: how far round the head follows, and how fast it turns (slow, steady, wrong). */
+	private static final float STARE_YAW_MAX = 170F, STARE_TURN = 6F;
 	/** Floating bob: amplitude (blocks) and speed (rad / tick). */
 	private static final double BOB = 0.05, BOB_SPEED = 0.06;
 	/** Distance (blocks) the Nona's walker rolls between two squeaks of its wheel. */
@@ -145,6 +122,8 @@ public class FamilyEntity extends HauntEntity {
 	private static final EntityDataAccessor<Boolean> FLOATING = SynchedEntityData.defineId(FamilyEntity.class, EntityDataSerializers.BOOLEAN);
 	/** Game time until which the jaw talks (the client compares it with its own clock). */
 	private static final EntityDataAccessor<Integer> TALK_UNTIL = SynchedEntityData.defineId(FamilyEntity.class, EntityDataSerializers.INT);
+	/** Expression bits ({@link #EXPR_STARE}, {@link #EXPR_SMILE}). */
+	private static final EntityDataAccessor<Integer> EXPR = SynchedEntityData.defineId(FamilyEntity.class, EntityDataSerializers.INT);
 
 	/** Plays the walker squeak and the rocker creak on its own (set false if the script plays them). */
 	public boolean propSounds = true;
@@ -164,6 +143,7 @@ public class FamilyEntity extends HauntEntity {
 	private int floatStart;
 
 	private Entity watchTarget;
+	private Vec3 lookPoint;
 	private boolean watchPlayers = true;
 	private double squeak;
 	/** The body yaw this class last wrote (NaN before the first tick); see {@link #tick()}. */
@@ -190,23 +170,37 @@ public class FamilyEntity extends HauntEntity {
 		super.defineSynchedData(builder);
 		builder.define(FLOATING, false);
 		builder.define(TALK_UNTIL, 0);
+		builder.define(EXPR, 0);
 	}
 
 	// ------------------------------------------------------------------ pose helpers (shared with the models)
-	/** The Nona's seated poses: the rocker is shown and the walker hidden. */
+	/** The Nona's poses in her rocker: the rocker is shown and the walker hidden. */
 	public static boolean seated(int pose) {
-		return pose == POSE_KNIT_SIT || pose == POSE_FLOAT_ROCK || pose == POSE_YARN_CAST || pose == POSE_SCREAM_DENTURES
-				|| pose == POSE_SEW_CALM;
+		return pose == POSE_KNIT_SIT || pose == POSE_FLOAT_ROCK || pose == POSE_SCREAM_DENTURES || pose == POSE_SEW_CALM;
 	}
 
-	/** The Nona has her walker in this pose (every standing pose but the furious one and the throw). */
+	/** The Nona has her walker in this pose (every standing pose; not seated, not on a chair). */
 	public static boolean walkerShown(int pose) {
-		return !seated(pose) && pose != POSE_STAND_NO_WALKER && pose != POSE_THROW_CHANCLETA;
+		return !seated(pose) && pose != POSE_SIT;
 	}
 
 	/** The Nona's poses that float the rocker off the floor (the 1961 room). */
 	public static boolean floatPose(int pose) {
-		return pose == POSE_FLOAT_ROCK || pose == POSE_YARN_CAST || pose == POSE_SCREAM_DENTURES;
+		return pose == POSE_FLOAT_ROCK || pose == POSE_SCREAM_DENTURES;
+	}
+
+	// ------------------------------------------------------------------ expressions
+	public int expression() {
+		return this.entityData.get(EXPR);
+	}
+
+	/** Sets the expression bits ({@link #EXPR_STARE}, {@link #EXPR_SMILE}; 0 = none). */
+	public void setExpression(int bits) {
+		this.entityData.set(EXPR, bits);
+	}
+
+	public boolean staring() {
+		return (this.expression() & EXPR_STARE) != 0;
 	}
 
 	public boolean isPossessed() {
@@ -242,6 +236,14 @@ public class FamilyEntity extends HauntEntity {
 	/** Whether the head follows the nearest hunter when no {@link #watch(Entity)} target is set (default on). */
 	public void watchPlayers(boolean on) {
 		this.watchPlayers = on;
+	}
+
+	/**
+	 * The head turns to this point when no {@link #watch(Entity)} target is set (her plate, her phone in her lap, a
+	 * door); null: back to the nearest hunter (if {@link #watchPlayers(boolean)} is on) or straight ahead.
+	 */
+	public void lookAt(Vec3 point) {
+		this.lookPoint = point;
 	}
 
 	// ------------------------------------------------------------------ walking
@@ -442,13 +444,7 @@ public class FamilyEntity extends HauntEntity {
 		double vy = v.y;
 		double vz = v.z;
 		if (this.isInWater()) {
-			if (this.action() == POSE_LIMP_FALL) {
-				// he floats on his back: the feet settle ~0.3 under the surface
-				boolean deep = this.level().getFluidState(BlockPos.containing(this.getX(), this.getY() + 0.3, this.getZ())).is(FluidTags.WATER);
-				vy = (vy + (deep ? 0.025 : -0.02)) * 0.7;
-			} else {
-				vy = (vy - 0.02) * 0.8;
-			}
+			vy = (vy - 0.02) * 0.8;
 			vx *= 0.8;
 			vz *= 0.8;
 		} else {
@@ -469,34 +465,45 @@ public class FamilyEntity extends HauntEntity {
 		this.move(MoverType.SELF, this.getDeltaMovement());
 	}
 
-	/** Standing: the head turns to the watched entity / nearest hunter in front; walking: the look control. */
+	/**
+	 * Standing: the head turns to the watched entity, else the look point, else the nearest hunter in front (with
+	 * {@link #EXPR_STARE} it follows round to 170 degrees, slowly); walking: the look control.
+	 */
 	private void tickHead(ServerLevel level) {
 		Entity target = this.watchTarget;
 		if (target != null && (target.isRemoved() || target.level() != level || target.distanceToSqr(this) > 32.0 * 32.0)) {
 			target = null;
 		}
+		Vec3 point = target != null ? target.getEyePosition() : this.lookPoint;
 		if (!this.isNoAi()) {
 			if (target != null) {
 				this.getLookControl().setLookAt(target, 30F, 30F);
+			} else if (point != null) {
+				this.getLookControl().setLookAt(point.x, point.y, point.z, 30F, 30F);
 			}
 			return;
 		}
-		if (target == null && this.watchPlayers) {
-			target = nearestHunter(level);
+		if (point == null && this.watchPlayers) {
+			ServerPlayer p = nearestHunter(level);
+			if (p != null) {
+				point = p.getEyePosition();
+			}
 		}
+		boolean stare = this.staring();
+		float max = stare ? STARE_YAW_MAX : HEAD_YAW_MAX;
 		float body = this.yBodyRot;
 		float yaw = body;
 		float pitch = 0F;
-		if (target != null) {
-			Vec3 to = target.getEyePosition().subtract(this.getEyePosition());
+		if (point != null) {
+			Vec3 to = point.subtract(this.getEyePosition());
 			double h = Math.sqrt(to.x * to.x + to.z * to.z);
 			float rel = Mth.wrapDegrees((float) (Mth.atan2(to.z, to.x) * Mth.RAD_TO_DEG) - 90F - body);
-			if (Math.abs(rel) < HEAD_GIVE_UP) {
-				yaw = body + Mth.clamp(rel, -HEAD_YAW_MAX, HEAD_YAW_MAX);
+			if (stare || Math.abs(rel) < HEAD_GIVE_UP) {
+				yaw = body + Mth.clamp(rel, -max, max);
 				pitch = Mth.clamp((float) -(Mth.atan2(to.y, h) * Mth.RAD_TO_DEG), -HEAD_PITCH_MAX, HEAD_PITCH_MAX);
 			}
 		}
-		this.setYHeadRot(Mth.approachDegrees(this.getYHeadRot(), yaw, HEAD_TURN));
+		this.setYHeadRot(Mth.approachDegrees(this.getYHeadRot(), yaw, stare ? STARE_TURN : HEAD_TURN));
 		this.setXRot(Mth.approach(this.getXRot(), pitch, HEAD_TILT));
 	}
 
@@ -543,7 +550,7 @@ public class FamilyEntity extends HauntEntity {
 	@Override
 	protected void clientEffects() {
 		super.clientEffects();
-		if (this.getType() == FamilyEntities.JORGE && this.isPossessed() && this.action() != POSE_LIMP_FALL && this.tickCount % 4 == 0) {
+		if (this.getType() == FamilyEntities.JORGE && this.isPossessed() && this.tickCount % 4 == 0) {
 			float yaw = this.yBodyRot * Mth.DEG_TO_RAD;
 			float side = this.random.nextBoolean() ? 0.12F : -0.12F;
 			this.level().addParticle(ParticleTypes.POOF, this.getX() + Mth.cos(yaw) * side, this.getY() + 1.4,
