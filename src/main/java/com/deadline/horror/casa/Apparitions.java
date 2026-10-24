@@ -20,6 +20,7 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
@@ -221,6 +222,44 @@ public final class Apparitions {
 	public static boolean clear(Run r, Vec3 a, Vec3 b, Entity viewer) {
 		BlockHitResult hit = r.level.clip(new ClipContext(a, b, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, viewer));
 		return hit.getType() == HitResult.Type.MISS || hit.getLocation().distanceTo(a) >= a.distanceTo(b) - 0.3;
+	}
+
+	/**
+	 * The mouth of a doorway on the side of `toward`: from the door cell along its passage axis, through the 1-block
+	 * reveal when the door sits deep in a 2-thick wall (solid on both sides), to the face where it opens into the room
+	 * or the hall, 0.1 out, at the door's lower block height. A view check aimed here is not cut by the wall beside a
+	 * recessed door (from along a hall the door itself never shows). Null for an unknown door.
+	 */
+	public static Vec3 doorway(Run r, String door, Vec3 toward) {
+		Vec3 dp = HouseQuery.doorPos(r, door);
+		if (dp == null) {
+			return null;
+		}
+		BlockPos cell = BlockPos.containing(dp);
+		BlockState st = r.level.getBlockState(cell);
+		Direction.Axis axis = st.hasProperty(BlockStateProperties.HORIZONTAL_FACING)
+				? st.getValue(BlockStateProperties.HORIZONTAL_FACING).getAxis()
+				: (open(r, cell.east()) && open(r, cell.west()) ? Direction.Axis.X : Direction.Axis.Z);
+		Direction dir = axis == Direction.Axis.X ? (toward.x >= dp.x ? Direction.EAST : Direction.WEST)
+				: (toward.z >= dp.z ? Direction.SOUTH : Direction.NORTH);
+		Direction lat = dir.getClockWise();
+		for (int i = 0; i < 2; i++) {
+			BlockPos next = cell.relative(dir);
+			if (!open(r, next) || !solid(r, next.relative(lat)) || !solid(r, next.relative(lat.getOpposite()))) {
+				break;  // the room or the hall itself: the reveal ends here
+			}
+			cell = next;
+		}
+		return Vec3.atCenterOf(cell).add(dir.getStepX() * 0.6, 0, dir.getStepZ() * 0.6);
+	}
+
+	/** Nothing to collide with at feet and head height. */
+	private static boolean open(Run r, BlockPos feet) {
+		return !solid(r, feet) && !solid(r, feet.above());
+	}
+
+	private static boolean solid(Run r, BlockPos p) {
+		return !r.level.getBlockState(p).getCollisionShape(r.level, p).isEmpty();
 	}
 
 	/** The dark corners of a room area: 4 floor spots 0.7 block in from the walls, standable, darkest first. */

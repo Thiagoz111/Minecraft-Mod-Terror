@@ -117,7 +117,15 @@ public final class Director {
 			}
 			r = create(ac.type, ac.site, level, origin, def);
 			// after a restart: back to the checkpoint of the saved chapter and replay it (flags and actors were not saved)
-			r.chapter = Math.max(1, ac.stage);
+			// (the furthest chapter any online hunter of the same case saved: a joined hunter may carry an older one)
+			int stage = ac.stage;
+			for (ServerPlayer o : level.getServer().getPlayerList().getPlayers()) {
+				ActiveCase oc = ModAttachments.get(o).active;
+				if (oc != null && oc.type == ac.type && oc.site == ac.site) {
+					stage = Math.max(stage, oc.stage);
+				}
+			}
+			r.chapter = Math.max(1, stage);
 			r.checkpoint(p);
 		}
 		return r;

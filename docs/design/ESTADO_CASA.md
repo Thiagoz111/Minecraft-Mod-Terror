@@ -84,6 +84,31 @@ a `casa_terror.md`, manda `casa_terror.md`.
 - Pendiente anotado (no empezar sin pedido del dueño): resource pack de interfaz (inventario, hotbar, botones) con
   estética del mod; el probe del CI ya lista tamaños y `.mcmeta` de `textures/gui` vanilla (`tools/ci/probe-assets.txt`).
 
+## Revisión final (sesión 2)
+Arreglado (compila en sintaxis; nada probado en juego todavía):
+- **Flujo**: puertas traseras y balcón trabados en actos 1–2; portones del terreno cerrados con llave en actos 3–6 y
+  abiertos al amanecer; la puerta del acto 2 se traba recién cuando todos los cazadores del terreno pasaron el umbral.
+  Watchdogs que re-arman `cuarto61`, `final:auto` y la cacería. El acto 6 empieza tras despertar de la segunda captura.
+  El acto 4 dura hasta terminar sus set pieces y "Escóndase" (tope 9 min). Los textos de la historia llegan a todos.
+- **Final**: DEAD LINE + tarjeta de créditos (`deadline.casa.creditos`) antes de cerrar el caso; la luz de arriba queda
+  prendida. El "CASO RESUELTO +$" suena después de los créditos (no se agregó el `returnHome` silencioso).
+- **Multijugador**: si se va uno de varios cazadores, `Haunt.stopFor(p)` corta solo sus eventos y `Hunt.letGo(p)` lo
+  saca del escondite y le limpia el HUD; el que se une toma el capítulo de la noche (`stage`), y tras un reinicio el
+  capítulo sale del máximo `stage` de los cazadores online.
+- **Sustos**: los jumpscares del acto 6 y de Lucía son incondicionales; `detras_hombro` toma el bloqueo de 3 min solo si
+  la cara aparece. La linterna (clic) y salir de un escondite (15) son ruido que la Nona oye. El perro largo es el set
+  piece `sp_perro_largo` (`horror/casa/dog/SpPerroLargo`), disparado por `CasaScript` a los 3 min de cacería cerca de
+  la cucha, o al principio del acto 6 si no salió. El tablero eléctrico solo se rearma en el acto 4.
+- `sombra_cruza`, `puerta_lenta` y `lucia_techo_corre` apuntan a la boca del vano (`Apparitions.doorway`); desde un
+  pasillo la sombra cruza el pasillo. `huellas` busca la habitación a 1–3 bloques del vidrio; `linterna_muere` mira las
+  lámparas del cuarto y el cielo en vez de la luz del propio haz. GPS oculto a menos de 64 bloques. Sin pista en el
+  celular para la Casa. CI: captura extra `casa_js_nona_rota_wall` (la cara contra una pared, NEAR 0.35).
+
+A verificar en juego (incierto): que los 6 eventos que el smoke no ubicó (`sombra_cruza`, `lucia_techo_corre`,
+`lampara_fondo`, `mecedora`, `huellas`, `linterna_muere`) ahora encuentren lugar; que `sp_perro_largo` llegue a salir
+(depende de pasar cerca de la cucha); el ritmo del acto 4 sin tope de intensidad aleatoria (no se aplicó `capOverride`);
+salir/entrar de cazadores a mitad de set piece; que el tiempo vuelva a correr al terminar (no se dejó el amanecer fijo).
+
 ## Pendiente (en orden)
 1. ~~CI verde~~ (hecho).
 2. **Cerrar la casona**: revisar renders (`siterender.py casa --point living|hall|pasillo_1p|cuarto61|patio`), corregir

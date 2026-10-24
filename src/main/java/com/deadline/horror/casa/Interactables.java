@@ -104,7 +104,7 @@ public final class Interactables {
 
 	/**
 	 * True while the house has power: always before the blackout of act 4, then only for the 40-90 s after the
-	 * breaker panel was reset (switches, the TV and the radio do nothing without it).
+	 * breaker panel was reset in act 4 (switches, the TV and the radio do nothing without it; never again after).
 	 */
 	public static boolean powered(Run r) {
 		int act = Polter.act(r);
@@ -646,6 +646,11 @@ public final class Interactables {
 		int act = Polter.act(r);
 		if (act < 4) {
 			r.sound(ModSounds.POLTER_LLAVE_LUZ, at, 0.9F, 0.6F);  // the lights are on: the lever does not move
+			return true;
+		}
+		if (act > 4) {
+			// C: only the blackout of act 4 can be reset (design 2); after it the panel is dead: a dull clunk, nothing
+			r.sound(ModSounds.CASA_BREAKER_TRIP, at, 1.0F, 0.55F);
 			return true;
 		}
 		if (powered(r)) {

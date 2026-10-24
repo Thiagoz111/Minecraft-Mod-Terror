@@ -43,11 +43,13 @@ public class PuertaLenta extends HorrorEvent {
 				continue;
 			}
 			Vec3 dp = HouseQuery.doorPos(c.run, d);
-			double dist = dp.distanceTo(c.p.position());
+			// the hall doors sit deep in a thick wall: from along the hall he sees the mouth of the doorway, not the leaf
+			Vec3 mouth = Apparitions.doorway(c.run, d, c.p.position());
+			double dist = mouth.distanceTo(c.p.position());
 			if (dist < 4.0 || Math.abs(dp.y - c.p.getY() - 0.5) > 2.0 || !inHall(c, dp)) {
 				continue;
 			}
-			if (!Apparitions.sees(c, dp.add(0, 0.5, 0), 40F)) {
+			if (!Apparitions.sees(c, mouth.add(0, 0.5, 0), 40F)) {
 				continue;
 			}
 			Plan p = plan(c, d);

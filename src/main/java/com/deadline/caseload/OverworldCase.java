@@ -113,6 +113,7 @@ public final class OverworldCase {
 		}
 		if (others) {
 			run.sync(p); // somebody is in the house right now: join their night instead of rebuilding it under them
+			d.active.stage = run.chapter(); // the saved chapter is the night's, not 1 (a restart replays from it)
 		} else {
 			run = Director.create(type, site, level, origin, def);
 			if (!OverworldSite.busy(type)) {

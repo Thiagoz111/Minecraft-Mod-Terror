@@ -15,8 +15,9 @@ import net.minecraft.world.phys.Vec3;
 
 /**
  * 33 sombra_cruza (acts 1-5, intensity 2): a tall shadow crosses the frame of an open door at the far end, from
- * behind one jamb to behind the other, in a few heavy strides. Never closer than 6 blocks; gone at once if he comes
- * within 3.5 blocks of it.
+ * behind one jamb to behind the other, in a few heavy strides. Never closer than 4 blocks; gone at once if he comes
+ * within 3.5 blocks of it. Seen from along a hall (the doors there sit deep in a thick wall: nothing beyond them shows)
+ * it steps out of the doorway instead, crosses the hall and is gone into the wall across.
  */
 public class SombraCruza extends HorrorEvent {
 	private static final int CROSS_TICKS = 30;
@@ -40,13 +41,17 @@ public class SombraCruza extends HorrorEvent {
 				continue;
 			}
 			Vec3 dp = HouseQuery.doorPos(c.run, d);
-			if (dp == null || dp.distanceTo(c.p.position()) < 6.0 || Math.abs(dp.y - c.p.getY() - 0.5) > 2.0) {
+			if (dp == null || Math.abs(dp.y - c.p.getY() - 0.5) > 2.0) {
 				continue;
 			}
-			if (!Apparitions.sees(c, dp.add(0, 0.6, 0), 45F)) {
+			// aimed at the mouth of the doorway on his side, not at the door deep in the wall
+			Vec3 mouth = Apparitions.doorway(c.run, d, c.p.position());
+			if (mouth == null || mouth.distanceTo(c.p.position()) < 4.0 || !Apparitions.sees(c, mouth.add(0, 0.6, 0), 45F)) {
 				continue;
 			}
-			Plan p = plan(c, dp);
+			String hall = HouseQuery.roomAt(c.run, mouth);
+			boolean along = hall != null && hall.startsWith("pasillo") && hall.equals(c.room());
+			Plan p = along ? across(c, dp, mouth) : plan(c, dp);
 			if (p != null) {
 				c.put("plan", p);
 				return true;
@@ -76,6 +81,29 @@ public class SombraCruza extends HorrorEvent {
 		Vec3 a = base.add(lat.scale(flip ? HALF_WIDTH : -HALF_WIDTH));
 		Vec3 b = base.add(lat.scale(flip ? -HALF_WIDTH : HALF_WIDTH));
 		return new Plan(a, b, dp);
+	}
+
+	/** From along a hall: out of the doorway, across the (narrow) hall and into the wall opposite. */
+	private static Plan across(Ctx c, Vec3 dp, Vec3 mouth) {
+		Vec3 out = mouth.subtract(dp).multiply(1, 0, 1);
+		if (out.lengthSqr() < 1.0E-4) {
+			return null;
+		}
+		out = out.normalize();
+		double y = Apparitions.floorY(c.run, BlockPos.containing(mouth));
+		int k = 0;
+		while (k < 4) {
+			Vec3 v = mouth.add(out.scale(0.4 + k));
+			if (!HouseQuery.standable(c.run, BlockPos.containing(v.x, y + 0.1, v.z))) {
+				break;
+			}
+			k++;
+		}
+		if (k == 0 || k >= 4) {
+			return null;  // not a hall: no wall across within reach
+		}
+		Vec3 base = new Vec3(mouth.x, y, mouth.z);
+		return new Plan(base.subtract(out.scale(1.1)), base.add(out.scale(k + 0.6)), dp);
 	}
 
 	@Override

@@ -51,13 +51,31 @@ public class Huellas extends HorrorEvent {
 		return HouseQuery.key(st).startsWith("casa_ventana");
 	}
 
+	/** Where hands could be "outside" a window (no area at all is outside too). */
+	private static final List<String> OUTSIDE = List.of("jardin", "patio", "balcon", "porche");
+
+	/** The first room 1 to 3 blocks off the glass: the window sits in the outer skin and its reveal is no room. */
+	private static String side(Run r, Vec3 mid, Vec3 n) {
+		for (int k = 1; k <= 3; k++) {
+			String s = HouseQuery.roomAt(r, mid.add(n.scale(k)));
+			if (s != null) {
+				return s;
+			}
+		}
+		return null;
+	}
+
+	private static boolean outside(String room) {
+		return room == null || OUTSIDE.contains(room);
+	}
+
 	@Override
 	public boolean canRun(Ctx c) {
 		if (!Apparitions.canScare(c)) {
 			return false;
 		}
 		String room = c.room();
-		if (room == null) {
+		if (room == null || OUTSIDE.contains(room)) {
 			return false;
 		}
 		List<Win> ok = new ArrayList<>();
@@ -70,14 +88,14 @@ public class Huellas extends HorrorEvent {
 					: Direction.NORTH;
 			Vec3 n = new Vec3(f.getStepX(), 0, f.getStepZ());
 			Vec3 mid = Vec3.atCenterOf(pos);
-			String a = HouseQuery.roomAt(c.run, mid.add(n));
-			String b = HouseQuery.roomAt(c.run, mid.subtract(n));
+			String a = side(c.run, mid, n);
+			String b = side(c.run, mid, n.scale(-1));
 			Vec3 out;
 			Direction into;
-			if (room.equals(a) && !room.equals(b)) {
+			if (room.equals(a) && outside(b)) {
 				out = n.scale(-1);
 				into = f;
-			} else if (room.equals(b) && !room.equals(a)) {
+			} else if (room.equals(b) && outside(a)) {
 				out = n;
 				into = f.getOpposite();
 			} else {

@@ -1,6 +1,7 @@
 package com.deadline.horror.casa;
 
 import com.deadline.horror.HorrorEvents;
+import com.deadline.horror.casa.dog.SpPerroLargo;
 import com.deadline.horror.casa.events.BajoCama;
 import com.deadline.horror.casa.events.CopiaSonrie;
 import com.deadline.horror.casa.events.DetrasHombro;
@@ -46,5 +47,6 @@ public final class ApparitionEvents {
 		HorrorEvents.register("casa", new OfeliaAparece());     // 43
 		HorrorEvents.register("casa", new Sabana());            // 44
 		HorrorEvents.register("casa", new Visitante());         // 45
+		HorrorEvents.register("casa", new SpPerroLargo());      // design 7: the long dog (scripted, CasaScript fires it)
 	}
 }

@@ -158,6 +158,12 @@ public final class Hunt {
 		}
 	}
 
+	/** One hunter leaves the case while the others stay: out of his hiding place, hunt HUD cleared. */
+	public static void letGo(ServerPlayer p) {
+		HideSpots.release(p);
+		HuntHud.clear(p);
+	}
+
 	/** True from the start of the transformation (or {@link #start}) until {@link #stop}. */
 	public static boolean active(Run run) {
 		State s = peek(run);

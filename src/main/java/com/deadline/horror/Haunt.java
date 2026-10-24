@@ -350,6 +350,28 @@ public final class Haunt {
 		}
 	}
 
+	/** Aborts only the events aimed at one hunter (he leaves the case while the others stay): each restores the world. */
+	public void stopFor(ServerPlayer p) {
+		List<Ctx> mine = new ArrayList<>();
+		for (Iterator<Ctx> it = running.iterator(); it.hasNext();) {
+			Ctx c = it.next();
+			if (c.p == p) {
+				it.remove();
+				mine.add(c);
+			}
+		}
+		for (Iterator<Ctx> it = incoming.iterator(); it.hasNext();) {
+			Ctx c = it.next();
+			if (c.p == p) {
+				it.remove();
+				mine.add(c);
+			}
+		}
+		for (Ctx c : mine) {
+			finish(c);
+		}
+	}
+
 	/** Aborts every running event (leaving the case, checkpoints): each one restores the world in stop(). */
 	public void stopAll() {
 		List<Ctx> all = new ArrayList<>(running);

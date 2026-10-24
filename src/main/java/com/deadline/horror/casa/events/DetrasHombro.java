@@ -10,7 +10,7 @@ import net.minecraft.world.phys.Vec3;
 
 /**
  * 38 detras_hombro (acts 4-6, intensity 5, SCARE -- a jumpscare: the haunt allows one every 3 minutes, never in the
- * first 4): a breath right behind his ear. If he whips round (more than ~100 degrees inside a third of a second) the red
+ * first 4; the 3-minute lock is taken only when the face actually shows): a breath right behind his ear. If he whips round (more than ~100 degrees inside a third of a second) the red
  * face is there, pressed against his, for half a second (Fx.jumpscare 'cara_roja'). If he does not turn, only the
  * breath was there.
  */
@@ -54,6 +54,7 @@ public class DetrasHombro extends HorrorEvent {
 		}
 		if (c.t > 2 && Math.abs(Mth.wrapDegrees(yaw[0] - yaw[WINDOW])) > TURN) {
 			Fx.jumpscare(c.p, "cara_roja");
+			c.haunt.jumpscared();
 			Fx.shake(c.p, 1.3F, 14);
 			Fx.redFlash(c.p, 0.6F);
 			return true;

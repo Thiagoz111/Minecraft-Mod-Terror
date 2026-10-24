@@ -9,7 +9,6 @@ import com.deadline.director.Steps;
 import com.deadline.horror.Haunt;
 import com.deadline.horror.HorrorEvents;
 import com.deadline.horror.HouseQuery;
-import com.deadline.horror.casa.hunt.HideSpots;
 import com.deadline.horror.casa.hunt.Hunt;
 import com.deadline.horror.casa.setpiece.Stage;
 import com.deadline.net.Fx;
@@ -406,6 +405,11 @@ public class CasaScript extends CaseScript {
 			Hunt.start(run);  // C: watchdog -- she was stopped some other way: the act always has its hunter
 		}
 		messages(run, s, ACT5, PhoneMessages.MARTA);
+		// C: the long dog (design 7, the end of act 5): once, after 3 minutes of hunt, when he is near the kitchen / patio
+		if (!run.has("sp:perro_largo") && run.now() - s.huntSince > 20 * 180 && run.now() % 200 == 0
+				&& h.fire("sp_perro_largo", p, true) != null) {
+			run.flag("sp:perro_largo");
+		}
 		int caught = Hunt.captures(run);
 		if (caught != s.lastCaptures) {
 			s.lastCaptures = caught;
@@ -461,6 +465,11 @@ public class CasaScript extends CaseScript {
 		if (roomScripted && run.has("cuarto61") && !run.has("escape") && run.since("cuarto61") > 40
 				&& !h.isRunning("sp_cuarto61") && !run.event("cuarto61:fin")) {
 			run.unflag("cuarto61");
+		}
+		// C: the long dog's fallback: early in act 6, while the 1961 room has not started (once; checked every 10 s)
+		if (!run.has("sp:perro_largo") && !run.has("cuarto61") && run.now() % 200 == 0
+				&& h.fire("sp_perro_largo", p, true) != null) {
+			run.flag("sp:perro_largo");
 		}
 		if (!run.has("cuarto61") && (inRoom || below)) {
 			run.flag("cuarto61");
@@ -546,7 +555,11 @@ public class CasaScript extends CaseScript {
 		// C: one of several hunters goes home: only he is let go, the night goes on for the others (hunters() still lists
 		// him here). The story set pieces that were aimed at him start over through the act watchdogs
 		if (run.hunters().stream().anyMatch(o -> o != p)) {
-			HideSpots.release(p);
+			Hunt.letGo(p);
+			Haunt h = Haunt.peek(run);
+			if (h != null) {
+				h.stopFor(p);
+			}
 			return;
 		}
 		Hunt.stop(run);

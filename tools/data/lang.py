@@ -44,7 +44,7 @@ BLOCKS = {
 CASES = {
     'casa': {
         'place': ('Casa Morales', 'The Morales House'),
-        'hint': ('La muñeca de Lucía está en el sótano.', "Lucia's doll is in the basement."),
+        'hint': ('', ''),
     },
     'colegio': {
         'place': ('Colegio Santa Inés de la Vigilia', 'Saint Agnes of the Vigil School'),
@@ -139,6 +139,7 @@ SCRIPT = {
     'deadline.colegio.caption.archivero': ('Un cajón del archivero de la Madre se abre solo.', "A drawer of the Mother's filing cabinet slides open by itself."),
     'deadline.door.locked': ('Está cerrada con llave.', "It's locked."),
     'deadline.casa.fin': ('DEAD LINE', 'DEAD LINE'),
+    'deadline.casa.creditos': ('Casa Morales\n\nla Nona · Marta · Jorge · Lucía · Toti · Choripán', 'The Morales House\n\nthe Nona · Marta · Jorge · Lucía · Toti · Choripán'),
     'deadline.colegio.ch.1': ('03:33 · LLEGADA', '03:33 · ARRIVAL'),
     'deadline.colegio.ch.1.sub': ('Colegio Santa Inés de la Vigilia', 'Saint Agnes of the Vigil School'),
     'deadline.colegio.ch.2': ('20:00 · ESTUDIO', '20:00 · STUDY'),

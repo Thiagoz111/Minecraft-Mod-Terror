@@ -5,6 +5,7 @@ import com.deadline.horror.HorrorEvent;
 import com.deadline.horror.HouseQuery;
 import com.deadline.horror.casa.Apparitions;
 import com.deadline.horror.casa.BloodDecals;
+import com.deadline.horror.casa.Polter;
 import com.deadline.item.FlashlightItem;
 import com.deadline.item.FlashlightLights;
 import com.deadline.item.ItemUtil;
@@ -17,6 +18,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.phys.Vec3;
 
 /**
@@ -74,7 +76,14 @@ public class LinternaMuere extends HorrorEvent {
 		if (st.isEmpty() || st.getDamageValue() >= st.getMaxDamage() - 2) {
 			return false;
 		}
-		return HouseQuery.dark(c.run, BlockPos.containing(c.p.getEyePosition()));
+		// the beam's own light block, a few blocks ahead, lights his eyes: ask the lamps of the room instead (and the sky)
+		BlockPos eye = BlockPos.containing(c.p.getEyePosition());
+		for (String g : Polter.lightGroups(c.run, c.p.getEyePosition())) {
+			if (Polter.anyLit(c.run, g)) {
+				return false;
+			}
+		}
+		return c.level().getBrightness(LightLayer.SKY, eye) <= 6;
 	}
 
 	@Override

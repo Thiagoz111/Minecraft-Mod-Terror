@@ -387,7 +387,7 @@ public final class HideSpots {
 				it.remove();
 				h.run.level.playSound(null, h.spot.out().x, h.spot.out().y + 0.5, h.spot.out().z, SoundEvents.WOODEN_DOOR_OPEN,
 						SoundSource.PLAYERS, 0.45F, 0.85F);
-				Hunt.noise(h.run, h.spot.hide(), 10F);
+				Hunt.noise(h.run, h.spot.hide(), 15F);
 			}
 		}
 	}

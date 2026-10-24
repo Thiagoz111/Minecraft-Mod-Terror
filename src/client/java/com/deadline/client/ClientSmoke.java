@@ -348,6 +348,20 @@ public final class ClientSmoke {
 			shot(3, "casa_js_" + k);
 			shot(6, "casa_js_" + k + "_late");
 		}
+		// the face must draw in front of a wall the hunter has his nose against (Jumpscare3D NEAR = 0.35)
+		step(10, mc -> server(mc, p -> {
+			net.minecraft.core.BlockPos b = p.blockPosition();
+			p.level().setBlockAndUpdate(b.south(), net.minecraft.world.level.block.Blocks.STONE.defaultBlockState());
+			p.level().setBlockAndUpdate(b.south().above(), net.minecraft.world.level.block.Blocks.STONE.defaultBlockState());
+			p.teleportTo((ServerLevel) p.level(), b.getX() + 0.5, p.getY(), b.getZ() + 0.6, Set.of(), 0F, 0F, false);
+		}));
+		step(30, mc -> com.deadline.client.hunt.Jumpscare3D.start("nona_rota"));
+		shot(3, "casa_js_nona_rota_wall");
+		step(10, mc -> server(mc, p -> {
+			net.minecraft.core.BlockPos b = p.blockPosition();
+			p.level().setBlockAndUpdate(b.south(), net.minecraft.world.level.block.Blocks.AIR.defaultBlockState());
+			p.level().setBlockAndUpdate(b.south().above(), net.minecraft.world.level.block.Blocks.AIR.defaultBlockState());
+		}));
 		step(30, mc -> ClientState.reset());
 	}
 

@@ -44,17 +44,23 @@ public class LuciaTechoCorre extends HorrorEvent {
 			if (dp == null) {
 				continue;
 			}
-			double dist = dp.distanceTo(c.p.position());
-			if (dist < 4.0 || dist > 14.0 || !Apparitions.sees(c, dp.add(0, 1.0, 0), 60F)) {
-				continue;
-			}
 			// the hall's centre line next to the door, and a start 6 blocks further along it, away from him
 			Vec3 at = alongX ? new Vec3(dp.x, dp.y, centre.z) : new Vec3(centre.x, dp.y, dp.z);
+			double dist = at.distanceTo(c.p.position());
+			if (dist < 4.0 || dist > 14.0) {
+				continue;
+			}
 			Vec3 axis = alongX ? new Vec3(1, 0, 0) : new Vec3(0, 0, 1);
 			double away = at.subtract(c.p.position()).dot(axis) >= 0 ? 1.0 : -1.0;
 			Vec3 start = at.add(axis.scale(6.0 * away));
 			if (!hall.inflate(0.0, 2.0, 0.0).contains(start)) {
 				start = at.add(axis.scale(3.5 * away));
+			}
+			// the door sits deep in the wall (never visible from along the hall): he looks at its doorway or at the
+			// stretch of ceiling she runs along
+			Vec3 mouth = Apparitions.doorway(c.run, d, at);
+			if (mouth == null || !Apparitions.seesAny(c, 60F, mouth.add(0, 1.0, 0), start.add(0, BODY, 0), at.add(0, BODY, 0))) {
+				continue;
 			}
 			double ceilA = Apparitions.ceilingY(c.run, start);
 			double ceilB = Apparitions.ceilingY(c.run, at);

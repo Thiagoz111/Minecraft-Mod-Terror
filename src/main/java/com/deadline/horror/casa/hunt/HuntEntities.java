@@ -61,6 +61,7 @@ public final class HuntEntities {
 		UseItemCallback.EVENT.register((player, world, hand) -> {
 			if (player instanceof ServerPlayer sp && sp.getItemInHand(hand).is(ModItems.FLASHLIGHT) && Director.of(sp) != null) {
 				NoiseMeter.add(sp, 14F);
+				Hunt.noise(Director.of(sp), sp.position(), 20F);
 			}
 			return InteractionResult.PASS;
 		});
